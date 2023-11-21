@@ -30,10 +30,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.Pair;
-import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
+import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
@@ -437,11 +434,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
-        return UpgradableIntMap.of(scope == null ? UpgradableIntMap.of() : scope.typesReferenced2(weight),
+    public PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
+        return PackedIntMap.of(scope == null ? PackedIntMap.of() : scope.typesReferenced2(weight),
                 parameterizedType.typesReferenced2(weight),
                 parameterExpressions.stream().flatMap(e -> e.typesReferenced2(weight).stream())
-                        .collect(UpgradableIntMap.collector()));
+                        .collect(PackedIntMap.collector()));
     }
 
     @Override

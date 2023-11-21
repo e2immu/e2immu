@@ -27,8 +27,9 @@ import org.e2immu.analyser.output.QualifiedName;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.ThisName;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.PackedInt;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
@@ -249,9 +250,9 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
     }
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+    public PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
         if (scope != null && !scopeIsThis()) {
-            return UpgradableIntMap.of(scope.typesReferenced2(weight), parameterizedType.typesReferenced2(weight));
+            return PackedIntMap.of(scope.typesReferenced2(weight), parameterizedType.typesReferenced2(weight));
         }
         return parameterizedType.typesReferenced2(weight);
     }

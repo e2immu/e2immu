@@ -30,8 +30,9 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.PackedInt;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
+import org.e2immu.analyser.util.PackedIntMap;
 
 import java.util.List;
 import java.util.Map;
@@ -270,10 +271,10 @@ public class Lambda extends BaseExpression implements Expression {
     }
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
-        return UpgradableIntMap.of(block.typesReferenced2(weight),
+    public PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
+        return PackedIntMap.of(block.typesReferenced2(weight),
                 parameters.stream().flatMap(p -> p.typesReferenced2(weight).stream())
-                        .collect(UpgradableIntMap.collector()));
+                        .collect(PackedIntMap.collector()));
     }
 
     @Override

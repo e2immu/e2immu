@@ -21,8 +21,9 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.support.SetOnce;
 
 import java.util.ArrayList;
@@ -120,23 +121,21 @@ public class FieldInfo implements InfoObject, WithInspectionAndAnalysis {
         );
     }
 
-    public static final int FIELD_WEIGHT = 50;
-    public static final int FIELD_EXPRESSION_WEIGHT = 1;
-
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2() {
-        return UpgradableIntMap.of(
-                type.typesReferenced2(FIELD_WEIGHT),
+    public PackedIntMap<TypeInfo> typesReferenced2() {
+        return PackedIntMap.of(
+                type.typesReferenced2(PackedInt.FIELD),
                 fieldInspection.isSet() ? fieldInspection.get().getAnnotations().stream()
-                        .flatMap(a -> a.typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream()).collect(UpgradableIntMap.collector())
-                        : UpgradableIntMap.of(),
+                        .flatMap(a -> a.typesReferenced2(PackedInt.STATIC_METHOD_CALL_OR_ANNOTATION).stream())
+                        .collect(PackedIntMap.collector())
+                        : PackedIntMap.of(),
                 hasBeenAnalysed() ? fieldAnalysis.get().getAnnotationStream()
                         .filter(e -> e.getValue().isVisible())
-                        .flatMap(e -> e.getKey().typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
-                        .collect(UpgradableIntMap.collector()) : UpgradableIntMap.of(),
+                        .flatMap(e -> e.getKey().typesReferenced2(PackedInt.STATIC_METHOD_CALL_OR_ANNOTATION).stream())
+                        .collect(PackedIntMap.collector()) : PackedIntMap.of(),
                 fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet() ?
-                        fieldInspection.get().getFieldInitialiser().initialiser().typesReferenced2(FIELD_EXPRESSION_WEIGHT)
-                        : UpgradableIntMap.of()
+                        fieldInspection.get().getFieldInitialiser().initialiser().typesReferenced2(PackedInt.EXPRESSION)
+                        : PackedIntMap.of()
         );
     }
 

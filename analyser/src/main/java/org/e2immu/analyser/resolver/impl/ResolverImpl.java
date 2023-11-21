@@ -39,6 +39,7 @@ import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.analyser.util.PackedInt;
 import org.e2immu.analyser.util.TimedLogger;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
@@ -58,6 +59,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
@@ -1320,11 +1322,11 @@ public class ResolverImpl implements Resolver {
                 LOGGER.info("Created directory {}", directory);
             }
             synchronized (typeGraph) {
-                dumpTypeGraph(new File(directory, "typeDependencies.gml.gz"));
-                dumpPackageGraphBasedOnTypeGraph(new File(directory, "packageDependenciesBasedOnTypeGraph.gml.gz"));
+                dumpTypeGraph(new File(directory, "typeDependencies.gml"));
+                dumpPackageGraphBasedOnTypeGraph(new File(directory, "packageDependenciesBasedOnTypeGraph.gml"));
             }
             synchronized (methodCallGraph) {
-                dumpMethodCallGraph(new File(directory, "methodCalls.gml.gz"));
+                dumpMethodCallGraph(new File(directory, "methodCalls.gml"));
             }
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
@@ -1338,7 +1340,7 @@ public class ResolverImpl implements Resolver {
             Map<String, Integer> toMap = aggregated.computeIfAbsent(typeInfo.packageName(), s -> new HashMap<>());
             for (Map.Entry<TypeInfo, Integer> e2 : entry.getValue().getWeights().entrySet()) {
                 TypeInfo target = e2.getKey();
-                toMap.merge(target.packageName(), e2.getValue(), Integer::sum);
+                toMap.merge(target.packageName(), e2.getValue(), PackedInt::sum);
             }
         }
         dumpPackageGraph(file, aggregated);
@@ -1365,18 +1367,13 @@ public class ResolverImpl implements Resolver {
                 graph.setEdgeWeight(e, e2.getValue());
             }
         }
-
-        GmlExporter<String, DefaultWeightedEdge> exporter = new GmlExporter<>();
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_VERTEX_LABELS, true);
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_EDGE_WEIGHTS, true);
-        exporter.setVertexAttributeProvider((v) -> {
+        Function<String, Map<String, Attribute>> vertexAttributeProvider = (v) -> {
             Map<String, Attribute> map = new LinkedHashMap<>();
             map.put("label", DefaultAttribute.createAttribute(v));
             return map;
-        });
-        try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file))) {
-            exporter.exportGraph(graph, gzipOutputStream);
-        }
+        };
+
+        exportWeightedGraph(graph, vertexAttributeProvider, file);
     }
 
     private void dumpTypeGraph(File file) throws IOException {
@@ -1397,21 +1394,33 @@ public class ResolverImpl implements Resolver {
                 graph.setEdgeWeight(e, e2.getValue());
             }
         }
-
-        GmlExporter<TypeInfo, DefaultWeightedEdge> exporter = new GmlExporter<>();
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_VERTEX_LABELS, true);
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_CUSTOM_VERTEX_ATTRIBUTES, true);
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_EDGE_WEIGHTS, true);
-        exporter.setVertexAttributeProvider((v) -> {
+        Function<TypeInfo, Map<String, Attribute>> vertexAttributeProvider = (v) -> {
             Map<String, Attribute> map = new LinkedHashMap<>();
             map.put("label", DefaultAttribute.createAttribute(v.fullyQualifiedName));
             TypeGraph.Dependencies dependencies = typeGraph.getNodeMap().get(v);
             map.put("weight", DefaultAttribute.createAttribute(dependencies.getSumIncoming()));
             return map;
+        };
+        exportWeightedGraph(graph, vertexAttributeProvider, file);
+    }
+
+    private static <T> void exportWeightedGraph(Graph<T, DefaultWeightedEdge> graph,
+                                                Function<T, Map<String, Attribute>> vertexAttributeProvider,
+                                                File file) throws IOException {
+        GmlExporter<T, DefaultWeightedEdge> exporter = new GmlExporter<>();
+        exporter.setParameter(GmlExporter.Parameter.EXPORT_VERTEX_LABELS, true);
+        exporter.setParameter(GmlExporter.Parameter.EXPORT_CUSTOM_VERTEX_ATTRIBUTES, true);
+        exporter.setVertexAttributeProvider(vertexAttributeProvider);
+        exporter.setParameter(GmlExporter.Parameter.EXPORT_EDGE_WEIGHTS, false);
+        exporter.setParameter(GmlExporter.Parameter.EXPORT_EDGE_LABELS, false);
+        exporter.setParameter(GmlExporter.Parameter.EXPORT_CUSTOM_EDGE_ATTRIBUTES, true);
+        exporter.setEdgeAttributeProvider(e -> {
+            Map<String, Attribute> map = new LinkedHashMap<>();
+            int w = (int) graph.getEdgeWeight(e);
+            map.put("weight", DefaultAttribute.createAttribute(w));
+            return map;
         });
-        try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file))) {
-            exporter.exportGraph(graph, gzipOutputStream);
-        }
+        exporter.exportGraph(graph, file);
     }
 
     private void dumpMethodCallGraph(File file) throws IOException {
@@ -1438,8 +1447,6 @@ public class ResolverImpl implements Resolver {
             map.put("label", DefaultAttribute.createAttribute(v.fullyQualifiedName));
             return map;
         });
-        try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(new FileOutputStream(file))) {
-            exporter.exportGraph(graph, gzipOutputStream);
-        }
+        exporter.exportGraph(graph, file);
     }
 }

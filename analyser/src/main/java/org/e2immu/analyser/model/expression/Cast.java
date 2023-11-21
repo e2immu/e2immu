@@ -22,8 +22,9 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
 
 import java.util.List;
 import java.util.Objects;
@@ -118,8 +119,8 @@ public class Cast extends BaseExpression implements Expression {
     }
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
-        return UpgradableIntMap.of(expression.typesReferenced2(weight), parameterizedType.typesReferenced2(weight));
+    public PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
+        return PackedIntMap.of(expression.typesReferenced2(weight), parameterizedType.typesReferenced2(weight));
     }
 
     @Override

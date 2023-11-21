@@ -25,10 +25,7 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.Pair;
-import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
+import org.e2immu.analyser.util.*;
 
 import java.util.List;
 import java.util.Objects;
@@ -169,9 +166,9 @@ public class TryStatement extends StatementWithStructure {
         }
 
         @Override
-        public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
-            return UpgradableIntMap.of(unionOfTypes.stream().flatMap(pt -> pt.typesReferenced2(weight).stream())
-                    .collect(UpgradableIntMap.collector()));
+        public PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
+            return PackedIntMap.of(unionOfTypes.stream().flatMap(pt -> pt.typesReferenced2(weight).stream())
+                    .collect(PackedIntMap.collector()));
         }
 
         @Override

@@ -27,8 +27,9 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;
 import org.e2immu.support.SetOnceMap;
@@ -229,39 +230,40 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
     public static final int METHOD_EXPRESSION_WEIGHT = 1;
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2() {
-        if (!hasBeenInspected()) return UpgradableIntMap.of();
+    public PackedIntMap<TypeInfo> typesReferenced2() {
+        if (!hasBeenInspected()) return PackedIntMap.of();
         MethodInspection inspection = methodInspection.get();
+        PackedInt packedInt = isStatic() ? PackedInt.STATIC_METHOD : PackedInt.METHOD;
 
-        UpgradableIntMap<TypeInfo> constructorTypes = isConstructor() ? UpgradableIntMap.of() :
-                inspection.getReturnType().typesReferenced2(METHOD_WEIGHT);
+        PackedIntMap<TypeInfo> constructorTypes = isConstructor() ? PackedIntMap.of() :
+                inspection.getReturnType().typesReferenced2(packedInt);
 
-        UpgradableIntMap<TypeInfo> parameterTypes =
+        PackedIntMap<TypeInfo> parameterTypes =
                 inspection.getParameters().stream()
-                        .flatMap(p -> p.typesReferenced2().stream()).collect(UpgradableIntMap.collector());
+                        .flatMap(p -> p.typesReferenced2().stream()).collect(PackedIntMap.collector());
 
-        UpgradableIntMap<TypeInfo> annotationTypes =
+        PackedIntMap<TypeInfo> annotationTypes =
                 inspection.getAnnotations().stream().flatMap(ae ->
-                                ae.typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
-                        .collect(UpgradableIntMap.collector());
+                                ae.typesReferenced2(PackedInt.STATIC_METHOD_CALL_OR_ANNOTATION).stream())
+                        .collect(PackedIntMap.collector());
 
-        UpgradableIntMap<TypeInfo> analysedAnnotationTypes =
+        PackedIntMap<TypeInfo> analysedAnnotationTypes =
                 hasBeenAnalysed() ? methodAnalysis.get().getAnnotationStream()
                         .filter(e -> e.getValue().isVisible())
-                        .flatMap(e -> e.getKey().typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
-                        .collect(UpgradableIntMap.collector()) : UpgradableIntMap.of();
+                        .flatMap(e -> e.getKey().typesReferenced2(PackedInt.STATIC_METHOD_CALL_OR_ANNOTATION).stream())
+                        .collect(PackedIntMap.collector()) : PackedIntMap.of();
 
-        UpgradableIntMap<TypeInfo> exceptionTypes =
+        PackedIntMap<TypeInfo> exceptionTypes =
                 inspection.getExceptionTypes().stream().flatMap(et ->
-                        et.typesReferenced2(METHOD_WEIGHT).stream()).collect(UpgradableIntMap.collector());
+                        et.typesReferenced2(packedInt).stream()).collect(PackedIntMap.collector());
 
-        UpgradableIntMap<TypeInfo> bodyTypes = hasBeenInspected() ?
-                inspection.getMethodBody().typesReferenced2(METHOD_EXPRESSION_WEIGHT) : UpgradableIntMap.of();
+        PackedIntMap<TypeInfo> bodyTypes = hasBeenInspected() ?
+                inspection.getMethodBody().typesReferenced2(PackedInt.EXPRESSION) : PackedIntMap.of();
 
-        UpgradableIntMap<TypeInfo> companionMethodTypes = inspection.getCompanionMethods().values().stream()
-                .flatMap(cm -> cm.typesReferenced2().stream()).collect(UpgradableIntMap.collector());
+        PackedIntMap<TypeInfo> companionMethodTypes = inspection.getCompanionMethods().values().stream()
+                .flatMap(cm -> cm.typesReferenced2().stream()).collect(PackedIntMap.collector());
 
-        return UpgradableIntMap.of(constructorTypes, parameterTypes, analysedAnnotationTypes,
+        return PackedIntMap.of(constructorTypes, parameterTypes, analysedAnnotationTypes,
                 annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
     }
 

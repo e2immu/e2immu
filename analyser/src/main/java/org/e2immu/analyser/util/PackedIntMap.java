@@ -28,29 +28,29 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 @ImmutableContainer(hc = true)
-public class UpgradableIntMap<T> {
-    private static final UpgradableIntMap<?> EMPTY = new UpgradableIntMap<>();
+public class PackedIntMap<T> {
+    private static final PackedIntMap<?> EMPTY = new PackedIntMap<>();
 
     @NotNull
-    public static <T> Collector<? super Map.Entry<T, Integer>, UpgradableIntMap<T>, UpgradableIntMap<T>> collector() {
+    public static <T> Collector<? super Map.Entry<T, Integer>, PackedIntMap<T>, PackedIntMap<T>> collector() {
         return new Collector<>() {
             @Override
-            public Supplier<UpgradableIntMap<T>> supplier() {
-                return UpgradableIntMap::new;
+            public Supplier<PackedIntMap<T>> supplier() {
+                return PackedIntMap::new;
             }
 
             @Override
-            public BiConsumer<UpgradableIntMap<T>, Map.Entry<T, Integer>> accumulator() {
+            public BiConsumer<PackedIntMap<T>, Map.Entry<T, Integer>> accumulator() {
                 return (map, e) -> map.put(e.getKey(), e.getValue());
             }
 
             @Override
-            public BinaryOperator<UpgradableIntMap<T>> combiner() {
-                return UpgradableIntMap::putAll;
+            public BinaryOperator<PackedIntMap<T>> combiner() {
+                return PackedIntMap::putAll;
             }
 
             @Override
-            public Function<UpgradableIntMap<T>, UpgradableIntMap<T>> finisher() {
+            public Function<PackedIntMap<T>, PackedIntMap<T>> finisher() {
                 return Objects::requireNonNull;
             }
 
@@ -65,16 +65,16 @@ public class UpgradableIntMap<T> {
 
     @Independent
     @NotNull
-    public static <T> UpgradableIntMap<T> of(T t, int b) {
-        UpgradableIntMap<T> upgradableIntegerMap = new UpgradableIntMap<>();
+    public static <T> PackedIntMap<T> of(T t, int b) {
+        PackedIntMap<T> upgradableIntegerMap = new PackedIntMap<>();
         upgradableIntegerMap.put(t, b);
         return upgradableIntegerMap;
     }
 
     @Independent // IMPROVE should be hc=true
     @NotNull
-    public static <T> UpgradableIntMap<T> of(T t1, int b1, T t2, int b2) {
-        UpgradableIntMap<T> upgradableIntegerMap = new UpgradableIntMap<>();
+    public static <T> PackedIntMap<T> of(T t1, int b1, T t2, int b2) {
+        PackedIntMap<T> upgradableIntegerMap = new PackedIntMap<>();
         upgradableIntegerMap.put(t1, b1);
         upgradableIntegerMap.put(t2, b2);
         return upgradableIntegerMap;
@@ -82,16 +82,16 @@ public class UpgradableIntMap<T> {
 
     @SuppressWarnings("unchecked")
     @Independent
-    public static <T> UpgradableIntMap<T> of() {
-        return (UpgradableIntMap<T>) EMPTY;
+    public static <T> PackedIntMap<T> of() {
+        return (PackedIntMap<T>) EMPTY;
     }
 
     @SafeVarargs
     @Independent(hc = true)
-    public static <T> UpgradableIntMap<T> of(UpgradableIntMap<T>... maps) {
-        UpgradableIntMap<T> result = new UpgradableIntMap<>();
+    public static <T> PackedIntMap<T> of(PackedIntMap<T>... maps) {
+        PackedIntMap<T> result = new PackedIntMap<>();
         if (maps != null) {
-            for (UpgradableIntMap<T> map : maps) {
+            for (PackedIntMap<T> map : maps) {
                 result.putAll(map);
             }
         }
@@ -100,12 +100,12 @@ public class UpgradableIntMap<T> {
 
     @Modified(construction = true)
     private void put(@Independent(hc = true) @NotNull T t, int b) {
-        map.merge(t, b, Integer::sum);
+        map.merge(t, b, PackedInt::sum);
     }
 
     @Modified(construction = true)
     @Fluent
-    private UpgradableIntMap<T> putAll(@Independent(hc = true) UpgradableIntMap<T> other) {
+    private PackedIntMap<T> putAll(@Independent(hc = true) PackedIntMap<T> other) {
         other.stream().forEach(e -> this.put(e.getKey(), e.getValue()));
         return this;
     }

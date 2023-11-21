@@ -1,5 +1,6 @@
 package org.e2immu.analyser.util.graph;
 
+import org.e2immu.analyser.util.PackedInt;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TestTypeDependencies {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTypeDependencies.class);
@@ -36,7 +38,12 @@ public class TestTypeDependencies {
         Map<Node, Map<Node, Long>> map = convertGraphToMap(graph);
         G<Node> g = G.create(map);
         LOGGER.info("Have graph of {} nodes, {} edges", g.vertices().size(), g.edgeStream().count());
-        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>());
+        EdgePrinter<Node> edgePrinter = m -> m == null ? "[]"
+                : m.entrySet().stream().map(e -> e.getKey() + "->" +
+                        e.getValue().entrySet().stream().map(e2 -> e2.getKey() + ":"
+                                + PackedInt.nice((int) (long) e2.getValue())).collect(Collectors.joining(",")))
+                .collect(Collectors.joining(";"));
+        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>(edgePrinter));
         BreakCycles.Linearization<Node> lin = bc.go(g);
     }
 
@@ -93,7 +100,7 @@ public class TestTypeDependencies {
 
         @Override
         public String toString() {
-            return id + " (" + weight + "): " + label;
+            return label + " (" + weight + ")";
         }
     }
 

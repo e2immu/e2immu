@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.util.PackedInt;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -59,7 +60,7 @@ public class TypeGraph {
             for (Map.Entry<TypeInfo, Integer> dep : dependencies.weights.entrySet()) {
                 Dependencies d = nodeMap.get(dep.getKey());
                 if (d != null) {
-                    d.sumIncoming += dep.getValue();
+                    d.sumIncoming = PackedInt.sum(d.sumIncoming, dep.getValue());
                 }
             }
         }

@@ -18,8 +18,9 @@ import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
@@ -47,7 +48,7 @@ public interface AnnotationExpression extends Expression {
     UpgradableBooleanMap<TypeInfo> typesReferenced();
 
     @NotNull
-    UpgradableIntMap<TypeInfo> typesReferenced2(int weight);
+    PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight);
 
     @NotNull
     AnnotationParameters e2ImmuAnnotationParameters();

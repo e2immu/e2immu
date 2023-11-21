@@ -169,6 +169,15 @@ public class BreakCycles<T> {
     }
 
     public static class GreedyEdgeRemoval<T> implements ActionComputer<T> {
+        private final EdgePrinter<T> edgePrinter;
+
+        public GreedyEdgeRemoval() {
+            this(Object::toString);
+        }
+
+        public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter) {
+            this.edgePrinter = edgePrinter;
+        }
 
         @Override
         public Action<T> compute(G<T> inputGraph, Set<V<T>> cycle) {
@@ -197,7 +206,10 @@ public class BreakCycles<T> {
                 }
                 ++n;
             }
-            LOGGER.debug("Best choice for greedy edge removal is {}, quality now {}", bestEdgesToRemove, bestQuality);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Best choice for greedy edge removal is {}, quality now {}",
+                        edgePrinter.print(bestEdgesToRemove), bestQuality);
+            }
             if (bestQuality < cycle.size()) {
                 G<T> finalGraph = bestSubGraph;
                 EdgeRemoval<T> info = new EdgeRemoval<>(bestEdgesToRemove);

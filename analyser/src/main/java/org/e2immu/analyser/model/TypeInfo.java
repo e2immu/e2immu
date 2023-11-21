@@ -27,8 +27,9 @@ import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Either;
 import org.e2immu.support.SetOnce;
@@ -577,25 +578,27 @@ public final class TypeInfo implements NamedType,
     public static final int ANNOTATION_WEIGHT = 10;
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2() {
-        if (!typeInspection.isSet()) return UpgradableIntMap.of();
+    public PackedIntMap<TypeInfo> typesReferenced2() {
+        if (!typeInspection.isSet()) return PackedIntMap.of();
         TypeInspection inspection = typeInspection.get();
 
-        UpgradableIntMap<TypeInfo> fromParent = inspection.parentClass() == null ? UpgradableIntMap.of()
-                : inspection.parentClass().typesReferenced2(PARENT_WEIGHT);
+        PackedIntMap<TypeInfo> fromParent = inspection.parentClass() == null ? PackedIntMap.of()
+                : inspection.parentClass().typesReferenced2(PackedInt.HIERARCHY);
 
-        UpgradableIntMap<TypeInfo> fromInterfaces = inspection.interfacesImplemented().stream()
-                .flatMap(i -> i.typesReferenced2(INTERFACE_WEIGHT).stream())
-                .collect(UpgradableIntMap.collector());
+        PackedIntMap<TypeInfo> fromInterfaces = inspection.interfacesImplemented().stream()
+                .flatMap(i -> i.typesReferenced2(PackedInt.HIERARCHY).stream())
+                .collect(PackedIntMap.collector());
 
-        UpgradableIntMap<TypeInfo> inspectedAnnotations = inspection.getAnnotations().stream()
-                .flatMap(a -> a.typesReferenced2(ANNOTATION_WEIGHT).stream()).collect(UpgradableIntMap.collector());
+        PackedIntMap<TypeInfo> inspectedAnnotations = inspection.getAnnotations().stream()
+                .flatMap(a -> a.typesReferenced2(PackedInt.STATIC_METHOD_CALL_OR_ANNOTATION).stream())
+                .collect(PackedIntMap.collector());
 
-        UpgradableIntMap<TypeInfo> analysedAnnotations = hasBeenAnalysed() ? typeAnalysis.get().getAnnotationStream()
-                .flatMap(entry -> entry.getKey().typesReferenced2(ANNOTATION_WEIGHT).stream()).collect(UpgradableIntMap.collector())
-                : UpgradableIntMap.of();
+        PackedIntMap<TypeInfo> analysedAnnotations = hasBeenAnalysed() ? typeAnalysis.get().getAnnotationStream()
+                .flatMap(entry -> entry.getKey().typesReferenced2(PackedInt.STATIC_METHOD_CALL_OR_ANNOTATION).stream())
+                .collect(PackedIntMap.collector())
+                : PackedIntMap.of();
 
-        return UpgradableIntMap.of(
+        return PackedIntMap.of(
                 fromParent,
                 fromInterfaces,
                 inspectedAnnotations,
@@ -603,13 +606,13 @@ public final class TypeInfo implements NamedType,
 
                 // types from methods and constructors and their parameters
                 inspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
-                        .flatMap(a -> a.typesReferenced2().stream()).collect(UpgradableIntMap.collector()),
+                        .flatMap(a -> a.typesReferenced2().stream()).collect(PackedIntMap.collector()),
 
                 // types from fields
-                inspection.fields().stream().flatMap(a -> a.typesReferenced2().stream()).collect(UpgradableIntMap.collector()),
+                inspection.fields().stream().flatMap(a -> a.typesReferenced2().stream()).collect(PackedIntMap.collector()),
 
                 // types from subTypes
-                inspection.subTypes().stream().flatMap(a -> a.typesReferenced2().stream()).collect(UpgradableIntMap.collector())
+                inspection.subTypes().stream().flatMap(a -> a.typesReferenced2().stream()).collect(PackedIntMap.collector())
         );
     }
 

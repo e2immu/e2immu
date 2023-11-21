@@ -22,8 +22,9 @@ import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;
 
@@ -77,7 +78,7 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         return parameterizedType().typesReferenced(explicit);
     }
 
-    default UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+    default PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
         return parameterizedType().typesReferenced2(weight);
     }
 

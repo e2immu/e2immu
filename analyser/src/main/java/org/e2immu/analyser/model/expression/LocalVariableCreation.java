@@ -26,8 +26,9 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.PackedInt;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
+import org.e2immu.analyser.util.PackedIntMap;
 
 import java.util.List;
 import java.util.Map;
@@ -235,14 +236,14 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
     }
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
+    public PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
         Stream<Map.Entry<TypeInfo, Integer>> s1 = localVariableReference.assignmentExpression.typesReferenced2(weight).stream();
         Stream<Map.Entry<TypeInfo, Integer>> s2 = localVariableReference.parameterizedType.typesReferenced2(weight).stream();
         Stream<Map.Entry<TypeInfo, Integer>> s3 = moreDeclarations.stream()
                 .flatMap(d -> d.localVariableReference.assignmentExpression.typesReferenced2(weight).stream());
         Stream<Map.Entry<TypeInfo, Integer>> s4 = moreDeclarations.stream()
                 .flatMap(d -> d.localVariableReference.parameterizedType().typesReferenced2(weight).stream());
-        return Stream.concat(Stream.concat(s1, s2), Stream.concat(s3, s4)).collect(UpgradableIntMap.collector());
+        return Stream.concat(Stream.concat(s1, s2), Stream.concat(s3, s4)).collect(PackedIntMap.collector());
     }
 
     @Override

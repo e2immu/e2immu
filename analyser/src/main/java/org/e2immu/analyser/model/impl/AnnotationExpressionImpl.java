@@ -25,8 +25,9 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.rare.Finalizer;
 import org.e2immu.annotation.rare.IgnoreModifications;
@@ -318,11 +319,11 @@ public class AnnotationExpressionImpl extends BaseExpression implements Annotati
     }
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2(int weight) {
-        return UpgradableIntMap.of(
+    public PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
+        return PackedIntMap.of(
                 parameterizedType.typesReferenced2(weight),
                 expressions.stream().flatMap(e -> e.typesReferenced2(weight).stream())
-                        .collect(UpgradableIntMap.collector()));
+                        .collect(PackedIntMap.collector()));
     }
 
     private static final Set<String> FQN_ALWAYS_CONTRACT = Set.of(Finalizer.class.getCanonicalName(),

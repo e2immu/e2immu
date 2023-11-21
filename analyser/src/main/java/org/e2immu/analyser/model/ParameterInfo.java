@@ -23,8 +23,9 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.UpgradableIntMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.support.SetOnce;
 
@@ -232,17 +233,18 @@ public class ParameterInfo implements Variable, InfoObject, WithInspectionAndAna
     public static final int PARAMETER_WEIGHT = 100;
 
     @Override
-    public UpgradableIntMap<TypeInfo> typesReferenced2() {
-        UpgradableIntMap<TypeInfo> inspectedAnnotations =
+    public PackedIntMap<TypeInfo> typesReferenced2() {
+        PackedIntMap<TypeInfo> inspectedAnnotations =
                 parameterInspection.get().getAnnotations().stream()
-                        .flatMap(ae -> ae.typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
-                        .collect(UpgradableIntMap.collector());
-        UpgradableIntMap<TypeInfo> analysedAnnotations = hasBeenAnalysed()
+                        .flatMap(ae -> ae.typesReferenced2(PackedInt.STATIC_METHOD_CALL_OR_ANNOTATION).stream())
+                        .collect(PackedIntMap.collector());
+        PackedIntMap<TypeInfo> analysedAnnotations = hasBeenAnalysed()
                 ? parameterAnalysis.get().getAnnotationStream()
-                .flatMap(ae -> ae.getKey().typesReferenced2(TypeInfo.ANNOTATION_WEIGHT).stream())
-                .collect(UpgradableIntMap.collector())
-                : UpgradableIntMap.of();
-        return UpgradableIntMap.of(parameterizedType.typesReferenced2(PARAMETER_WEIGHT), analysedAnnotations,
+                .flatMap(ae -> ae.getKey().typesReferenced2(PackedInt.STATIC_METHOD_CALL_OR_ANNOTATION).stream())
+                .collect(PackedIntMap.collector())
+                : PackedIntMap.of();
+        PackedInt packedInt = getMethod().isStatic() ? PackedInt.STATIC_METHOD : PackedInt.METHOD;
+        return PackedIntMap.of(parameterizedType.typesReferenced2(packedInt), analysedAnnotations,
                 inspectedAnnotations);
     }
 
