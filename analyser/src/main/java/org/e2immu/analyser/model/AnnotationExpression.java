@@ -18,7 +18,7 @@ import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.ImmutableContainer;

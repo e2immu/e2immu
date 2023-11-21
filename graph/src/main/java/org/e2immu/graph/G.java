@@ -1,4 +1,4 @@
-package org.e2immu.analyser.util.graph;
+package org.e2immu.graph;
 
 import java.util.*;
 import java.util.function.Function;

@@ -39,7 +39,7 @@ import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.DependencyGraph;
-import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.TimedLogger;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
@@ -62,7 +62,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.GZIPOutputStream;
 
 import static org.e2immu.analyser.model.util.ConvertExpressionWithTypeCreations.convertExpressionIntoSupplier;
 import static org.e2immu.analyser.model.util.ConvertMethodReference.convertMethodReferenceIntoAnonymous;

@@ -38,20 +38,13 @@ tasks.test {
 }
 
 dependencies {
-    implementation(project(":graph"))
-
-    implementation (libs.e2immuSupport)
-    implementation (libs.logbackClassic)
-    implementation (libs.javaParser)
-    implementation (libs.asm)
+    implementation (libs.slf4jApi)
     implementation (libs.jgraphtCore)
     implementation (libs.jgraphtIO)
 
     testImplementation (libs.junitJupiterApi)
     testRuntimeOnly (libs.junitJupiterEngine)
-
-    // present for TestByteCodeInspectorCommonsPool
-    testImplementation("commons-pool:commons-pool:1.6")
+    testImplementation(libs.logbackClassic)
 }
 
 publishing {
@@ -60,8 +53,8 @@ publishing {
             from(components["java"])
 
             pom {
-                name = "e2immu analyser"
-                description = "Static code analyser focusing on modication and immutability"
+                name = "e2immu graph library"
+                description = "Helper library for the e2immu analyser"
                 url = "https://e2immu.org"
                 licenses {
                     license {

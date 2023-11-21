@@ -22,7 +22,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 

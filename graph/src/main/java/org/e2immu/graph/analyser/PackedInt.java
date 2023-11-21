@@ -1,4 +1,4 @@
-package org.e2immu.analyser.util;
+package org.e2immu.graph.analyser;
 
 public enum PackedInt {
 

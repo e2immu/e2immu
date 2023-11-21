@@ -32,6 +32,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.graph.analyser.PackedInt;
 
 import java.util.HashMap;
 import java.util.List;

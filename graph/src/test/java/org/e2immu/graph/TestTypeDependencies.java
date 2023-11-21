@@ -1,6 +1,8 @@
-package org.e2immu.analyser.util.graph;
+package org.e2immu.graph;
 
-import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.graph.analyser.PackedInt;
+import org.e2immu.graph.op.BreakCycles;
+import org.e2immu.graph.op.GreedyEdgeRemoval;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.builder.GraphTypeBuilder;
@@ -22,14 +24,16 @@ import java.util.stream.Collectors;
 public class TestTypeDependencies {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTypeDependencies.class);
 
+    // cp analyser/build/e2immuGraph/typeDependencies.gml analyser/build/e2immuGraph/packageDependenciesBasedOnTypeGraph.gml  graph/src/test/resources/org/e2immu/graph
+
     @Test
     public void test() throws IOException {
-        test("org/e2immu/analyser/util/graph/typeDependencies.gml");
+        test("org/e2immu/graph/typeDependencies.gml");
     }
 
     @Test
     public void test2() throws IOException {
-        test("org/e2immu/analyser/util/graph/packageDependenciesBasedOnTypeGraph.gml");
+        test("org/e2immu/graph/packageDependenciesBasedOnTypeGraph.gml");
     }
 
     private void test(String resourceName) throws IOException {
@@ -44,9 +48,9 @@ public class TestTypeDependencies {
                                 + PackedInt.nice((int) (long) e2.getValue())).collect(Collectors.joining(",")))
                 .collect(Collectors.joining(";"));
         long limit = PackedInt.FIELD.of(1);
-        BreakCycles.EdgeIterator<Node> edgeIterator = gg ->
+        EdgeIterator<Node> edgeIterator = gg ->
                 BreakCycles.edgeIterator2(gg, Long::compareTo, limit, PackedInt::longSum);
-        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>(edgePrinter, edgeIterator));
+        BreakCycles<Node> bc = new BreakCycles<>(new GreedyEdgeRemoval<>(edgePrinter, edgeIterator));
         BreakCycles.Linearization<Node> lin = bc.go(g);
     }
 

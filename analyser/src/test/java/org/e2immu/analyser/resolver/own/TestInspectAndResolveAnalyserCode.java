@@ -34,6 +34,7 @@ public class TestInspectAndResolveAnalyserCode {
                 .setAlternativeJREDirectory(CommonTestRunner.CURRENT_JDK)
                 .addSources("src/main/java")
                 .addSources("src/test/java")
+                .addClassPath("../graph/build/classes/java/main")
                 .addClassPath("jmods/java.base.jmod")
                 .addClassPath("jmods/java.compiler.jmod")
                 .addClassPath("jmods/java.xml.jmod") // org.w3c.dom.Document

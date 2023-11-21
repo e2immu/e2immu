@@ -13,6 +13,7 @@
  */
 
 rootProject.name = "org.e2immu"
+include("graph")
 include("analyser")
 include("gradle-plugin")
 include("analyser-cli")

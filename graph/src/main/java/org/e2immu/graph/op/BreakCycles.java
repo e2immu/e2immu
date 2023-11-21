@@ -1,5 +1,7 @@
-package org.e2immu.analyser.util.graph;
+package org.e2immu.graph.op;
 
+import org.e2immu.graph.G;
+import org.e2immu.graph.V;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +67,7 @@ public class BreakCycles<T> {
     // set: parallel
     // the vertex contains multiple Ts that are in a cycle which cannot or will not be broken
     private InternalLinearization<T> go2(G<T> g, boolean first) {
-        GraphOperations.LinearizationResult<T> r = GraphOperations.linearize(g);
+        org.e2immu.graph.op.Linearization.Result<T> r = org.e2immu.graph.op.Linearization.linearize(g);
         if (r.quality() == 0) {
             return new InternalLinearization<>(r.linearized(), List.of());
         }
@@ -168,7 +170,6 @@ public class BreakCycles<T> {
     public record EdgeRemoval<T>(Map<V<T>, Map<V<T>, Long>> edges) implements ActionInfo {
     }
 
-
     private record VertexAndSomeEdges<T>(Map<V<T>, Map<V<T>, Long>> edges, long sum) {
     }
 
@@ -197,64 +198,4 @@ public class BreakCycles<T> {
                 .iterator();
     }
 
-    public interface EdgeIterator<T> {
-        Iterator<Map<V<T>, Map<V<T>, Long>>> iterator(G<T> g);
-    }
-
-    public static class GreedyEdgeRemoval<T> implements ActionComputer<T> {
-        private final EdgePrinter<T> edgePrinter;
-        private final EdgeIterator<T> edgeIterator;
-
-        public GreedyEdgeRemoval() {
-            this(Object::toString, g -> g.edgeIterator(Long::compareTo, null));
-        }
-
-        public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter, EdgeIterator<T> edgeIterator) {
-            this.edgePrinter = edgePrinter;
-            this.edgeIterator = edgeIterator;
-        }
-
-        @Override
-        public Action<T> compute(G<T> inputGraph, Set<V<T>> cycle) {
-            G<T> g = inputGraph.subGraph(cycle);
-
-            int bestQuality = cycle.size();
-            assert bestQuality > 0;
-            G<T> bestSubGraph = null;
-            Map<V<T>, Map<V<T>, Long>> bestEdgesToRemove = null;
-
-            Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = edgeIterator.iterator(g);
-            while (iterator.hasNext() && bestQuality > 0) {
-                Map<V<T>, Map<V<T>, Long>> edgesToRemove = iterator.next();
-                G<T> withoutEdges = g.withFewerEdgesMap(edgesToRemove);
-                int quality = GraphOperations.qualityBasedOnTotalCluster(withoutEdges);
-                if (quality < bestQuality) {
-                    bestSubGraph = withoutEdges;
-                    bestQuality = quality;
-                    bestEdgesToRemove = edgesToRemove;
-                }
-            }
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Best choice for greedy edge removal is {}, quality now {}",
-                        edgePrinter.print(bestEdgesToRemove), bestQuality);
-            }
-            if (bestQuality < cycle.size()) {
-                G<T> finalGraph = bestSubGraph;
-                EdgeRemoval<T> info = new EdgeRemoval<>(bestEdgesToRemove);
-                return new Action<T>() {
-                    @Override
-                    public G<T> apply() {
-                        return finalGraph;
-                    }
-
-                    @Override
-                    public ActionInfo info() {
-                        return info;
-                    }
-                };
-            }
-            LOGGER.debug("No edge found that improves quality; keeping cycle of size {}", cycle.size());
-            return null; // must be a group, we cannot break the cycle
-        }
-    }
 }

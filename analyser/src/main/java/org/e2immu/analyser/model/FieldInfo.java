@@ -21,7 +21,7 @@ import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.output.*;
-import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.support.SetOnce;

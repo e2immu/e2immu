@@ -15,7 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.graph.analyser.PackedInt;
 
 import java.util.*;
 import java.util.function.Consumer;

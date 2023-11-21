@@ -23,7 +23,7 @@ import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.util.PackedInt;
+import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 

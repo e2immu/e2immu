@@ -1,13 +1,16 @@
-package org.e2immu.analyser.util.graph;
+package org.e2immu.graph.op;
+
+import org.e2immu.graph.G;
+import org.e2immu.graph.V;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class GraphOperations {
+public class Linearization {
 
-    public record LinearizationResult<T>(List<Set<V<T>>> linearized,
-                                         List<V<T>> nonProblematic,
-                                         List<Set<V<T>>> remainingCycles) {
+    public record Result<T>(List<Set<V<T>>> linearized,
+                            List<V<T>> nonProblematic,
+                            List<Set<V<T>>> remainingCycles) {
 
         /*
         The quality of an operation is measured by the size of the largest cycle after linearization.
@@ -32,7 +35,7 @@ public class GraphOperations {
         return linearize(g, LinearizationMode.ONLY_REVERSE_GRAPH).quality();
     }
 
-    public static <T> LinearizationResult<T> linearize(G<T> g) {
+    public static <T> Result<T> linearize(G<T> g) {
         return linearize(g, LinearizationMode.ALL);
     }
 
@@ -40,7 +43,7 @@ public class GraphOperations {
         ONLY_LINEAR, ONLY_REVERSE_GRAPH, ALL
     }
 
-    public static <T> LinearizationResult<T> linearize(G<T> g, LinearizationMode mode) {
+    public static <T> Result<T> linearize(G<T> g, LinearizationMode mode) {
         Set<V<T>> toDo = new HashSet<>(g.vertices());
         Set<V<T>> done = new HashSet<>();
         List<Set<V<T>>> linearResult = new ArrayList<>();
@@ -88,12 +91,12 @@ public class GraphOperations {
                 linearResult.add(localLinear);
             }
         }
-        return new LinearizationResult<>(linearResult, attachedToCycle, cycles);
+        return new Result<>(linearResult, attachedToCycle, cycles);
     }
 
     private static <T> List<V<T>> removeAsManyAsPossible(G<T> g, Set<V<T>> toDo) {
         G<T> reverseSub = g.mutableReverseSubGraph(toDo);
-        LinearizationResult<T> r = linearize(reverseSub, LinearizationMode.ONLY_LINEAR);
+        Result<T> r = linearize(reverseSub, LinearizationMode.ONLY_LINEAR);
         return r.linearized.stream().flatMap(Collection::stream).toList();
     }
 

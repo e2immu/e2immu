@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.*;
+import org.e2immu.graph.analyser.PackedInt;
 
 import java.util.List;
 import java.util.Objects;
