@@ -2,6 +2,7 @@ package org.e2immu.graph;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.LongBinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,7 +31,7 @@ public class G<T> {
         Map<V<T>, Map<V<T>, Long>> edges = new HashMap<>();
         Map<T, V<T>> elements = new HashMap<>();
         for (T t : initialGraph.keySet()) {
-            V<T> v = new V<>(Set.of(t), 0, Set.of());
+            V<T> v = new V<>(Set.of(t), t, 0, Set.of());
             vertices.add(v);
             elements.put(t, v);
         }
@@ -42,6 +43,34 @@ public class G<T> {
             }
         }
         return new G<>(Set.copyOf(vertices), Map.copyOf(elements), Map.copyOf(edges));
+    }
+
+    // based on a map of T elements
+    public static class Builder<T> {
+        private final LongBinaryOperator sum;
+
+        public Builder(LongBinaryOperator sum) {
+            this.sum = sum;
+        }
+
+        Map<T, Map<T, Long>> map = new HashMap<>();
+
+        public void addVertex(T t) {
+            map.put(t, new HashMap<>());
+        }
+
+        public void mergeEdge(T from, T to, long weight) {
+            map.computeIfAbsent(from, f -> new HashMap<>()).merge(to, weight, sum::applyAsLong);
+        }
+
+        public G<T> build() {
+            return create(map);
+        }
+
+        public Iterable<Map.Entry<T, Map<T, Long>>> edges() {
+            return () -> map.entrySet().iterator();
+        }
+
     }
 
     @Override
