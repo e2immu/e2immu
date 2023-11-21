@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.LongBinaryOperator;
 import java.util.stream.Collectors;
 
 /*
@@ -13,7 +14,7 @@ Combination of grouping and breaking cycles.
 public class BreakCycles<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BreakCycles.class);
 
-    public record Linearization<T>(List<Set<Set<T>>> list, List<ActionInfo<T>> actionLog) {
+    public record Linearization<T>(List<Set<Set<T>>> list, List<ActionInfo> actionLog) {
         @Override
         public String toString() {
             return list.stream().map(s -> "["
@@ -25,7 +26,7 @@ public class BreakCycles<T> {
         }
     }
 
-    private record InternalLinearization<T>(List<Set<V<T>>> list, List<ActionInfo<T>> actionLog) {
+    private record InternalLinearization<T>(List<Set<V<T>>> list, List<ActionInfo> actionLog) {
 
     }
 
@@ -36,10 +37,10 @@ public class BreakCycles<T> {
     public interface Action<T> {
         G<T> apply();
 
-        ActionInfo<T> info();
+        ActionInfo info();
     }
 
-    public interface ActionInfo<T> {
+    public interface ActionInfo {
 
     }
 
@@ -75,7 +76,7 @@ public class BreakCycles<T> {
          */
         assert !r.remainingCycles().isEmpty();
         List<List<Set<V<T>>>> newLinearizations = new ArrayList<>();
-        List<ActionInfo<T>> actionLog = new ArrayList<>();
+        List<ActionInfo> actionLog = new ArrayList<>();
         if (first) {
             LOGGER.debug("Have {} remaining cycles: {}", r.remainingCycles().size(),
                     r.remainingCycles().stream().map(c -> Integer.toString(c.size())).collect(Collectors.joining(",")));
@@ -95,10 +96,10 @@ public class BreakCycles<T> {
                 actionLog.addAll(internalLinearization.actionLog);
             }
         }
-        if(!newLinearizations.isEmpty()) {
+        if (!newLinearizations.isEmpty()) {
             appendLinearizations(newLinearizations, result);
         }
-        List<ActionInfo<T>> immutableActionLog = List.copyOf(actionLog);
+        List<ActionInfo> immutableActionLog = List.copyOf(actionLog);
         if (r.nonProblematic().isEmpty()) {
             return new InternalLinearization<>(List.copyOf(result), immutableActionLog);
         }
@@ -164,20 +165,51 @@ public class BreakCycles<T> {
         }
     }
 
-    public record EdgeRemoval<T>(Map<V<T>, Map<V<T>, Long>> edges) implements ActionInfo<T> {
+    public record EdgeRemoval<T>(Map<V<T>, Map<V<T>, Long>> edges) implements ActionInfo {
+    }
+
+
+    private record VertexAndSomeEdges<T>(Map<V<T>, Map<V<T>, Long>> edges, long sum) {
+    }
+
+    public static <T> Iterator<Map<V<T>, Map<V<T>, Long>>> edgeIterator2(G<T> g,
+                                                                         Comparator<Long> comparator,
+                                                                         Long limit,
+                                                                         LongBinaryOperator sumWeights) {
+        List<VertexAndSomeEdges<T>> list = new LinkedList<>();
+        for (Map.Entry<V<T>, Map<V<T>, Long>> entry : g.edges()) {
+            Map<V<T>, Long> multiEdges = new HashMap<>();
+            long sum = 0;
+            for (Map.Entry<V<T>, Long> e2 : entry.getValue().entrySet()) {
+                long weight = e2.getValue();
+                if (weight < limit) {
+                    multiEdges.put(e2.getKey(), weight);
+                    sum = sumWeights.applyAsLong(sum, weight);
+                    list.add(new VertexAndSomeEdges<>(Map.of(entry.getKey(), Map.of(e2.getKey(), weight)), weight));
+                }
+            }
+            if (multiEdges.size() > 1) {
+                list.add(new VertexAndSomeEdges<>(Map.of(entry.getKey(), multiEdges), sum));
+            }
+        }
+        return list.stream().sorted((v1, v2) -> comparator.compare(v1.sum, v2.sum))
+                .map(vase -> vase.edges)
+                .iterator();
     }
 
     public static class GreedyEdgeRemoval<T> implements ActionComputer<T> {
         private final EdgePrinter<T> edgePrinter;
         private final Long limit;
+        private final LongBinaryOperator sumWeights;
 
         public GreedyEdgeRemoval() {
-            this(Object::toString, null);
+            this(Object::toString, null, Long::sum);
         }
 
-        public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter, Long limit) {
+        public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter, Long limit, LongBinaryOperator sumWeights) {
             this.edgePrinter = edgePrinter;
             this.limit = limit;
+            this.sumWeights = sumWeights;
         }
 
         @Override
@@ -189,7 +221,7 @@ public class BreakCycles<T> {
             G<T> bestSubGraph = null;
             Map<V<T>, Map<V<T>, Long>> bestEdgesToRemove = null;
 
-            Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = g.edgeIterator(Long::compareTo, limit);
+            Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = edgeIterator2(g, Long::compareTo, limit, sumWeights);
             while (iterator.hasNext() && bestQuality > 0) {
                 Map<V<T>, Map<V<T>, Long>> edgesToRemove = iterator.next();
                 G<T> withoutEdges = g.withFewerEdgesMap(edgesToRemove);
@@ -214,7 +246,7 @@ public class BreakCycles<T> {
                     }
 
                     @Override
-                    public ActionInfo<T> info() {
+                    public ActionInfo info() {
                         return info;
                     }
                 };

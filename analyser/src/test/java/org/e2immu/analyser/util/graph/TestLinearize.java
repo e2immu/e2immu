@@ -93,7 +93,7 @@ public class TestLinearize {
             }
 
             @Override
-            public BreakCycles.ActionInfo<String> info() {
+            public BreakCycles.ActionInfo info() {
                 if (cycle.contains(v6)) {
                     return new BreakCycles.EdgeRemoval<>(Map.of(v6, Map.of(v5, 1L)));
                 }
@@ -115,7 +115,7 @@ public class TestLinearize {
                     }
 
                     @Override
-                    public BreakCycles.ActionInfo<String> info() {
+                    public BreakCycles.ActionInfo info() {
                         return new BreakCycles.EdgeRemoval<>(Map.of(v6, Map.of(v5, 1L)));
                     }
                 };

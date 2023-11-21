@@ -44,7 +44,8 @@ public class TestTypeDependencies {
                                 + PackedInt.nice((int) (long) e2.getValue())).collect(Collectors.joining(",")))
                 .collect(Collectors.joining(";"));
         long limit = PackedInt.HIERARCHY.of(1);
-        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>(edgePrinter, limit));
+        BreakCycles<Node> bc = new BreakCycles<>(new BreakCycles.GreedyEdgeRemoval<>(edgePrinter, limit,
+                PackedInt::longSum));
         BreakCycles.Linearization<Node> lin = bc.go(g);
     }
 

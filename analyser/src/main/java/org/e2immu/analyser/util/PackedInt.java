@@ -37,6 +37,17 @@ public enum PackedInt {
         return sum;
     }
 
+    public static long longSum(long i1, long i2) {
+        long sum = 0;
+        for (int shift = 0; shift < BITS; shift += BITS_PER_GROUP) {
+            long v1 = (i1 >> shift) & GROUP_MASK;
+            long v2 = (i2 >> shift) & GROUP_MASK;
+            long s = Math.min(v1 + v2, GROUP_MASK);
+            sum += (s << shift);
+        }
+        return sum;
+    }
+
     public static String nice(int i) {
         if (i == 0) return "0";
         StringBuilder sb = new StringBuilder();

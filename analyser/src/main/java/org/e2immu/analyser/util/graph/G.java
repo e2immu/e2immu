@@ -138,6 +138,10 @@ public class G<T> {
         return edges.get(v);
     }
 
+    public Iterable<Map.Entry<V<T>, Map<V<T>, Long>>> edges() {
+        return () -> edges.entrySet().iterator();
+    }
+
     public Stream<E<T>> edgeStream() {
         return edges.entrySet().stream()
                 .flatMap(e -> e.getValue().entrySet().stream()
