@@ -8,6 +8,7 @@ import java.util.*;
 public class Common {
 
     public static <T> Set<V<T>> follow(G<T> g, V<T> startingPoint) {
+        assert startingPoint != null;
         List<V<T>> toDo = new LinkedList<>();
         Set<V<T>> connected = new HashSet<>();
         toDo.add(startingPoint);

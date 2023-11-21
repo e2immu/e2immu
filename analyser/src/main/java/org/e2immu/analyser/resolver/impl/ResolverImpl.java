@@ -16,7 +16,6 @@ package org.e2immu.analyser.resolver.impl;
 
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
-import org.e2immu.analyser.analyser.util.TypeGraph;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.inspector.impl.FieldAccessStore;
@@ -38,28 +37,24 @@ import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
-import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.graph.G;
+import org.e2immu.graph.V;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.TimedLogger;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.builder.GraphTypeBuilder;
-import org.jgrapht.nio.Attribute;
-import org.jgrapht.nio.DefaultAttribute;
-import org.jgrapht.nio.gml.GmlExporter;
+
+import org.e2immu.graph.op.Common;
+import org.e2immu.graph.op.Linearization;
+import org.e2immu.support.FirstThen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.processing.Generated;
-import java.io.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -83,10 +78,11 @@ public class ResolverImpl implements Resolver {
     private final Resolver parent;
     private final AnonymousTypeCounters anonymousTypeCounters;
     private final AtomicInteger typeCounterForDebugging;
-    private final DependencyGraph<MethodInfo> methodCallGraph;
+    private final FirstThen<G.Builder<MethodInfo>, G<MethodInfo>> methodCallGraph;
     private final boolean storeComments;
     private final TimedLogger timedLogger;
-    private final TypeGraph typeGraph = new TypeGraph();
+    private final FirstThen<G.Builder<TypeInfo>, G<TypeInfo>> typeGraph
+            = new FirstThen<>(new G.Builder<>(PackedInt::longSum));
     private final boolean parallel;
 
     @Override
@@ -135,7 +131,7 @@ public class ResolverImpl implements Resolver {
         this.inspectionProvider = inspectionProvider;
         this.parent = null;
         this.anonymousTypeCounters = anonymousTypeCounters;
-        methodCallGraph = new DependencyGraph<>();
+        methodCallGraph = new FirstThen<>(new G.Builder<>(Long::sum));
         this.storeComments = storeComments;
         timedLogger = new TimedLogger(LOGGER, 1000L);
         typeCounterForDebugging = new AtomicInteger();
@@ -181,11 +177,14 @@ public class ResolverImpl implements Resolver {
             LOGGER.info("Computing analyser sequence from dependency graph, have {} builders",
                     resolutionBuilders.size());
         }
-        List<TypeInfo> sorted = sortWarnForCircularDependencies(resolutionBuilders);
         if (parent == null) {
-            LOGGER.info("Computing type resolution, sorted {} types", sorted.size());
+            LOGGER.info("Computing type resolution");
         }
-        return computeTypeResolution(sorted, resolutionBuilders, inspectedTypes);
+        computeTypeResolution(resolutionBuilders, inspectedTypes);
+        if (parent == null) {
+            LOGGER.info("Linearize");
+        }
+        return linearize(resolutionBuilders);
     }
 
     private TypeResolution.Builder resolveTypeAndCreateBuilder(Map.Entry<TypeInfo, ExpressionContext> entry, Set<TypeInfo> stayWithin) {
@@ -221,51 +220,23 @@ public class ResolverImpl implements Resolver {
         }
     }
 
-    private List<TypeInfo> sortWarnForCircularDependencies(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
-        Set<TypeInfo> inCycle = new HashSet<>();
-
-        LOGGER.debug("\n\n******* start sorting *********\n");
-        synchronized (typeGraph) {
-            return typeGraph.sorted(cycle -> foundCycle(resolutionBuilders, cycle, inCycle),
-                    typeInfo -> LOGGER.debug("Adding {}", typeInfo.fullyQualifiedName),
-                    Comparator.comparing(typeInfo -> typeInfo.fullyQualifiedName),
-                    shallowResolver, parallel);
-        }
+    private SortedTypes linearize(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
+        G<TypeInfo> g = builtTypeGraph();
+        // we do not attempt to break cycles here! That's, for now, part of an external activity.
+        Linearization.Result<TypeInfo> res = Linearization.linearize(g, Linearization.LinearizationMode.ALL);
+        Stream<V<TypeInfo>> vertexStream = Stream.concat(res.linearized().stream().flatMap(Set::stream),
+                Stream.concat(res.remainingCycles().stream().flatMap(Set::stream),
+                        res.nonProblematic().stream()));
+        List<TypeCycle> typeCycles = vertexStream.map(v -> {
+            List<SortedType> sortedTypes = v.ts().stream()
+                    .map(ti -> resolutionBuilders.get(ti).getSortedType()).toList();
+            return (TypeCycle) new ListOfSortedTypes(sortedTypes);
+        }).toList();
+        return new SortedTypes(typeCycles);
     }
 
-    private void foundCycle(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders,
-                            List<TypeInfo> cycle,
-                            Set<TypeInfo> inCycle) {
-        List<TypeInfo> restrictedCycle = new LinkedList<>(cycle);
-        restrictedCycle.removeAll(inCycle);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Cycle of size {} cycle reduced to {}", cycle.size(), restrictedCycle.size());
-            restrictedCycle.forEach(ti -> LOGGER.debug("\t" + ti.fullyQualifiedName));
-        }
-        boolean addMessage = true;
-        Set<TypeInfo> cycleAsSet = restrictedCycle.stream().collect(Collectors.toUnmodifiableSet());
-        for (TypeInfo typeInfo : restrictedCycle) {
-            TypeResolution.Builder otherBuilder = resolutionBuilders.get(typeInfo);
-            otherBuilder.addCircularDependencies(cycleAsSet);
-
-            if (addMessage) {
-                String cycleString = restrictedCycle.stream().map(t -> t.fullyQualifiedName)
-                        .collect(Collectors.joining(", "));
-                Message message = Message.newMessage(typeInfo.newLocation(), Message.Label.CIRCULAR_TYPE_DEPENDENCY,
-                        cycleString);
-                synchronized (messages) {
-                    messages.add(message);
-                }
-                addMessage = false;
-            }
-        }
-        inCycle.addAll(restrictedCycle);
-    }
-
-    private SortedTypes computeTypeResolution(List<TypeInfo> sorted,
-                                              Map<TypeInfo, TypeResolution.Builder> resolutionBuilders,
-                                              Map<TypeInfo, ExpressionContext> inspectedTypes) {
-        assert new HashSet<>(sorted).equals(resolutionBuilders.keySet());
+    private void computeTypeResolution(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders,
+                                       Map<TypeInfo, ExpressionContext> inspectedTypes) {
         /*
         The code that computes supertypes and counts implementations runs over all known types and subtypes,
         out of the standard sorting order, exactly because of circular dependencies.
@@ -285,10 +256,6 @@ public class ResolverImpl implements Resolver {
                 parent != null ? inspectedTypes.get(e.getKey()) : inspectedTypes.get(e.getKey().primaryType())));
         if (parent == null) LOGGER.info("Post-process type resolution");
         makeStream(entries).forEach(e -> e.getKey().typeResolution.set(e.getValue().build()));
-        if (parent == null) LOGGER.info("Group by cycles");
-        List<TypeCycle> typeCycles = groupByCycles(sorted.stream()
-                .map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList());
-        return new SortedTypes(typeCycles);
     }
 
     private Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> makeStream
@@ -305,25 +272,6 @@ public class ResolverImpl implements Resolver {
         boolean accessed = fieldAccessStore.fieldsOfTypeAreAccessedOutsideTypeInsidePrimaryType(typeInfo, typeInspection);
         builder.setFieldsAccessedInRestOfPrimaryType(accessed);
     }
-
-
-    private List<TypeCycle> groupByCycles(List<SortedType> sortedPrimaryTypes) {
-        List<TypeCycle> cycles = new LinkedList<>();
-        Set<TypeInfo> seen = new HashSet<>();
-        for (SortedType sortedType : sortedPrimaryTypes) {
-            if (!seen.contains(sortedType.primaryType())) {
-                Set<TypeInfo> circularDependencies = sortedType.primaryType().typeResolution.get().circularDependencies();
-                List<SortedType> cycle =
-                        circularDependencies.isEmpty() ? List.of(sortedType) : circularDependencies.stream()
-                                .sorted(Comparator.comparing(TypeInfo::fullyQualifiedName))
-                                .map(typeInfo -> typeInfo.typeResolution.get().sortedType()).toList();
-                cycles.add(new ListOfSortedTypes(cycle));
-                seen.addAll(circularDependencies);
-            }
-        }
-        return cycles;
-    }
-
 
     private Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> addSubtypeResolutionBuilders(InspectionProvider inspectionProvider,
                                                                                              TypeInfo typeInfo,
@@ -366,7 +314,7 @@ public class ResolverImpl implements Resolver {
 
         // main call
         ExpressionContext expressionContextOfType = expressionContextOfFile.newTypeContext("Primary type");
-        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
+        G.Builder<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new G.Builder<>(PackedInt::longSum);
         List<TypeInfo> typeAndAllSubTypes = doType(typeInfo, typeInfo, expressionContextOfType, methodFieldSubTypeGraph);
 
         // FROM HERE ON, ALL INSPECTION HAS BEEN SET!
@@ -390,14 +338,18 @@ public class ResolverImpl implements Resolver {
         Map<TypeInfo, Integer> dependsOn = hardCoded != null && hardCoded.eraseDependencies ? Map.of()
                 : Map.copyOf(typeDependencies);
         synchronized (typeGraph) {
-            typeGraph.addNode(typeInfo, dependsOn);
+            G.Builder<TypeInfo> builder = typeGraph.getFirst();
+            builder.addVertex(typeInfo);
+            dependsOn.forEach((to, w) -> builder.mergeEdge(typeInfo, to, w));
         }
-        List<WithInspectionAndAnalysis> sorted = methodFieldSubTypeGraph.sorted(null, null,
+        G<WithInspectionAndAnalysis> g = methodFieldSubTypeGraph.build();
+        Linearization.Result<WithInspectionAndAnalysis> lin = Linearization.linearize(g);
+        List<WithInspectionAndAnalysis> sorted = lin.asList(
                 Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName));
         List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(sorted);
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Method graph has {} relations", methodFieldSubTypeGraph.relations());
+            LOGGER.debug("Method graph has {} edges", g.edgeStream().count());
             LOGGER.debug("Method and field order in {}: {}", typeInfo.fullyQualifiedName,
                     methodFieldSubTypeOrder.stream().map(WithInspectionAndAnalysis::name).collect(Collectors.joining(", ")));
             LOGGER.debug("Types referred to in {}: {}", typeInfo.fullyQualifiedName, typeDependencies);
@@ -409,7 +361,7 @@ public class ResolverImpl implements Resolver {
     private List<TypeInfo> doType(TypeInfo typeInfo,
                                   TypeInfo topType,
                                   ExpressionContext expressionContextOfType,
-                                  DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                                  G.Builder<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
             TypeInspection typeInspection = expressionContextOfType.typeContext()
                     .typeMap().getTypeInspectionToStartResolving(typeInfo);
@@ -462,7 +414,7 @@ public class ResolverImpl implements Resolver {
             Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream()
                     .map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
             typeDependencies.retainAll(restrictToType);
-            methodFieldSubTypeGraph.addNode(typeInfo, List.copyOf(typeDependencies));
+            methodFieldSubTypeGraph.add(typeInfo, List.copyOf(typeDependencies));
 
             timedLogger.info("Resolved {} types", cnt);
 
@@ -522,14 +474,14 @@ public class ResolverImpl implements Resolver {
     private void doFields(TypeInspection typeInspection,
                           TypeInfo topType,
                           ExpressionContext expressionContext,
-                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                          G.Builder<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         typeInspection.fields().forEach(fieldInfo -> {
             FieldInspectionImpl.Builder fieldInspection = (FieldInspectionImpl.Builder)
                     expressionContext.typeContext().getFieldInspection(fieldInfo);
             if (!fieldInspection.fieldInitialiserIsSet() && fieldInspection.getInitialiserExpression() != null) {
                 doFieldInitialiser(fieldInfo, fieldInspection, topType, expressionContext, methodFieldSubTypeGraph);
             } else {
-                methodFieldSubTypeGraph.addNode(fieldInfo, List.of());
+                methodFieldSubTypeGraph.addVertex(fieldInfo);
             }
             expressionContext.variableContext().add(new FieldReferenceImpl(expressionContext.typeContext(), fieldInfo));
             assert !fieldInfo.fieldInspection.isSet() : "Field inspection for " + fieldInfo.fullyQualifiedName() + " has already been set";
@@ -551,7 +503,7 @@ public class ResolverImpl implements Resolver {
                                     FieldInspectionImpl.Builder fieldInspectionBuilder,
                                     TypeInfo topType,
                                     ExpressionContext expressionContext,
-                                    DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                                    G.Builder<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         // we can cast here: no point in resolving if inspection has been set.
 
         Expression expression = fieldInspectionBuilder.getInitialiserExpression();
@@ -622,7 +574,7 @@ public class ResolverImpl implements Resolver {
                     Identifier.generate("resolved empty initializer"));
             dependencies = List.of();
         }
-        methodFieldSubTypeGraph.addNode(fieldInfo, dependencies);
+        methodFieldSubTypeGraph.add(fieldInfo, dependencies);
         fieldInspectionBuilder.setFieldInitializer(fieldInitialiser);
     }
 
@@ -649,7 +601,7 @@ public class ResolverImpl implements Resolver {
     private void doMethodsAndConstructors(TypeInspection typeInspection,
                                           TypeInfo topType,
                                           ExpressionContext expressionContext,
-                                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                                          G.Builder<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
 
@@ -693,7 +645,7 @@ public class ResolverImpl implements Resolver {
                                        MethodInspectionImpl.Builder methodInspection,
                                        TypeInfo topType,
                                        ExpressionContext expressionContext,
-                                       DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                                       G.Builder<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         LOGGER.debug("Resolving {}", methodInfo.fullyQualifiedName);
 
         // TYPE PARAMETERS OF METHOD
@@ -747,11 +699,12 @@ public class ResolverImpl implements Resolver {
         if (methodInspection.staticBlockIdentifier > 0) {
             // add a dependency to the previous one!
             MethodInfo previousStaticBlock = typeInspection.findStaticBlock(methodInspection.staticBlockIdentifier - 1);
+            assert previousStaticBlock != null;
             methodsAndFieldsVisited.methodsAndFields.add(previousStaticBlock);
         }
 
         // and only then, when the FQN is known, add to the sub-graph
-        methodFieldSubTypeGraph.addNode(methodInfo, List.copyOf(methodsAndFieldsVisited.methodsAndFields));
+        methodFieldSubTypeGraph.add(methodInfo, methodsAndFieldsVisited.methodsAndFields);
 
         doAnnotations(methodInspection.getAnnotations(), expressionContext);
     }
@@ -858,7 +811,7 @@ public class ResolverImpl implements Resolver {
                 if (methodInfo != null && !methodInfo.isSyntheticConstructor()) {
                     if (caller != null) {
                         synchronized (methodCallGraph) {
-                            methodCallGraph.addNode(caller, List.of(methodInfo));
+                            methodCallGraph.getFirst().mergeEdge(caller, methodInfo, 1L);
                         }
                         created.set(true);
                     }
@@ -880,7 +833,7 @@ public class ResolverImpl implements Resolver {
             });
             if (caller != null && !created.get()) {
                 synchronized (methodCallGraph) {
-                    methodCallGraph.addNode(caller, List.of());
+                    methodCallGraph.getFirst().addVertex(caller);
                 }
             }
         }
@@ -925,20 +878,22 @@ public class ResolverImpl implements Resolver {
     private void methodResolution() {
         // iterate twice, because we have partial results on all MethodInfo objects for the setCallStatus computation
         Map<MethodInfo, MethodResolution.Builder> builders = new HashMap<>();
-        Set<MethodInfo> inCycle = new HashSet<>();
         AtomicInteger count = new AtomicInteger();
-
-        methodCallGraph.visit((methodInfo, toList) -> {
+        G<MethodInfo> g = builtMethodCallGraph();
+        for (V<MethodInfo> vertex : g.vertices()) {
+            MethodInfo methodInfo = vertex.someElement();
             try {
                 if (!methodInfo.methodResolution.isSet()) {
                     int cnt = count.incrementAndGet();
-                    Set<MethodInfo> methodsReached = methodCallGraph.dependenciesWithoutStartingPoint(methodInfo);
+                    Set<V<MethodInfo>> methodsReached = Common.follow(g, vertex);
 
                     MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
                     builders.put(methodInfo, methodResolutionBuilder);
 
                     TypeInfo staticEnclosingType = methodInfo.typeInfo.firstStaticEnclosingType(inspectionProvider);
                     Set<MethodInfo> methodsOfOwnClassReached = methodsReached.stream()
+                            .flatMap(v -> v.ts().stream())
+                            .filter(m -> !methodInfo.equals(m))
                             .filter(m -> m.typeInfo.firstStaticEnclosingType(inspectionProvider) == staticEnclosingType)
                             .collect(Collectors.toUnmodifiableSet());
                     methodResolutionBuilder.setMethodsOfOwnClassReached(methodsOfOwnClassReached);
@@ -948,35 +903,33 @@ public class ResolverImpl implements Resolver {
                     timedLogger.info("Computed method resolution for {} methods", cnt);
                 } // otherwise: already processed during AnnotatedAPI
             } catch (RuntimeException e) {
-                LOGGER.error("Caught exception filling {} to {} ", methodInfo.fullyQualifiedName, toList);
+                LOGGER.error("Caught exception filling {}", methodInfo.fullyQualifiedName);
                 throw e;
             }
-        });
+        }
 
-        LOGGER.info("Sorting method call graph of size {}", methodCallGraph.size());
-        methodCallGraph.sorted(cycle -> {
-            boolean first = true;
-            List<MethodInfo> restrictedList = new LinkedList<>(cycle);
-            restrictedList.removeAll(inCycle);
-            Set<MethodInfo> restrictedCycle = new HashSet<>(restrictedList);
-            for (MethodInfo methodInfo : restrictedList) {
-                MethodResolution.Builder builder = builders.get(methodInfo);
-
-                builder.setIgnoreMeBecauseOfPartOfCallCycle(first);
-                builder.setCallCycle(restrictedCycle);
-
-                first = false;
-            }
-            inCycle.addAll(restrictedCycle);
-        }, null, (m1, m2) -> {
+        LOGGER.info("Linearizing method call graph of {} methods, {} edges", g.vertices().size(), g.edgeStream().count());
+        Linearization.Result<MethodInfo> result = Linearization.linearize(g, Linearization.LinearizationMode.ALL);
+        Comparator<MethodInfo> sorter = (m1, m2) -> {
             int r1 = methodRank(m1);
             int r2 = methodRank(m2);
             int c = r1 - r2;
             if (c != 0) return c;
             return m1.fullyQualifiedName.compareTo(m2.fullyQualifiedName);
-        });
+        };
+        for (Set<V<MethodInfo>> cycle : result.remainingCycles()) {
+            MethodInfo first = cycle.stream().map(V::someElement).min(sorter).orElseThrow();
+            Set<MethodInfo> restrictedCycle = cycle.stream().map(V::someElement).collect(Collectors.toUnmodifiableSet());
 
-        methodCallGraph.visit((methodInfo, toList) -> {
+            for (MethodInfo methodInfo : restrictedCycle) {
+                MethodResolution.Builder builder = builders.get(methodInfo);
+                boolean isFirst = methodInfo == first;
+                builder.setIgnoreMeBecauseOfPartOfCallCycle(isFirst);
+                builder.setCallCycle(restrictedCycle);
+            }
+        }
+        for (V<MethodInfo> v : g.vertices()) {
+            MethodInfo methodInfo = v.someElement();
             if (!methodInfo.methodResolution.isSet()) {
                 MethodResolution.Builder builder = builders.get(methodInfo);
                 try {
@@ -992,7 +945,7 @@ public class ResolverImpl implements Resolver {
                     throw ise;
                 }
             } // otherwise: already processed during AnnotatedAPI
-        });
+        }
     }
 
     /*
@@ -1315,137 +1268,22 @@ public class ResolverImpl implements Resolver {
                 inspection.isPackagePrivate();
     }
 
-    public void dumpGraphs(File directory) {
-        try {
-            if (directory.mkdirs()) {
-                LOGGER.info("Created directory {}", directory);
+    public G<TypeInfo> builtTypeGraph() {
+        if (typeGraph.isSet()) return typeGraph.get();
+        synchronized (typeGraph) {
+            if (typeGraph.isFirst()) {
+                typeGraph.set(typeGraph.getFirst().build());
             }
-            synchronized (typeGraph) {
-                dumpTypeGraph(new File(directory, "typeDependencies.gml"));
-                dumpPackageGraphBasedOnTypeGraph(new File(directory, "packageDependenciesBasedOnTypeGraph.gml"));
-            }
-            synchronized (methodCallGraph) {
-                dumpMethodCallGraph(new File(directory, "methodCalls.gml"));
-            }
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
+            return typeGraph.get();
         }
     }
 
-    private void dumpPackageGraphBasedOnTypeGraph(File file) throws IOException {
-        Map<String, Map<String, Integer>> aggregated = new HashMap<>();
-        for (Map.Entry<TypeInfo, TypeGraph.Dependencies> entry : typeGraph.getNodeMap().entrySet()) {
-            TypeInfo typeInfo = entry.getKey();
-            Map<String, Integer> toMap = aggregated.computeIfAbsent(typeInfo.packageName(), s -> new HashMap<>());
-            for (Map.Entry<TypeInfo, Integer> e2 : entry.getValue().getWeights().entrySet()) {
-                TypeInfo target = e2.getKey();
-                toMap.merge(target.packageName(), e2.getValue(), PackedInt::sum);
-            }
+    public G<MethodInfo> builtMethodCallGraph() {
+        if (methodCallGraph.isSet()) return methodCallGraph.get();
+        if (methodCallGraph.isFirst()) {
+            methodCallGraph.set(methodCallGraph.getFirst().build());
         }
-        dumpPackageGraph(file, aggregated);
+        return methodCallGraph.get();
     }
 
-    private static Graph<String, DefaultWeightedEdge> createPackageGraph() {
-        return GraphTypeBuilder.<String, DefaultWeightedEdge>directed()
-                .allowingMultipleEdges(false)
-                .allowingSelfLoops(true)
-                .edgeClass(DefaultWeightedEdge.class)
-                .weighted(true)
-                .buildGraph();
-    }
-
-    private void dumpPackageGraph(File file, Map<String, Map<String, Integer>> aggregated) throws IOException {
-        Graph<String, DefaultWeightedEdge> graph = createPackageGraph();
-        for (Map.Entry<String, Map<String, Integer>> entry : aggregated.entrySet()) {
-            String from = entry.getKey();
-            if (!graph.containsVertex(from)) graph.addVertex(from);
-            for (Map.Entry<String, Integer> e2 : entry.getValue().entrySet()) {
-                String target = e2.getKey();
-                if (!graph.containsVertex(target)) graph.addVertex(target);
-                DefaultWeightedEdge e = graph.addEdge(from, target);
-                graph.setEdgeWeight(e, e2.getValue());
-            }
-        }
-        Function<String, Map<String, Attribute>> vertexAttributeProvider = (v) -> {
-            Map<String, Attribute> map = new LinkedHashMap<>();
-            map.put("label", DefaultAttribute.createAttribute(v));
-            return map;
-        };
-
-        exportWeightedGraph(graph, vertexAttributeProvider, file);
-    }
-
-    private void dumpTypeGraph(File file) throws IOException {
-        Graph<TypeInfo, DefaultWeightedEdge> graph =
-                GraphTypeBuilder.<TypeInfo, DefaultWeightedEdge>directed()
-                        .allowingMultipleEdges(false)
-                        .allowingSelfLoops(true)
-                        .edgeClass(DefaultWeightedEdge.class)
-                        .weighted(true)
-                        .buildGraph();
-        for (Map.Entry<TypeInfo, TypeGraph.Dependencies> entry : typeGraph.getNodeMap().entrySet()) {
-            TypeInfo typeInfo = entry.getKey();
-            if (!graph.containsVertex(typeInfo)) graph.addVertex(typeInfo);
-            for (Map.Entry<TypeInfo, Integer> e2 : entry.getValue().getWeights().entrySet()) {
-                TypeInfo target = e2.getKey();
-                if (!graph.containsVertex(target)) graph.addVertex(target);
-                DefaultWeightedEdge e = graph.addEdge(typeInfo, target);
-                graph.setEdgeWeight(e, e2.getValue());
-            }
-        }
-        Function<TypeInfo, Map<String, Attribute>> vertexAttributeProvider = (v) -> {
-            Map<String, Attribute> map = new LinkedHashMap<>();
-            map.put("label", DefaultAttribute.createAttribute(v.fullyQualifiedName));
-            TypeGraph.Dependencies dependencies = typeGraph.getNodeMap().get(v);
-            map.put("weight", DefaultAttribute.createAttribute(dependencies.getSumIncoming()));
-            return map;
-        };
-        exportWeightedGraph(graph, vertexAttributeProvider, file);
-    }
-
-    private static <T> void exportWeightedGraph(Graph<T, DefaultWeightedEdge> graph,
-                                                Function<T, Map<String, Attribute>> vertexAttributeProvider,
-                                                File file) throws IOException {
-        GmlExporter<T, DefaultWeightedEdge> exporter = new GmlExporter<>();
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_VERTEX_LABELS, true);
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_CUSTOM_VERTEX_ATTRIBUTES, true);
-        exporter.setVertexAttributeProvider(vertexAttributeProvider);
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_EDGE_WEIGHTS, false);
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_EDGE_LABELS, false);
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_CUSTOM_EDGE_ATTRIBUTES, true);
-        exporter.setEdgeAttributeProvider(e -> {
-            Map<String, Attribute> map = new LinkedHashMap<>();
-            int w = (int) graph.getEdgeWeight(e);
-            map.put("weight", DefaultAttribute.createAttribute(w));
-            return map;
-        });
-        exporter.exportGraph(graph, file);
-    }
-
-    private void dumpMethodCallGraph(File file) throws IOException {
-        Graph<MethodInfo, DefaultEdge> graph =
-                GraphTypeBuilder.<MethodInfo, DefaultEdge>directed()
-                        .allowingMultipleEdges(false)
-                        .allowingSelfLoops(true)
-                        .edgeClass(DefaultEdge.class)
-                        .weighted(false)
-                        .buildGraph();
-        for (MethodInfo methodInfo : methodCallGraph.nodes()) {
-            graph.addVertex(methodInfo);
-        }
-        methodCallGraph.visit((from, list) -> {
-            if (list != null) {
-                list.forEach(to -> graph.addEdge(from, to));
-            }
-        });
-
-        GmlExporter<MethodInfo, DefaultEdge> exporter = new GmlExporter<>();
-        exporter.setParameter(GmlExporter.Parameter.EXPORT_VERTEX_LABELS, true);
-        exporter.setVertexAttributeProvider((v) -> {
-            Map<String, Attribute> map = new LinkedHashMap<>();
-            map.put("label", DefaultAttribute.createAttribute(v.fullyQualifiedName));
-            return map;
-        });
-        exporter.exportGraph(graph, file);
-    }
 }

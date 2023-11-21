@@ -39,6 +39,7 @@ public class G<T> {
             V<T> from = elements.get(entry.getKey());
             for (Map.Entry<T, Long> e2 : entry.getValue().entrySet()) {
                 V<T> to = elements.get(e2.getKey());
+                assert to != null;
                 edges.computeIfAbsent(from, f -> new HashMap<>()).put(to, e2.getValue());
             }
         }
@@ -56,11 +57,17 @@ public class G<T> {
         Map<T, Map<T, Long>> map = new HashMap<>();
 
         public void addVertex(T t) {
-            map.put(t, new HashMap<>());
+            ensureVertex(t);
+        }
+
+        private Map<T, Long> ensureVertex(T t) {
+            assert t != null;
+            return map.computeIfAbsent(t, f -> new HashMap<>());
         }
 
         public void mergeEdge(T from, T to, long weight) {
-            map.computeIfAbsent(from, f -> new HashMap<>()).merge(to, weight, sum::applyAsLong);
+            ensureVertex(to);
+            ensureVertex(from).merge(to, weight, sum::applyAsLong);
         }
 
         public G<T> build() {
@@ -71,6 +78,13 @@ public class G<T> {
             return () -> map.entrySet().iterator();
         }
 
+        public void add(T from, Collection<T> tos) {
+            Map<T, Long> m = ensureVertex(from);
+            tos.forEach(to -> {
+                ensureVertex(to);
+                m.merge(Objects.requireNonNull(to), 1L, Long::sum);
+            });
+        }
     }
 
     @Override
@@ -164,6 +178,7 @@ public class G<T> {
     }
 
     public Map<V<T>, Long> edges(V<T> v) {
+        assert v != null;
         return edges.get(v);
     }
 

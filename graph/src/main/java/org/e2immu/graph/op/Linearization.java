@@ -5,6 +5,7 @@ import org.e2immu.graph.V;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Linearization {
 
@@ -28,6 +29,13 @@ public class Linearization {
                     + " R=" + remainingCycles.stream().map(s -> "[" +
                             s.stream().map(V::toString).sorted().collect(Collectors.joining(", ")) + "]")
                     .collect(Collectors.joining("; "));
+        }
+
+        public List<T> asList(Comparator<T> comparator) {
+            Stream<T> s1 = linearized.stream().flatMap(set -> set.stream().flatMap(v -> v.ts().stream()).sorted(comparator));
+            Stream<T> s2 = remainingCycles.stream().flatMap(set -> set.stream().flatMap(v -> v.ts().stream()).sorted(comparator));
+            Stream<T> s3 = nonProblematic.stream().flatMap(v -> v.ts().stream().sorted(comparator));
+            return Stream.concat(s1, Stream.concat(s2, s3)).toList();
         }
     }
 

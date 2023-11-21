@@ -28,6 +28,7 @@ import org.e2immu.analyser.parser.impl.InspectAll;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.resolver.SortedTypes;
 import org.e2immu.analyser.resolver.TypeCycle;
+import org.e2immu.analyser.resolver.impl.GraphIO;
 import org.e2immu.analyser.resolver.impl.ResolverImpl;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
 import org.slf4j.Logger;
@@ -219,7 +220,7 @@ public class Parser {
         }
         String graphDirectory = configuration.inspectorConfiguration().graphDirectory();
         if (graphDirectory != null) {
-            resolver.dumpGraphs(new File(graphDirectory));
+            GraphIO.dumpGraphs(new File(graphDirectory), resolver.builtTypeGraph(), resolver.builtMethodCallGraph());
         }
         return sortedTypes;
     }

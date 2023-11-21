@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.util;
+package org.e2immu.analyser.parser.own.util.testexample;
 
 import org.e2immu.annotation.*;
 import org.e2immu.annotation.eventual.Only;
@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 /**
  * In-house implementation of a directed graph that can be used to model dependencies between objects.
+ * IMPORTANT: only used for testing; currently used code is in graph project.
  *
  * @param <T>
  */

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.analyser.parser.own.util.testexample.DependencyGraph;
 import org.junit.jupiter.api.Test;
 
 import java.util.Comparator;
