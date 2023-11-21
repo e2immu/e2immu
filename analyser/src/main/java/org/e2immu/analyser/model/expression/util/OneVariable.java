@@ -14,12 +14,11 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.model.variable.Variable;
 
 /*
 Represents a numeric variable in an inequality.
 This can be a numeric variable, or a non-modifying method on an object-type variable, such as set.size()
  */
 public interface OneVariable {
-    Variable variable();
+
 }

@@ -45,11 +45,6 @@ public interface Variable extends OneVariable, Comparable<Variable> {
         return fullyQualifiedName().compareTo(o.fullyQualifiedName());
     }
 
-    @Override
-    default Variable variable() {
-        return this;
-    }
-
     static String fullyQualifiedName(Set<Variable> dependencies) {
         if (dependencies == null) return "";
         return dependencies.stream().map(Variable::fullyQualifiedName).collect(Collectors.joining("; "));

@@ -107,13 +107,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         this.modificationTimes = Objects.requireNonNull(modificationTimes);
     }
 
-    // only used in the inequality system
-    @Override
-    public Variable variable() {
-        List<Variable> variables = object.variables();
-        return variables.size() == 1 ? variables.get(0) : null;
-    }
-
     @Override
     public Expression translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         Expression asExpression = translationMap.translateExpression(this);

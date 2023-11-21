@@ -182,7 +182,7 @@ public class BreakCycles<T> {
             long sum = 0;
             for (Map.Entry<V<T>, Long> e2 : entry.getValue().entrySet()) {
                 long weight = e2.getValue();
-                if (weight < limit) {
+                if (limit == null || weight < limit) {
                     multiEdges.put(e2.getKey(), weight);
                     sum = sumWeights.applyAsLong(sum, weight);
                     list.add(new VertexAndSomeEdges<>(Map.of(entry.getKey(), Map.of(e2.getKey(), weight)), weight));
@@ -197,19 +197,21 @@ public class BreakCycles<T> {
                 .iterator();
     }
 
+    public interface EdgeIterator<T> {
+        Iterator<Map<V<T>, Map<V<T>, Long>>> iterator(G<T> g);
+    }
+
     public static class GreedyEdgeRemoval<T> implements ActionComputer<T> {
         private final EdgePrinter<T> edgePrinter;
-        private final Long limit;
-        private final LongBinaryOperator sumWeights;
+        private final EdgeIterator<T> edgeIterator;
 
         public GreedyEdgeRemoval() {
-            this(Object::toString, null, Long::sum);
+            this(Object::toString, g -> g.edgeIterator(Long::compareTo, null));
         }
 
-        public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter, Long limit, LongBinaryOperator sumWeights) {
+        public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter, EdgeIterator<T> edgeIterator) {
             this.edgePrinter = edgePrinter;
-            this.limit = limit;
-            this.sumWeights = sumWeights;
+            this.edgeIterator = edgeIterator;
         }
 
         @Override
@@ -221,7 +223,7 @@ public class BreakCycles<T> {
             G<T> bestSubGraph = null;
             Map<V<T>, Map<V<T>, Long>> bestEdgesToRemove = null;
 
-            Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = edgeIterator2(g, Long::compareTo, limit, sumWeights);
+            Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = edgeIterator.iterator(g);
             while (iterator.hasNext() && bestQuality > 0) {
                 Map<V<T>, Map<V<T>, Long>> edgesToRemove = iterator.next();
                 G<T> withoutEdges = g.withFewerEdgesMap(edgesToRemove);
