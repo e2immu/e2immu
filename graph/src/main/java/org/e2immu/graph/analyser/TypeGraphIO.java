@@ -31,12 +31,10 @@ public class TypeGraphIO {
         return map;
     }
 
-    public static void importGraph(ClassLoader classLoader,
-                                   String resourceName,
+    public static void importGraph(InputStream inputStream,
                                    Graph<Node, DefaultWeightedEdge> graph) throws IOException {
         GmlImporter<Node, DefaultWeightedEdge> importer = new GmlImporter<>();
-        try (InputStream inputStream = classLoader.getResourceAsStream(resourceName);
-             InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(inputStream),
+        try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(inputStream),
                      StandardCharsets.UTF_8)) {
             importer.setVertexFactory(Node::new);
             importer.addVertexAttributeConsumer((pair, attribute) -> {
