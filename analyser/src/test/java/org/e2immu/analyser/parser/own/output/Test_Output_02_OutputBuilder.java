@@ -140,17 +140,17 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             if ("joining".equals(d.methodInfo().name)) {
                 int n = d.methodInfo().methodInspection.get().getParameters().size();
                 if (n == 1) {
-                    assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if (n == 2) {
-                    assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if (n == 4) {
                     // separator
-                    assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(1), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(2), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(3), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    String value = d.iteration() < 4 ? "<m:joining>"
+                    assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(2), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(3), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    String value = d.iteration() < 5 ? "<m:joining>"
                             : "/*inline joining*/new Collector<>(){final AtomicInteger countMid=new AtomicInteger();public Supplier<OutputBuilder> supplier(){return OutputBuilder::new;}public BiConsumer<OutputBuilder,OutputBuilder> accumulator(){return (a,b)->{... debugging ...};}public BinaryOperator<OutputBuilder> combiner(){return (a,b)->{... debugging ...};}public Function<OutputBuilder,OutputBuilder> finisher(){return t->{... debugging ...};}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT);}}";
                     assertEquals(value, d.methodAnalysis().getSingleReturnValue().toString());
                 }
@@ -162,7 +162,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("OutputBuilder".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 5, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -173,7 +173,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 case "OutputElement" -> "--";
                 case "Qualifier" -> "-";
                 case "Guide" -> "------";
-                case "TypeName", "OutputBuilder" -> "-------";
+                case "TypeName" -> "-------";
+                case "OutputBuilder" -> "--------";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
@@ -182,8 +183,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, ElementarySpace.class, Space.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)

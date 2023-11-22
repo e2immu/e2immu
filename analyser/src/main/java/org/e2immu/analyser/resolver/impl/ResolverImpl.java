@@ -876,10 +876,13 @@ public class ResolverImpl implements Resolver {
      */
 
     private void methodResolution() {
+        G<MethodInfo> g = builtMethodCallGraph();
+        LOGGER.info("Linearizing method call graph of {} methods, {} edges", g.vertices().size(), g.edgeStream().count());
+        Linearization.Result<MethodInfo> result = Linearization.linearize(g, Linearization.LinearizationMode.ALL);
+
         // iterate twice, because we have partial results on all MethodInfo objects for the setCallStatus computation
         Map<MethodInfo, MethodResolution.Builder> builders = new HashMap<>();
         AtomicInteger count = new AtomicInteger();
-        G<MethodInfo> g = builtMethodCallGraph();
         for (V<MethodInfo> vertex : g.vertices()) {
             MethodInfo methodInfo = vertex.someElement();
             try {
@@ -889,11 +892,12 @@ public class ResolverImpl implements Resolver {
 
                     MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
                     builders.put(methodInfo, methodResolutionBuilder);
+                    boolean partOfCycle = result.remainingCycles().stream().anyMatch(cycle -> cycle.contains(vertex));
 
                     TypeInfo staticEnclosingType = methodInfo.typeInfo.firstStaticEnclosingType(inspectionProvider);
                     Set<MethodInfo> methodsOfOwnClassReached = methodsReached.stream()
                             .flatMap(v -> v.ts().stream())
-                            .filter(m -> !methodInfo.equals(m))
+                            .filter(m -> !methodInfo.equals(m) || partOfCycle)
                             .filter(m -> m.typeInfo.firstStaticEnclosingType(inspectionProvider) == staticEnclosingType)
                             .collect(Collectors.toUnmodifiableSet());
                     methodResolutionBuilder.setMethodsOfOwnClassReached(methodsOfOwnClassReached);
@@ -908,8 +912,6 @@ public class ResolverImpl implements Resolver {
             }
         }
 
-        LOGGER.info("Linearizing method call graph of {} methods, {} edges", g.vertices().size(), g.edgeStream().count());
-        Linearization.Result<MethodInfo> result = Linearization.linearize(g, Linearization.LinearizationMode.ALL);
         Comparator<MethodInfo> sorter = (m1, m2) -> {
             int r1 = methodRank(m1);
             int r2 = methodRank(m2);

@@ -359,13 +359,13 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
                 assertHc(d, 0, "HasSize");
             }
             if ("ImmutableArrayOfTransparentOnes".equals(clazz)) {
-                assertHc(d, 1, "");
+                assertHc(d, 2, "");
             }
             if ("EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
-                assertHc(d, 1, "HasSize");
+                assertHc(d, 2, "HasSize");
             }
             if ("EncapsulatedImmutableArrayOfHasSize".equals(clazz)) {
-                assertHc(d, 1, "HasSize");
+                assertHc(d, 2, "HasSize");
             }
         };
 
