@@ -436,7 +436,13 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
     }
 
     public boolean inConstruction() {
-        return isConstructor() || methodResolution.get().callStatus() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+        if (isConstructor()) {
+            return true;
+        }
+        if (!methodResolution.isSet()) {
+            return false; // catches recursion, calling from an anonymous type into a method of the enclosing type
+        }
+        return methodResolution.get().callStatus() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
     }
 
     public MethodInfo implementationIn(TypeInfo typeInfo) {

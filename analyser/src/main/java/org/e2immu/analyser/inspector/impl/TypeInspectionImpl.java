@@ -208,7 +208,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             for (MethodInfo methodInfo : typeInspection.methods()) {
                 MethodInspection inspection = inspectionProvider.getMethodInspection(methodInfo);
                 if (inspection == null) {
-                    throw new RuntimeException("Cannot find type inspection of " + methodInfo.fullyQualifiedName);
+                    throw new RuntimeException("Cannot find method inspection of " + methodInfo.fullyQualifiedName);
                 }
                 boolean nonStaticNonDefault = !inspection.isPrivate() && !methodInfo.isStatic()
                         && !methodInfo.isDefault() && !inspection.isOverloadOfJLOMethod();
