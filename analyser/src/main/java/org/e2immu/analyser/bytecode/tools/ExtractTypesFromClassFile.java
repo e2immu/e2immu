@@ -1,50 +1,50 @@
-package org.e2immu.analyser.bytecode.asm;
+package org.e2immu.analyser.bytecode.tools;
 
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Source;
 import org.e2immu.graph.G;
-import org.e2immu.graph.V;
 import org.e2immu.graph.analyser.PackedInt;
-import org.junit.jupiter.api.Test;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.bytecode.asm.MyClassVisitor.pathToFqn;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.objectweb.asm.Opcodes.ASM9;
 
-public class TestJarExternals {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestJarExternals.class);
+public class ExtractTypesFromClassFile {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExtractTypesFromClassFile.class);
 
-    @Test
-    public void test() throws IOException {
-        Resources resources = new Resources();
-        int entries = resources.addJarFromClassPath("org/jgrapht/graph");
-        assertTrue(entries > 0);
-        G.Builder<String> typeGraph = new G.Builder<>(PackedInt::longSum);
-        Set<String> own = new HashSet<>();
+    private final G.Builder<String> externalTypeGraphBuilder = new G.Builder<>(PackedInt::longSum);
+    private final Map<String, List<String>> jarsOfType = new HashMap<>();
+    private final Map<String, Set<String>> typesInJar = new HashMap<>();
+
+    // called at the end
+    public G<String> build() {
+        return externalTypeGraphBuilder.build();
+    }
+
+    // can be called multiple times
+    public void go(Resources resources) throws IOException {
+        G.Builder<String> typeGraphBuilder = new G.Builder<>(PackedInt::longSum);
         resources.visit(new String[]{}, (prefix, uris) -> {
             URI uri = uris.get(0);
             if (uri.toString().endsWith(".class") && !uri.toString().endsWith("/module-info.class")) {
                 String fqn = pathToFqn(String.join(".", prefix));
-                LOGGER.info("Parsing {}", fqn);
-                own.add(fqn);
+                String jarName = extractJarName(uri.toString());
+                LOGGER.info("Parsing {} in jar {}", fqn, jarName);
+
                 Source source = resources.fqnToPath(fqn, ".class");
                 byte[] classBytes = resources.loadBytes(source.path());
                 if (classBytes != null) {
                     ClassReader classReader = new ClassReader(classBytes);
-                    MyClassVisitor myClassVisitor = new MyClassVisitor(typeGraph);
+                    MyClassVisitor myClassVisitor = new MyClassVisitor(jarName, typeGraphBuilder);
                     classReader.accept(myClassVisitor, 0);
                     LOGGER.debug("Constructed class reader with {} bytes", classBytes.length);
                 } else {
@@ -52,28 +52,46 @@ public class TestJarExternals {
                 }
             }
         });
-        G<String> g = typeGraph.build();
-        for (V<String> v : g.vertices()) {
-            if (!own.contains(v.someElement())) {
-                LOGGER.info("External: {}", v.someElement());
+        // copy to external; we should already know what to exclude
+        for (Map.Entry<String, Map<String, Long>> edge : typeGraphBuilder.edges()) {
+            // all 'from' types should be registered
+            String from = edge.getKey();
+            List<String> jars = jarsOfType.get(from);
+            if (jars != null) {
+                String jarOfFrom = jars.get(0);
+                for (Map.Entry<String, Long> e2 : edge.getValue().entrySet()) {
+                    String to = e2.getKey();
+                    List<String> jarsOfTo = jarsOfType.get(to);
+                    if (jarsOfTo == null || !jarOfFrom.equals(jarsOfTo.get(0))) {
+                        externalTypeGraphBuilder.mergeEdge(from, to, e2.getValue());
+                    }
+                }
             }
         }
     }
 
-    static class MyClassVisitor extends ClassVisitor {
+    private void addTypeToJar(String fqn, String jarName) {
+        jarsOfType.computeIfAbsent(fqn, m -> new ArrayList<>()).add(jarName);
+        typesInJar.computeIfAbsent(jarName, m -> new HashSet<>()).add(fqn);
+    }
+
+    class MyClassVisitor extends ClassVisitor {
         private final G.Builder<String> typeGraph;
+        private final String jarName;
         private String fqn;
 
-        public MyClassVisitor(G.Builder<String> typeGraph) {
+        public MyClassVisitor(String jarName, G.Builder<String> typeGraph) {
             super(ASM9);
             this.typeGraph = typeGraph;
+            this.jarName = jarName;
         }
 
         @Override
         public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             fqn = pathToFqn(name);
+            addTypeToJar(fqn, jarName);
             typeGraph.addVertex(fqn);
-            LOGGER.debug("Visiting {}", fqn);
+            LOGGER.debug("Visiting {} in jar {}", fqn, jarName);
 
             if (signature == null) {
                 String parentFqn = superName == null ? null : pathToFqn(superName);
@@ -99,7 +117,11 @@ public class TestJarExternals {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access,
+                                         String name,
+                                         String descriptor,
+                                         String signature,
+                                         String[] exceptions) {
             if (signature != null) {
                 List<String> types = extract(signature);
                 for (String type : types) {
@@ -126,24 +148,7 @@ public class TestJarExternals {
                     typeGraph.mergeEdge(fqn, type, PackedInt.FIELD.of(1));
                 }
             }
-            return new MyFieldVisitor(fqn, typeGraph);
-        }
-
-        @Override
-        public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-            LOGGER.info("Type annotation {} {} {} {}", typeRef, typePath, descriptor, visible);
-            return super.visitTypeAnnotation(typeRef, typePath, descriptor, visible);
-        }
-    }
-
-    static class MyFieldVisitor extends FieldVisitor {
-        private final String fqn;
-        private final G.Builder<String> typeGraph;
-
-        MyFieldVisitor(String fqn, G.Builder<String> typeGraph) {
-            super(ASM9);
-            this.fqn = fqn;
-            this.typeGraph = typeGraph;
+            return null;
         }
 
         @Override
@@ -179,11 +184,47 @@ public class TestJarExternals {
                 } else {
                     List<String> extracted = extract(type);
                     for (String eFqn : extracted) {
-                        LOGGER.debug("Type instruction {} -> {}", type, typeFqn);
+                        LOGGER.debug("Type instruction {} -> {}", type, eFqn);
                         typeGraph.mergeEdge(fqn, eFqn, PackedInt.METHOD.of(1));
                     }
                 }
             }
+        }
+
+        @Override
+        public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
+            if (descriptor != null) {
+                List<String> fieldTypes = extract(descriptor);
+                fieldTypes.forEach(type -> {
+                    typeGraph.mergeEdge(fqn, type, PackedInt.EXPRESSION.of(1));
+                    LOGGER.debug("Field instruction {} -> {}", descriptor, type);
+                });
+            }
+        }
+
+        @Override
+        public void visitMultiANewArrayInsn(String descriptor, int numDimensions) {
+            if (descriptor != null) {
+                List<String> fieldTypes = extract(descriptor);
+                fieldTypes.forEach(type -> {
+                    typeGraph.mergeEdge(fqn, type, PackedInt.EXPRESSION.of(1));
+                    LOGGER.debug("Multi-array {} -> {}", descriptor, type);
+                });
+            }
+        }
+
+        @Override
+        public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+            int open = descriptor.indexOf('(');
+            int close = descriptor.indexOf(')');
+            String returnType = descriptor.substring(close + 1);
+            List<String> returnTypes = extract(returnType);
+            String parameters = descriptor.substring(open + 1, close);
+            List<String> parameterTypes = extract(parameters);
+            Stream.concat(returnTypes.stream(), parameterTypes.stream()).forEach(type -> {
+                typeGraph.mergeEdge(fqn, type, PackedInt.EXPRESSION.of(1));
+                LOGGER.debug("Method call type {} -> {}", returnType, type);
+            });
         }
 
         // parameter types,
@@ -213,7 +254,7 @@ public class TestJarExternals {
         return null;
     }
 
-    private static List<String> extract(String descriptor) {
+    static List<String> extract(String descriptor) {
         int lessThan = descriptor.indexOf('<');
         if (lessThan >= 0) {
             int correspondingGt = correspondingGt(descriptor, lessThan + 1);
@@ -238,7 +279,7 @@ public class TestJarExternals {
         throw new UnsupportedOperationException();
     }
 
-    private static final Pattern STD = Pattern.compile("^\\[*L([\\p{Alnum}/$.]+);");
+    static final Pattern STD = Pattern.compile("^\\[*L([\\p{Alnum}/$.]+);");
 
     private static List<String> extractWithoutGenerics(String descriptor) {
         Matcher std = STD.matcher(descriptor);
@@ -259,26 +300,10 @@ public class TestJarExternals {
         return !parentFqName.startsWith("java.lang.");
     }
 
-    @Test
-    public void test2a() {
-        assertEquals("[org.apache.commons.pool.impl.CursorableLinkedList.ListIter]",
-                extract("Lorg/apache/commons/pool/impl/CursorableLinkedList<TE;>.ListIter;").toString());
-    }
+    private static final Pattern JAR = Pattern.compile("/([^/]+)!/");
 
-    @Test
-    public void test2b() {
-        Matcher m = STD.matcher("[Ljava/lang/Object;");
-        assertTrue(m.matches());
-    }
-
-    @Test
-    public void test2c() {
-        assertEquals("[java.util.List, java.util.Map, java.xx.String, java.yy.Double]",
-                extract("Ljava/util/List<Ljava/util/Map<Ljava/xx/String;Ljava/yy/Double;>;>;").toString());
-    }
-
-    @Test
-    public void test2d() {
-        assertEquals("[org.apache.commons.pool.impl.GenericKeyedObjectPool.Latch]", extract("Lorg/apache/commons/pool/impl/GenericKeyedObjectPool<TK;TV;>.Latch<TLK;TLV;>;").toString());
+    private static String extractJarName(String path) {
+        Matcher m = JAR.matcher(path);
+        return m.find() ? m.group(1) : null;
     }
 }
