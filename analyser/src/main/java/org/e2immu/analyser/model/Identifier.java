@@ -33,6 +33,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /*
@@ -56,6 +58,7 @@ StatementTime 8
  */
 public interface Identifier extends Comparable<Identifier> {
     Logger LOGGER = LoggerFactory.getLogger(Identifier.class);
+
     int identifierOrder();
 
 
@@ -342,6 +345,16 @@ public interface Identifier extends Comparable<Identifier> {
         @Override
         public String compact() {
             return uri.toString();
+        }
+
+        private static final Pattern JAR = Pattern.compile("/([^/]+)!/");
+
+        public String extractJarName() {
+            Matcher m = JAR.matcher(uri.toString());
+            if (m.find()) {
+                return m.group(1);
+            }
+            return null;
         }
     }
 

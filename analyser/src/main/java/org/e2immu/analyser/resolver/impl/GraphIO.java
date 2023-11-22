@@ -1,5 +1,6 @@
 package org.e2immu.analyser.resolver.impl;
 
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.graph.G;
@@ -16,27 +17,86 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.function.Function;
 
 public class GraphIO {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphIO.class);
+    public static final String JAVA_BASE_JMOD = "java.base.jmod";
 
-    public static void dumpGraphs(File directory, G<TypeInfo> typeGraph, G<MethodInfo> methodCallGraph) {
+    public static void dumpGraphs(File directory,
+                                  G<TypeInfo> typeGraph,
+                                  G<TypeInfo> externalTypeGraph,
+                                  G<MethodInfo> methodCallGraph) {
         try {
             if (directory.mkdirs()) {
                 LOGGER.info("Created directory {}", directory);
             }
             dumpTypeGraph(new File(directory, "typeDependencies.gml"), typeGraph);
+            dumpTypeGraph(new File(directory, "externalTypeDependencies.gml"), externalTypeGraph);
             dumpPackageGraphBasedOnTypeGraph(new File(directory, "packageDependenciesBasedOnTypeGraph.gml"),
                     typeGraph);
+            dumpPackageGraphBasedOnTypeGraph(new File(directory, "packageDependenciesBasedOnExternalTypeGraph.gml"),
+                    externalTypeGraph);
+            Map<String, Map<String, Long>> packageToJar = dumpPackageToJarGraphBasedOnTypeGraph(new File(directory,
+                            "packageToJarDependenciesBasedOnExternalTypeGraph.gml"),
+                    externalTypeGraph);
+            dumpJarCentricUsageTable(new File(directory, "jarToPackage.txt"), packageToJar);
             dumpMethodCallGraph(new File(directory, "methodCalls.gml"), methodCallGraph);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
+    }
+
+    private static void dumpJarCentricUsageTable(File file, Map<String, Map<String, Long>> packageToJar) throws IOException {
+        Map<String, Map<String, Long>> jarToPackage = new HashMap<>();
+        Map<String, Long> jarScore = new HashMap<>();
+        for (Map.Entry<String, Map<String, Long>> entry : packageToJar.entrySet()) {
+            for (Map.Entry<String, Long> entry2 : entry.getValue().entrySet()) {
+                Map<String, Long> map = jarToPackage.computeIfAbsent(entry2.getKey(), p -> new HashMap<>());
+                map.merge(entry.getKey(), entry2.getValue(), PackedInt::longSum);
+                jarScore.merge(entry2.getKey(), entry2.getValue(), PackedInt::longSum);
+            }
+        }
+        List<String> jarsSorted = jarScore.keySet().stream().sorted(Comparator.comparingLong(jarScore::get).reversed()).toList();
+        try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            for (String theJar : jarsSorted) {
+                Long score = jarScore.get(theJar);
+                Map<String, Long> packages = jarToPackage.get(theJar);
+                List<String> packagesSorted = packages.keySet().stream().sorted(Comparator.comparingLong(packages::get).reversed())
+                        .limit(3).toList();
+                osw.append('"').append(theJar).append('"').append(',').append(PackedInt.nice((int) (long) score))
+                        .append(',').append(Integer.toString(packages.size()));
+                for (String toPackage : packagesSorted) {
+                    osw.append(',').append(toPackage);
+                }
+                osw.append('\n');
+            }
+        }
+    }
+
+    private static Map<String, Map<String, Long>> dumpPackageToJarGraphBasedOnTypeGraph(File file, G<TypeInfo> typeGraph) throws IOException {
+        Map<String, Map<String, Long>> aggregated = new HashMap<>();
+        for (Map.Entry<V<TypeInfo>, Map<V<TypeInfo>, Long>> entry : typeGraph.edges()) {
+            TypeInfo typeInfo = entry.getKey().someElement();
+            Map<String, Long> toMap = aggregated.computeIfAbsent(typeInfo.packageName(), s -> new HashMap<>());
+            for (Map.Entry<V<TypeInfo>, Long> e2 : entry.getValue().entrySet()) {
+                TypeInfo target = e2.getKey().someElement();
+                if (target.getIdentifier() instanceof Identifier.JarIdentifier jid) {
+                    String jarName = jid.extractJarName();
+                    if (jarName != null && !JAVA_BASE_JMOD.equals(jarName)) {
+                        toMap.merge(jarName, e2.getValue(), PackedInt::longSum);
+                    }
+                }
+            }
+        }
+        dumpPackageGraph(file, aggregated);
+        return aggregated;
     }
 
     private static void dumpPackageGraphBasedOnTypeGraph(File file, G<TypeInfo> typeGraph) throws IOException {

@@ -220,7 +220,8 @@ public class Parser {
         }
         String graphDirectory = configuration.inspectorConfiguration().graphDirectory();
         if (graphDirectory != null) {
-            GraphIO.dumpGraphs(new File(graphDirectory), resolver.builtTypeGraph(), resolver.builtMethodCallGraph());
+            GraphIO.dumpGraphs(new File(graphDirectory), resolver.builtTypeGraph(), resolver.builtExternalTypeGraph(),
+                    resolver.builtMethodCallGraph());
         }
         return sortedTypes;
     }

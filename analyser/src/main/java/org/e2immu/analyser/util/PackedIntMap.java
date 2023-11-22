@@ -17,10 +17,7 @@ package org.e2immu.analyser.util;
 import org.e2immu.annotation.*;
 import org.e2immu.graph.analyser.PackedInt;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -29,7 +26,7 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 @ImmutableContainer(hc = true)
-public class PackedIntMap<T> {
+public class PackedIntMap<T> implements Iterable<Map.Entry<T, Integer>> {
     private static final PackedIntMap<?> EMPTY = new PackedIntMap<>();
 
     @NotNull
@@ -109,6 +106,11 @@ public class PackedIntMap<T> {
     private PackedIntMap<T> putAll(@Independent(hc = true) PackedIntMap<T> other) {
         other.stream().forEach(e -> this.put(e.getKey(), e.getValue()));
         return this;
+    }
+
+    @Override
+    public Iterator<Map.Entry<T, Integer>> iterator() {
+        return map.entrySet().iterator();
     }
 
     @ImmutableContainer(hc = true)

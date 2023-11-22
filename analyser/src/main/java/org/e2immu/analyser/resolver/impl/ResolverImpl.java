@@ -83,6 +83,8 @@ public class ResolverImpl implements Resolver {
     private final TimedLogger timedLogger;
     private final FirstThen<G.Builder<TypeInfo>, G<TypeInfo>> typeGraph
             = new FirstThen<>(new G.Builder<>(PackedInt::longSum));
+    private final FirstThen<G.Builder<TypeInfo>, G<TypeInfo>> externalTypeGraph
+            = new FirstThen<>(new G.Builder<>(PackedInt::longSum));
     private final boolean parallel;
 
     @Override
@@ -323,24 +325,33 @@ public class ResolverImpl implements Resolver {
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         // only add primary types!
-        Map<TypeInfo, Integer> typeDependencies = typeInfo.typesReferenced2().stream()
-                .filter(e -> e.getKey() != typeInfo
-                        && stayWithin.contains(e.getKey())
-                        && !typeAndAllSubTypes.contains(e.getKey()))
-                .peek(e -> {
-                    if (e.getKey().primaryType() != e.getKey()) {
-                        throw new UnsupportedOperationException("Not a primary type! " + e.getKey());
-                    }
-                })
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-
+        Map<TypeInfo, Integer> typeDependencies = new HashMap<>();
+        Map<TypeInfo, Integer> externalTypeDependencies = new HashMap<>();
         TypeInfo.HardCoded hardCoded = TypeInfo.HARDCODED_TYPES.get(typeInfo.fullyQualifiedName);
-        Map<TypeInfo, Integer> dependsOn = hardCoded != null && hardCoded.eraseDependencies ? Map.of()
-                : Map.copyOf(typeDependencies);
+        if (hardCoded == null || !hardCoded.eraseDependencies) {
+            for (Map.Entry<TypeInfo, Integer> e : typeInfo.typesReferenced2()) {
+                TypeInfo t = e.getKey();
+                assert t.primaryType() == t : "Not a primary type! " + t;
+                if (t != typeInfo) {
+                    if (stayWithin.contains(t)) {
+                        if (!typeAndAllSubTypes.contains(t)) {
+                            typeDependencies.put(t, e.getValue());
+                        }
+                    } else {
+                        externalTypeDependencies.put(t, e.getValue());
+                    }
+                }
+            }
+        }
         synchronized (typeGraph) {
             G.Builder<TypeInfo> builder = typeGraph.getFirst();
             builder.addVertex(typeInfo);
-            dependsOn.forEach((to, w) -> builder.mergeEdge(typeInfo, to, w));
+            typeDependencies.forEach((to, w) -> builder.mergeEdge(typeInfo, to, w));
+        }
+        synchronized (externalTypeGraph) {
+            G.Builder<TypeInfo> builder = externalTypeGraph.getFirst();
+            builder.addVertex(typeInfo);
+            externalTypeDependencies.forEach((to, w) -> builder.mergeEdge(typeInfo, to, w));
         }
         G<WithInspectionAndAnalysis> g = methodFieldSubTypeGraph.build();
         Linearization.Result<WithInspectionAndAnalysis> lin = Linearization.linearize(g);
@@ -1268,6 +1279,16 @@ public class ResolverImpl implements Resolver {
                 inSamePackage && !inspection.isPrivate() ||
                 !inSamePackage && inspection.isProtected() ||
                 inspection.isPackagePrivate();
+    }
+
+    public G<TypeInfo> builtExternalTypeGraph() {
+        if (externalTypeGraph.isSet()) return externalTypeGraph.get();
+        synchronized (externalTypeGraph) {
+            if (externalTypeGraph.isFirst()) {
+                externalTypeGraph.set(externalTypeGraph.getFirst().build());
+            }
+            return externalTypeGraph.get();
+        }
     }
 
     public G<TypeInfo> builtTypeGraph() {
