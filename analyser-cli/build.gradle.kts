@@ -26,7 +26,9 @@ java {
 
 dependencies {
     implementation(libs.e2immuSupport)
-
+    implementation(libs.commonsIO)
+    
+    implementation(project(":graph"))
     implementation(project(":analyser"))
     implementation(project(":analyser-store-uploader"))
     implementation(libs.javaParser)

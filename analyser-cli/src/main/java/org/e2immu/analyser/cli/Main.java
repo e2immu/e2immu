@@ -66,6 +66,9 @@ public class Main {
     public static final String SKIP_ANALYSIS = "skip-analysis"; // not available on CMD line
     public static final String PARALLEL = "parallel";
 
+    public static final String ACTION = "action";
+    public static final String ACTION_PARAMETER = "action-parameter";
+
     public static final int EXIT_OK = 0;
     public static final int EXIT_INTERNAL_EXCEPTION = 1;
     public static final int EXIT_PARSER_ERROR = 2;
@@ -86,7 +89,28 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        Configuration configuration = parseConfiguration(args);
+        try {
+            int exitValue = execute(args);
+            if (exitValue != EXIT_OK) {
+                LOGGER.error(exitMessage(exitValue));
+            }
+            System.exit(exitValue);
+        } catch (ParseException parseException) {
+            LOGGER.error("Parse exception: ", parseException);
+            System.exit(EXIT_INTERNAL_EXCEPTION);
+        }
+    }
+
+    private static int execute(String[] args) throws ParseException {
+        CommandLineParser commandLineParser = new DefaultParser();
+        Options options = createOptions();
+        CommandLine cmd = commandLineParser.parse(options, args);
+        String action = cmd.getOptionValue(ACTION);
+        if (action != null) {
+            String[] actionParameters = cmd.getOptionValues(ACTION_PARAMETER);
+            return Action.execAction(action, actionParameters);
+        }
+        Configuration configuration = parseConfiguration(cmd, options);
         configuration.initializeLoggers();
         // the following will be output if the CONFIGURATION logger is active!
         LOGGER.debug("Configuration:\n{}", configuration);
@@ -95,95 +119,86 @@ public class Main {
         if (!configuration.quiet()) {
             runAnalyser.getMessageStream().forEach(m -> System.out.println(m.detailedMessage()));
         }
-        System.exit(runAnalyser.getExitValue());
+        return runAnalyser.getExitValue();
     }
 
-    public static Configuration parseConfiguration(String[] args) {
-        CommandLineParser commandLineParser = new DefaultParser();
-        Options options = createOptions();
-        try {
-            CommandLine cmd = commandLineParser.parse(options, args);
-            if (cmd.hasOption(HELP)) {
-                HelpFormatter formatter = new HelpFormatter();
-                formatter.setOptionComparator(null);
-                formatter.setWidth(128);
-                formatter.printHelp("e2immu-analyser", options);
-                System.exit(EXIT_OK);
-            }
-            Configuration.Builder builder = new Configuration.Builder();
-            InputConfiguration.Builder inputBuilder = new InputConfiguration.Builder();
-            String[] sources = cmd.getOptionValues(SOURCE);
-            splitAndAdd(sources, PATH_SEPARATOR, inputBuilder::addSources);
-            String[] classPaths = cmd.getOptionValues(CLASSPATH);
-            splitAndAdd(classPaths, PATH_SEPARATOR, inputBuilder::addClassPath);
-
-            String alternativeJREDirectory = cmd.getOptionValue(JRE);
-            inputBuilder.setAlternativeJREDirectory(alternativeJREDirectory);
-            String sourceEncoding = cmd.getOptionValue(SOURCE_ENCODING);
-            inputBuilder.setSourceEncoding(sourceEncoding);
-
-            String[] restrictSourceToPackages = cmd.getOptionValues(SOURCE_PACKAGES);
-            splitAndAdd(restrictSourceToPackages, COMMA_ALLOW_SPACE, inputBuilder::addRestrictSourceToPackages);
-            builder.setInputConfiguration(inputBuilder.build());
-
-            InspectorConfiguration.Builder inspectorBuilder = new InspectorConfiguration.Builder();
-            String graphDirectory = cmd.getOptionValue(GRAPH_DIRECTORY);
-            inspectorBuilder.setGraphDirectory(graphDirectory);
-            builder.setInspectorConfiguration(inspectorBuilder.build());
-
-            String[] debugLogTargets = cmd.getOptionValues(DEBUG);
-            splitAndAdd(debugLogTargets, COMMA_ALLOW_SPACE, builder::addDebugLogTargets);
-            boolean ignoreErrors = cmd.hasOption(IGNORE_ERRORS);
-            builder.setIgnoreErrors(ignoreErrors);
-
-            boolean parallel = cmd.hasOption(PARALLEL);
-            builder.setParallel(parallel);
-
-            UploadConfiguration.Builder uploadBuilder = new UploadConfiguration.Builder();
-            boolean upload = cmd.hasOption(UPLOAD);
-            uploadBuilder.setUpload(upload);
-            String uploadUrl = cmd.getOptionValue(UPLOAD_URL);
-            uploadBuilder.setAnnotationServerUrl(uploadUrl);
-            String projectName = cmd.getOptionValue(UPLOAD_PROJECT);
-            uploadBuilder.setProjectName(projectName);
-            String[] uploadPackages = cmd.getOptionValues(UPLOAD_PACKAGES);
-            splitAndAdd(uploadPackages, COMMA_ALLOW_SPACE, uploadBuilder::addUploadPackage);
-            builder.setUploadConfiguration(uploadBuilder.build());
-
-            AnnotationXmlConfiguration.Builder xmlBuilder = new AnnotationXmlConfiguration.Builder();
-            boolean writeAnnotationXml = cmd.hasOption(WRITE_ANNOTATION_XML);
-            xmlBuilder.setAnnotationXml(writeAnnotationXml);
-            xmlBuilder.setWriteAnnotationXmlDir(cmd.getOptionValue(WRITE_ANNOTATION_XML_DIR));
-            String[] annotationXmlWritePackages = cmd.getOptionValues(WRITE_ANNOTATION_XML_PACKAGES);
-            splitAndAdd(annotationXmlWritePackages, COMMA_ALLOW_SPACE, xmlBuilder::addAnnotationXmlWritePackages);
-            String[] annotationXmlReadPackages = cmd.getOptionValues(READ_ANNOTATION_XML_PACKAGES);
-            splitAndAdd(annotationXmlReadPackages, COMMA_ALLOW_SPACE, xmlBuilder::addAnnotationXmlReadPackages);
-            builder.setAnnotationXmConfiguration(xmlBuilder.build());
-
-            AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
-            String[] annotatedAPISources = cmd.getOptionValues(ANNOTATED_API_SOURCE);
-            splitAndAdd(annotatedAPISources, PATH_SEPARATOR, apiBuilder::addAnnotatedAPISourceDirs);
-
-            String writeAnnotatedAPIs = cmd.getOptionValue(ANNOTATED_API_WRITE_MODE);
-            if (writeAnnotatedAPIs != null) {
-                apiBuilder.setWriteMode(AnnotatedAPIConfiguration.WriteMode.valueOf(writeAnnotatedAPIs.trim().toUpperCase()));
-            }
-            apiBuilder.setWriteAnnotatedAPIsDir(cmd.getOptionValue(WRITE_ANNOTATED_API_DIR));
-            apiBuilder.setDestinationPackage(cmd.getOptionValue(WRITE_ANNOTATED_API_DESTINATION_PACKAGE));
-            String[] writeAnnotatedAPIPackages = cmd.getOptionValues(WRITE_ANNOTATED_API_PACKAGES);
-            splitAndAdd(writeAnnotatedAPIPackages, COMMA_ALLOW_SPACE, apiBuilder::addWriteAnnotatedAPIPackages);
-            String[] readAnnotatedAPIPackages = cmd.getOptionValues(READ_ANNOTATED_API_PACKAGES);
-            splitAndAdd(readAnnotatedAPIPackages, COMMA_ALLOW_SPACE, apiBuilder::addReadAnnotatedAPIPackages);
-            AnnotatedAPIConfiguration api = apiBuilder.build();
-            builder.setAnnotatedAPIConfiguration(api);
-
-            return builder.build();
-        } catch (ParseException parseException) {
-            parseException.printStackTrace();
-            System.err.println("Caught parse exception: " + parseException.getMessage());
-            System.exit(EXIT_INTERNAL_EXCEPTION);
-            return null; // unreachable statement
+    private static Configuration parseConfiguration(CommandLine cmd, Options options) {
+        if (cmd.hasOption(HELP)) {
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.setOptionComparator(null);
+            formatter.setWidth(128);
+            formatter.printHelp("e2immu-analyser", options);
+            System.exit(EXIT_OK);
         }
+        Configuration.Builder builder = new Configuration.Builder();
+        InputConfiguration.Builder inputBuilder = new InputConfiguration.Builder();
+        String[] sources = cmd.getOptionValues(SOURCE);
+        splitAndAdd(sources, PATH_SEPARATOR, inputBuilder::addSources);
+        String[] classPaths = cmd.getOptionValues(CLASSPATH);
+        splitAndAdd(classPaths, PATH_SEPARATOR, inputBuilder::addClassPath);
+
+        String alternativeJREDirectory = cmd.getOptionValue(JRE);
+        inputBuilder.setAlternativeJREDirectory(alternativeJREDirectory);
+        String sourceEncoding = cmd.getOptionValue(SOURCE_ENCODING);
+        inputBuilder.setSourceEncoding(sourceEncoding);
+
+        String[] restrictSourceToPackages = cmd.getOptionValues(SOURCE_PACKAGES);
+        splitAndAdd(restrictSourceToPackages, COMMA_ALLOW_SPACE, inputBuilder::addRestrictSourceToPackages);
+        builder.setInputConfiguration(inputBuilder.build());
+
+        InspectorConfiguration.Builder inspectorBuilder = new InspectorConfiguration.Builder();
+        String graphDirectory = cmd.getOptionValue(GRAPH_DIRECTORY);
+        inspectorBuilder.setGraphDirectory(graphDirectory);
+        builder.setInspectorConfiguration(inspectorBuilder.build());
+
+        String[] debugLogTargets = cmd.getOptionValues(DEBUG);
+        splitAndAdd(debugLogTargets, COMMA_ALLOW_SPACE, builder::addDebugLogTargets);
+        boolean ignoreErrors = cmd.hasOption(IGNORE_ERRORS);
+        builder.setIgnoreErrors(ignoreErrors);
+
+        boolean parallel = cmd.hasOption(PARALLEL);
+        builder.setParallel(parallel);
+
+        UploadConfiguration.Builder uploadBuilder = new UploadConfiguration.Builder();
+        boolean upload = cmd.hasOption(UPLOAD);
+        uploadBuilder.setUpload(upload);
+        String uploadUrl = cmd.getOptionValue(UPLOAD_URL);
+        uploadBuilder.setAnnotationServerUrl(uploadUrl);
+        String projectName = cmd.getOptionValue(UPLOAD_PROJECT);
+        uploadBuilder.setProjectName(projectName);
+        String[] uploadPackages = cmd.getOptionValues(UPLOAD_PACKAGES);
+        splitAndAdd(uploadPackages, COMMA_ALLOW_SPACE, uploadBuilder::addUploadPackage);
+        builder.setUploadConfiguration(uploadBuilder.build());
+
+        AnnotationXmlConfiguration.Builder xmlBuilder = new AnnotationXmlConfiguration.Builder();
+        boolean writeAnnotationXml = cmd.hasOption(WRITE_ANNOTATION_XML);
+        xmlBuilder.setAnnotationXml(writeAnnotationXml);
+        xmlBuilder.setWriteAnnotationXmlDir(cmd.getOptionValue(WRITE_ANNOTATION_XML_DIR));
+        String[] annotationXmlWritePackages = cmd.getOptionValues(WRITE_ANNOTATION_XML_PACKAGES);
+        splitAndAdd(annotationXmlWritePackages, COMMA_ALLOW_SPACE, xmlBuilder::addAnnotationXmlWritePackages);
+        String[] annotationXmlReadPackages = cmd.getOptionValues(READ_ANNOTATION_XML_PACKAGES);
+        splitAndAdd(annotationXmlReadPackages, COMMA_ALLOW_SPACE, xmlBuilder::addAnnotationXmlReadPackages);
+        builder.setAnnotationXmConfiguration(xmlBuilder.build());
+
+        AnnotatedAPIConfiguration.Builder apiBuilder = new AnnotatedAPIConfiguration.Builder();
+        String[] annotatedAPISources = cmd.getOptionValues(ANNOTATED_API_SOURCE);
+        splitAndAdd(annotatedAPISources, PATH_SEPARATOR, apiBuilder::addAnnotatedAPISourceDirs);
+
+        String writeAnnotatedAPIs = cmd.getOptionValue(ANNOTATED_API_WRITE_MODE);
+        if (writeAnnotatedAPIs != null) {
+            apiBuilder.setWriteMode(AnnotatedAPIConfiguration.WriteMode.valueOf(writeAnnotatedAPIs.trim().toUpperCase()));
+        }
+        apiBuilder.setWriteAnnotatedAPIsDir(cmd.getOptionValue(WRITE_ANNOTATED_API_DIR));
+        apiBuilder.setDestinationPackage(cmd.getOptionValue(WRITE_ANNOTATED_API_DESTINATION_PACKAGE));
+        String[] writeAnnotatedAPIPackages = cmd.getOptionValues(WRITE_ANNOTATED_API_PACKAGES);
+        splitAndAdd(writeAnnotatedAPIPackages, COMMA_ALLOW_SPACE, apiBuilder::addWriteAnnotatedAPIPackages);
+        String[] readAnnotatedAPIPackages = cmd.getOptionValues(READ_ANNOTATED_API_PACKAGES);
+        splitAndAdd(readAnnotatedAPIPackages, COMMA_ALLOW_SPACE, apiBuilder::addReadAnnotatedAPIPackages);
+        AnnotatedAPIConfiguration api = apiBuilder.build();
+        builder.setAnnotatedAPIConfiguration(api);
+
+        return builder.build();
+
     }
 
     private static void splitAndAdd(String[] strings, String separator, Consumer<String> adder) {

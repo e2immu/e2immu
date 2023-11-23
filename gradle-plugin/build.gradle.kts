@@ -25,9 +25,10 @@ java {
 }
 
 dependencies {
-    implementation (libs.e2immuSupport)
+    implementation(libs.e2immuSupport)
+
     implementation(project(":analyser")) {
-        exclude ("ch.qos.logback")
+        exclude("ch.qos.logback")
     }
     implementation(project(":analyser-cli"))
     implementation(project(":analyser-store-uploader"))

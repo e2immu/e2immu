@@ -43,6 +43,8 @@ public record AnalyserPropertyComputer(
 
     private static final Logger LOGGER = Logging.getLogger(AnalyserPropertyComputer.class);
     public static final String PREFIX = "e2immu-analyser.";
+    // used for round trip String[] -> String -> String[]; TODO this should be done in a better way
+    public static final String M_A_G_I_C = "__M_A_G_I_C__";
 
     public Map<String, Object> computeProperties() {
         Map<String, Object> properties = new LinkedHashMap<>();
@@ -94,39 +96,44 @@ public record AnalyserPropertyComputer(
         }
     }
 
-    private void detectProperties(final Project project, final Map<String, Object> properties, AnalyserExtension extension) {
-        properties.put(Main.DEBUG, extension.getDebug());
-        properties.put(Main.SOURCE_PACKAGES, extension.getSourcePackages());
-        properties.put(Main.JRE, extension.getJre());
+    private void detectProperties(Project project, Map<String, Object> properties, AnalyserExtension extension) {
+        properties.put(Main.DEBUG, extension.debug);
+        properties.put(Main.SOURCE_PACKAGES, extension.sourcePackages);
+        properties.put(Main.JRE, extension.jre);
         properties.put(Main.IGNORE_ERRORS, extension.ignoreErrors);
         properties.put(Main.SKIP_ANALYSIS, extension.skipAnalysis);
         properties.put(Main.PARALLEL, extension.parallel);
 
-        properties.put(Main.GRAPH_DIRECTORY, extension.getGraphDirectory());
+        properties.put(Main.GRAPH_DIRECTORY, extension.graphDirectory);
 
         properties.put(Main.UPLOAD, extension.upload == null || extension.upload);
         properties.put(Main.UPLOAD_PROJECT, project.getName());
-        properties.put(Main.UPLOAD_URL, extension.getUploadUrl());
-        properties.put(Main.UPLOAD_PACKAGES, extension.getUploadPackages());
+        properties.put(Main.UPLOAD_URL, extension.uploadUrl);
+        properties.put(Main.UPLOAD_PACKAGES, extension.uploadPackages);
 
         File buildDir = project.getLayout().getBuildDirectory().get().getAsFile();
-        properties.put(Main.READ_ANNOTATED_API_PACKAGES, getOrDefault(extension.getReadAnnotatedAPIPackages(),
+        properties.put(Main.READ_ANNOTATED_API_PACKAGES, getOrDefault(extension.readAnnotatedAPIPackages,
                 AnnotatedAPIConfiguration.DO_NOT_READ_ANNOTATED_API));
-        properties.put(Main.ANNOTATED_API_WRITE_MODE, getOrDefault(extension.getAnnotatedAPIWriteMode(),
+        properties.put(Main.ANNOTATED_API_WRITE_MODE, getOrDefault(extension.annotatedAPIWriteMode,
                 AnnotatedAPIConfiguration.WriteMode.DO_NOT_WRITE.toString()));
-        properties.put(Main.WRITE_ANNOTATED_API_DIR, getOrDefault(extension.getWriteAnnotatedAPIDir(),
+        properties.put(Main.WRITE_ANNOTATED_API_DIR, getOrDefault(extension.writeAnnotatedAPIDir,
                 new File(buildDir, "annotatedAPIs").getAbsolutePath()));
-        properties.put(Main.WRITE_ANNOTATED_API_PACKAGES, extension.getWriteAnnotatedAPIPackages());
-        properties.put(Main.WRITE_ANNOTATED_API_DESTINATION_PACKAGE, extension.getWriteAnnotatedAPIDestinationPackage());
+        properties.put(Main.WRITE_ANNOTATED_API_PACKAGES, extension.writeAnnotatedAPIPackages);
+        properties.put(Main.WRITE_ANNOTATED_API_DESTINATION_PACKAGE, extension.writeAnnotatedAPIDestinationPackage);
 
-        properties.put(Main.READ_ANNOTATION_XML_PACKAGES, extension.getReadAnnotationXMLPackages());
+        properties.put(Main.READ_ANNOTATION_XML_PACKAGES, extension.readAnnotationXMLPackages);
         properties.put(Main.WRITE_ANNOTATION_XML, extension.writeAnnotationXML);
-        properties.put(Main.WRITE_ANNOTATION_XML_DIR, getOrDefault(extension.getWriteAnnotationXMLDir(),
+        properties.put(Main.WRITE_ANNOTATION_XML_DIR, getOrDefault(extension.writeAnnotationXMLDir,
                 new File(buildDir, "annotationXml").getAbsolutePath()));
-        properties.put(Main.WRITE_ANNOTATION_XML_PACKAGES, extension.getWriteAnnotationXMLPackages());
+        properties.put(Main.WRITE_ANNOTATION_XML_PACKAGES, extension.writeAnnotationXMLPackages);
 
+        properties.put(Main.ACTION, extension.action);
+        if (extension.actionParameters != null) {
+            String joined = String.join(M_A_G_I_C, extension.actionParameters);
+            properties.put(Main.ACTION_PARAMETER, joined);
+        }
         project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
-            boolean hasSource = detectSourceDirsAndJavaClasspath(project, properties, extension.getJmods());
+            boolean hasSource = detectSourceDirsAndJavaClasspath(project, properties, extension.jmods);
             if (hasSource) {
                 detectSourceEncoding(project, properties);
             }

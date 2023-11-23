@@ -25,37 +25,41 @@ public class AnalyserExtension {
     public boolean skipProject;
 
     /* from InputConfiguration -- sources taken from Gradle */
-    private String jmods; // part of the class path
-    private String jre;
-    private String sourcePackages;
+    public String jmods; // part of the class path
+    public String jre;
+    public String sourcePackages;
 
     /* from InspectorConfiguration */
-    private String graphDirectory;
+    public String graphDirectory;
 
     /* from AnnotatedAPIConfiguration -- sources taken from Gradle */
-    private String readAnnotatedAPIPackages;
-    private String annotatedAPIWriteMode;
-    private String writeAnnotatedAPIPackages;
-    private String writeAnnotatedAPIDestinationPackage;
-    private String writeAnnotatedAPIDir;
+    public String readAnnotatedAPIPackages;
+    public String annotatedAPIWriteMode;
+    public String writeAnnotatedAPIPackages;
+    public String writeAnnotatedAPIDestinationPackage;
+    public String writeAnnotatedAPIDir;
 
     /* from AnnotationXMLConfiguration */
-    private String readAnnotationXMLPackages;
+    public String readAnnotationXMLPackages;
     public boolean writeAnnotationXML;
-    private String writeAnnotationXMLPackages;
-    private String writeAnnotationXMLDir;
+    public String writeAnnotationXMLPackages;
+    public String writeAnnotationXMLDir;
 
     /* from UploadConfiguration */
     public Boolean upload;
-    private String uploadUrl;
-    private String uploadPackages;
-    private String uploadProject;
+    public String uploadUrl;
+    public String uploadPackages;
+    public String uploadProject;
 
     /* from the general Configuration -- Quiet taken from Gradle */
-    private String debug;
+    public String debug;
     public boolean ignoreErrors;
     public boolean skipAnalysis;
     public boolean parallel;
+
+    // actions
+    public String action;
+    public String[] actionParameters;
 
     private final ActionBroadcast<AnalyserProperties> propertiesActions;
 
@@ -65,139 +69,5 @@ public class AnalyserExtension {
 
     public void properties(Action<? super AnalyserProperties> action) {
         propertiesActions.add(action);
-    }
-
-    /* ********* getters and setters ************* */
-
-    public String getJmods() {
-        return jmods;
-    }
-
-    public void setJmods(String jMods) {
-        this.jmods = jMods;
-    }
-
-    public String getJre() {
-        return jre;
-    }
-
-    public void setJre(String jre) {
-        this.jre = jre;
-    }
-
-    public String getSourcePackages() {
-        return sourcePackages;
-    }
-
-    public void setSourcePackages(String sourcePackages) {
-        this.sourcePackages = sourcePackages;
-    }
-
-    public String getWriteAnnotatedAPIPackages() {
-        return writeAnnotatedAPIPackages;
-    }
-
-    public void setWriteAnnotatedAPIPackages(String writeAnnotatedAPIPackages) {
-        this.writeAnnotatedAPIPackages = writeAnnotatedAPIPackages;
-    }
-
-    public String getWriteAnnotationXMLPackages() {
-        return writeAnnotationXMLPackages;
-    }
-
-    public void setWriteAnnotationXMLPackages(String writeAnnotationXMLPackages) {
-        this.writeAnnotationXMLPackages = writeAnnotationXMLPackages;
-    }
-
-    public String getUploadPackages() {
-        return uploadPackages;
-    }
-
-    public void setUploadPackages(String uploadPackages) {
-        this.uploadPackages = uploadPackages;
-    }
-
-    public String getUploadUrl() {
-        return uploadUrl;
-    }
-
-    public void setUploadUrl(String uploadUrl) {
-        this.uploadUrl = uploadUrl;
-    }
-
-    public String getDebug() {
-        return debug;
-    }
-
-    public void setDebug(String debug) {
-        this.debug = debug;
-    }
-
-    public String getReadAnnotationXMLPackages() {
-        return readAnnotationXMLPackages;
-    }
-
-    public void setReadAnnotationXMLPackages(String readAnnotationXMLPackages) {
-        this.readAnnotationXMLPackages = readAnnotationXMLPackages;
-    }
-
-    public void setWriteAnnotationXML(boolean writeAnnotationXML) {
-        this.writeAnnotationXML = writeAnnotationXML;
-    }
-
-    public String getWriteAnnotationXMLDir() {
-        return writeAnnotationXMLDir;
-    }
-
-    public void setWriteAnnotationXMLDir(String writeAnnotationXMLDir) {
-        this.writeAnnotationXMLDir = writeAnnotationXMLDir;
-    }
-
-    public String getReadAnnotatedAPIPackages() {
-        return readAnnotatedAPIPackages;
-    }
-
-    public void setReadAnnotatedAPIPackages(String readAnnotatedAPIPackages) {
-        this.readAnnotatedAPIPackages = readAnnotatedAPIPackages;
-    }
-
-    public String getAnnotatedAPIWriteMode() {
-        return annotatedAPIWriteMode;
-    }
-
-    public void setAnnotatedAPIWriteMode(String annotatedAPIWriteMode) {
-        this.annotatedAPIWriteMode = annotatedAPIWriteMode;
-    }
-
-    public String getWriteAnnotatedAPIDestinationPackage() {
-        return writeAnnotatedAPIDestinationPackage;
-    }
-
-    public void setWriteAnnotatedAPIDestinationPackage(String writeAnnotatedAPIDestinationPackage) {
-        this.writeAnnotatedAPIDestinationPackage = writeAnnotatedAPIDestinationPackage;
-    }
-
-    public String getWriteAnnotatedAPIDir() {
-        return writeAnnotatedAPIDir;
-    }
-
-    public void setWriteAnnotatedAPIDir(String writeAnnotatedAPIDir) {
-        this.writeAnnotatedAPIDir = writeAnnotatedAPIDir;
-    }
-
-    public String getUploadProject() {
-        return uploadProject;
-    }
-
-    public void setUploadProject(String uploadProject) {
-        this.uploadProject = uploadProject;
-    }
-
-    public String getGraphDirectory() {
-        return graphDirectory;
-    }
-
-    public void setGraphDirectory(String graphDirectory) {
-        this.graphDirectory = graphDirectory;
     }
 }

@@ -27,6 +27,7 @@ dependencyResolutionManagement {
 
             library("asm", "org.ow2.asm:asm:9.5") // 3-clause BSD permissive license
             library("commonsCli", "commons-cli:commons-cli:1.4") // Apache License 2.0
+            library("commonsIO", "commons-io:commons-io:2.15.0") // Apache License 2.0
             library("googleGson", "com.google.code.gson:gson:2.8.9") // Apache License 2.0
             library("httpClient", "org.apache.httpcomponents:httpclient:4.5.13") // Apache License 2.0
             library("httpCore", "org.apache.httpcomponents:httpcore:4.4.13") // Apache License 2.0
