@@ -22,12 +22,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.*;
-import java.util.Enumeration;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.jar.JarFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The Trie contains the full name of the resource: the class file for java.util.List
@@ -46,6 +46,15 @@ public class Resources {
     }
 
     private final Trie<URI> data = new Trie<>();
+
+    public record JarSize(int entries, int bytes) {
+    }
+
+    private final Map<String, JarSize> jarSizes = new HashMap<>();
+
+    public Map<String, JarSize> getJarSizes() {
+        return jarSizes;
+    }
 
     public void visit(String[] prefix, BiConsumer<String[], List<URI>> visitor) {
         data.visit(prefix, visitor);
@@ -134,6 +143,8 @@ public class Resources {
         return entries;
     }
 
+    private static final Pattern JAR_FILE = Pattern.compile("/([^/]+\\.jar)");
+
     /**
      * Add a jar to the trie
      *
@@ -161,6 +172,14 @@ public class Resources {
                 }
             }
         });
+        String jarName;
+        Matcher m = JAR_FILE.matcher(jarFile.getName());
+        if (m.find()) {
+            jarName = m.group(1);
+        } else {
+            jarName = jarUrl.toString();
+        }
+        jarSizes.put(jarName, new JarSize(entries.get(), 0));
         if (errors.get() > 0) {
             throw new IOException("Got " + errors.get() + " errors while adding from jar to classpath");
         }
@@ -190,9 +209,7 @@ public class Resources {
                         URL fullUrl = new URL(jmodUrl, je.getRealName());
                         data.add(split, fullUrl.toURI());
                         entries.incrementAndGet();
-                    } catch (MalformedURLException e) {
-                        e.printStackTrace();
-                    } catch (URISyntaxException e) {
+                    } catch (MalformedURLException | URISyntaxException e) {
                         throw new RuntimeException(e);
                     }
                 });

@@ -3,6 +3,7 @@ package org.e2immu.analyser.resolver.impl;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.util.Resources;
 import org.e2immu.graph.G;
 import org.e2immu.graph.V;
 import org.e2immu.graph.analyser.PackedInt;
@@ -20,7 +21,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
@@ -32,7 +32,8 @@ public class GraphIO {
     public static void dumpGraphs(File directory,
                                   G<TypeInfo> typeGraph,
                                   G<TypeInfo> externalTypeGraph,
-                                  G<MethodInfo> methodCallGraph) {
+                                  G<MethodInfo> methodCallGraph,
+                                  Map<String, Resources.JarSize> jarSizeMap) {
         try {
             if (directory.mkdirs()) {
                 LOGGER.info("Created directory {}", directory);
@@ -46,14 +47,16 @@ public class GraphIO {
             Map<String, Map<String, Long>> packageToJar = dumpPackageToJarGraphBasedOnTypeGraph(new File(directory,
                             "packageToJarDependenciesBasedOnExternalTypeGraph.gml"),
                     externalTypeGraph);
-            dumpJarCentricUsageTable(new File(directory, "jarToPackage.txt"), packageToJar);
+            dumpJarCentricUsageTable(new File(directory, "jarToPackage.txt"), packageToJar, jarSizeMap);
             dumpMethodCallGraph(new File(directory, "methodCalls.gml"), methodCallGraph);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
     }
 
-    private static void dumpJarCentricUsageTable(File file, Map<String, Map<String, Long>> packageToJar) throws IOException {
+    private static void dumpJarCentricUsageTable(File file,
+                                                 Map<String, Map<String, Long>> packageToJar,
+                                                 Map<String, Resources.JarSize> jarSizeMap) throws IOException {
         Map<String, Map<String, Long>> jarToPackage = new HashMap<>();
         Map<String, Long> jarScore = new HashMap<>();
         for (Map.Entry<String, Map<String, Long>> entry : packageToJar.entrySet()) {
@@ -65,12 +68,19 @@ public class GraphIO {
         }
         List<String> jarsSorted = jarScore.keySet().stream().sorted(Comparator.comparingLong(jarScore::get).reversed()).toList();
         try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+            osw.append("JAR,score,entries,packages,top1,top2,top3\n");
             for (String theJar : jarsSorted) {
                 Long score = jarScore.get(theJar);
+                Resources.JarSize jarSize = jarSizeMap.get(theJar);
+                //String bytes = jarSize == null ? "?" : Integer.toString(jarSize.bytes());
+                String entries = jarSize == null ? "?" : Integer.toString(jarSize.entries());
                 Map<String, Long> packages = jarToPackage.get(theJar);
                 List<String> packagesSorted = packages.keySet().stream().sorted(Comparator.comparingLong(packages::get).reversed())
                         .limit(3).toList();
-                osw.append('"').append(theJar).append('"').append(',').append(PackedInt.nice((int) (long) score))
+                osw.append('"').append(theJar).append('"')
+                        .append(',').append(PackedInt.nice((int) (long) score))
+                       // .append(',').append(bytes)
+                        .append(',').append(entries)
                         .append(',').append(Integer.toString(packages.size()));
                 for (String toPackage : packagesSorted) {
                     osw.append(',').append(toPackage);

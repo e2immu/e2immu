@@ -34,7 +34,9 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.Pair;
+import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1203,6 +1205,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Override
     public List<? extends Element> subElements() {
         return ListUtil.immutableConcat(parameterExpressions, List.of(object));
+    }
+
+    @Override
+    public PackedIntMap<TypeInfo> typesReferenced2(PackedInt weight) {
+        return PackedIntMap.of(concreteReturnType.typesReferenced2(weight),
+                object.typesReferenced2(weight),
+                parameterExpressions.stream()
+                        .flatMap(e -> e.typesReferenced2(weight).stream()).collect(PackedIntMap.collector())
+        );
     }
 
     @Override

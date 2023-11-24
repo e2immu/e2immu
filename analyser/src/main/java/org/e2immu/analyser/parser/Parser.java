@@ -221,7 +221,7 @@ public class Parser {
         String graphDirectory = configuration.inspectorConfiguration().graphDirectory();
         if (graphDirectory != null) {
             GraphIO.dumpGraphs(new File(graphDirectory), resolver.builtTypeGraph(), resolver.builtExternalTypeGraph(),
-                    resolver.builtMethodCallGraph());
+                    resolver.builtMethodCallGraph(), input.classPath().getJarSizes());
         }
         return sortedTypes;
     }
