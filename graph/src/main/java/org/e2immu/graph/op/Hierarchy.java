@@ -2,9 +2,7 @@ package org.e2immu.graph.op;
 
 import org.e2immu.graph.V;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,5 +33,14 @@ public record Hierarchy<T>(List<Set<V<T>>> list) {
 
     public int size() {
         return list.size();
+    }
+
+    public Hierarchy<T> reversed() {
+        List<Set<V<T>>> reverse = new ArrayList<>(list.size());
+        ListIterator<Set<V<T>>> iterator = list.listIterator(list.size());
+        while (iterator.hasPrevious()) {
+            reverse.add(iterator.previous());
+        }
+        return new Hierarchy<>(reverse);
     }
 }

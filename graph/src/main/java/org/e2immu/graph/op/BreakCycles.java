@@ -104,7 +104,9 @@ public class BreakCycles<T> {
                 actionLog.addAll(lin.actionLog);
             }
         }
-        result.add(cycles);
+        if(!cycles.isEmpty()) {
+            result.add(cycles);
+        }
         if (!newLinearizations.isEmpty()) {
             appendLinearizations(newLinearizations, result);
         }
@@ -130,13 +132,13 @@ public class BreakCycles<T> {
             result.add(new LinkedHashSet<>(set));
         }
         for (Set<V<T>> set : attachedToCycles.list()) {
-            Set<Cycle<T>> newSet = new HashSet<>();
+            Set<Cycle<T>> newSet = new LinkedHashSet<>();
             for (V<T> from : set) {
                 Map<V<T>, Long> edges = g.edges(from);
                 assert edges != null;
                 int maxPosition = edges.keySet()
                         .stream().mapToInt(to -> positionOfVertex.getOrDefault(to, -1)).max().orElseThrow();
-                if (maxPosition == input.size() - 1) {
+                if (maxPosition == result.size() - 1) {
                     newSet.add(new Cycle<>(Set.of(from)));
                 } else {
                     assert maxPosition >= 0;

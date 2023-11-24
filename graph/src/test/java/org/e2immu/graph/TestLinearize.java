@@ -20,9 +20,9 @@ public class TestLinearize {
                 "v3", Map.of("v4", 1L),
                 "v4", Map.of());
         G<String> g = G.create(initialGraph);
-        assertEquals("[v1]->1->[v2], [v1]->1->[v3], [v3]->1->[v4]", g.toString());
+        assertEquals("v1->1->v2, v1->1->v3, v3->1->v4", g.toString());
         Linearize.Result<String> r = Linearize.linearize(g);
-        assertEquals("L=[[v2], [v4]]; [[v3]]; [[v1]] P= R=", r.toString());
+        assertEquals("L=[v2, v4]; [v3]; [v1] P= R=", r.toString());
         assertEquals(3, r.linearized().size());
         assertEquals(0, r.quality());
     }
@@ -35,9 +35,9 @@ public class TestLinearize {
                 "v3", Map.of("v4", 1L),
                 "v4", Map.of());
         G<String> g = G.create(initialGraph);
-        assertEquals("[v1]->1->[v2], [v2]->1->[v3], [v3]->1->[v4]", g.toString());
+        assertEquals("v1->1->v2, v2->1->v3, v3->1->v4", g.toString());
         Linearize.Result<String> r = Linearize.linearize(g);
-        assertEquals("L=[[v4]]; [[v3]]; [[v2]]; [[v1]] P= R=", r.toString());
+        assertEquals("L=[v4]; [v3]; [v2]; [v1] P= R=", r.toString());
         assertEquals(4, r.linearized().size());
         assertEquals(0, r.quality());
     }
@@ -50,9 +50,9 @@ public class TestLinearize {
                 "v2", Map.of("v3", 1L),
                 "v1", Map.of("v2", 1L));
         G<String> g = G.create(initialGraph);
-        assertEquals("[v1]->1->[v2], [v2]->1->[v3], [v3]->1->[v4]", g.toString());
+        assertEquals("v1->1->v2, v2->1->v3, v3->1->v4", g.toString());
         Linearize.Result<String> r = Linearize.linearize(g);
-        assertEquals("L=[[v4]]; [[v3]]; [[v2]]; [[v1]] P= R=", r.toString());
+        assertEquals("L=[v4]; [v3]; [v2]; [v1] P= R=", r.toString());
         assertEquals(4, r.linearized().size());
         assertEquals(0, r.quality());
     }
@@ -72,11 +72,11 @@ public class TestLinearize {
                 "v10", Map.of("v9", 10L));
         G<String> g = G.create(initialGraph);
         assertEquals("""
-                [v10]->10->[v9], [v1]->1->[v3], [v2]->2->[v3], [v3]->3->[v4], [v4]->4->[v7], [v5]->5->[v4], \
-                [v6]->6->[v5], [v7]->7->[v6], [v7]->8->[v8], [v9]->9->[v10]\
+                v1->1->v3, v10->10->v9, v2->2->v3, v3->3->v4, v4->4->v7, v5->5->v4, v6->6->v5, v7->7->v6, \
+                v7->8->v8, v9->9->v10\
                 """, g.toString());
         Linearize.Result<String> r = Linearize.linearize(g);
-        assertEquals("L=[[v8]] P=[v1], [v2], [v3] R=[[v4], [v5], [v6], [v7]]; [[v10], [v9]]", r.toString());
+        assertEquals("L=[v8] P=[v3]; [v1, v2] R=[v10, v9]; [v4, v5, v6, v7]", r.toString());
         assertEquals(4, r.quality());
         V<String> v5 = g.vertex("v5");
         V<String> v6 = g.vertex("v6");
@@ -107,7 +107,7 @@ public class TestLinearize {
             }
         });
         BreakCycles.Linearization<String> linearization = bc.go(g);
-        assertEquals("[v8]; [v6, v9]; [v10, v7]; [v4]; [v3, v5]; [v1]; [v2]", linearization.toString());
+        assertEquals("[v8]; [v6, v9]; [v10, v7]; [v4]; [v3, v5]; [v1, v2]", linearization.toString());
 
         BreakCycles<String> bc2 = new BreakCycles<>((g1, cycle) -> {
             if (cycle.contains(v6)) {
@@ -129,7 +129,7 @@ public class TestLinearize {
             throw new UnsupportedOperationException();
         });
         BreakCycles.Linearization<String> linearization2 = bc2.go(g);
-        assertEquals("[v8]; [v10, v9]; [v6]; [v7]; [v4]; [v3, v5]; [v1]; [v2]", linearization2.toString());
+        assertEquals("[v8]; [v10, v9]; [v6]; [v7]; [v4]; [v3, v5]; [v1, v2]", linearization2.toString());
 
         BreakCycles<String> bc3 = new BreakCycles<>(new GreedyEdgeRemoval<>());
         BreakCycles.Linearization<String> linearization3 = bc3.go(g);
@@ -149,14 +149,14 @@ public class TestLinearize {
 
         G<String> g = G.create(initialGraph);
         assertEquals("""
-                [v1]->1->[v2], [v1]->2->[v3], [v2]->3->[v3], [v3]->6->[v4], [v4]->4->[v5], [v5]->5->[v1], [v5]->5->[v3]\
+                v1->1->v2, v1->2->v3, v2->3->v3, v3->6->v4, v4->4->v5, v5->5->v1, v5->5->v3\
                 """, g.toString());
         BreakCycles<String> bc = new BreakCycles<>(new GreedyEdgeRemoval<>());
         BreakCycles.Linearization<String> linearization = bc.go(g);
         // because all the edges have a different weight, we'll always get the same result!
         assertEquals("[v4]; [v3]; [v2]; [v1]; [v5]", linearization.toString());
         assertEquals(1, linearization.actionLog().size());
-        assertEquals("EdgeRemoval[edges={[v4]={[v5]=4}}]", linearization.actionLog().get(0).toString());
+        assertEquals("EdgeRemoval[edges={v4={v5=4}}]", linearization.actionLog().get(0).toString());
     }
 
     // remove two cycles
@@ -171,14 +171,14 @@ public class TestLinearize {
 
         G<String> g = G.create(initialGraph);
         assertEquals("""
-                [v1]->1->[v2], [v2]->3->[v3], [v3]->2->[v1], [v3]->6->[v4], [v4]->4->[v5], [v5]->5->[v1], [v5]->5->[v3]\
+                v1->1->v2, v2->3->v3, v3->2->v1, v3->6->v4, v4->4->v5, v5->5->v1, v5->5->v3\
                 """, g.toString());
         BreakCycles<String> bc = new BreakCycles<>(new GreedyEdgeRemoval<>());
         BreakCycles.Linearization<String> linearization = bc.go(g);
         // because all the edges have a different weight, we'll always get the same result!
         assertEquals("[v1]; [v4]; [v3]; [v2, v5]", linearization.toString());
         assertEquals(2, linearization.actionLog().size());
-        assertEquals("[EdgeRemoval[edges={[v1]={[v2]=1}}], EdgeRemoval[edges={[v4]={[v5]=4}}]]",
+        assertEquals("[EdgeRemoval[edges={v1={v2=1}}], EdgeRemoval[edges={v4={v5=4}}]]",
                 linearization.actionLog().toString());
     }
 }

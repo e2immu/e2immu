@@ -44,7 +44,7 @@ public class G<T> {
 
     // ! expensive operation, no map
     public V<T> vertex(T t) {
-        return vertices.stream().filter(t::equals).findFirst().orElse(null);
+        return vertices.stream().filter(v -> t.equals(v.t())).findFirst().orElseThrow();
     }
 
     // based on a map of T elements

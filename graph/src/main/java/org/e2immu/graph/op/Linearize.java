@@ -102,7 +102,7 @@ public class Linearize {
     private static <T> Hierarchy<T> removeAsManyAsPossible(G<T> g, Set<V<T>> toDo) {
         G<T> reverseSub = g.mutableReverseSubGraph(toDo);
         Result<T> r = linearize(reverseSub, LinearizationMode.ONLY_LINEAR);
-        return r.linearized;
+        return r.linearized.reversed();
     }
 
     public static <T> List<Cycle<T>> findConnectedSubSets(G<T> g, Set<V<T>> startingPoints) {

@@ -19,7 +19,7 @@ public record Cycles<T>(Set<Cycle<T>> cycles) implements Iterable<Cycle<T>> {
     }
 
     public boolean isEmpty() {
-        return !cycles.isEmpty();
+        return cycles.isEmpty();
     }
 
     public int size() {

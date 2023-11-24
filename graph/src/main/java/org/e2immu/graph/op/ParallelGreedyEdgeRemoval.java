@@ -105,6 +105,9 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
         AtomicInteger counter = new AtomicInteger();
         AtomicInteger bestQuality = new AtomicInteger(Integer.MAX_VALUE);
         Best<T> overallBest = generator.stream().map(block -> {
+            if(block.isEmpty()) {
+                return new Best<T>(null, Integer.MAX_VALUE, Map.of());
+            }
             Best<T> best = compute(g, block);
             double percentageQuality = (cycleSize - best.quality) / cycleSize;
             if (percentageQuality >= improvement) {
