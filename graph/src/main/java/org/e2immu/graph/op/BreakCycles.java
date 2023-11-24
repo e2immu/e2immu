@@ -91,7 +91,7 @@ public class BreakCycles<T> {
                     r.remainingCycles().stream().map(c -> Integer.toString(c.size())).collect(Collectors.joining(",")));
         }
         for (Set<V<T>> cycle : r.remainingCycles()) {
-            timedLogger.info("Starting cycle of size {}", r.remainingCycles().size());
+            LOGGER.info("Starting cycle of size {}", cycle.size());
             Action<T> action = actionComputer.compute(g, cycle);
             if (action == null) {
                 // unbreakable cycle

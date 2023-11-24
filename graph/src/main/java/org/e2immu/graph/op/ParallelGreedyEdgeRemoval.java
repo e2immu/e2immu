@@ -23,6 +23,7 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
         private final List<Map<V<T>, Map<V<T>, Long>>> edges;
         private final int blockSize;
         private final int vertexCount;
+        private final int blocks;
         private boolean stop;
 
         public StoppableEdgeBlockStreamGenerator(G<T> g, EdgeIterator<T> edgeIterator, int blockSize) {
@@ -30,12 +31,15 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
             edges = StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false).toList();
             this.blockSize = blockSize;
             this.vertexCount = g.vertices().size();
+            this.blocks = edges.size() / blockSize;
+            LOGGER.info("Have {} edges, block size {}, expect {} blocks", edges.size(), blockSize, blocks);
         }
 
         @Override
         public Stream<List<Map<V<T>, Map<V<T>, Long>>>> stream() {
             Iterator<List<Map<V<T>, Map<V<T>, Long>>>> iterator = new MyIterator();
-            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+
+            return StreamSupport.stream(Spliterators.spliterator(iterator, blocks, Spliterator.CONCURRENT), true);
         }
 
         @Override
@@ -97,13 +101,13 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
     public BreakCycles.Action<T> compute(G<T> inputGraph, Set<V<T>> cycle) {
         G<T> g = inputGraph.subGraph(cycle);
         double cycleSize = cycle.size();
-        EdgeBlockStreamGenerator<T> generator = new StoppableEdgeBlockStreamGenerator<>(g, edgeIterator, 100);
+        EdgeBlockStreamGenerator<T> generator = new StoppableEdgeBlockStreamGenerator<>(g, edgeIterator, 50);
         AtomicInteger counter = new AtomicInteger();
         AtomicInteger bestQuality = new AtomicInteger(Integer.MAX_VALUE);
         Best<T> overallBest = generator.stream().map(block -> {
             Best<T> best = compute(g, block);
-            double percentageQuality = best.quality / cycleSize;
-            if (percentageQuality < improvement) {
+            double percentageQuality = (cycleSize - best.quality) / cycleSize;
+            if (percentageQuality >= improvement) {
                 LOGGER.info("Stop, have improvement of {} percent", percentageQuality * 100);
             }
             int count = counter.addAndGet(block.size());

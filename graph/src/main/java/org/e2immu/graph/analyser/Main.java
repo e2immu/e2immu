@@ -60,6 +60,7 @@ public class Main {
         BreakCycles.ActionComputer<TypeGraphIO.Node> actionComputer;
         if ("parallel".equalsIgnoreCase(method)) {
             actionComputer = new ParallelGreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger, improvement);
+            LOGGER.info("Parallel algorithm, stop on improvement of {} percent", improvement * 100);
         } else {
             actionComputer = new GreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger);
         }
