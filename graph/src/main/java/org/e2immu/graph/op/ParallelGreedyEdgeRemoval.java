@@ -16,23 +16,22 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
     public interface EdgeBlockStreamGenerator<T> {
         Stream<List<Map<V<T>, Map<V<T>, Long>>>> stream();
 
-        void stop();
+        int edgeCount();
     }
 
     public static class StoppableEdgeBlockStreamGenerator<T> implements EdgeBlockStreamGenerator<T> {
         private final List<Map<V<T>, Map<V<T>, Long>>> edges;
         private final int blockSize;
-        private final int vertexCount;
+        private final int edgeCount;
         private final int blocks;
-        private boolean stop;
 
         public StoppableEdgeBlockStreamGenerator(G<T> g, EdgeIterator<T> edgeIterator, int blockSize) {
             Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = edgeIterator.iterator(g);
             edges = StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false).toList();
+            edgeCount = edges.size();
             this.blockSize = blockSize;
-            this.vertexCount = g.vertices().size();
             this.blocks = edges.size() / blockSize;
-            LOGGER.info("Have {} edges, block size {}, expect {} blocks", edges.size(), blockSize, blocks);
+            LOGGER.info("Have {} edges, block size {}, expect {} blocks", edgeCount, blockSize, blocks);
         }
 
         @Override
@@ -43,8 +42,8 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
         }
 
         @Override
-        public void stop() {
-            this.stop = true;
+        public int edgeCount() {
+            return edgeCount;
         }
 
         class MyIterator implements Iterator<List<Map<V<T>, Map<V<T>, Long>>>> {
@@ -52,7 +51,7 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
 
             @Override
             public boolean hasNext() {
-                return !stop && pos < vertexCount;
+                return pos < edgeCount;
             }
 
             @Override
@@ -67,14 +66,11 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
     private final EdgePrinter<T> edgePrinter;
     private final EdgeIterator<T> edgeIterator;
     private final TimedLogger timedLogger;
-    private final double improvement;
 
-    public ParallelGreedyEdgeRemoval(EdgePrinter<T> edgePrinter, EdgeIterator<T> iterator, TimedLogger timedLogger,
-                                     double improvement) {
+    public ParallelGreedyEdgeRemoval(EdgePrinter<T> edgePrinter, EdgeIterator<T> iterator, TimedLogger timedLogger) {
         this.edgePrinter = edgePrinter;
         this.edgeIterator = iterator;
         this.timedLogger = timedLogger;
-        this.improvement = improvement;
     }
 
     private record Best<T>(G<T> subGraph, int quality, Map<V<T>, Map<V<T>, Long>> edgesToRemove) {
@@ -105,36 +101,35 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
         AtomicInteger counter = new AtomicInteger();
         AtomicInteger bestQuality = new AtomicInteger(Integer.MAX_VALUE);
         Best<T> overallBest = generator.stream().map(block -> {
-            if(block.isEmpty()) {
+            if (block.isEmpty()) {
                 return new Best<T>(null, Integer.MAX_VALUE, Map.of());
             }
             Best<T> best = compute(g, block);
-            double percentageQuality = (cycleSize - best.quality) / cycleSize;
-            if (percentageQuality >= improvement) {
-                LOGGER.info("Stop, have improvement of {} percent", percentageQuality * 100);
-            }
-            int count = counter.addAndGet(block.size());
             if (best.quality < bestQuality.get()) {
                 bestQuality.set(best.quality);
             }
+            int count = counter.addAndGet(block.size());
             timedLogger.info("Count {}, best {}", count, bestQuality);
             return best;
-        }).min(Comparator.comparing(Best::quality)).orElseThrow();
-        LOGGER.info("Best choice for greedy edge removal is {}, quality now {}",
-                edgePrinter.print(overallBest.edgesToRemove), overallBest.quality);
-        if (overallBest.quality < cycle.size()) {
-            BreakCycles.EdgeRemoval<T> info = new BreakCycles.EdgeRemoval<>(overallBest.edgesToRemove);
-            return new BreakCycles.Action<>() {
-                @Override
-                public G<T> apply() {
-                    return overallBest.subGraph;
-                }
+        }).min(Comparator.comparing(Best::quality)).orElse(null);
+        if (overallBest != null) {
+            assert counter.get() == generator.edgeCount();
+            LOGGER.info("Best choice for greedy edge removal is {}, quality now {}",
+                    edgePrinter.print(overallBest.edgesToRemove), overallBest.quality);
+            if (overallBest.quality < cycle.size()) {
+                BreakCycles.EdgeRemoval<T> info = new BreakCycles.EdgeRemoval<>(overallBest.edgesToRemove);
+                return new BreakCycles.Action<>() {
+                    @Override
+                    public G<T> apply() {
+                        return overallBest.subGraph;
+                    }
 
-                @Override
-                public BreakCycles.ActionInfo info() {
-                    return info;
-                }
-            };
+                    @Override
+                    public BreakCycles.ActionInfo info() {
+                        return info;
+                    }
+                };
+            }
         }
         LOGGER.info("No edge found that improves quality; keeping cycle of size {}", cycle.size());
         return null; // must be a group, we cannot break the cycle

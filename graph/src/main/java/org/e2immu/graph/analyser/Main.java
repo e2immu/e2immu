@@ -36,8 +36,7 @@ public class Main {
         String gmlFileName = args[0];
         try (InputStream inputStream = makeInputStream(gmlFileName)) {
             String method = args.length > 1 ? args[1] : SEQUENTIAL;
-            Double improvement = args.length > 2 ? Double.parseDouble(args[2]) : null;
-            return test(inputStream, method, improvement);
+            return test(inputStream, method);
         }
     }
 
@@ -49,8 +48,7 @@ public class Main {
     }
 
     private static BreakCycles.Linearization<TypeGraphIO.Node> test(InputStream inputStream,
-                                                                    String method,
-                                                                    Double improvement) throws IOException {
+                                                                    String method) throws IOException {
         Graph<TypeGraphIO.Node, DefaultWeightedEdge> graph = createPackageGraph();
         TypeGraphIO.importGraph(inputStream, graph);
         Map<TypeGraphIO.Node, Map<TypeGraphIO.Node, Long>> map = convertGraphToMap(graph);
@@ -67,8 +65,8 @@ public class Main {
         TimedLogger timedLogger = new TimedLogger(LOGGER, 1000L);
         BreakCycles.ActionComputer<TypeGraphIO.Node> actionComputer;
         if (PARALLEL.equalsIgnoreCase(method)) {
-            actionComputer = new ParallelGreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger, improvement);
-            LOGGER.info("Parallel algorithm, stop on improvement of {} percent", improvement * 100);
+            actionComputer = new ParallelGreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger);
+            LOGGER.info("Parallel algorithm");
         } else {
             LOGGER.info("Sequential algorithm");
             actionComputer = new GreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger);

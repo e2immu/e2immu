@@ -18,16 +18,17 @@ public class TestTypeDependencies {
                 + "org/e2immu/graph/typeDependencies.gml", "sequential"});
         assertEquals(31, lin.maxCycleSize());
         assertEquals(101, lin.actionLog().size());
-        assertEquals(100, lin.list().size());
+        assertEquals(98, lin.list().size());
     }
 
     @Test
     public void testParallel() throws IOException {
         Main main = new Main();
-        BreakCycles.Linearization<TypeGraphIO.Node> lin = main.go(new String[]{Main.CLASSPATH + "org/e2immu/graph/typeDependencies.gml", "parallel", "0.5"});
+        BreakCycles.Linearization<TypeGraphIO.Node> lin = main.go(new String[]{Main.CLASSPATH
+                + "org/e2immu/graph/typeDependencies.gml", "parallel"});
         assertEquals(31, lin.maxCycleSize());
         assertEquals(101, lin.actionLog().size());
-        assertEquals(100, lin.list().size());
+        assertEquals(98, lin.list().size());
     }
 
     @Test
