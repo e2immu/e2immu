@@ -2,6 +2,7 @@ package org.e2immu.graph.op;
 
 import org.e2immu.graph.G;
 import org.e2immu.graph.V;
+import org.e2immu.graph.util.TimedLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +48,15 @@ public class BreakCycles<T> {
     }
 
     private final ActionComputer<T> actionComputer;
+    private final TimedLogger timedLogger;
 
     public BreakCycles(ActionComputer<T> actionComputer) {
+        this(actionComputer, null);
+    }
+
+    public BreakCycles(ActionComputer<T> actionComputer, TimedLogger timedLogger) {
         this.actionComputer = actionComputer;
+        this.timedLogger = timedLogger;
     }
 
     // list: sequential
@@ -80,10 +87,11 @@ public class BreakCycles<T> {
         List<List<Set<V<T>>>> newLinearizations = new ArrayList<>();
         List<ActionInfo> actionLog = new ArrayList<>();
         if (first) {
-            LOGGER.debug("Have {} remaining cycles: {}", r.remainingCycles().size(),
+            LOGGER.info("Have {} remaining cycles: {}", r.remainingCycles().size(),
                     r.remainingCycles().stream().map(c -> Integer.toString(c.size())).collect(Collectors.joining(",")));
         }
         for (Set<V<T>> cycle : r.remainingCycles()) {
+            timedLogger.info("Starting cycle of size {}", r.remainingCycles().size());
             Action<T> action = actionComputer.compute(g, cycle);
             if (action == null) {
                 // unbreakable cycle

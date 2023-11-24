@@ -5,6 +5,7 @@ import org.e2immu.graph.EdgePrinter;
 import org.e2immu.graph.G;
 import org.e2immu.graph.op.BreakCycles;
 import org.e2immu.graph.op.GreedyEdgeRemoval;
+import org.e2immu.graph.util.TimedLogger;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.slf4j.Logger;
@@ -54,7 +55,9 @@ public class Main {
         long limit = PackedInt.FIELD.of(1);
         EdgeIterator<TypeGraphIO.Node> edgeIterator = gg ->
                 BreakCycles.edgeIterator2(gg, Long::compareTo, limit, PackedInt::longSum);
-        BreakCycles<TypeGraphIO.Node> bc = new BreakCycles<>(new GreedyEdgeRemoval<>(edgePrinter, edgeIterator));
+        TimedLogger timedLogger = new TimedLogger(LOGGER, 1000L);
+        GreedyEdgeRemoval<TypeGraphIO.Node> action = new GreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger);
+        BreakCycles<TypeGraphIO.Node> bc = new BreakCycles<>(action, timedLogger);
         BreakCycles.Linearization<TypeGraphIO.Node> lin = bc.go(g);
     }
 

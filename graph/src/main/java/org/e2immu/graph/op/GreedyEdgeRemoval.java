@@ -4,6 +4,7 @@ import org.e2immu.graph.EdgeIterator;
 import org.e2immu.graph.EdgePrinter;
 import org.e2immu.graph.G;
 import org.e2immu.graph.V;
+import org.e2immu.graph.util.TimedLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,14 +17,16 @@ public class GreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<T> {
 
     private final EdgePrinter<T> edgePrinter;
     private final EdgeIterator<T> edgeIterator;
+    private final TimedLogger timedLogger;
 
     public GreedyEdgeRemoval() {
-        this(Object::toString, g -> g.edgeIterator(Long::compareTo, null));
+        this(Object::toString, g -> g.edgeIterator(Long::compareTo, null), null);
     }
 
-    public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter, EdgeIterator<T> edgeIterator) {
+    public GreedyEdgeRemoval(EdgePrinter<T> edgePrinter, EdgeIterator<T> edgeIterator, TimedLogger timedLogger) {
         this.edgePrinter = edgePrinter;
         this.edgeIterator = edgeIterator;
+        this.timedLogger = timedLogger;
     }
 
     @Override
@@ -34,7 +37,7 @@ public class GreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<T> {
         assert bestQuality > 0;
         G<T> bestSubGraph = null;
         Map<V<T>, Map<V<T>, Long>> bestEdgesToRemove = null;
-
+        int count = 0;
         Iterator<Map<V<T>, Map<V<T>, Long>>> iterator = edgeIterator.iterator(g);
         while (iterator.hasNext() && bestQuality > 0) {
             Map<V<T>, Map<V<T>, Long>> edgesToRemove = iterator.next();
@@ -45,11 +48,13 @@ public class GreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<T> {
                 bestQuality = quality;
                 bestEdgesToRemove = edgesToRemove;
             }
+            ++count;
+            if (timedLogger != null) {
+                timedLogger.info("Edge removal, done {}, best {}", count, bestQuality);
+            }
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Best choice for greedy edge removal is {}, quality now {}",
-                    edgePrinter.print(bestEdgesToRemove), bestQuality);
-        }
+        LOGGER.info("Best choice for greedy edge removal is {}, quality now {}",
+                edgePrinter.print(bestEdgesToRemove), bestQuality);
         if (bestQuality < cycle.size()) {
             G<T> finalGraph = bestSubGraph;
             BreakCycles.EdgeRemoval<T> info = new BreakCycles.EdgeRemoval<>(bestEdgesToRemove);
@@ -65,7 +70,7 @@ public class GreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<T> {
                 }
             };
         }
-        LOGGER.debug("No edge found that improves quality; keeping cycle of size {}", cycle.size());
+        LOGGER.info("No edge found that improves quality; keeping cycle of size {}", cycle.size());
         return null; // must be a group, we cannot break the cycle
     }
 }

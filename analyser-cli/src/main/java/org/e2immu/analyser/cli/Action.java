@@ -4,6 +4,7 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.e2immu.analyser.bytecode.tools.ExtractTypesFromClassFile;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.graph.G;
+import org.e2immu.graph.analyser.Main;
 import org.e2immu.graph.analyser.PackedInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +27,20 @@ public class Action {
                 LOGGER.error("Caught exception", e);
             }
         }
+        if ("Graph".equals(action)) {
+            try {
+                graph(actionParameters);
+                return 0;
+            } catch (IOException e) {
+                LOGGER.error("Caught exception", e);
+            }
+        }
         LOGGER.error("Action '{}' not recognized", action);
         return 1;
+    }
+
+    private static void graph(String[] actionParameters) throws IOException {
+        Main.main(actionParameters);
     }
 
     private static int extractTypesFromClassFile(String[] actionParameters) throws IOException {
