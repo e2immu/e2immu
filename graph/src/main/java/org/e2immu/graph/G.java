@@ -7,17 +7,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class G<T> {
-
     private final Set<V<T>> vertices;
     private final Map<V<T>, Map<V<T>, Long>> edges;
-    private final Map<T, V<T>> elements;
 
     private G(Set<V<T>> vertices,
-              Map<T, V<T>> elements,
               Map<V<T>, Map<V<T>, Long>> edges) {
         this.vertices = vertices;
         this.edges = edges;
-        this.elements = elements;
     }
 
     @Override
@@ -31,7 +27,7 @@ public class G<T> {
         Map<V<T>, Map<V<T>, Long>> edges = new LinkedHashMap<>();
         Map<T, V<T>> elements = new LinkedHashMap<>();
         for (T t : initialGraph.keySet()) {
-            V<T> v = new V<>(Set.of(t), t, 0, Set.of());
+            V<T> v = new V<>(t);
             vertices.add(v);
             elements.put(t, v);
         }
@@ -43,7 +39,12 @@ public class G<T> {
                 edges.computeIfAbsent(from, f -> new LinkedHashMap<>()).put(to, e2.getValue());
             }
         }
-        return new G<>(Set.copyOf(vertices), Map.copyOf(elements), Map.copyOf(edges));
+        return new G<>(Set.copyOf(vertices), Map.copyOf(edges));
+    }
+
+    // ! expensive operation, no map
+    public V<T> vertex(T t) {
+        return vertices.stream().filter(t::equals).findFirst().orElse(null);
     }
 
     // based on a map of T elements
@@ -120,22 +121,12 @@ public class G<T> {
                 newEdges.put(entry.getKey(), newEdgesOfV);
             }
         }
-        return new G<T>(vertices, elements, Map.copyOf(newEdges));
+        return new G<T>(vertices, Map.copyOf(newEdges));
     }
-
-
-    public G<T> withGroupedVertices(Set<V<T>> grouping) {
-        throw new UnsupportedOperationException("NYI");
-    }
-
 
     public G<T> subGraph(Set<V<T>> subSet) {
-        Map<T, V<T>> newElements = new LinkedHashMap<>();
         Map<V<T>, Map<V<T>, Long>> newEdges = new LinkedHashMap<>();
         for (V<T> v : subSet) {
-            for (T t : v.ts()) {
-                newElements.put(t, v);
-            }
             Map<V<T>, Long> localEdges = edges.get(v);
             if (localEdges != null) {
                 Map<V<T>, Long> newLocal = new LinkedHashMap<>();
@@ -150,16 +141,12 @@ public class G<T> {
                 }
             }
         }
-        return new G<T>(Set.copyOf(subSet), Map.copyOf(newElements), Map.copyOf(newEdges));
+        return new G<T>(Set.copyOf(subSet), Map.copyOf(newEdges));
     }
 
     public G<T> mutableReverseSubGraph(Set<V<T>> subSet) {
-        Map<T, V<T>> newElements = new LinkedHashMap<>();
         Map<V<T>, Map<V<T>, Long>> newEdges = new LinkedHashMap<>();
         for (V<T> v : subSet) {
-            for (T t : v.ts()) {
-                newElements.put(t, v);
-            }
             Map<V<T>, Long> localEdges = edges.get(v);
             if (localEdges != null) {
                 for (Map.Entry<V<T>, Long> entry : localEdges.entrySet()) {
@@ -170,7 +157,7 @@ public class G<T> {
             }
         }
         // freeze edge maps
-        return new G<T>(subSet, newElements, newEdges);
+        return new G<T>(subSet, newEdges);
     }
 
     public Set<V<T>> vertices() {
@@ -190,10 +177,6 @@ public class G<T> {
         return edges.entrySet().stream()
                 .flatMap(e -> e.getValue().entrySet().stream()
                         .map(e2 -> new E<>(e.getKey(), e2.getKey(), e2.getValue())));
-    }
-
-    public V<T> vertex(T t) {
-        return elements.get(t);
     }
 
     public Iterator<Map<V<T>, Map<V<T>, Long>>> edgeIterator(Comparator<Long> comparator, Long limit) {

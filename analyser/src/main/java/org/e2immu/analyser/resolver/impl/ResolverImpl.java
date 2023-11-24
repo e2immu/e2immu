@@ -43,7 +43,8 @@ import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.TimedLogger;
 
 import org.e2immu.graph.op.Common;
-import org.e2immu.graph.op.Linearization;
+import org.e2immu.graph.op.Cycle;
+import org.e2immu.graph.op.Linearize;
 import org.e2immu.support.FirstThen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -225,13 +226,16 @@ public class ResolverImpl implements Resolver {
     private SortedTypes linearize(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
         G<TypeInfo> g = builtTypeGraph();
         // we do not attempt to break cycles here! That's, for now, part of an external activity.
-        Linearization.Result<TypeInfo> res = Linearization.linearize(g, Linearization.LinearizationMode.ALL);
-        Stream<V<TypeInfo>> vertexStream = Stream.concat(res.linearized().stream().flatMap(Set::stream),
-                Stream.concat(res.remainingCycles().stream().flatMap(Set::stream),
-                        res.nonProblematic().stream()));
-        List<TypeCycle> typeCycles = vertexStream.map(v -> {
-            List<SortedType> sortedTypes = v.ts().stream()
-                    .map(ti -> resolutionBuilders.get(ti).getSortedType()).toList();
+        Linearize.Result<TypeInfo> res = Linearize.linearize(g, Linearize.LinearizationMode.ALL);
+        Stream<Set<TypeInfo>> s1 = res.linearized().list().stream()
+                .map(set -> set.stream().map(V::t).collect(Collectors.toUnmodifiableSet()));
+        Stream<Set<TypeInfo>> s2 = res.remainingCycles().cycles().stream()
+                .map(cycle -> cycle.vertices().stream().map(V::t).collect(Collectors.toUnmodifiableSet()));
+        Stream<Set<TypeInfo>> s3 = res.attachedToCycles().list().stream()
+                .map(set -> set.stream().map(V::t).collect(Collectors.toUnmodifiableSet()));
+        Stream<Set<TypeInfo>> vertexStream = Stream.concat(s1, Stream.concat(s2, s3));
+        List<TypeCycle> typeCycles = vertexStream.map(set -> {
+            List<SortedType> sortedTypes = set.stream().map(ti -> resolutionBuilders.get(ti).getSortedType()).toList();
             return (TypeCycle) new ListOfSortedTypes(sortedTypes);
         }).toList();
         return new SortedTypes(typeCycles);
@@ -354,7 +358,7 @@ public class ResolverImpl implements Resolver {
             externalTypeDependencies.forEach((to, w) -> builder.mergeEdge(typeInfo, to, w));
         }
         G<WithInspectionAndAnalysis> g = methodFieldSubTypeGraph.build();
-        Linearization.Result<WithInspectionAndAnalysis> lin = Linearization.linearize(g);
+        Linearize.Result<WithInspectionAndAnalysis> lin = Linearize.linearize(g);
         List<WithInspectionAndAnalysis> sorted = lin.asList(
                 Comparator.comparing(WithInspectionAndAnalysis::fullyQualifiedName));
         List<WithInspectionAndAnalysis> methodFieldSubTypeOrder = List.copyOf(sorted);
@@ -889,13 +893,13 @@ public class ResolverImpl implements Resolver {
     private void methodResolution() {
         G<MethodInfo> g = builtMethodCallGraph();
         LOGGER.info("Linearizing method call graph of {} methods, {} edges", g.vertices().size(), g.edgeStream().count());
-        Linearization.Result<MethodInfo> result = Linearization.linearize(g, Linearization.LinearizationMode.ALL);
+        Linearize.Result<MethodInfo> result = Linearize.linearize(g, Linearize.LinearizationMode.ALL);
 
         // iterate twice, because we have partial results on all MethodInfo objects for the setCallStatus computation
         Map<MethodInfo, MethodResolution.Builder> builders = new HashMap<>();
         AtomicInteger count = new AtomicInteger();
         for (V<MethodInfo> vertex : g.vertices()) {
-            MethodInfo methodInfo = vertex.someElement();
+            MethodInfo methodInfo = vertex.t();
             try {
                 if (!methodInfo.methodResolution.isSet()) {
                     int cnt = count.incrementAndGet();
@@ -903,11 +907,11 @@ public class ResolverImpl implements Resolver {
 
                     MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
                     builders.put(methodInfo, methodResolutionBuilder);
-                    boolean partOfCycle = result.remainingCycles().stream().anyMatch(cycle -> cycle.contains(vertex));
+                    boolean partOfCycle = result.remainingCycles().cycles().stream().anyMatch(cycle -> cycle.contains(vertex));
 
                     TypeInfo staticEnclosingType = methodInfo.typeInfo.firstStaticEnclosingType(inspectionProvider);
                     Set<MethodInfo> methodsOfOwnClassReached = methodsReached.stream()
-                            .flatMap(v -> v.ts().stream())
+                            .map(V::t)
                             .filter(m -> !methodInfo.equals(m) || partOfCycle)
                             .filter(m -> m.typeInfo.firstStaticEnclosingType(inspectionProvider) == staticEnclosingType)
                             .collect(Collectors.toUnmodifiableSet());
@@ -930,9 +934,9 @@ public class ResolverImpl implements Resolver {
             if (c != 0) return c;
             return m1.fullyQualifiedName.compareTo(m2.fullyQualifiedName);
         };
-        for (Set<V<MethodInfo>> cycle : result.remainingCycles()) {
-            MethodInfo first = cycle.stream().map(V::someElement).min(sorter).orElseThrow();
-            Set<MethodInfo> restrictedCycle = cycle.stream().map(V::someElement).collect(Collectors.toUnmodifiableSet());
+        for (Cycle<MethodInfo> cycle : result.remainingCycles()) {
+            MethodInfo first = cycle.first(sorter);
+            Set<MethodInfo> restrictedCycle = cycle.vertices().stream().map(V::t).collect(Collectors.toUnmodifiableSet());
 
             for (MethodInfo methodInfo : restrictedCycle) {
                 MethodResolution.Builder builder = builders.get(methodInfo);
@@ -942,7 +946,7 @@ public class ResolverImpl implements Resolver {
             }
         }
         for (V<MethodInfo> v : g.vertices()) {
-            MethodInfo methodInfo = v.someElement();
+            MethodInfo methodInfo = v.t();
             if (!methodInfo.methodResolution.isSet()) {
                 MethodResolution.Builder builder = builders.get(methodInfo);
                 try {

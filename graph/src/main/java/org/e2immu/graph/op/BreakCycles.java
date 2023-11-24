@@ -2,7 +2,6 @@ package org.e2immu.graph.op;
 
 import org.e2immu.graph.G;
 import org.e2immu.graph.V;
-import org.e2immu.graph.util.TimedLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,11 +16,13 @@ Combination of grouping and breaking cycles.
 public class BreakCycles<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BreakCycles.class);
 
-    public record Linearization<T>(List<Set<Set<T>>> list, List<ActionInfo> actionLog) {
+    // list: sequential dependence level
+    // set: have the same dependence level
+    public record Linearization<T>(List<Set<Cycle<T>>> list, List<ActionInfo> actionLog) {
         @Override
         public String toString() {
             return list.stream().map(s -> "["
-                            + s.stream().map(set -> set.stream().map(Object::toString).sorted()
+                            + s.stream().map(cycle -> cycle.vertices().stream().map(Object::toString).sorted()
                                     .collect(Collectors.joining(", ")))
                             .sorted().collect(Collectors.joining(", "))
                             + "]")
@@ -29,16 +30,12 @@ public class BreakCycles<T> {
         }
 
         public int maxCycleSize() {
-            return list.stream().mapToInt(Set::size).max().orElse(0);
+            return list.stream().flatMap(Set::stream).mapToInt(Cycle::size).max().orElse(0);
         }
     }
 
-    private record InternalLinearization<T>(List<Set<V<T>>> list, List<ActionInfo> actionLog) {
-
-    }
-
     public interface ActionComputer<T> {
-        Action<T> compute(G<T> g, Set<V<T>> cycle);
+        Action<T> compute(G<T> g, Cycle<T> cycle);
     }
 
     public interface Action<T> {
@@ -61,111 +58,112 @@ public class BreakCycles<T> {
     // set: parallel, these elements are independent (have no edges between them), can be "processed" in parallel
     // set: grouped, cycles cannot be broken here, must be processed together
     public Linearization<T> go(G<T> g) {
-        InternalLinearization<T> linearization = go2(g, true);
-        // unpack the vertices
-        List<Set<Set<T>>> unpacked = linearization.list.stream()
-                .map(s -> s.stream().map(V::ts).collect(Collectors.toUnmodifiableSet())).toList();
-        return new Linearization<>(unpacked, linearization.actionLog);
+        return go2(g, true);
     }
 
     // list: sequential
     // set: parallel
     // the vertex contains multiple Ts that are in a cycle which cannot or will not be broken
-    private InternalLinearization<T> go2(G<T> g, boolean first) {
-        org.e2immu.graph.op.Linearization.Result<T> r = org.e2immu.graph.op.Linearization.linearize(g);
+    private Linearization<T> go2(G<T> g, boolean first) {
+        Linearize.Result<T> r = Linearize.linearize(g);
+        Hierarchy<T> linearPart = r.linearized();
+        List<Set<Cycle<T>>> linearPartTransformed = linearPart.list().stream()
+                .map(set -> set.stream().map(v -> new Cycle<>(Set.of(v))).collect(Collectors.toUnmodifiableSet()))
+                .toList();
         if (r.quality() == 0) {
-            return new InternalLinearization<>(r.linearized(), List.of());
+            // no cycles here, so we replace each vertex with a single element set.
+            return new Linearization<>(linearPartTransformed, List.of());
         }
-        List<Set<V<T>>> result = new ArrayList<>(r.linearized());
+        List<Set<Cycle<T>>> result = new ArrayList<>(linearPartTransformed);
         /*
          we have at least one cycle, and some non-problematic nodes that can be added once the cycle has been linearized
          this must proceed recursively
          */
         assert !r.remainingCycles().isEmpty();
-        List<List<Set<V<T>>>> newLinearizations = new ArrayList<>();
+        List<List<Set<Cycle<T>>>> newLinearizations = new ArrayList<>();
         List<ActionInfo> actionLog = new ArrayList<>();
         if (first) {
             LOGGER.info("Have {} remaining cycles: {}", r.remainingCycles().size(),
-                    r.remainingCycles().stream().map(c -> Integer.toString(c.size())).collect(Collectors.joining(",")));
+                    r.remainingCycles().cycles().stream().map(c -> Integer.toString(c.size()))
+                            .collect(Collectors.joining(",")));
         }
-        for (Set<V<T>> cycle : r.remainingCycles()) {
+        Set<Cycle<T>> cycles = new LinkedHashSet<>();
+        for (Cycle<T> cycle : r.remainingCycles()) {
             LOGGER.info("Starting cycle of size {}", cycle.size());
             Action<T> action = actionComputer.compute(g, cycle);
             if (action == null) {
                 // unbreakable cycle
-                result.add(cycle);
+                cycles.add(cycle);
             } else {
                 // apply the action
                 G<T> newG = action.apply();
                 assert !newG.equals(g);
-                InternalLinearization<T> internalLinearization = go2(newG, false);
-                newLinearizations.add(internalLinearization.list);
+                Linearization<T> lin = go2(newG, false);
+                newLinearizations.add(lin.list);
                 actionLog.add(action.info());
-                actionLog.addAll(internalLinearization.actionLog);
+                actionLog.addAll(lin.actionLog);
             }
         }
+        result.add(cycles);
         if (!newLinearizations.isEmpty()) {
             appendLinearizations(newLinearizations, result);
         }
         List<ActionInfo> immutableActionLog = List.copyOf(actionLog);
-        if (r.nonProblematic().isEmpty()) {
-            return new InternalLinearization<>(List.copyOf(result), immutableActionLog);
+        if (r.attachedToCycles().isEmpty()) {
+            return new Linearization<>(List.copyOf(result), immutableActionLog);
         }
-        return new InternalLinearization<>(attachNonProblematicNodes(g, r.nonProblematic(), result), immutableActionLog);
+        List<Set<Cycle<T>>> sets = attachNonProblematicNodes(g, r.attachedToCycles(), result);
+        return new Linearization<>(sets, immutableActionLog);
     }
 
-    private List<Set<V<T>>> attachNonProblematicNodes(G<T> g, List<V<T>> vs, List<Set<V<T>>> input) {
+    private List<Set<Cycle<T>>> attachNonProblematicNodes(G<T> g, Hierarchy<T> attachedToCycles, List<Set<Cycle<T>>> input) {
         Map<V<T>, Integer> positionOfVertex = new LinkedHashMap<>();
-        List<Set<V<T>>> result = new ArrayList<>(input.size());
+        List<Set<Cycle<T>>> result = new ArrayList<>(input.size());
         int i = 0;
-        for (Set<V<T>> set : input) {
-            for (V<T> v : set) {
-                positionOfVertex.put(v, i);
+        for (Set<Cycle<T>> set : input) {
+            for (Cycle<T> set2 : set) {
+                for (V<T> t : set2.vertices()) {
+                    positionOfVertex.put(t, i);
+                }
             }
             i++;
             result.add(new LinkedHashSet<>(set));
         }
-        Set<V<T>> toDo = new LinkedHashSet<>(vs);
-        while (!toDo.isEmpty()) {
-            Set<V<T>> done = new LinkedHashSet<>();
-            for (V<T> from : toDo) {
+        for (Set<V<T>> set : attachedToCycles.list()) {
+            Set<Cycle<T>> newSet = new HashSet<>();
+            for (V<T> from : set) {
                 Map<V<T>, Long> edges = g.edges(from);
                 assert edges != null;
                 int maxPosition = edges.keySet()
                         .stream().mapToInt(to -> positionOfVertex.getOrDefault(to, -1)).max().orElseThrow();
-                Set<V<T>> toAdd;
                 if (maxPosition == input.size() - 1) {
-                    toAdd = new LinkedHashSet<>();
-                    result.add(toAdd);
-                } else if (maxPosition >= 0) {
-                    toAdd = result.get(maxPosition + 1);
+                    newSet.add(new Cycle<>(Set.of(from)));
                 } else {
-                    toAdd = null;
+                    assert maxPosition >= 0;
+                    Set<Cycle<T>> toAdd = result.get(maxPosition + 1);
+                    toAdd.add(new Cycle<>(Set.of(from)));
                 }
-                if (toAdd != null) {
-                    toAdd.add(from);
-                    done.add(from);
-                    positionOfVertex.put(from, maxPosition + 1);
-                }
+                positionOfVertex.put(from, maxPosition + 1);
             }
-            assert !done.isEmpty();
-            toDo.removeAll(done);
+            if (!newSet.isEmpty()) {
+                result.add(newSet);
+            }
         }
         result.replaceAll(Set::copyOf);
         return List.copyOf(result);
     }
 
-    private void appendLinearizations(List<List<Set<V<T>>>> newLinearizations, List<Set<V<T>>> result) {
+    private void appendLinearizations(List<List<Set<Cycle<T>>>> newLinearizations, List<Set<Cycle<T>>> result) {
         if (newLinearizations.size() == 1) {
             result.addAll(newLinearizations.get(0));
             return;
         }
         int max = newLinearizations.stream().mapToInt(List::size).max().orElseThrow();
         for (int i = 0; i < max; i++) {
-            Set<V<T>> set = new LinkedHashSet<>();
-            for (List<Set<V<T>>> linearization : newLinearizations) {
+            Set<Cycle<T>> set = new LinkedHashSet<>();
+            for (List<Set<Cycle<T>>> linearization : newLinearizations) {
                 if (linearization.size() >= i + 1) {
-                    Set<V<T>> s = linearization.get(i);
+                    Set<Cycle<T>> s = linearization.get(i);
                     set.addAll(s);
                 }
             }

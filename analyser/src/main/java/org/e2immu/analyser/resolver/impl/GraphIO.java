@@ -93,10 +93,10 @@ public class GraphIO {
     private static Map<String, Map<String, Long>> dumpPackageToJarGraphBasedOnTypeGraph(File file, G<TypeInfo> typeGraph) throws IOException {
         Map<String, Map<String, Long>> aggregated = new HashMap<>();
         for (Map.Entry<V<TypeInfo>, Map<V<TypeInfo>, Long>> entry : typeGraph.edges()) {
-            TypeInfo typeInfo = entry.getKey().someElement();
+            TypeInfo typeInfo = entry.getKey().t();
             Map<String, Long> toMap = aggregated.computeIfAbsent(typeInfo.packageName(), s -> new HashMap<>());
             for (Map.Entry<V<TypeInfo>, Long> e2 : entry.getValue().entrySet()) {
-                TypeInfo target = e2.getKey().someElement();
+                TypeInfo target = e2.getKey().t();
                 if (target.getIdentifier() instanceof Identifier.JarIdentifier jid) {
                     String jarName = jid.extractJarName();
                     if (jarName != null && !JAVA_BASE_JMOD.equals(jarName)) {
@@ -112,10 +112,10 @@ public class GraphIO {
     private static void dumpPackageGraphBasedOnTypeGraph(File file, G<TypeInfo> typeGraph) throws IOException {
         Map<String, Map<String, Long>> aggregated = new HashMap<>();
         for (Map.Entry<V<TypeInfo>, Map<V<TypeInfo>, Long>> entry : typeGraph.edges()) {
-            TypeInfo typeInfo = entry.getKey().someElement();
+            TypeInfo typeInfo = entry.getKey().t();
             Map<String, Long> toMap = aggregated.computeIfAbsent(typeInfo.packageName(), s -> new HashMap<>());
             for (Map.Entry<V<TypeInfo>, Long> e2 : entry.getValue().entrySet()) {
-                TypeInfo target = e2.getKey().someElement();
+                TypeInfo target = e2.getKey().t();
                 toMap.merge(target.packageName(), e2.getValue(), PackedInt::longSum);
             }
         }
@@ -161,10 +161,10 @@ public class GraphIO {
                         .weighted(true)
                         .buildGraph();
         for (Map.Entry<V<TypeInfo>, Map<V<TypeInfo>, Long>> entry : typeGraph.edges()) {
-            TypeInfo typeInfo = entry.getKey().someElement();
+            TypeInfo typeInfo = entry.getKey().t();
             if (!graph.containsVertex(typeInfo)) graph.addVertex(typeInfo);
             for (Map.Entry<V<TypeInfo>, Long> e2 : entry.getValue().entrySet()) {
-                TypeInfo target = e2.getKey().someElement();
+                TypeInfo target = e2.getKey().t();
                 if (!graph.containsVertex(target)) graph.addVertex(target);
                 DefaultWeightedEdge e = graph.addEdge(typeInfo, target);
                 graph.setEdgeWeight(e, e2.getValue());
@@ -212,11 +212,11 @@ public class GraphIO {
                         .weighted(false)
                         .buildGraph();
         for (V<MethodInfo> v : methodCallGraph.vertices()) {
-            graph.addVertex(v.someElement());
+            graph.addVertex(v.t());
         }
         for (Map.Entry<V<MethodInfo>, Map<V<MethodInfo>, Long>> entry : methodCallGraph.edges()) {
             for (V<MethodInfo> to : entry.getValue().keySet()) {
-                graph.addEdge(entry.getKey().someElement(), to.someElement());
+                graph.addEdge(entry.getKey().t(), to.t());
             }
         }
 

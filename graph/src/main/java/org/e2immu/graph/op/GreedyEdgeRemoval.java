@@ -30,8 +30,8 @@ public class GreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<T> {
     }
 
     @Override
-    public BreakCycles.Action<T> compute(G<T> inputGraph, Set<V<T>> cycle) {
-        G<T> g = inputGraph.subGraph(cycle);
+    public BreakCycles.Action<T> compute(G<T> inputGraph, Cycle<T> cycle) {
+        G<T> g = inputGraph.subGraph(cycle.vertices());
 
         int bestQuality = cycle.size();
         assert bestQuality > 0;
@@ -42,7 +42,7 @@ public class GreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<T> {
         while (iterator.hasNext() && bestQuality > 0) {
             Map<V<T>, Map<V<T>, Long>> edgesToRemove = iterator.next();
             G<T> withoutEdges = g.withFewerEdgesMap(edgesToRemove);
-            int quality = Linearization.qualityBasedOnTotalCluster(withoutEdges);
+            int quality = Linearize.qualityBasedOnTotalCluster(withoutEdges);
             if (quality < bestQuality) {
                 bestSubGraph = withoutEdges;
                 bestQuality = quality;

@@ -59,7 +59,7 @@ public class Action {
         }
         G<String> g = e.build();
         Map<String, Long> external = new TreeMap<>();
-        g.edgeStream().forEach(edge -> external.merge(edge.to().someElement(), edge.weight(), PackedInt::longSum));
+        g.edgeStream().forEach(edge -> external.merge(edge.to().t(), edge.weight(), PackedInt::longSum));
         LOGGER.info("***** have {} *****", external.size());
         for (Map.Entry<String, Long> entry : external.entrySet()) {
             LOGGER.info("{} {}", entry.getKey(), PackedInt.nice((int) (long) entry.getValue()));

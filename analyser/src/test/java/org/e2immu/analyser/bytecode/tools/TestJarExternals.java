@@ -29,7 +29,7 @@ public class TestJarExternals {
         assertEquals(569, graph.vertices().size());
         for (Map.Entry<V<String>, Map<V<String>, Long>> edge : graph.edges()) {
             for (Map.Entry<V<String>, Long> e2 : edge.getValue().entrySet()) {
-                assertFalse(e2.getKey().someElement().startsWith("org.jgraph"));
+                assertFalse(e2.getKey().t().startsWith("org.jgraph"));
                 LOGGER.debug("{} --> {}, value {}", edge.getKey(), e2.getKey(),
                         PackedInt.nice((int) (long) e2.getValue()));
             }

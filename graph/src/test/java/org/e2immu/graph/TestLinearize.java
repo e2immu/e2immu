@@ -1,7 +1,7 @@
 package org.e2immu.graph;
 
 import org.e2immu.graph.op.BreakCycles;
-import org.e2immu.graph.op.Linearization;
+import org.e2immu.graph.op.Linearize;
 import org.e2immu.graph.op.GreedyEdgeRemoval;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +21,7 @@ public class TestLinearize {
                 "v4", Map.of());
         G<String> g = G.create(initialGraph);
         assertEquals("[v1]->1->[v2], [v1]->1->[v3], [v3]->1->[v4]", g.toString());
-        Linearization.Result<String> r = Linearization.linearize(g);
+        Linearize.Result<String> r = Linearize.linearize(g);
         assertEquals("L=[[v2], [v4]]; [[v3]]; [[v1]] P= R=", r.toString());
         assertEquals(3, r.linearized().size());
         assertEquals(0, r.quality());
@@ -36,7 +36,7 @@ public class TestLinearize {
                 "v4", Map.of());
         G<String> g = G.create(initialGraph);
         assertEquals("[v1]->1->[v2], [v2]->1->[v3], [v3]->1->[v4]", g.toString());
-        Linearization.Result<String> r = Linearization.linearize(g);
+        Linearize.Result<String> r = Linearize.linearize(g);
         assertEquals("L=[[v4]]; [[v3]]; [[v2]]; [[v1]] P= R=", r.toString());
         assertEquals(4, r.linearized().size());
         assertEquals(0, r.quality());
@@ -51,7 +51,7 @@ public class TestLinearize {
                 "v1", Map.of("v2", 1L));
         G<String> g = G.create(initialGraph);
         assertEquals("[v1]->1->[v2], [v2]->1->[v3], [v3]->1->[v4]", g.toString());
-        Linearization.Result<String> r = Linearization.linearize(g);
+        Linearize.Result<String> r = Linearize.linearize(g);
         assertEquals("L=[[v4]]; [[v3]]; [[v2]]; [[v1]] P= R=", r.toString());
         assertEquals(4, r.linearized().size());
         assertEquals(0, r.quality());
@@ -75,7 +75,7 @@ public class TestLinearize {
                 [v10]->10->[v9], [v1]->1->[v3], [v2]->2->[v3], [v3]->3->[v4], [v4]->4->[v7], [v5]->5->[v4], \
                 [v6]->6->[v5], [v7]->7->[v6], [v7]->8->[v8], [v9]->9->[v10]\
                 """, g.toString());
-        Linearization.Result<String> r = Linearization.linearize(g);
+        Linearize.Result<String> r = Linearize.linearize(g);
         assertEquals("L=[[v8]] P=[v1], [v2], [v3] R=[[v4], [v5], [v6], [v7]]; [[v10], [v9]]", r.toString());
         assertEquals(4, r.quality());
         V<String> v5 = g.vertex("v5");
@@ -87,10 +87,10 @@ public class TestLinearize {
             @Override
             public G<String> apply() {
                 if (cycle.contains(v6)) {
-                    return g1.subGraph(cycle).withFewerEdges(Map.of(v6, Set.of(v5)));
+                    return g1.subGraph(cycle.vertices()).withFewerEdges(Map.of(v6, Set.of(v5)));
                 }
                 if (cycle.contains(v9)) {
-                    return g1.subGraph(cycle).withFewerEdges(Map.of(v9, Set.of(v10)));
+                    return g1.subGraph(cycle.vertices()).withFewerEdges(Map.of(v9, Set.of(v10)));
                 }
                 throw new UnsupportedOperationException();
             }
@@ -114,7 +114,7 @@ public class TestLinearize {
                 return new BreakCycles.Action<String>() {
                     @Override
                     public G<String> apply() {
-                        return g1.subGraph(cycle).withFewerEdges(Map.of(v6, Set.of(v5)));
+                        return g1.subGraph(cycle.vertices()).withFewerEdges(Map.of(v6, Set.of(v5)));
                     }
 
                     @Override

@@ -86,7 +86,7 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
         Map<V<T>, Map<V<T>, Long>> bestEdgesToRemove = null;
         for (Map<V<T>, Map<V<T>, Long>> edgesToRemove : block) {
             G<T> withoutEdges = g.withFewerEdgesMap(edgesToRemove);
-            int quality = Linearization.qualityBasedOnTotalCluster(withoutEdges);
+            int quality = Linearize.qualityBasedOnTotalCluster(withoutEdges);
             if (quality < bestQuality) {
                 bestSubGraph = withoutEdges;
                 bestQuality = quality;
@@ -98,8 +98,8 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
     }
 
     @Override
-    public BreakCycles.Action<T> compute(G<T> inputGraph, Set<V<T>> cycle) {
-        G<T> g = inputGraph.subGraph(cycle);
+    public BreakCycles.Action<T> compute(G<T> inputGraph, Cycle<T> cycle) {
+        G<T> g = inputGraph.subGraph(cycle.vertices());
         double cycleSize = cycle.size();
         EdgeBlockStreamGenerator<T> generator = new StoppableEdgeBlockStreamGenerator<>(g, edgeIterator, 50);
         AtomicInteger counter = new AtomicInteger();
@@ -121,7 +121,7 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
                 edgePrinter.print(overallBest.edgesToRemove), overallBest.quality);
         if (overallBest.quality < cycle.size()) {
             BreakCycles.EdgeRemoval<T> info = new BreakCycles.EdgeRemoval<>(overallBest.edgesToRemove);
-            return new BreakCycles.Action<T>() {
+            return new BreakCycles.Action<>() {
                 @Override
                 public G<T> apply() {
                     return overallBest.subGraph;
