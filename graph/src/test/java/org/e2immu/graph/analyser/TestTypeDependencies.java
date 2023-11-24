@@ -25,7 +25,12 @@ public class TestTypeDependencies {
 
     @Test
     public void test() throws IOException {
-        Main.main(new String[]{Main.CLASSPATH + "org/e2immu/graph/typeDependencies.gml"});
+        Main.main(new String[]{Main.CLASSPATH + "org/e2immu/graph/typeDependencies.gml", "sequential", "0.0"});
+    }
+
+    @Test
+    public void testParallel() throws IOException {
+        Main.main(new String[]{Main.CLASSPATH + "org/e2immu/graph/typeDependencies.gml", "parallel", "0.5"});
     }
 
     @Test

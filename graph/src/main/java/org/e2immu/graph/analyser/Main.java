@@ -5,6 +5,7 @@ import org.e2immu.graph.EdgePrinter;
 import org.e2immu.graph.G;
 import org.e2immu.graph.op.BreakCycles;
 import org.e2immu.graph.op.GreedyEdgeRemoval;
+import org.e2immu.graph.op.ParallelGreedyEdgeRemoval;
 import org.e2immu.graph.util.TimedLogger;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -30,7 +31,7 @@ public class Main {
 
     private void go(String[] args) throws IOException {
         try (InputStream inputStream = makeInputStream(args[0])) {
-            test(inputStream);
+            test(inputStream, args[1], Double.parseDouble(args[2]));
         }
     }
 
@@ -41,7 +42,7 @@ public class Main {
         return new FileInputStream(location);
     }
 
-    private static void test(InputStream inputStream) throws IOException {
+    private static void test(InputStream inputStream, String method, double improvement) throws IOException {
         Graph<TypeGraphIO.Node, DefaultWeightedEdge> graph = createPackageGraph();
         TypeGraphIO.importGraph(inputStream, graph);
         Map<TypeGraphIO.Node, Map<TypeGraphIO.Node, Long>> map = convertGraphToMap(graph);
@@ -56,8 +57,13 @@ public class Main {
         EdgeIterator<TypeGraphIO.Node> edgeIterator = gg ->
                 BreakCycles.edgeIterator2(gg, Long::compareTo, limit, PackedInt::longSum);
         TimedLogger timedLogger = new TimedLogger(LOGGER, 1000L);
-        GreedyEdgeRemoval<TypeGraphIO.Node> action = new GreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger);
-        BreakCycles<TypeGraphIO.Node> bc = new BreakCycles<>(action, timedLogger);
+        BreakCycles.ActionComputer<TypeGraphIO.Node> actionComputer;
+        if ("parallel".equalsIgnoreCase(method)) {
+            actionComputer = new ParallelGreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger, improvement);
+        } else {
+            actionComputer = new GreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger);
+        }
+        BreakCycles<TypeGraphIO.Node> bc = new BreakCycles<>(actionComputer, timedLogger);
         BreakCycles.Linearization<TypeGraphIO.Node> lin = bc.go(g);
     }
 
