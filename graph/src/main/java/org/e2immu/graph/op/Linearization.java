@@ -52,14 +52,14 @@ public class Linearization {
     }
 
     public static <T> Result<T> linearize(G<T> g, LinearizationMode mode) {
-        Set<V<T>> toDo = new HashSet<>(g.vertices());
-        Set<V<T>> done = new HashSet<>();
+        Set<V<T>> toDo = new LinkedHashSet<>(g.vertices());
+        Set<V<T>> done = new LinkedHashSet<>();
         List<Set<V<T>>> linearResult = new ArrayList<>();
         List<Set<V<T>>> cycles = new ArrayList<>();
         List<V<T>> attachedToCycle = new ArrayList<>();
         int n = toDo.size();
         while (!toDo.isEmpty()) {
-            Set<V<T>> localLinear = new HashSet<>();
+            Set<V<T>> localLinear = new LinkedHashSet<>();
             for (V<T> v : toDo) {
                 Map<V<T>, Long> edgeMap = g.edges(v);
                 Set<V<T>> edges = edgeMap == null ? null : edgeMap.keySet();
@@ -67,7 +67,7 @@ public class Linearization {
                 if (edges == null || edges.isEmpty()) {
                     safe = true;
                 } else {
-                    Set<V<T>> copy = new HashSet<>(edges);
+                    Set<V<T>> copy = new LinkedHashSet<>(edges);
                     copy.removeAll(done);
                     copy.remove(v);
                     safe = copy.isEmpty();
@@ -110,7 +110,7 @@ public class Linearization {
 
     public static <T> List<Set<V<T>>> findConnectedSubSets(G<T> g, Set<V<T>> startingPoints) {
         List<Set<V<T>>> result = new ArrayList<>();
-        Set<V<T>> toDo = new HashSet<>(startingPoints);
+        Set<V<T>> toDo = new LinkedHashSet<>(startingPoints);
         while (!toDo.isEmpty()) {
             V<T> v = toDo.stream().findFirst().orElseThrow();
             Set<V<T>> connected = Common.follow(g, v);

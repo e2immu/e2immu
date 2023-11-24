@@ -10,7 +10,7 @@ public class Common {
     public static <T> Set<V<T>> follow(G<T> g, V<T> startingPoint) {
         assert startingPoint != null;
         List<V<T>> toDo = new LinkedList<>();
-        Set<V<T>> connected = new HashSet<>();
+        Set<V<T>> connected = new LinkedHashSet<>();
         toDo.add(startingPoint);
         connected.add(startingPoint);
         while (!toDo.isEmpty()) {

@@ -27,6 +27,10 @@ public class BreakCycles<T> {
                             + "]")
                     .collect(Collectors.joining("; "));
         }
+
+        public int maxCycleSize() {
+            return list.stream().mapToInt(Set::size).max().orElse(0);
+        }
     }
 
     private record InternalLinearization<T>(List<Set<V<T>>> list, List<ActionInfo> actionLog) {
@@ -48,15 +52,9 @@ public class BreakCycles<T> {
     }
 
     private final ActionComputer<T> actionComputer;
-    private final TimedLogger timedLogger;
 
     public BreakCycles(ActionComputer<T> actionComputer) {
-        this(actionComputer, null);
-    }
-
-    public BreakCycles(ActionComputer<T> actionComputer, TimedLogger timedLogger) {
         this.actionComputer = actionComputer;
-        this.timedLogger = timedLogger;
     }
 
     // list: sequential
@@ -117,7 +115,7 @@ public class BreakCycles<T> {
     }
 
     private List<Set<V<T>>> attachNonProblematicNodes(G<T> g, List<V<T>> vs, List<Set<V<T>>> input) {
-        Map<V<T>, Integer> positionOfVertex = new HashMap<>();
+        Map<V<T>, Integer> positionOfVertex = new LinkedHashMap<>();
         List<Set<V<T>>> result = new ArrayList<>(input.size());
         int i = 0;
         for (Set<V<T>> set : input) {
@@ -125,11 +123,11 @@ public class BreakCycles<T> {
                 positionOfVertex.put(v, i);
             }
             i++;
-            result.add(new HashSet<>(set));
+            result.add(new LinkedHashSet<>(set));
         }
-        Set<V<T>> toDo = new HashSet<>(vs);
+        Set<V<T>> toDo = new LinkedHashSet<>(vs);
         while (!toDo.isEmpty()) {
-            Set<V<T>> done = new HashSet<>();
+            Set<V<T>> done = new LinkedHashSet<>();
             for (V<T> from : toDo) {
                 Map<V<T>, Long> edges = g.edges(from);
                 assert edges != null;
@@ -137,7 +135,7 @@ public class BreakCycles<T> {
                         .stream().mapToInt(to -> positionOfVertex.getOrDefault(to, -1)).max().orElseThrow();
                 Set<V<T>> toAdd;
                 if (maxPosition == input.size() - 1) {
-                    toAdd = new HashSet<>();
+                    toAdd = new LinkedHashSet<>();
                     result.add(toAdd);
                 } else if (maxPosition >= 0) {
                     toAdd = result.get(maxPosition + 1);
@@ -164,7 +162,7 @@ public class BreakCycles<T> {
         }
         int max = newLinearizations.stream().mapToInt(List::size).max().orElseThrow();
         for (int i = 0; i < max; i++) {
-            Set<V<T>> set = new HashSet<>();
+            Set<V<T>> set = new LinkedHashSet<>();
             for (List<Set<V<T>>> linearization : newLinearizations) {
                 if (linearization.size() >= i + 1) {
                     Set<V<T>> s = linearization.get(i);
@@ -187,7 +185,7 @@ public class BreakCycles<T> {
                                                                          LongBinaryOperator sumWeights) {
         List<VertexAndSomeEdges<T>> list = new LinkedList<>();
         for (Map.Entry<V<T>, Map<V<T>, Long>> entry : g.edges()) {
-            Map<V<T>, Long> multiEdges = new HashMap<>();
+            Map<V<T>, Long> multiEdges = new LinkedHashMap<>();
             long sum = 0;
             for (Map.Entry<V<T>, Long> e2 : entry.getValue().entrySet()) {
                 long weight = e2.getValue();

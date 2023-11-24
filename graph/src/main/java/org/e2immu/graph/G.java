@@ -27,9 +27,9 @@ public class G<T> {
     }
 
     public static <T> G<T> create(Map<T, Map<T, Long>> initialGraph) {
-        Set<V<T>> vertices = new HashSet<>();
-        Map<V<T>, Map<V<T>, Long>> edges = new HashMap<>();
-        Map<T, V<T>> elements = new HashMap<>();
+        Set<V<T>> vertices = new LinkedHashSet<>();
+        Map<V<T>, Map<V<T>, Long>> edges = new LinkedHashMap<>();
+        Map<T, V<T>> elements = new LinkedHashMap<>();
         for (T t : initialGraph.keySet()) {
             V<T> v = new V<>(Set.of(t), t, 0, Set.of());
             vertices.add(v);
@@ -40,7 +40,7 @@ public class G<T> {
             for (Map.Entry<T, Long> e2 : entry.getValue().entrySet()) {
                 V<T> to = elements.get(e2.getKey());
                 assert to != null;
-                edges.computeIfAbsent(from, f -> new HashMap<>()).put(to, e2.getValue());
+                edges.computeIfAbsent(from, f -> new LinkedHashMap<>()).put(to, e2.getValue());
             }
         }
         return new G<>(Set.copyOf(vertices), Map.copyOf(elements), Map.copyOf(edges));
@@ -54,7 +54,7 @@ public class G<T> {
             this.sum = sum;
         }
 
-        Map<T, Map<T, Long>> map = new HashMap<>();
+        Map<T, Map<T, Long>> map = new LinkedHashMap<>();
 
         public void addVertex(T t) {
             ensureVertex(t);
@@ -62,7 +62,7 @@ public class G<T> {
 
         private Map<T, Long> ensureVertex(T t) {
             assert t != null;
-            return map.computeIfAbsent(t, f -> new HashMap<>());
+            return map.computeIfAbsent(t, f -> new LinkedHashMap<>());
         }
 
         public void mergeEdge(T from, T to, long weight) {
@@ -103,12 +103,12 @@ public class G<T> {
     }
 
     private G<T> internalWithFewerEdges(Function<V<T>, Set<V<T>>> edgesToRemove) {
-        Map<V<T>, Map<V<T>, Long>> newEdges = new HashMap<>();
+        Map<V<T>, Map<V<T>, Long>> newEdges = new LinkedHashMap<>();
         for (Map.Entry<V<T>, Map<V<T>, Long>> entry : edges.entrySet()) {
             Set<V<T>> toRemove = edgesToRemove.apply(entry.getKey());
             Map<V<T>, Long> newEdgesOfV;
             if (toRemove != null && !toRemove.isEmpty()) {
-                Map<V<T>, Long> map = new HashMap<>(entry.getValue());
+                Map<V<T>, Long> map = new LinkedHashMap<>(entry.getValue());
                 map.keySet().removeAll(toRemove);
                 newEdgesOfV = Map.copyOf(map);
             } else {
@@ -130,15 +130,15 @@ public class G<T> {
 
 
     public G<T> subGraph(Set<V<T>> subSet) {
-        Map<T, V<T>> newElements = new HashMap<>();
-        Map<V<T>, Map<V<T>, Long>> newEdges = new HashMap<>();
+        Map<T, V<T>> newElements = new LinkedHashMap<>();
+        Map<V<T>, Map<V<T>, Long>> newEdges = new LinkedHashMap<>();
         for (V<T> v : subSet) {
             for (T t : v.ts()) {
                 newElements.put(t, v);
             }
             Map<V<T>, Long> localEdges = edges.get(v);
             if (localEdges != null) {
-                Map<V<T>, Long> newLocal = new HashMap<>();
+                Map<V<T>, Long> newLocal = new LinkedHashMap<>();
                 for (Map.Entry<V<T>, Long> entry : localEdges.entrySet()) {
                     V<T> to = entry.getKey();
                     if (subSet.contains(to)) {
@@ -154,8 +154,8 @@ public class G<T> {
     }
 
     public G<T> mutableReverseSubGraph(Set<V<T>> subSet) {
-        Map<T, V<T>> newElements = new HashMap<>();
-        Map<V<T>, Map<V<T>, Long>> newEdges = new HashMap<>();
+        Map<T, V<T>> newElements = new LinkedHashMap<>();
+        Map<V<T>, Map<V<T>, Long>> newEdges = new LinkedHashMap<>();
         for (V<T> v : subSet) {
             for (T t : v.ts()) {
                 newElements.put(t, v);
@@ -164,7 +164,7 @@ public class G<T> {
             if (localEdges != null) {
                 for (Map.Entry<V<T>, Long> entry : localEdges.entrySet()) {
                     V<T> to = entry.getKey();
-                    Map<V<T>, Long> newLocal = newEdges.computeIfAbsent(to, t -> new HashMap<>());
+                    Map<V<T>, Long> newLocal = newEdges.computeIfAbsent(to, t -> new LinkedHashMap<>());
                     newLocal.put(v, entry.getValue());
                 }
             }

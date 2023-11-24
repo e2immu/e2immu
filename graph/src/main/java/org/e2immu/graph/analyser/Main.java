@@ -25,13 +25,19 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
     public static final String CLASSPATH = "classpath:";
 
+    public static final String SEQUENTIAL = "sequential";
+    public static final String PARALLEL = "parallel";
+
     public static void main(String[] args) throws IOException {
         new Main().go(args);
     }
 
-    private void go(String[] args) throws IOException {
-        try (InputStream inputStream = makeInputStream(args[0])) {
-            test(inputStream, args[1], Double.parseDouble(args[2]));
+    public BreakCycles.Linearization<TypeGraphIO.Node> go(String[] args) throws IOException {
+        String gmlFileName = args[0];
+        try (InputStream inputStream = makeInputStream(gmlFileName)) {
+            String method = args.length > 1 ? args[1] : SEQUENTIAL;
+            Double improvement = args.length > 2 ? Double.parseDouble(args[2]) : null;
+            return test(inputStream, method, improvement);
         }
     }
 
@@ -42,7 +48,9 @@ public class Main {
         return new FileInputStream(location);
     }
 
-    private static void test(InputStream inputStream, String method, double improvement) throws IOException {
+    private static BreakCycles.Linearization<TypeGraphIO.Node> test(InputStream inputStream,
+                                                                    String method,
+                                                                    Double improvement) throws IOException {
         Graph<TypeGraphIO.Node, DefaultWeightedEdge> graph = createPackageGraph();
         TypeGraphIO.importGraph(inputStream, graph);
         Map<TypeGraphIO.Node, Map<TypeGraphIO.Node, Long>> map = convertGraphToMap(graph);
@@ -58,14 +66,15 @@ public class Main {
                 BreakCycles.edgeIterator2(gg, Long::compareTo, limit, PackedInt::longSum);
         TimedLogger timedLogger = new TimedLogger(LOGGER, 1000L);
         BreakCycles.ActionComputer<TypeGraphIO.Node> actionComputer;
-        if ("parallel".equalsIgnoreCase(method)) {
+        if (PARALLEL.equalsIgnoreCase(method)) {
             actionComputer = new ParallelGreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger, improvement);
             LOGGER.info("Parallel algorithm, stop on improvement of {} percent", improvement * 100);
         } else {
+            LOGGER.info("Sequential algorithm");
             actionComputer = new GreedyEdgeRemoval<>(edgePrinter, edgeIterator, timedLogger);
         }
-        BreakCycles<TypeGraphIO.Node> bc = new BreakCycles<>(actionComputer, timedLogger);
-        BreakCycles.Linearization<TypeGraphIO.Node> lin = bc.go(g);
+        BreakCycles<TypeGraphIO.Node> bc = new BreakCycles<>(actionComputer);
+        return bc.go(g);
     }
 
 }

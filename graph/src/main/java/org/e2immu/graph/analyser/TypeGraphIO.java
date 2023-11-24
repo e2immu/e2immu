@@ -9,18 +9,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class TypeGraphIO {
 
     public static Map<Node, Map<Node, Long>> convertGraphToMap(Graph<Node, DefaultWeightedEdge> graph) {
-        Map<Node, Map<Node, Long>> map = new HashMap<>();
+        Map<Node, Map<Node, Long>> map = new LinkedHashMap<>();
         for (Node node : graph.vertexSet()) {
             Set<DefaultWeightedEdge> edges = graph.edgesOf(node);
-            Map<Node, Long> edgeMap = new HashMap<>();
+            Map<Node, Long> edgeMap = new LinkedHashMap<>();
             for (DefaultWeightedEdge d : edges) {
                 Node to = graph.getEdgeTarget(d);
                 long weight = (long) graph.getEdgeWeight(d);
