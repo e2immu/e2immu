@@ -15,10 +15,7 @@
 package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.MethodReferenceExpr;
-import org.e2immu.analyser.inspector.ExpressionContext;
-import org.e2immu.analyser.inspector.ForwardReturnTypeInfo;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
-import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
 import org.e2immu.analyser.model.expression.MethodReference;
@@ -47,7 +44,12 @@ public class ParseMethodReferenceExpr {
         boolean scopeIsAType = scopeIsAType(scope);
         Scope.ScopeNature scopeNature = scopeIsAType ? Scope.ScopeNature.STATIC :
                 Scope.ScopeNature.INSTANCE;
-        ParameterizedType parameterizedType = scope.returnType();
+        ParameterizedType parameterizedType;
+        if (scopeIsAType) {
+            parameterizedType = scope.returnType().typeInfo.asParameterizedType(typeContext);
+        } else {
+            parameterizedType = scope.returnType();
+        }
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
 
@@ -91,14 +93,27 @@ public class ParseMethodReferenceExpr {
             throw new UnsupportedOperationException("I've killed all the candidates myself??");
         }
         MethodTypeParameterMap method = sorted.get(0);
-        List<ParameterizedType> types = inputTypes(typeContext.getPrimitives(), parameterizedType, method, parametersPresented);
+        MethodInfo methodInfo = method.methodInspection.getMethodInfo();
+        ParameterizedType formalMethodType = methodInfo.typeInfo.asParameterizedType(typeContext);
+
+        List<ParameterizedType> types = inputTypes(typeContext.getPrimitives(), formalMethodType, method, parametersPresented);
+
         ParameterizedType concreteReturnType = method.getConcreteReturnType(typeContext.getPrimitives());
-        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext, types,
-                concreteReturnType);
-        LOGGER.debug("End parsing method reference {}, found {}", methodNameForErrorReporting,
-                method.methodInspection.getDistinguishingName());
-        return new MethodReference(Identifier.from(methodReferenceExpr),
-                scope, method.methodInspection.getMethodInfo(), functionalType);
+        ParameterizedType connected;
+        if (concreteReturnType.hasTypeParameters()) {
+            ParameterizedType formalReturnType = method.methodInspection.getReturnType();
+            Map<NamedType, ParameterizedType> matched = singleAbstractMethod.formalOfSamToConcreteTypes(method.methodInspection, typeContext);
+            // Lambda_18
+            connected = formalReturnType.applyTranslation(typeContext.getPrimitives(), matched);
+        } else {
+            // MethodReference_2
+            connected = concreteReturnType;
+        }
+
+        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext, types, connected);
+
+        LOGGER.debug("End parsing method reference {}, found {}", methodNameForErrorReporting, methodInfo);
+        return new MethodReference(Identifier.from(methodReferenceExpr), scope, methodInfo, functionalType);
     }
 
     private static List<MethodTypeParameterMap> handleMultipleCandidates(TypeContext typeContext,

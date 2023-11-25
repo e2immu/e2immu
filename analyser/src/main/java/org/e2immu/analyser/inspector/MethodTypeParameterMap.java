@@ -215,4 +215,57 @@ public class MethodTypeParameterMap {
         if (!lastOne.parameterInspection.get().isVarArgs()) throw new UnsupportedOperationException();
         return lastOne.parameterizedType().copyWithOneFewerArrays();
     }
+
+    /*
+    CT = concreteTypes
+
+    CT:  T in Function -> AL<LL<S>>
+    F2C: T in Function -> Coll<E>
+    result: E in Coll -> LL<S>
+
+    CT:  R in Function -> Stream<? R in flatMap>
+    F2C: R in Function -> Stream<E in Coll>
+    result: E in Coll = R in flatMap (is of little value here)
+     */
+    public Map<NamedType, ParameterizedType> formalOfSamToConcreteTypes(MethodInspection actualMethodInspection, InspectionProvider inspectionProvider) {
+        Map<NamedType, ParameterizedType> result = new HashMap<>(concreteTypes);
+
+        TypeInspection functionalTypeInspection = inspectionProvider.getTypeInspection(this.methodInspection.getMethodInfo().typeInfo);
+        MethodInspection sam = functionalTypeInspection.getSingleAbstractMethod();
+        // match types of actual method inspection to type parameters of sam
+        if (sam.getReturnType().isTypeParameter()) {
+            NamedType f2cFrom = sam.getReturnType().typeParameter;
+            ParameterizedType f2cTo = actualMethodInspection.getReturnType();
+            ParameterizedType ctTo = concreteTypes.get(f2cFrom);
+            match(inspectionProvider, f2cFrom, f2cTo, ctTo, result);
+        }
+        if (!actualMethodInspection.getMethodInfo().isStatic() && !functionalTypeInspection.typeParameters().isEmpty()) {
+            NamedType f2cFrom = functionalTypeInspection.typeParameters().get(0);
+            ParameterizedType f2cTo = actualMethodInspection.getMethodInfo().typeInfo.asParameterizedType(inspectionProvider);
+            ParameterizedType ctTo = concreteTypes.get(f2cFrom);
+            match(inspectionProvider, f2cFrom, f2cTo, ctTo, result);
+        }
+        // TODO for-loop: make an equivalent with more type parameters MethodReference_2
+        return result;
+    }
+
+    /*
+    f2cFrom = T in function
+    fc2To = Coll<E>
+    ctTo = ArrayList<LinkedList<String>>
+
+     */
+    private void match(InspectionProvider inspectionProvider, NamedType f2cFrom, ParameterizedType f2cTo,
+                       ParameterizedType ctTo, Map<NamedType, ParameterizedType> result) {
+        if (f2cTo.isAssignableFrom(inspectionProvider, ctTo)) {
+            ParameterizedType concreteSuperType = ctTo.concreteSuperType(inspectionProvider, f2cTo);
+            int i = 0;
+            for (ParameterizedType pt : f2cTo.parameters) {
+                if (pt.isTypeParameter()) {
+                    result.put(pt.typeParameter, concreteSuperType.parameters.get(i));
+                }
+                i++;
+            }
+        }
+    }
 }

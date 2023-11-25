@@ -12,9 +12,10 @@ public class MethodCall_52 {
         }
     }
 
-    //  <V> void method(long id, V value) {
-    //      throw new MyException(3L, String.valueOf(id), String.valueOf(value));
-    //  }
+    <V> void method(long id, V value) {
+        throw new MyException(3L, String.valueOf(id), String.valueOf(value));
+    }
+
     <V> String method2(V value) {
         return String.valueOf(value);
     }

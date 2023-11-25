@@ -66,15 +66,6 @@ public class MyClassVisitor extends ClassVisitor {
                 typeContext.typeMap.getE2ImmuAnnotationExpressions()) : null;
     }
 
-    // return true when child = parent + $ + somethingWithoutDollars
-    static boolean isDirectChildOf(String child, String parent) {
-        if (!child.startsWith(parent)) return false;
-        int dollar = parent.length();
-        if (child.length() <= dollar + 1) return false;
-        int otherDollar = child.indexOf('$', dollar + 1);
-        return otherDollar < 0;
-    }
-
     public static String pathToFqn(String path) {
         return StringUtil.stripDotClass(path).replaceAll("[/$]", ".");
     }

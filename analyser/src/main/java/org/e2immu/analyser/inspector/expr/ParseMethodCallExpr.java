@@ -689,6 +689,17 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         Set<TypeParameter> typeParameters = parameterType.extractTypeParameters();
         Map<NamedType, ParameterizedType> outsideMap = outsideContext.initialTypeParameterMap(typeContext);
         if (typeParameters.isEmpty() || outsideMap.isEmpty()) {
+            if (outsideMap.isEmpty()) {
+                /* here we test whether the return type of the method is a method type parameter. If so,
+                   we have and outside type that we can assign to it. See MethodCall_68, assigning B to type parameter T
+                 */
+                ParameterizedType returnType = method.methodInspection.getReturnType();
+                if (returnType.typeParameter != null) {
+                    Map<NamedType, ParameterizedType> translate = Map.of(returnType.typeParameter, outsideContext);
+                    ParameterizedType translated = parameterType.applyTranslation(primitives, translate);
+                    return new ForwardReturnTypeInfo(translated, false, extra);
+                }
+            }
             // No type parameters to fill in or to extract
             ParameterizedType translated = parameterType.applyTranslation(primitives, extra.map());
             return new ForwardReturnTypeInfo(translated, false, extra);

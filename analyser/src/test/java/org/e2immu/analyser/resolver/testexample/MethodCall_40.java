@@ -9,7 +9,7 @@ public class MethodCall_40 {
     Result of valueOf is Long
      */
     public String method(String value) {
-        DecimalFormat dfOID = new DecimalFormat("000000000000");
-        return dfOID.format(Long.valueOf(value));
+        DecimalFormat format = new DecimalFormat("000000000000");
+        return format.format(Long.valueOf(value));
     }
 }

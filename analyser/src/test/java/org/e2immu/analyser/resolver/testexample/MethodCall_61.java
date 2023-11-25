@@ -42,6 +42,6 @@ public class MethodCall_61 {
     }
 
     static <T extends I> T[] method3(T[] array) {
-       return null;// Arrays.stream(array).filter(predicate(I::getId)).toArray(getArrayFactory(array));
+       return Arrays.stream(array).filter(predicate(I::getId)).toArray(getArrayFactory(array));
     }
 }

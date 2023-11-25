@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.resolver;
 
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
@@ -503,7 +502,7 @@ public class TestMethodCall extends CommonTest {
         TypeInfo typeInfo = typeMap.get(MethodCall_66.class);
         MethodInfo m1 = typeInfo.findUniqueMethod("method1", 1);
         MethodCall mc1 = methodCallInFirstStatement(m1);
-        assertEquals("org.e2immu.analyser.resolver.testexample.MethodCall_66.Logger.logError(String,org.e2immu.analyser.resolver.testexample.MethodCall_66.SofBoException)",
+        assertEquals("org.e2immu.analyser.resolver.testexample.MethodCall_66.Logger.logError(String,org.e2immu.analyser.resolver.testexample.MethodCall_66.MyException)",
                 mc1.methodInfo.fullyQualifiedName);
 
         MethodInfo m2 = typeInfo.findUniqueMethod("method2", 1);
@@ -523,6 +522,11 @@ public class TestMethodCall extends CommonTest {
         inspectAndResolve(MethodCall_67.class);
     }
 
+    /*
+    information about type parameter T reaches the second parameter of 'method', Run<T>, via the
+    method result. That can be seen in method2 (where T extends B rather than A). It does not reach it via the
+    first parameter, but it should.
+     */
     @Test
     public void test_68() throws IOException {
         inspectAndResolve(MethodCall_68.class);

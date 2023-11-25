@@ -11,7 +11,7 @@ public class MethodCall_51 {
             void processPath(ResolverPath path);
         }
 
-        public void getConditionalSysRepRelationResolvePaths(Set<ResolverPath> paths, PathProcessor processor) {
+        public void get(Set<ResolverPath> paths, PathProcessor processor) {
         }
     }
 
@@ -23,7 +23,7 @@ public class MethodCall_51 {
     private PathProcessor processor;
 
     public void method() {
-        new ResolverPath().getConditionalSysRepRelationResolvePaths(null, processor);
+        new ResolverPath().get(null, processor);
     }
 
 }

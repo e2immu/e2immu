@@ -14,7 +14,7 @@ public class MethodCall_32 {
     }
 
     public interface J {
-        int j();
+        char j();
     }
 
     public static <T extends I> T filterByID(T t, long theID) {
@@ -60,8 +60,7 @@ public class MethodCall_32 {
         return filterByID(x, id);
     }
 
-    // TODO what if int becomes char?
-    record Y(int j) implements J {
+    record Y(char j) implements J {
     }
 
     Y test3(Y y, long id) {

@@ -4,35 +4,35 @@ import java.util.List;
 
 public class MethodCall_65 {
 
-    interface VWFRCDPDealData {
+    interface I {
 
     }
 
-    static class VWFRCDPBorrowerIndividual {
-        List<VWFRCDPDealData> getDealData() {
+    static class S {
+        List<I> getList() {
             return null;
         }
     }
 
-    static class Borrower {
-        DealDataList dealDataList;
+    static class B {
+        D d;
 
-        public void setDealDataList(DealDataList value) {
-            this.dealDataList = value;
+        public void setD(D value) {
+            this.d = value;
         }
 
-        static class DealDataList {
+        static class D {
 
         }
     }
 
-    private org.e2immu.analyser.resolver.testexample.MethodCall_65.Borrower.DealDataList createCDPBorrowerDealDataList(List<VWFRCDPDealData> dealDataList) {
+    private B.D create(List<I> list) {
         return null;
     }
 
-    Borrower method(VWFRCDPBorrowerIndividual individual) {
-        Borrower borrower = new Borrower();
-        borrower.setDealDataList(createCDPBorrowerDealDataList(individual.getDealData()));
-        return borrower;
+    B method(S s) {
+        B b = new B();
+        b.setD(create(s.getList()));
+        return b;
     }
 }

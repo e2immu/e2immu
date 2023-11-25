@@ -26,7 +26,7 @@ public class MethodCall_58 {
 
     public void method1(Date date, double n) {
         SortedMap<D, Double> map = new TreeMap<>();
-     //   map.compute(new D(date), (k, v) -> add(v == null ? 0 : (double) v, n));
+        map.compute(new D(date), (k, v) -> add(v == null ? 0 : (double) v, n));
     }
 
     public void method2(Date date, double n) {
