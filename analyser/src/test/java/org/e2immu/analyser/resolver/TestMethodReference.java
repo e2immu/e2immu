@@ -22,10 +22,7 @@ import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.MethodReference_0;
-import org.e2immu.analyser.resolver.testexample.MethodReference_1;
-import org.e2immu.analyser.resolver.testexample.MethodReference_2;
-import org.e2immu.analyser.resolver.testexample.MethodReference_3;
+import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -75,5 +72,10 @@ public class TestMethodReference extends CommonTest {
     @Test
     public void test_3() throws IOException {
         inspectAndResolve(MethodReference_3.class);
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        inspectAndResolve(MethodReference_4.class);
     }
 }

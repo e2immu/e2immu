@@ -36,6 +36,11 @@ import java.util.*;
 import static org.e2immu.analyser.inspector.InspectionState.STARTING_BYTECODE;
 import static org.e2immu.analyser.inspector.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 
+/*
+The ByteCodeInspectorImpl is used as a singleton.
+Concurrent calls to 'inspectFromPath' each create a new LocalTypeMapImpl.
+This method must only be called from TypeMapImpl.Builder, which handles all threading and synchronization.
+*/
 public class ByteCodeInspectorImpl implements ByteCodeInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(ByteCodeInspectorImpl.class);
 

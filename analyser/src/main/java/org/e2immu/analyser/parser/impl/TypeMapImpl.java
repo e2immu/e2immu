@@ -18,7 +18,6 @@ import com.github.javaparser.ParseException;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.bytecode.TypeData;
 import org.e2immu.analyser.bytecode.TypeDataImpl;
-import org.e2immu.analyser.bytecode.asm.LocalTypeMap;
 import org.e2immu.analyser.inspector.InspectionState;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
@@ -145,6 +144,7 @@ public class TypeMapImpl implements TypeMap {
         private final ReentrantReadWriteLock.ReadLock tiReadLock = tiLock.readLock();
 
         private final Set<String> byteCodeQueue = new HashSet<>();
+        private final Postmortem postmortem;
 
         private ByteCodeInspector byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
@@ -166,6 +166,7 @@ public class TypeMapImpl implements TypeMap {
                     add(typeInfo, BY_HAND_WITHOUT_STATEMENTS);
             }
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
+            postmortem = parallel ? new Postmortem() : null;
         }
 
         public Builder(TypeMapImpl.Builder source, Resources newClassPath, boolean parallel) {
@@ -175,10 +176,22 @@ public class TypeMapImpl implements TypeMap {
             primitives = source.primitives;
             e2ImmuAnnotationExpressions = source.e2ImmuAnnotationExpressions;
             typeInspections = source.typeInspections;
+            postmortem = source.postmortem;
         }
 
         @Override
         public TypeMapImpl build() {
+            try {
+                return internalBuild();
+            } catch (RuntimeException re) {
+                if (postmortem != null) {
+                    postmortem.write();
+                }
+                throw re;
+            }
+        }
+
+        private TypeMapImpl internalBuild() {
             /*
             The queue is there to ensure that the analysers can work on a type map that has been built/frozen.
             Type parameters and types of parameters of methods are loaded in LoadMode.QUEUE; they're not immediately
@@ -284,7 +297,10 @@ public class TypeMapImpl implements TypeMap {
             String simpleName = lastDot < 0 ? fqn : fqn.substring(lastDot + 1);
             TypeInfo typeInfo = getOrCreateByteCode(packageName, simpleName);
             if (typeInfo == null) {
-                if (complain) throw new UnsupportedOperationException("Cannot find " + fqn);
+                if (complain) {
+                    if (postmortem != null) postmortem.write();
+                    throw new UnsupportedOperationException("Cannot find " + fqn);
+                }
                 return null;
             }
             return typeInfo;
@@ -393,6 +409,7 @@ public class TypeMapImpl implements TypeMap {
                 return trie.addIfNodeDataEmpty(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
             } catch (IllegalStateException ise) {
                 LOGGER.error("Caught exception adding {} to the trie", typeInfo);
+                if (postmortem != null) postmortem.write();
                 throw ise;
             } finally {
                 trieLock.writeLock().unlock();
@@ -463,6 +480,7 @@ public class TypeMapImpl implements TypeMap {
                     typeData = typeInspections.get(fieldInfo.owner.fullyQualifiedName);
                 }
                 if (typeData.fieldInspectionsPut(fieldInfo, builder) != null) {
+                    if (postmortem != null) postmortem.write();
                     throw new IllegalArgumentException("Re-registering field " + fieldInfo.fullyQualifiedName());
                 }
             } finally {
@@ -482,6 +500,7 @@ public class TypeMapImpl implements TypeMap {
                     typeData = typeInspections.get(typeInfo.fullyQualifiedName);
                 }
                 if (typeData.methodInspectionsPut(builder.getDistinguishingName(), builder) != null) {
+                    if (postmortem != null) postmortem.write();
                     throw new IllegalArgumentException("Re-registering method " + builder.getDistinguishingName());
                 }
             } finally {
@@ -589,16 +608,31 @@ public class TypeMapImpl implements TypeMap {
             // here, two threads can arrive at the same time; we'll not block that
             if (Inspector.BYTE_CODE_INSPECTION.equals(typeData.getInspectionState().getInspector())) {
                 typeData.setInspectionState(STARTING_BYTECODE);
-                return inspectWithByteCodeInspector(typeInfo);
-            } else if (typeData.getInspectionState() == TRIGGER_JAVA_PARSER || typeData.getInspectionState() == INIT_JAVA_PARSER) {
+                try {
+                    return inspectWithByteCodeInspector(typeInfo);
+                } catch (RuntimeException re) {
+                    if (postmortem != null) postmortem.write();
+                    throw re;
+                }
+            }
+            if (typeData.getInspectionState() == TRIGGER_JAVA_PARSER || typeData.getInspectionState() == INIT_JAVA_PARSER) {
                 try {
                     typeData.setInspectionState(STARTING_JAVA_PARSER);
+                    if (postmortem != null) {
+                        postmortem.acceptJavaParser(typeInfo.fullyQualifiedName, STARTING_JAVA_PARSER);
+                    }
                     LOGGER.debug("Triggering Java parser on {}", typeInfo.fullyQualifiedName);
                     inspectWithJavaParser.inspect(typeInspection);
                     typeData.setInspectionState(FINISHED_JAVA_PARSER);
+                    if (postmortem != null) {
+                        postmortem.acceptJavaParser(typeInfo.fullyQualifiedName, FINISHED_JAVA_PARSER);
+                    }
                 } catch (ParseException e) {
                     String message = "Caught parse exception inspecting " + typeInfo.fullyQualifiedName;
                     throw new UnsupportedOperationException(message, e);
+                } catch (RuntimeException re) {
+                    if (postmortem != null) postmortem.write();
+                    throw re;
                 }
             }
             // always not null here
@@ -785,17 +819,21 @@ public class TypeMapImpl implements TypeMap {
             try {
                 // overwrite, unless done
                 TypeInspection.Builder startBuilder = null;
-                for (TypeData ias : data) {
-                    String fullyQualifiedName = ias.getTypeInspectionBuilder().typeInfo().fullyQualifiedName;
+                for (TypeData typedData : data) {
+                    String fullyQualifiedName = typedData.getTypeInspectionBuilder().typeInfo().fullyQualifiedName;
                     TypeData inMap = typeInspections.get(fullyQualifiedName);
                     TypeData theTypeData;
-                    if (inMap == null || !inMap.getInspectionState().isDone() && ias.getInspectionState().isDone()) {
+                    if (inMap == null || !inMap.getInspectionState().isDone() && typedData.getInspectionState().isDone()) {
                         LOGGER.debug("Writing type inspection of {}", fullyQualifiedName);
-                        typeInspections.put(fullyQualifiedName, ias);
-                        theTypeData = ias;
+                        typeInspections.put(fullyQualifiedName, typedData);
+                        if (postmortem != null) {
+                            postmortem.acceptByteCode(start.fullyQualifiedName, fullyQualifiedName,
+                                    inMap == null ? null : inMap.getInspectionState(), typedData.getInspectionState());
+                        }
+                        theTypeData = typedData;
                     } else {
                         // overhead; is pretty low
-                        LOGGER.debug("Not writing inspection of {}, state {}", fullyQualifiedName, ias.getInspectionState());
+                        LOGGER.debug("Not writing inspection of {}, state {}", fullyQualifiedName, typedData.getInspectionState());
                         theTypeData = inMap;
                     }
                     if (start.equals(theTypeData.getTypeInspectionBuilder().typeInfo())) {
@@ -814,6 +852,11 @@ public class TypeMapImpl implements TypeMap {
             synchronized (byteCodeQueue) {
                 byteCodeQueue.add(fqn);
             }
+        }
+
+        public void writePostmortem() {
+            assert postmortem != null;
+            postmortem.write();
         }
     }
 }
