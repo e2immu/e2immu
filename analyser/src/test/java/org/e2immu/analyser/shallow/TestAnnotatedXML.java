@@ -126,10 +126,10 @@ public class TestAnnotatedXML {
     public void testOptional() {
         TypeInfo optional = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(optional);
-        assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
-        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
-        assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals("", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
+        assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     // not hardcoded

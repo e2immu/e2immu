@@ -168,10 +168,11 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
-                case "ElementarySpace", "Space" -> "-----";
-                case "FormattingOptions" -> "----";
+                case "ElementarySpace" -> "-----";
+                case "Space" -> "------";
+                case "FormattingOptions" -> "-----";
                 case "OutputElement" -> "--";
-                case "Qualifier" -> "-";
+                case "Qualifier" -> "------";
                 case "Guide" -> "------";
                 case "TypeName" -> "-------";
                 case "OutputBuilder" -> "--------";
@@ -183,8 +184,8 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         testSupportAndUtilClasses(List.of(OutputBuilder.class, OutputElement.class, Qualifier.class,
                         FormattingOptions.class, Guide.class, ElementarySpace.class, Space.class, TypeName.class),
                 0, 0, new DebugConfiguration.Builder()
-                      //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)

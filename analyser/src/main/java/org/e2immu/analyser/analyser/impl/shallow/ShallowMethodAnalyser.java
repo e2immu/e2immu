@@ -442,7 +442,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
     private DV computeParameterImmutable(ParameterAnalysisImpl.Builder builder) {
         DV typeImmutable = analyserContext.typeImmutable(builder.getParameterInfo().parameterizedType);
         return typeImmutable.isDelayed() && analyserContext.inAnnotatedAPIAnalysis()
-                ? MultiLevel.EFFECTIVELY_IMMUTABLE_DV : typeImmutable;
+                ? MultiLevel.MUTABLE_DV : typeImmutable;
     }
 
     private DV computeParameterIndependent(ParameterAnalysisImpl.Builder builder) {

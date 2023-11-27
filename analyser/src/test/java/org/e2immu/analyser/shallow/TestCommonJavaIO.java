@@ -137,4 +137,28 @@ public class TestCommonJavaIO extends CommonAnnotatedAPI {
 
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
     }
+
+    @Test
+    public void testFileFilterAccept() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(FileFilter.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("accept", 1);
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        assertEquals(methodInspection.getMethodInfo(),
+                typeInfo.typeInspection.get().getSingleAbstractMethod().getMethodInfo());
+        assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
+
+        assertTrue(methodInspection.isPublic());
+        assertTrue(methodInfo.isAbstract());
+        assertFalse(methodInfo.isDefault());
+        assertTrue(methodInspection.isPubliclyAccessible());
+        assertFalse(methodInfo.isStatic());
+
+        MethodResolution methodResolution = methodInfo.methodResolution.get();
+        assertFalse(methodResolution.allowsInterrupts());
+
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.NULLABLE_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+    }
 }

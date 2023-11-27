@@ -259,9 +259,9 @@ public class ResolverImpl implements Resolver {
                         Map<V<TypeInfo>, Long> weightedEdges = g.edges(from);
                         for (V<TypeInfo> to : edges.getValue()) {
                             long weight = weightedEdges.get(to);
-                            if (PackedInt.HIERARCHY.of(1) <= weight) {
-                                LOGGER.warn("Removing hierarchical relation {} -> {}", from, to);
-                            }
+                         //   if (PackedInt.HIERARCHY.of(1) <= weight) {
+                                LOGGER.warn("Removing relation {} -> {} -> {}", from, PackedInt.nice((int)weight), to);
+                         //   }
                         }
                     }
                 }

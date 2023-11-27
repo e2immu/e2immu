@@ -215,7 +215,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S-S-SF--SFM-SFM-SFMT----SF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-S--S-SF--SFM-SFM-SFMT----SF---", d.delaySequence());
 
         testClass("DGSimplified_0", 0, 1, new DebugConfiguration.Builder()
                 //  .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -312,7 +312,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--S--S-S-SF--SFM-SFM-SFMT------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-S--S-S--SF--SFM-SFM-SFMT------", d.delaySequence());
         testClass("DGSimplified_1", 4, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

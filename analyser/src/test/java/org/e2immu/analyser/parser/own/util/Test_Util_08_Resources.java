@@ -27,10 +27,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Trie;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.e2immu.support.Freezable;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +75,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1.0.2".equals(d.statementId())) {
-                    String value = d.iteration() == 0 ? "<m:add>" : "instance type TrieNode<URI>";
+                    String value = d.iteration() == 0 ? "<m:add>" : "<no return value>";
                     assertEquals(value, d.evaluationResult().value().toString());
                 }
             }
@@ -179,12 +176,23 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> {
+            String expected = switch (d.typeInfo().simpleName) {
+                case "Freezable" -> "----";
+                case "Trie" -> "-------";
+                case "Resources" -> "-----S--S---S--";
+                default -> "";
+            };
+            assertEquals(expected, d.delaySequence(), d.typeInfo().fullyQualifiedName);
+        };
+
         testSupportAndUtilClasses(List.of(Resources.class, Trie.class, Freezable.class),
-                0, 12, new DebugConfiguration.Builder()
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                0, 16, new DebugConfiguration.Builder()
+                        //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(), new AnalyserConfiguration.Builder()
                         .setComputeFieldAnalyserAcrossAllMethods(true)
                         .build());

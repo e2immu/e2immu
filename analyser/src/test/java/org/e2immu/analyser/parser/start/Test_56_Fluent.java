@@ -42,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_56_Fluent extends CommonTestRunner {
 
+    public static final String BREAK_DELAY = "-----S--S--S---SFM-SFM--SFMT--";
+
     public Test_56_Fluent() {
         super(false);
     }
@@ -64,25 +66,25 @@ public class Test_56_Fluent extends CommonTestRunner {
                     }
                     // calls from, which is CM false in iteration 2
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 11, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 8, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 // equals is evaluated after copyOf, so CM in the parameter of equals is only visible in iteration 3
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 21, "instanceCopy/*(Fluent_0)*/");
+                        assertCurrentValue(d, 0, "instanceCopy/*(Fluent_0)*/");
                         assertTrue(d.currentValue() instanceof PropertyWrapper, "Have " + d.currentValue().getClass());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
-                        String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(new Builder()/*@NotNull*/).build()";
-                        assertCurrentValue(d, 21, value);
+                        String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(instance type Builder).build()";
+                        assertCurrentValue(d, 28, value);
 
-                        String expectLinks = d.iteration() < 21 ? "instanceCopy:-1" : "instanceCopy:1";
+                        String expectLinks = d.iteration() < 28 ? "instanceCopy:-1" : "instanceCopy:1";
                         assertEquals(expectLinks, d.variableInfo().getLinkedVariables().toString());
 
                         // computation of NNE is important here!
-                        assertDv(d, 21, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 28, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -92,7 +94,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("1".equals(d.statementId())) {
-                        assertDv(d, 7, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 5, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof This) {
@@ -130,7 +132,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("equals".equals(d.methodInfo().name)) {
+            if ("equals".equals(d.methodInfo().name) && "org.e2immu.analyser.parser.start.testexample.Fluent_0".equals(d.methodInfo().typeInfo.fullyQualifiedName)) {
                 assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
 
@@ -138,33 +140,33 @@ public class Test_56_Fluent extends CommonTestRunner {
                 // @NotModified
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
-                String expect = d.iteration() < 21 ? "<m:copyOf>"
-                        : "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(new Builder()/*@NotNull*/).build()";
+                String expect = d.iteration() < 28 ? "<m:copyOf>"
+                        : "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(instance type Builder).build()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
                 assertDv(d, DV.FALSE_DV, Property.FLUENT);
-                assertDv(d, 21, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 28, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("build".equals(d.methodInfo().name)) {
-                assertDv(d, 21, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 28, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
 
             if ("from".equals(d.methodInfo().name)) {
 
-                assertDv(d.p(0), 8, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expect = d.iteration() <= 8 ? "<m:from>" : "this/*(Builder)*/";
+                String expect = d.iteration() < 22 ? "<m:from>" : "this/*(Builder)*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, 9, DV.TRUE_DV, Property.FLUENT);
-                assertDv(d, 9, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 22, DV.TRUE_DV, Property.FLUENT);
+                assertDv(d, 22, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 // 'this' is always independent, there's no new information
-                assertDv(d, 7, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 21, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
@@ -209,19 +211,19 @@ public class Test_56_Fluent extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
-                case "IFluent_0", "Fluent_0" -> "-----S--S--S---SFM-SFM--SFMT--";
+                case "IFluent_0", "Fluent_0" -> BREAK_DELAY;
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);
         };
 
 
-        testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 1, new DebugConfiguration.Builder()
-                //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //    .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                    .addBreakDelayVisitor(breakDelayVisitor)
+        testClass(List.of("a.IFluent_0", "Fluent_0"), 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -308,11 +310,11 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S--S--S---SFM-SFM--SFMT--", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals(BREAK_DELAY, d.delaySequence());
 
         TypeContext typeContext = testClass(List.of("a.IFluent_1", "Fluent_1"),
                 List.of("jmods/java.compiler.jmod"),
-                0, 1, new DebugConfiguration.Builder()
+                0, 0, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
@@ -346,11 +348,13 @@ public class Test_56_Fluent extends CommonTestRunner {
             }
         };
 
-        testClass(List.of("a.IFluent_2", "Fluent_2"),
-                List.of("jmods/java.compiler.jmod"),
-                0, 2, new DebugConfiguration.Builder()
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals(BREAK_DELAY, d.delaySequence());
+
+        testClass(List.of("a.IFluent_2", "Fluent_2"), List.of("jmods/java.compiler.jmod"),
+                0, 1, new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 
@@ -361,10 +365,11 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertTrue(d.typeInfo().typePropertiesAreContracted());
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals(BREAK_DELAY, d.delaySequence());
         testClass(List.of("a.IFluent_3", "Fluent_3"),
-                List.of("jmods/java.compiler.jmod"),
-                0, 1, new DebugConfiguration.Builder()
+                0, 0, new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                        .addBreakDelayVisitor(breakDelayVisitor)
                         .build(), new AnalyserConfiguration.Builder().build(), new AnnotatedAPIConfiguration.Builder().build());
     }
 }

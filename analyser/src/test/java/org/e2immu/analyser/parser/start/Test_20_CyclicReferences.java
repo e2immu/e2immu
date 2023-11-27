@@ -142,7 +142,8 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("methodE".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("CyclicReferences_3.methodF(\"b\")", d.evaluationResult().value().toString());
+                    String expected = d.iteration() < 2 ? "<m:methodF>" : "true";
+                    assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
         };
@@ -150,7 +151,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodC".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "paramC".equals(p.name)) {
                     if ("0.0.0".equals(d.statementId())) {
-                        String expectValue = d.iteration() <= 3 ? "<mod:String>"
+                        String expectValue = d.iteration() < 6 ? "<p:paramC>"
                                 : "nullable instance type String/*@Identity*/";
                         // note that the value in its>0 is not "b" (see SAEvalOfMain.makeContext)
                         assertEquals(expectValue, d.currentValue().toString());
@@ -169,8 +170,8 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodC".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                String expected = d.iteration() == 0 ? "<m:methodC>"
-                        : "\"b\".equals(paramC)?CyclicReferences_3.methodD(\"b\"):\"a\".equals(paramC)";
+                String expected = d.iteration() < 7 ? "<m:methodC>"
+                        : "/*inline methodC*/\"a\".equals(paramC)||\"b\".equals(paramC)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("methodD".equals(d.methodInfo().name)) {
@@ -184,7 +185,8 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodF".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                String expected = "\"a\".equals(paramF)?CyclicReferences_3.methodC(\"a\"):\"b\".equals(paramF)";
+                String expected = d.iteration() == 0 ? "<m:methodF>"
+                        : "/*inline methodF*/\"a\".equals(paramF)?CyclicReferences_3.methodC(\"a\"):\"b\".equals(paramF)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -192,9 +194,9 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------", d.delaySequence());
 
         testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder()
-                //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -217,7 +219,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
         };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------", d.delaySequence());
         testClass("CyclicReferences_4", 0, 0, new DebugConfiguration.Builder()
-               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                // .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

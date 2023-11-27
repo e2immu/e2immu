@@ -75,7 +75,6 @@ public abstract class CommonAnnotatedAPI {
         Configuration configuration = new Configuration.Builder()
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration.build())
-                .addDebugLogTargets(LogTarget.SHALLOW_ANALYSERS)
                 .build();
         configuration.initializeLoggers();
         Parser parser = new Parser(configuration);
