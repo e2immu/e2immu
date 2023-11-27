@@ -176,6 +176,9 @@ public class BreakCycles<T> {
     public record EdgeRemoval<T>(Map<V<T>, Map<V<T>, Long>> edges) implements ActionInfo {
     }
 
+    public record EdgeRemoval2<T>(Map<V<T>, Set<V<T>>> edges) implements ActionInfo {
+    }
+
     private record VertexAndSomeEdges<T>(Map<V<T>, Map<V<T>, Long>> edges, long sum) {
     }
 

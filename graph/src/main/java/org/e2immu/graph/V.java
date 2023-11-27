@@ -1,7 +1,5 @@
 package org.e2immu.graph;
 
-import java.util.Set;
-
 // the vertex type of the graph
 public class V<T> {
     private final T t;

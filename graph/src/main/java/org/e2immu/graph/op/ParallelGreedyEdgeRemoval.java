@@ -121,7 +121,7 @@ public class ParallelGreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<
                 return new BreakCycles.Action<>() {
                     @Override
                     public G<T> apply() {
-                        return overallBest.subGraph;
+                        return overallBest.subGraph.subGraph(cycle.vertices());
                     }
 
                     @Override

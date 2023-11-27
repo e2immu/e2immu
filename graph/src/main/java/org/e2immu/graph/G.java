@@ -6,6 +6,10 @@ import java.util.function.LongBinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/*
+This class uses linked maps and sets (as opposed to Map.copyOf, Set.copyOf, new HashMap(), etc.)
+to behave in a consistent way across tests.
+ */
 public class G<T> {
     private final Set<V<T>> vertices;
     private final Map<V<T>, Map<V<T>, Long>> edges;
@@ -39,7 +43,7 @@ public class G<T> {
                 edges.computeIfAbsent(from, f -> new LinkedHashMap<>()).put(to, e2.getValue());
             }
         }
-        return new G<>(Set.copyOf(vertices), Map.copyOf(edges));
+        return new G<>(vertices, edges);
     }
 
     // ! expensive operation, no map
@@ -111,7 +115,7 @@ public class G<T> {
             if (toRemove != null && !toRemove.isEmpty()) {
                 Map<V<T>, Long> map = new LinkedHashMap<>(entry.getValue());
                 map.keySet().removeAll(toRemove);
-                newEdgesOfV = Map.copyOf(map);
+                newEdgesOfV = map;
             } else {
                 newEdgesOfV = entry.getValue();
             }
@@ -121,7 +125,7 @@ public class G<T> {
                 newEdges.put(entry.getKey(), newEdgesOfV);
             }
         }
-        return new G<T>(vertices, Map.copyOf(newEdges));
+        return new G<T>(vertices, newEdges);
     }
 
     public G<T> subGraph(Set<V<T>> subSet) {
@@ -137,11 +141,11 @@ public class G<T> {
                     }
                 }
                 if (!newLocal.isEmpty()) {
-                    newEdges.put(v, Map.copyOf(newLocal));
+                    newEdges.put(v, newLocal);
                 }
             }
         }
-        return new G<T>(Set.copyOf(subSet), Map.copyOf(newEdges));
+        return new G<T>(new LinkedHashSet<>(subSet), newEdges);
     }
 
     public G<T> mutableReverseSubGraph(Set<V<T>> subSet) {
@@ -185,5 +189,15 @@ public class G<T> {
                 .sorted((e1, e2) -> comparator.compare(e1.weight(), e2.weight()))
                 .toList();
         return edges.stream().map(e -> Map.of(e.from(), Map.of(e.to(), e.weight()))).iterator();
+    }
+
+    public Map<V<T>, Long> incomingVertexWeight(LongBinaryOperator sum) {
+        Map<V<T>, Long> map = new HashMap<>();
+        for (Map<V<T>, Long> targets : edges.values()) {
+            for (Map.Entry<V<T>, Long> entry : targets.entrySet()) {
+                map.merge(entry.getKey(), entry.getValue(), sum::applyAsLong);
+            }
+        }
+        return map;
     }
 }

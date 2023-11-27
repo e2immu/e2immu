@@ -15,20 +15,30 @@ public class TestTypeDependencies {
     public void test() throws IOException {
         Main main = new Main();
         BreakCycles.Linearization<TypeGraphIO.Node> lin = main.go(new String[]{Main.CLASSPATH
-                + "org/e2immu/graph/typeDependencies.gml", "sequential"});
+                + "org/e2immu/graph/typeDependencies.gml", Main.SEQUENTIAL});
         assertEquals(31, lin.maxCycleSize());
         assertEquals(101, lin.actionLog().size());
-        assertEquals(98, lin.list().size());
+        assertEquals(100, lin.list().size());
     }
 
     @Test
     public void testParallel() throws IOException {
         Main main = new Main();
         BreakCycles.Linearization<TypeGraphIO.Node> lin = main.go(new String[]{Main.CLASSPATH
-                + "org/e2immu/graph/typeDependencies.gml", "parallel"});
+                + "org/e2immu/graph/typeDependencies.gml", Main.PARALLEL});
         assertEquals(31, lin.maxCycleSize());
         assertEquals(101, lin.actionLog().size());
-        assertEquals(98, lin.list().size());
+        assertEquals(100, lin.list().size());
+    }
+
+    @Test
+    public void testVertexWeight() throws IOException {
+        Main main = new Main();
+        BreakCycles.Linearization<TypeGraphIO.Node> lin = main.go(new String[]{Main.CLASSPATH
+                + "org/e2immu/graph/typeDependencies.gml", Main.VERTEX_WEIGHT});
+        assertEquals(1, lin.maxCycleSize());
+        assertEquals(143, lin.actionLog().size());
+        assertEquals(168, lin.list().size()); // must be <= 1042, the number of nodes
     }
 
     @Test

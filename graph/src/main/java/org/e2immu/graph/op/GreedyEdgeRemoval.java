@@ -56,7 +56,7 @@ public class GreedyEdgeRemoval<T> implements BreakCycles.ActionComputer<T> {
         LOGGER.info("Best choice for greedy edge removal is {}, quality now {}",
                 edgePrinter.print(bestEdgesToRemove), bestQuality);
         if (bestQuality < cycle.size()) {
-            G<T> finalGraph = bestSubGraph;
+            G<T> finalGraph = bestSubGraph.subGraph(cycle.vertices());
             BreakCycles.EdgeRemoval<T> info = new BreakCycles.EdgeRemoval<>(bestEdgesToRemove);
             return new BreakCycles.Action<T>() {
                 @Override
