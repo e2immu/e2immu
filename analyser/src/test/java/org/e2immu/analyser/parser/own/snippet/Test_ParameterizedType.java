@@ -389,22 +389,22 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 14, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d, 14, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 13, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                assertDv(d, 15, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 assertDv(d.p(0), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(2), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                assertDv(d.p(3), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(2), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(3), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expected = d.iteration() < 14 ? "<m:iterativelyParseTypes>" : "next";
+                String expected = d.iteration() < 15 ? "<m:iterativelyParseTypes>" : "/*inline iterativelyParseTypes*/next";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("normalType".equals(d.methodInfo().name)) {
                 assertTrue(methodResolution.partOfCallCycle());
                 assertEquals("from, iterativelyParseTypes, normalType", methodResolution.callCycleSorted());
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 11, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d.p(0), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 12, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
@@ -419,11 +419,11 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 // ignoreMe... means that the "from" call in iterativelyParseTypes cannot cause delays
                 // the order of resolution should therefore be "iterativelyParseTypes", then "normalType", then "from"
                 assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
-                assertDv(d, 15, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 14, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 13, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
                 assertDv(d.p(1), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() < 13 ? "<m:from>" :
-                        "'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):'L'==('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?ParameterizedType_2.normalType(typeContext,findType,signature,'['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:0):0,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE,'['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),typeContext.get(signature.substring(1+('['==('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),'['==instance type char?1+instance type int:0,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE),signature.indexOf(';')+1,false):('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:0):0)>=1?new Result(new ParameterizedType(scope-primitivePt:0.typeInfo,'['==instance type char?1+instance type int:0),('['==instance type char?1+instance type int:0)+1,false):new Result(ParameterizedType_2.primitive(typeContext.getPrimitives(),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0)),1,false)";
+                String expected = d.iteration() < 12 ? "<m:from>" :
+                        "'*'==signature.charAt(0)?new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE,1,false):'L'==('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?ParameterizedType_2.normalType(typeContext,findType,signature,'['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:0):0,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE,'['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),typeContext.get(signature.substring(1+('['==('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0):([signature.charAt(0),signature.charAt(1),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?1:0):'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),'['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0),instance type boolean])?new Result(typeContext.getPrimitives().objectParameterizedType(),signature.indexOf(';')+1,true):new Result(new ParameterizedType((TypeParameter)typeContext.get(signature.substring(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0),signature.indexOf(';')),false),'['==instance type char?1+instance type int:0,'+'==signature.charAt(0)?WildCard.EXTENDS:'-'==signature.charAt(0)?WildCard.SUPER:WildCard.NONE),signature.indexOf(';')+1,false):('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?1+('['==instance type char?1+instance type int:0):0)>=1?new Result(new ParameterizedType(scope-primitivePt:0.typeInfo,'['==instance type char?1+instance type int:0),('['==instance type char?1+instance type int:0)+1,false):new Result(switch('['==('['==instance type char?signature.charAt(1+instance type int):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0))?signature.charAt(1+('['==instance type char?1+instance type int:'+'==signature.charAt(0)||'-'==signature.charAt(0)?1:0)):'+'==signature.charAt(0)||'-'==signature.charAt(0)?signature.charAt(1):signature.charAt(0)){'B'->typeContext.getPrimitives().byteParameterizedType();'C'->typeContext.getPrimitives().charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");},1,false)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 3, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 3, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
@@ -434,7 +434,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 String expected = d.iteration() <= 1 ? "<m:primitive>"
-                        : "switch(firstChar){'B'->primitives.byteParameterizedType();'C'->primitives.charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
+                        : "/*inline primitive*/switch(firstChar){'B'->primitives.byteParameterizedType();'C'->primitives.charParameterizedType();default->throw new RuntimeException(\"Char \"+firstChar+\" does NOT represent a primitive!\");}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("getPrimitives".equals(d.methodInfo().name)) {
@@ -472,7 +472,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                if (d.iteration() >= 1) {
+                if (d.iteration() >= 2) {
                     assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
                 } else {
                     assertTrue(d.typeAnalysis().hiddenContentDelays().isDelayed());
@@ -491,7 +491,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 new DebugConfiguration.Builder()
                         //     .addEvaluationResultVisitor(evaluationResultVisitor)
                         //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
@@ -505,16 +505,16 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("ParameterizedType".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 20, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 18, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("IterativeParsing".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 19, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 21, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 19, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S--S-S-SF-SF-SF------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------S--S-S-SF--SF------", d.delaySequence());
         testClass("ParameterizedType_2", 1, DONT_CARE,
                 new DebugConfiguration.Builder()
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)

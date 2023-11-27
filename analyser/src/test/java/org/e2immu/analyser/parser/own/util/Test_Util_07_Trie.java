@@ -21,7 +21,6 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -253,30 +252,25 @@ public class Test_Util_07_Trie extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int params = d.methodInfo().methodInspection.get().getParameters().size();
             if ("goTo".equals(d.methodInfo().name) && params == 1) {
-                String expected = d.iteration() < 3 ? "<m:goTo>"
-                        : "/*inline goTo*/-1-(instance type int)+strings.length>=0&&(null==``node`.map`.get(nullable instance type String)||null==``node`.map`)?null:-1-(instance type int)+strings.length>=0?``node`.map`.get(nullable instance type String):`root`";
+                String expected = d.iteration() < 4 ? "<m:goTo>"
+                        : "/*inline goTo*/this.goTo(strings,strings.length)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 4, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("goTo".equals(d.methodInfo().name) && params == 2) {
                 String expected = d.iteration() < 3 ? "<m:goTo>"
-                        : "/*inline goTo*/-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
+                        : "-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
-                if (d.iteration() >= 3) {
-                    if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1, node, node$1, node$1.map$0, root, this, upToPosition",
-                                inlinedMethod.variablesOfExpressionSorted());
-                    } else fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
-                }
-                assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(0), 3, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+
+                assertDv(d, 3, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(0), 2, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("add".equals(d.methodInfo().name)) {
-                assertDv(d, 2, DV.TRUE_DV, Property.MODIFIED_METHOD);
-                assertDv(d.p(1), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                assertDv(d.p(1), 4, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
                 String eventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_Trie]";
@@ -286,23 +280,23 @@ public class Test_Util_07_Trie extends CommonTestRunner {
                     default -> "@Only before: [frozen]";
                 };
                 //   assertEquals(eventual, d.methodAnalysis().getEventual().toString());
-                if (d.iteration() >= BIG) {
-                    assertEquals("Precondition[expression=!frozen, causes=[methodCall:ensureNotFrozen]]", d.methodAnalysis().getPrecondition().toString());
-                    assertEquals("Precondition[expression=!frozen, causes=[methodCall:ensureNotFrozen]]", d.methodAnalysis().getPreconditionForEventual().toString());
+                if (d.iteration() >= 3) {
+                    assertEquals("Precondition[expression=!frozen, causes=[methodCall:ensureTrieNode]]", d.methodAnalysis().getPrecondition().toString());
+                    assertEquals("Precondition[expression=!frozen, causes=[methodCall:ensureTrieNode]]", d.methodAnalysis().getPreconditionForEventual().toString());
                 }
             }
             // explains why we don't have an eventually E2Immutable type:
             if ("get".equals(d.methodInfo().name) && params == 1) {
-                assertDv(d, BIG, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 4, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("get".equals(d.methodInfo().name) && params == 2) {
                 // IMPROVE this should be DEPENDENT, data is mutable and should be linked to root (or this, given the expanded variables)
-                if (d.iteration() >= 19) {
-                    assertEquals("/*inline get*/-1-(instance type int)+upToPosition>=0&&(null==``node`.map`.get(nullable instance type String)||null==``node`.map`)?null:null==(-1-(instance type int)+upToPosition>=0?``node`.map`.get(nullable instance type String):`root`).data$1?List.of():(-1-(instance type int)+upToPosition>=0?``node`.map`.get(nullable instance type String):`root`).data$1",
+                if (d.iteration() >= 3) {
+                    assertEquals("null==this.goTo(strings,upToPosition)?null:null==(this.goTo(strings,upToPosition)).data$1?List.of():(this.goTo(strings,upToPosition)).data$1",
                             d.methodAnalysis().getSingleReturnValue().toString());
                 }
-                assertDv(d, 19, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d, 14, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 3, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
 
@@ -312,12 +306,12 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 0,
+        testSupportAndUtilClasses(List.of(Trie.class, Freezable.class), 0, 2,
                 new DebugConfiguration.Builder()
                        // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                        // .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                       // .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                       // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }

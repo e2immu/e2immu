@@ -187,14 +187,15 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getPrecondition().toString());
             }
         };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("IMMUTABLE".equals(d.fieldInfo().name)) {
                 assertEquals("new Property(){}", d.fieldAnalysis().getValue().toString());
             }
             if ("EFFECTIVELY_E1IMMUTABLE_DV".equals(d.fieldInfo().name)) {
                 assertEquals(d.iteration() > 0, d.fieldAnalysis().getLinkedVariables().isDone());
-                assertDv(d, 16, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d, 16, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 19, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 19, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 String expected = d.iteration() < 2 ? "<f:EFFECTIVELY_E1IMMUTABLE_DV>" : "new DV(5,List.of(new Cause(0)))";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
@@ -206,7 +207,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------S-S--SF----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------S-S--SF-SF----", d.delaySequence());
 
         testClass("AnalysisProvider_0", 0, 5,
                 new DebugConfiguration.Builder()
@@ -230,7 +231,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("defaultImmutable".equals(d.methodInfo().name) && numParams == 3) {
                 if ("typeAnalysis".equals(d.variableName())) {
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("7".equals(d.statementId())) {
                         assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -249,17 +250,18 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name) && "$4".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertEquals("0", d.statementId()); // pt -> defaultImmutable(pt, true)
                 if ("typeAnalysis".equals(d.variableName())) {
-                    assertFalse(d.variableInfoContainer().hasEvaluation());
+                    assertTrue(d.variableInfoContainer().hasEvaluation());
                     assertLinked(d, it0("NOT_YET_SET"),
                             it(1, 2, "AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,bestType:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,parameterizedType:-1,this:-1"),
                             it(3, 3, "AnalysisProvider_1.EFFECTIVELY_E2IMMUTABLE_DV:-1,AnalysisProvider_1.IMMUTABLE:-1,AnalysisProvider_1.NOT_INVOLVED_DV:-1,baseValue:-1,doSum:-1,dynamicBaseValue:-1,dynamicValue:-1,this:-1"),
                             it(4, "baseValue:2,doSum:2,this:2"));
 
                     assertFalse(d.variableInfoContainer().hasMerge());
-                    assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                 }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int numParams = d.methodInfo().methodInspection.get().getParameters().size();
             MethodResolution methodResolution = d.methodInfo().methodResolution.get();
@@ -291,12 +293,12 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------S--S--SF-------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------S--S--SF-SF-------", d.delaySequence());
 
         testClass("AnalysisProvider_1", 0, 6,
                 new DebugConfiguration.Builder()
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

@@ -116,9 +116,8 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
                 String eventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_Trie]";
-                    case 1 -> "[DelayedEventual:final@Field_root]";
-                    case 2 -> "[DelayedEventual:immutable@Class_TrieNode]";
-                    case 3 -> "[DelayedEventual:[16 delays]]";
+                    case 1 -> "[DelayedEventual:[26 delays]]";
+                    case 2, 3 -> "[DelayedEventual:[16 delays]]";
                     case 4 -> "[DelayedEventual:[14 delays]]";
                     default -> "@Only before: [frozen]";
                 };
@@ -141,7 +140,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
 
-        testSupportAndUtilClasses(List.of(Trie.class), 0, 0,
+        testSupportAndUtilClasses(List.of(Trie.class), 0, 2,
                 new DebugConfiguration.Builder()
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
