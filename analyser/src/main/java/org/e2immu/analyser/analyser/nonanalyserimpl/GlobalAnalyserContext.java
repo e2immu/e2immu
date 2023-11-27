@@ -97,22 +97,23 @@ public class GlobalAnalyserContext implements AnalyserContext {
         setEndOfAnnotatedAPIAnalysis.set();
     }
 
+    public static final String INTEGER_TO_STRING = "java.lang.Integer.toString(int)";
+
     public static Map<String, List<String>> PARAMETER_ANALYSES = Map.of(
-            "org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)",
-            List.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test"),
-            "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)",
-            List.of("org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean):0:b"));
+            TypeInfo.IS_KNOWN_FQN, List.of(TypeInfo.IS_KNOWN_FQN + ":0:test"),
+            TypeInfo.IS_FACT_FQN, List.of(TypeInfo.IS_FACT_FQN + ":0:b"),
+            INTEGER_TO_STRING, List.of(INTEGER_TO_STRING + ":0:i"));
 
     private static final Set<String> HARDCODED_METHODS = Set.of(
+            TypeInfo.IS_FACT_FQN,
+            TypeInfo.IS_KNOWN_FQN,
             "java.lang.CharSequence.length()",
-            "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)",
-            "org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)",
-            "java.util.Collection.size()",
-            "java.util.Map.size()");
+            "java.lang.String.length()",
+            INTEGER_TO_STRING
+    );
 
-    // occur in companions
-    private static final Set<String> HARDCODED_PARAMETERS = Set.of("org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean):0:test",
-            "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean):0:b");
+    private static final Set<String> HARDCODED_PARAMETERS = PARAMETER_ANALYSES
+            .values().stream().flatMap(List::stream).collect(Collectors.toUnmodifiableSet());
 
     private Map<String, TypeAnalysis> createHardCodedTypeAnalysis() {
         return TypeInfo.HARDCODED_TYPES.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,

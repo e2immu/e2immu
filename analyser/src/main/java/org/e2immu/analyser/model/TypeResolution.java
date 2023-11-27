@@ -67,11 +67,6 @@ public record TypeResolution(SortedType sortedType,
             return this;
         }
 
-        public void addCircularDependencies(Set<TypeInfo> typesInCycle) {
-            if (circularDependencies == null) circularDependencies = new HashSet<>();
-            circularDependencies.addAll(typesInCycle);
-        }
-
         public Builder setSuperTypesExcludingJavaLangObject(Set<TypeInfo> superTypesExcludingJavaLangObject) {
             this.superTypesExcludingJavaLangObject = superTypesExcludingJavaLangObject;
             return this;

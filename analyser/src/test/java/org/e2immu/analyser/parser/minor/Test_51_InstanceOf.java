@@ -136,7 +136,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo p && "collection".equals(p.name)) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if ("list".equals(d.variableName())) {
@@ -150,14 +150,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "collection:-1" : "collection:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<p:collection>/*(List<String>)*/" : "collection/*(List<String>)*/";
                         assertEquals(expected, d.currentValue().toString());
-                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -480,10 +480,11 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         };
 
         TypeMapVisitor typeMapVisitor = d -> {
+            // Integer has been hard-coded, see TypeInfo.HARDCODED_TYPES
             TypeInfo integer = d.typeMap().get(Integer.class);
             assertEquals(MultiLevel.CONTAINER_DV, d.getTypeAnalysis(integer).getProperty(Property.CONTAINER));
             TypeInfo boxedBool = d.typeMap().get(Boolean.class);
-            assertEquals(MultiLevel.CONTAINER_DV, d.getTypeAnalysis(boxedBool).getProperty(Property.CONTAINER));
+            assertEquals(MultiLevel.NOT_CONTAINER_DV, d.getTypeAnalysis(boxedBool).getProperty(Property.CONTAINER));
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

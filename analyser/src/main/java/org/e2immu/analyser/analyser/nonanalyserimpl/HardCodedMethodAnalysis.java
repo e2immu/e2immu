@@ -42,6 +42,9 @@ class HardCodedMethodAnalysis implements MethodAnalysis {
     @Override
     public List<ParameterAnalysis> getParameterAnalyses() {
         List<String> fqns = GlobalAnalyserContext.PARAMETER_ANALYSES.get(fullyQualifiedName);
+        if (fqns == null) {
+            throw new UnsupportedOperationException("Expect hardcoded parameter analyses for " + fullyQualifiedName);
+        }
         for (String fqn : fqns) {
             ParameterAnalysis pa = hardCodedParameters.get(fqn);
             if (pa == null) throw new UnsupportedOperationException("Cannot find " + fqn);

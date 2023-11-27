@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class Test_58_GuideSimplified extends CommonTestRunner {
 
     public Test_58_GuideSimplified() {
-        super(false);
+        super(true);
     }
 
     // original minus some dependencies
@@ -81,7 +81,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("values".equals(d.methodInfo().name)) {
                 assertEquals("Position", d.methodInfo().typeInfo.simpleName);
-                String expected = d.iteration() < 2 ? "<m:values>" : "{Position.START,Position.MID,Position.END}";
+                String expected = d.iteration() < 4 ? "<m:values>" : "{Position.START,Position.MID,Position.END}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("GuideSimplified_3".equals(d.methodInfo().name)) {
@@ -102,10 +102,13 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("GuideSimplified_3", 1, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
@@ -115,7 +118,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("position".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "position".equals(fr.fieldInfo().name)) {
-                    String expectValue = d.iteration() <= 1 ? "<f:position>" : "instance type Position";
+                    String expectValue = d.iteration() < 4 ? "<f:position>" : "instance type Position";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
@@ -128,7 +131,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("trace".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertTrue(d.iteration() < 4);
+                    assertTrue(d.iteration() < 6);
                 }
             }
             if ("position".equals(d.methodInfo().name)) {
@@ -145,19 +148,19 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             if ("values".equals(d.methodInfo().name)) {
                 assertEquals("Position", d.methodInfo().typeInfo.simpleName);
 
-                String expected = d.iteration() <= 1 ? "<m:values>" : "{Position.START,Position.MID,Position.END}";
+                String expected = d.iteration() < 4 ? "<m:values>" : "{Position.START,Position.MID,Position.END}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("GuideSimplified_4".equals(d.methodInfo().name)) {
                 assertDv(d.p(1), 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d.p(1), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
             }
             if ("trace".equals(d.methodInfo().name)) {
-                String expected = d.iteration() <= 1 ? "<m:trace>" : "\"/*\"+position.msg+\"*/\"";
+                String expected = d.iteration() < 4 ? "<m:trace>" : "\"/*\"+position.msg+\"*/\"";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
-                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
         };
 
@@ -172,11 +175,11 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
             if ("START".equals(d.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
-                assertDv(d, 3, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 5, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
             if ("position".equals(d.fieldInfo().name)) {
                 assertEquals("position", d.fieldAnalysis().getValue().toString());
-                assertDv(d, 2, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 4, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
             }
         };
 
@@ -186,12 +189,12 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------", d.delaySequence());
 
         testClass("GuideSimplified_4", 0, 0, new DebugConfiguration.Builder()
-                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
@@ -208,7 +211,7 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("trace".equals(d.methodInfo().name) && d.variable() instanceof ReturnVariable) {
-                String expectValue = d.iteration() <= 1 ? "\"/*\"+<f:this.position().msg>+\"*/\"" : TRACE_RETURN;
+                String expectValue = d.iteration() < 4 ? "\"/*\"+<f:this.position().msg>+\"*/\"" : TRACE_RETURN;
                 assertEquals(expectValue, d.currentValue().toString());
             }
             if ("GuideSimplified_5".equals(d.methodInfo().name)) {
@@ -222,17 +225,19 @@ public class Test_58_GuideSimplified extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("trace".equals(d.methodInfo().name)) {
-                String expect = d.iteration() <= 1 ? "<m:trace>" : TRACE_RETURN;
+                String expect = d.iteration() < 4 ? "<m:trace>" : TRACE_RETURN;
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("position".equals(d.methodInfo().name)) {
-                assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
         testClass("GuideSimplified_5", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

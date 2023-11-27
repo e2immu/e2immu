@@ -106,7 +106,7 @@ public class DefaultAnalyserGenerator implements AnalyserGenerator {
         methodAnalysers = Collections.unmodifiableMap(methodAnalysersBuilder);
 
         // finally, we deal with fields, and wire everything together
-        Map<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new HashMap<>();
+        Map<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new LinkedHashMap<>();
         List<Analyser> allAnalysers = sortedTypes.stream().flatMap(sortedType ->
                 sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
                     Analyser analyser;
@@ -135,7 +135,7 @@ public class DefaultAnalyserGenerator implements AnalyserGenerator {
                     }
                     return analyser == null ? Stream.empty() : Stream.of(analyser);
                 })).toList();
-        fieldAnalysers = Map.copyOf(fieldAnalysersBuilder);
+        fieldAnalysers = Collections.unmodifiableMap(fieldAnalysersBuilder);
 
         List<MethodAnalyser> methodAnalysersInOrder = new ArrayList<>(methodAnalysers.size());
         List<FieldAnalyser> fieldAnalysersInOrder = new ArrayList<>(fieldAnalysers.size());

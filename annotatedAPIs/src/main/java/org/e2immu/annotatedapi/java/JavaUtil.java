@@ -574,6 +574,9 @@ public class JavaUtil extends AnnotatedAPI {
         Iterator<E> spliterator();
     }
 
+    // IMPORTANT: as of 20231127, JDK 21, ArrayList is one of the few types whose hierarchy is broken during
+    // type cycle analysis. As a consequence, all its methods need annotating -- inheritance from List, Collection
+    // will not work.
     @Container
     static class ArrayList$<E> {
 
@@ -594,6 +597,15 @@ public class JavaUtil extends AnnotatedAPI {
 
         ArrayList$(@NotNull(content = true) @Independent(hc = true) Collection<? extends E> collection) {
         }
+
+        @Modified
+        boolean add(@NotNull E e) { return true; }
+
+        @Modified
+        boolean addAll(@NotNull(content = true) @NotModified Collection<? extends E> coll) { return true; }
+
+        @Modified
+        void clear() { }
     }
 
     @Container

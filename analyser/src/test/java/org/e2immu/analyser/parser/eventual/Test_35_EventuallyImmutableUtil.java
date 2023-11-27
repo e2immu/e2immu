@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,7 +68,8 @@ public class Test_35_EventuallyImmutableUtil extends CommonTestRunner {
             assertSame(Analysis.AnalysisMode.CONTRACTED, d.getMethodAnalysis(isSet).analysisMode());
             assertFalse(flipSwitch.typeResolution.get().hasOneKnownGeneratedImplementation());
             assertTrue(flipSwitch.typeResolution.get().circularDependencies().isEmpty());
-            assertTrue(flipSwitch.typeResolution.get().superTypesExcludingJavaLangObject().isEmpty());
+            Set<TypeInfo> superTypes = flipSwitch.typeResolution.get().superTypesExcludingJavaLangObject();
+            assertTrue(superTypes.isEmpty());
             MethodAnalysis isSetAnalysis = d.getMethodAnalysis(isSet);
             assertEquals("@TestMark: [isSet]", isSetAnalysis.getEventual().toString());
         };

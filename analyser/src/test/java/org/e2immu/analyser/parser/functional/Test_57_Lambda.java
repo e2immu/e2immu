@@ -461,9 +461,7 @@ public class Test_57_Lambda extends CommonTestRunner {
     @Test
     public void test_11() throws IOException {
         // potential null pointer, System.out
-        // error: due to inconsistencies in the GlobalAnalyserContext: Optional as a type is hard-coded IMMUTABLE_HC,
-        // while its methods are modifying
-        testClass("Lambda_11", 1, 1, new DebugConfiguration.Builder()
+        testClass("Lambda_11", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 

@@ -83,11 +83,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
 
     private final StatementSimplifier statementSimplifier = new StatementSimplifier();
+
     /*
     Note that MethodLevelData is not part of the shared state, as the "lastStatement", where it resides,
     is only computed in the first step of the analyser components.
      */
-    private record SharedState(BreakDelayLevel breakDelayLevel, EvaluationContext evaluationContext) {
+    public record SharedState(BreakDelayLevel breakDelayLevel, EvaluationContext evaluationContext) {
     }
 
 
@@ -161,7 +162,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(COMPUTE_IMMUTABLE, sharedState -> methodInfo.noReturnValue() ? DONE : computeImmutable(sharedState))
                 .add(COMPUTE_CONTAINER, sharedState -> methodInfo.noReturnValue() ? DONE : computeContainer(sharedState))
                 .add(COMPUTE_SSE, this::computeStaticSideEffects)
-                .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> methodInfo.isConstructor() ? DONE : detectMissingStaticModifier())
+                .add(DETECT_MISSING_STATIC_MODIFIER, (iteration) -> {
+                    if (!methodInfo.isConstructor()) detectMissingStaticModifier();
+                    return DONE;
+                })
                 .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
                 .add(COMPUTE_INDEPENDENT, this::analyseIndependent)
@@ -204,13 +208,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     public void initialize() {
         super.initialize();
 
-        Map<FieldInfo, FieldAnalyser> myFieldAnalysers = new HashMap<>();
+        Map<FieldInfo, FieldAnalyser> myFieldAnalysers = new LinkedHashMap<>();
         analyserContext.fieldAnalyserStream().forEach(analyser -> {
             if (analyser.getFieldInfo().owner == methodInfo.typeInfo) {
                 myFieldAnalysers.put(analyser.getFieldInfo(), analyser);
             }
         });
-        this.myFieldAnalysers = Map.copyOf(myFieldAnalysers);
+        this.myFieldAnalysers = Collections.unmodifiableMap(myFieldAnalysers);
     }
 
     // called from primary type analyser
@@ -297,7 +301,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private static final String NOT_RAISING = "Not raising the 'method should be marked static' error ";
 
-    private AnalysisStatus detectMissingStaticModifier() {
+    private void detectMissingStaticModifier() {
         if (!methodInfo.isStatic()
                 && !methodInfo.typeInfo.isInterface()
                 && methodInfo.isNotATestMethod()) {
@@ -310,13 +314,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                         Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
                 LOGGER.info("Method should be marked 'static': {}", methodInfo);
-                return DONE;
             }
             LOGGER.debug(NOT_RAISING + "(read, assigned): {}", methodInfo);
         } else {
             LOGGER.debug(NOT_RAISING + "(static, interface, test): {}", methodInfo);
         }
-        return DONE;
     }
 
     private boolean absentUnlessStatic(Predicate<VariableInfo> variableProperty) {
@@ -830,7 +832,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private AnalysisStatus computeContainer(SharedState sharedState) {
         if (methodAnalysis.getPropertyFromMapDelayWhenAbsent(CONTAINER).isDone()) return DONE;
-        DV container = computeContainerValue(sharedState.breakDelayLevel());
+        DV container = computeContainerValue();
         if (container.isDelayed()) {
             if (sharedState.breakDelayLevel.acceptMethodOverride()) {
                 methodAnalysis.setProperty(CONTAINER, CONTAINER.falseDv);
@@ -843,7 +845,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return DONE;
     }
 
-    private DV computeContainerValue(BreakDelayLevel breakDelayLevel) {
+    private DV computeContainerValue() {
         DV formal = analyserContext.safeContainer(methodInfo.returnType());
         if (MultiLevel.CONTAINER_DV.equals(formal)) {
             return formal;

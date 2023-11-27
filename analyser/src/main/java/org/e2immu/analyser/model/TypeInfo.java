@@ -27,6 +27,7 @@ import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.annotatedapi.AnnotatedAPI;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -43,43 +44,23 @@ public final class TypeInfo implements NamedType,
         WithInspectionAndAnalysis, Comparable<TypeInfo> {
 
     public static final String JAVA_LANG_OBJECT = "java.lang.Object";
-    public static final String IS_FACT_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)";
-    public static final String IS_KNOWN_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)";
+    public static final String IS_FACT_FQN = AnnotatedAPI.class.getCanonicalName() + ".isFact(boolean)";
+    public static final String IS_KNOWN_FQN = AnnotatedAPI.class.getCanonicalName() + ".isKnown(boolean)";
+
+    public enum HardCoded {
+        IMMUTABLE, IMMUTABLE_HC,
+    }
+
     public static Map<String, HardCoded> HARDCODED_TYPES = Collections.unmodifiableMap(new HashMap<>() {{
-        put("java.lang.Annotation", HardCoded.IMMUTABLE_HC);
-        put("java.lang.Enum", HardCoded.IMMUTABLE_HC);
-        put("java.lang.Object", HardCoded.IMMUTABLE_HC);
-        put("java.io.Serializable", HardCoded.IMMUTABLE_HC);
-        put("java.util.Comparator", HardCoded.IMMUTABLE_HC);
-        put("java.util.Optional", HardCoded.IMMUTABLE_HC_INDEPENDENT_HC);
-
-        put("java.lang.CharSequence", HardCoded.IMMUTABLE_HC);
-        put("java.lang.Class", HardCoded.IMMUTABLE);
-        put("java.lang.Module", HardCoded.IMMUTABLE);
-        put("java.lang.Package", HardCoded.IMMUTABLE);
-        put("java.lang.constant.Constable", HardCoded.IMMUTABLE_HC);
-        put("java.lang.constant.ConstantDesc", HardCoded.IMMUTABLE_HC);
-
-        put("java.util.Map", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
-        put("java.util.AbstractMap", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
-        put("java.util.WeakHashMap", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
-        put("java.lang.ref.WeakReference", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); // ClassValue
-        put("java.util.Collection", HardCoded.MUTABLE_CONTAINER_DO_NOT_ERASE); //  companion
-        put("java.lang.Throwable", HardCoded.MUTABLE_NOT_CONTAINER_DO_NOT_ERASE);
-
         put("org.e2immu.annotatedapi.AnnotatedAPI", HardCoded.IMMUTABLE_HC);
-
-        // primitives, boxed
-        put("java.lang.Boolean", HardCoded.IMMUTABLE);
-        put("java.lang.Byte", HardCoded.IMMUTABLE);
-        put("java.lang.Character", HardCoded.IMMUTABLE);
-        put("java.lang.Double", HardCoded.IMMUTABLE);
-        put("java.lang.Float", HardCoded.IMMUTABLE);
         put("java.lang.Integer", HardCoded.IMMUTABLE);
-        put("java.lang.Long", HardCoded.IMMUTABLE);
-        put("java.lang.Short", HardCoded.IMMUTABLE);
         put("java.lang.String", HardCoded.IMMUTABLE);
-        put("java.lang.Void", HardCoded.IMMUTABLE);
+        put("java.lang.Class", HardCoded.IMMUTABLE);
+        put("java.lang.CharSequence", HardCoded.IMMUTABLE_HC);
+
+        // the following two are not really necessary, but they help a lot of tests which don't use Annotated APIs.
+        put("java.lang.Object", HardCoded.IMMUTABLE_HC);
+        put("java.lang.Enum", HardCoded.IMMUTABLE_HC);
     }});
 
     @NotNull
@@ -899,19 +880,6 @@ public final class TypeInfo implements NamedType,
             if (!map.containsKey(interfaceImplemented.typeInfo)) {
                 makeHierarchy(inspectionProvider, map, interfaceImplemented.typeInfo, distance + 100);
             }
-        }
-    }
-
-    public enum HardCoded {
-        IMMUTABLE(true), IMMUTABLE_HC(true), IMMUTABLE_HC_INDEPENDENT_HC(true),
-        MUTABLE_NOT_CONTAINER_DO_NOT_ERASE(false),
-        MUTABLE_CONTAINER_DO_NOT_ERASE(false),
-        NO(false);
-
-        public final boolean eraseDependencies;
-
-        HardCoded(boolean eraseDependencies) {
-            this.eraseDependencies = eraseDependencies;
         }
     }
 }

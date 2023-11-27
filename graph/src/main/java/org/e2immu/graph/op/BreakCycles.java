@@ -169,7 +169,7 @@ public class BreakCycles<T> {
                     set.addAll(s);
                 }
             }
-            result.add(Set.copyOf(set));
+            result.add(set);
         }
     }
 

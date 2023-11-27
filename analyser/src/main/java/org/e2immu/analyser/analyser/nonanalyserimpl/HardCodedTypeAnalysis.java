@@ -163,28 +163,6 @@ record HardCodedTypeAnalysis(String fullyQualifiedName,
                 case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
                 default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
             };
-            case IMMUTABLE_HC_INDEPENDENT_HC -> switch (property) {
-                case IMMUTABLE -> MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
-                case INDEPENDENT -> MultiLevel.INDEPENDENT_HC_DV;
-                case CONTAINER -> MultiLevel.CONTAINER_DV;
-                case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
-                default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
-            };
-            case MUTABLE_NOT_CONTAINER_DO_NOT_ERASE -> switch (property) {
-                case IMMUTABLE -> MultiLevel.MUTABLE_DV;
-                case INDEPENDENT -> MultiLevel.DEPENDENT_DV;
-                case CONTAINER -> MultiLevel.NOT_CONTAINER_DV;
-                case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
-                default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
-            };
-            case MUTABLE_CONTAINER_DO_NOT_ERASE -> switch (property) {
-                case IMMUTABLE -> MultiLevel.MUTABLE_DV;
-                case INDEPENDENT -> MultiLevel.DEPENDENT_DV;
-                case CONTAINER -> MultiLevel.CONTAINER_DV;
-                case EXTENSION_CLASS, UTILITY_CLASS, SINGLETON, FINALIZER -> DV.FALSE_DV;
-                default -> throw new PropertyException(Analyser.AnalyserIdentification.TYPE, property);
-            };
-            default -> throw new UnsupportedOperationException();
         };
     }
 

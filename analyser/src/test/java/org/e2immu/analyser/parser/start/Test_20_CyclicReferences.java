@@ -189,12 +189,12 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------", d.delaySequence());
 
         testClass("CyclicReferences_3", 0, 0, new DebugConfiguration.Builder()
                 //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 //      .addEvaluationResultVisitor(evaluationResultVisitor)
-                //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -215,8 +215,10 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                 }
             }
         };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------", d.delaySequence());
         testClass("CyclicReferences_4", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+               // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 }

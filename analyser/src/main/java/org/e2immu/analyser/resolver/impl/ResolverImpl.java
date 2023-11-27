@@ -42,9 +42,7 @@ import org.e2immu.graph.V;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.TimedLogger;
 
-import org.e2immu.graph.op.Common;
-import org.e2immu.graph.op.Cycle;
-import org.e2immu.graph.op.Linearize;
+import org.e2immu.graph.op.*;
 import org.e2immu.support.FirstThen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,6 +185,11 @@ public class ResolverImpl implements Resolver {
         if (parent == null) {
             LOGGER.info("Linearize");
         }
+        if (shallowResolver) {
+            // remove cycles between types
+            return linearizeShallow(resolutionBuilders);
+        }
+        // keep cycles between types
         return linearize(resolutionBuilders);
     }
 
@@ -223,19 +226,62 @@ public class ResolverImpl implements Resolver {
         }
     }
 
+    private SortedTypes linearizeShallow(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
+        G<TypeInfo> g = builtTypeGraph();
+        Map<V<TypeInfo>, Long> typeWeights = g.incomingVertexWeight(PackedInt::longSum);
+        BreakCycles.ActionComputer<TypeInfo> actionComputer = new RemoveEdgesByVertexWeight<>(typeWeights);
+        BreakCycles<TypeInfo> breakCycles = new BreakCycles<>(actionComputer);
+        BreakCycles.Linearization<TypeInfo> r = breakCycles.go(g);
+        reportCycleBreaking(g, r);
+        List<TypeCycle> typeCycles = r.list().stream()
+                // all cycles in the set can be executed in parallel; for now, we simply flatten
+                .flatMap(Set::stream)
+                .map(cycle -> {
+                    List<SortedType> sortedTypes = cycle.vertices().stream()
+                            .map(v -> resolutionBuilders.get(v.t()).getSortedType()).toList();
+                    return (TypeCycle) new ListOfSortedTypes(sortedTypes);
+                }).toList();
+        return new SortedTypes(typeCycles);
+    }
+
+    /*
+     Which types need complete annotations, because the hierarchy has been broken?
+     Is dependent on the libraries, and JDK.
+     */
+    private void reportCycleBreaking(G<TypeInfo> g, BreakCycles.Linearization<TypeInfo> r) {
+        for (BreakCycles.ActionInfo info : r.actionLog()) {
+            if (info instanceof BreakCycles.EdgeRemoval2) {
+                @SuppressWarnings("unchecked")
+                BreakCycles.EdgeRemoval2<TypeInfo> er2 = (BreakCycles.EdgeRemoval2<TypeInfo>) info;
+                for (Map.Entry<V<TypeInfo>, Set<V<TypeInfo>>> edges : er2.edges().entrySet()) {
+                    V<TypeInfo> from = edges.getKey();
+                    if (!TypeInfo.HARDCODED_TYPES.containsKey(from.t().fullyQualifiedName)) {
+                        Map<V<TypeInfo>, Long> weightedEdges = g.edges(from);
+                        for (V<TypeInfo> to : edges.getValue()) {
+                            long weight = weightedEdges.get(to);
+                            if (PackedInt.HIERARCHY.of(1) <= weight) {
+                                LOGGER.warn("Removing hierarchical relation {} -> {}", from, to);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private SortedTypes linearize(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders) {
         G<TypeInfo> g = builtTypeGraph();
         // we do not attempt to break cycles here! That's, for now, part of an external activity.
         Linearize.Result<TypeInfo> res = Linearize.linearize(g, Linearize.LinearizationMode.ALL);
-        Stream<Set<TypeInfo>> s1 = res.linearized().list().stream()
-                .map(set -> set.stream().map(V::t).collect(Collectors.toUnmodifiableSet()));
-        Stream<Set<TypeInfo>> s2 = res.remainingCycles().cycles().stream()
-                .map(cycle -> cycle.vertices().stream().map(V::t).collect(Collectors.toUnmodifiableSet()));
-        Stream<Set<TypeInfo>> s3 = res.attachedToCycles().list().stream()
-                .map(set -> set.stream().map(V::t).collect(Collectors.toUnmodifiableSet()));
-        Stream<Set<TypeInfo>> vertexStream = Stream.concat(s1, Stream.concat(s2, s3));
-        List<TypeCycle> typeCycles = vertexStream.map(set -> {
-            List<SortedType> sortedTypes = set.stream().map(ti -> resolutionBuilders.get(ti).getSortedType()).toList();
+        Stream<Stream<TypeInfo>> s1 = res.linearized().list().stream().map(set -> set.stream().map(V::t));
+        Stream<Stream<TypeInfo>> s2 = res.remainingCycles().cycles().stream()
+                .map(cycle -> cycle.vertices().stream().map(V::t));
+        Stream<Stream<TypeInfo>> s3 = res.attachedToCycles().list().stream()
+                .map(set -> set.stream().map(V::t));
+        Stream<Stream<TypeInfo>> vertexStream = Stream.concat(s1, Stream.concat(s2, s3));
+        List<TypeCycle> typeCycles = vertexStream.map(stream -> {
+            List<SortedType> sortedTypes = stream.map(ti -> resolutionBuilders.get(ti).getSortedType())
+                    .collect(Collectors.toCollection(LinkedList::new));
             return (TypeCycle) new ListOfSortedTypes(sortedTypes);
         }).toList();
         return new SortedTypes(typeCycles);
@@ -331,8 +377,8 @@ public class ResolverImpl implements Resolver {
         // only add primary types!
         Map<TypeInfo, Integer> typeDependencies = new HashMap<>();
         Map<TypeInfo, Integer> externalTypeDependencies = new HashMap<>();
-        TypeInfo.HardCoded hardCoded = TypeInfo.HARDCODED_TYPES.get(typeInfo.fullyQualifiedName);
-        if (hardCoded == null || !hardCoded.eraseDependencies) {
+        // exclude JLO to break type cycle caused by its String toString() and Class getClass() methods
+        if (!typeInfo.isJavaLangObject()) {
             for (Map.Entry<TypeInfo, Integer> e : typeInfo.typesReferenced2()) {
                 TypeInfo t = e.getKey();
                 assert t.primaryType() == t : "Not a primary type! " + t;
