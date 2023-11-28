@@ -113,13 +113,10 @@ public class DefaultAnalyserGenerator implements AnalyserGenerator {
                     if (mfs instanceof FieldInfo fieldInfo) {
                         if (!fieldInfo.fieldAnalysis.isSet()) {
                             TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).getTypeAnalysis();
-                            TypeInfo primaryType = sortedType.primaryType();
                             if (inAnnotatedAPI) {
-                                analyser = new ShallowFieldAnalyser(fieldInfo, primaryType, ownerTypeAnalysis,
-                                        analyserContext);
+                                analyser = new ShallowFieldAnalyser(fieldInfo, ownerTypeAnalysis, analyserContext);
                             } else {
-                                analyser = new ComputingFieldAnalyser(fieldInfo, primaryType, ownerTypeAnalysis,
-                                        analyserContext);
+                                analyser = new ComputingFieldAnalyser(fieldInfo, ownerTypeAnalysis, analyserContext);
                             }
                             fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
                         } else {

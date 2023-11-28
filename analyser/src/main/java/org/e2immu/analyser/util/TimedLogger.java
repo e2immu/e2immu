@@ -7,12 +7,14 @@ import java.time.Instant;
 public class TimedLogger {
 
     private final Logger logger;
-    private final long delay;
+    private final long delayMillis;
     private long latest;
 
-    public TimedLogger(Logger logger, long delay) {
+    public TimedLogger(Logger logger, long delayMillis) {
         this.logger = logger;
-        this.delay = delay;
+        this.delayMillis = delayMillis;
+        // give it some time before we start logging
+        latest = Instant.now().toEpochMilli() + delayMillis;
     }
 
     public void info(String string, Object... objects) {
@@ -23,7 +25,7 @@ public class TimedLogger {
 
     private boolean allow() {
         long now = Instant.now().toEpochMilli();
-        boolean ok = now - latest >= delay;
+        boolean ok = now - latest >= delayMillis;
         if (ok) latest = now;
         return ok;
     }

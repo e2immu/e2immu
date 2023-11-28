@@ -194,9 +194,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         List<MethodAnalyser> myMethodAnalysers = new LinkedList<>();
         List<MethodAnalyser> myMethodAndConstructorAnalysersExcludingSAMs = new LinkedList<>();
         List<MethodAnalyser> myConstructors = new LinkedList<>();
-        List<FieldAnalyser> myFieldAnalysers = new LinkedList<>();
 
-        analyserContext.methodAnalyserStream().sorted().forEach(methodAnalyser -> {
+        analyserContext.methodAnalyserStream(typeInfo.primaryType()).sorted().forEach(methodAnalyser -> {
             if (methodAnalyser.getMethodInfo().typeInfo == typeInfo) {
                 if (methodAnalyser.getMethodInfo().isConstructor()) {
                     myConstructors.add(methodAnalyser);
@@ -211,17 +210,11 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 }
             }
         });
-        analyserContext.fieldAnalyserStream().sorted().forEach(fieldAnalyser -> {
-            if (fieldAnalyser.getFieldInfo().owner == typeInfo) {
-                myFieldAnalysers.add(fieldAnalyser);
-            }
-        });
-
+        this.myFieldAnalysers = analyserContext.fieldAnalyserStream(typeInfo).sorted().toList();
         this.myMethodAnalysersExcludingSAMs = List.copyOf(myMethodAnalysersExcludingSAMs);
         this.myConstructors = List.copyOf(myConstructors);
         this.myMethodAnalysers = List.copyOf(myMethodAnalysers);
         this.myMethodAndConstructorAnalysersExcludingSAMs = List.copyOf(myMethodAndConstructorAnalysersExcludingSAMs);
-        this.myFieldAnalysers = List.copyOf(myFieldAnalysers);
 
         ParameterizedType parentClass = typeInspection.parentClass();
         if (parentClass != null && !parentClass.isJavaLangObject()) {

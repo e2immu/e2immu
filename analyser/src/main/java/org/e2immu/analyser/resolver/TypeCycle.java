@@ -39,4 +39,8 @@ public interface TypeCycle {
     AnalyserGenerator createAnalyserGeneratorAndGenerateAnalysers(AnalyserContext analyserContext);
 
     Stream<TypeInfo> primaryTypeStream();
+
+    int size();
+
+    TypeInfo first();
 }

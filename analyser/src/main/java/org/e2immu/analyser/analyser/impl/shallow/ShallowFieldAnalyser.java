@@ -35,10 +35,8 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
     private static final Logger LOGGER = LoggerFactory.getLogger(ShallowFieldAnalyser.class);
 
 
-    public ShallowFieldAnalyser(FieldInfo fieldInfo, TypeInfo primaryType,
-                                TypeAnalysis ownerTypeAnalysis,
-                                AnalyserContext analyserContext) {
-        super(analyserContext, primaryType, ownerTypeAnalysis, fieldInfo);
+    public ShallowFieldAnalyser(FieldInfo fieldInfo, TypeAnalysis ownerTypeAnalysis, AnalyserContext analyserContext) {
+        super(analyserContext, ownerTypeAnalysis, fieldInfo);
     }
 
     @Override
@@ -139,7 +137,7 @@ public class ShallowFieldAnalyser extends FieldAnalyserImpl implements FieldAnal
         DV formallyIndependent = analyserContext.typeIndependent(fieldInfo.type);
         DV independent = MultiLevel.DEPENDENT_DV.maxIgnoreDelay(annotatedIndependent.maxIgnoreDelay(formallyIndependent));
         DV markedIgnoreMods = fieldAnalysis.getPropertyFromMapDelayWhenAbsent(Property.EXTERNAL_IGNORE_MODIFICATIONS);
-        DV ignoreMods = markedIgnoreMods.isDelayed() ? MultiLevel.NOT_IGNORE_MODS_DV: markedIgnoreMods;
+        DV ignoreMods = markedIgnoreMods.isDelayed() ? MultiLevel.NOT_IGNORE_MODS_DV : markedIgnoreMods;
         fieldAnalysis.setProperty(Property.EXTERNAL_IGNORE_MODIFICATIONS, ignoreMods);
 
         Properties properties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, notNull,

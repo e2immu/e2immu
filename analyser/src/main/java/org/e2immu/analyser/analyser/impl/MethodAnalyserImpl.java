@@ -47,12 +47,12 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
 
     protected MethodAnalyserImpl(MethodInfo methodInfo,
-                       MethodAnalysisImpl.Builder methodAnalysis,
-                       List<? extends ParameterAnalyser> parameterAnalysers,
-                       List<ParameterAnalysis> parameterAnalyses,
-                       Map<CompanionMethodName, CompanionAnalyser> companionAnalysers,
-                       boolean isSAM,
-                       AnalyserContext analyserContextInput) {
+                                 MethodAnalysisImpl.Builder methodAnalysis,
+                                 List<? extends ParameterAnalyser> parameterAnalysers,
+                                 List<ParameterAnalysis> parameterAnalyses,
+                                 Map<CompanionMethodName, CompanionAnalyser> companionAnalysers,
+                                 boolean isSAM,
+                                 AnalyserContext analyserContextInput) {
         super("Method " + methodInfo.name, analyserContextInput);
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
@@ -135,8 +135,6 @@ public abstract class MethodAnalyserImpl extends AbstractAnalyser implements Met
             Collection<AnnotationExpression> annotations = pa.getParameterInfo().getInspection().getAnnotations();
             pa.getParameterAnalysis().fromAnnotationsIntoProperties(AnalyserIdentification.PARAMETER, acceptVerify,
                     annotations, analyserContext.getE2ImmuAnnotationExpressions());
-
-            pa.initialize(analyserContext.fieldAnalyserStream());
         });
     }
 

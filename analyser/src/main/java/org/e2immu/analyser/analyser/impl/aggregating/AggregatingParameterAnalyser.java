@@ -15,13 +15,10 @@
 package org.e2immu.analyser.analyser.impl.aggregating;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.FieldAnalyser;
 import org.e2immu.analyser.analyser.impl.ParameterAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.model.ParameterInfo;
-
-import java.util.stream.Stream;
 
 public class AggregatingParameterAnalyser extends ParameterAnalyserImpl {
 
@@ -32,11 +29,6 @@ public class AggregatingParameterAnalyser extends ParameterAnalyserImpl {
     @Override
     public AnalyserComponents<String, ?> getAnalyserComponents() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void initialize(Stream<FieldAnalyser> fieldAnalyserStream) {
-
     }
 
     @Override

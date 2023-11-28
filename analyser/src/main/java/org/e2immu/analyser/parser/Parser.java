@@ -134,6 +134,8 @@ public class Parser {
 
             // creating the typeMap ensures that all inspections and resolutions are set.
             typeMap = input.globalTypeContext().typeMap.build();
+            LOGGER.info("Type map has been built");
+
             globalAnalyserContext = new GlobalAnalyserContext(input.globalTypeContext(),
                     configuration, importantClasses, typeMap.getE2ImmuAnnotationExpressions());
 
@@ -144,15 +146,18 @@ public class Parser {
             }
             globalAnalyserContext.startOnDemandMode();
             globalAnalyserContext.endOfAnnotatedAPIAnalysis();
+            LOGGER.info("End of Annotated API Analysis, have {} source types cycles, largest has size {}",
+                    resolvedSourceTypes.typeCycles().size(),
+                    resolvedSourceTypes.typeCycles().stream().mapToInt(TypeCycle::size).max().orElse(0));
 
             for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration().typeMapVisitors()) {
                 typeMapVisitor.visit(new TypeMapVisitor.Data(typeMap, globalAnalyserContext));
             }
 
             for (TypeCycle typeCycle : resolvedSourceTypes.typeCycles()) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Analysing primary type cycle:\n{}", typeCycle);
-                }
+                LOGGER.info("Analysing primary type cycle of size {}, starting with {}",
+                        typeCycle.size(), typeCycle.first());
+
                 runAnalyzer(globalAnalyserContext, typeCycle, false);
             }
         }

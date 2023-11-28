@@ -94,10 +94,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
     private TypeAnalyser myTypeAnalyser;
 
     public ComputingFieldAnalyser(FieldInfo fieldInfo,
-                                  TypeInfo primaryType,
                                   TypeAnalysis ownerTypeAnalysis,
                                   AnalyserContext nonExpandableAnalyserContext) {
-        super(new LocalAnalyserContext(nonExpandableAnalyserContext), primaryType, ownerTypeAnalysis, fieldInfo);
+        super(new LocalAnalyserContext(nonExpandableAnalyserContext), ownerTypeAnalysis, fieldInfo);
         this.acrossAllMethods = analyserContext.getConfiguration().analyserConfiguration().computeFieldAnalyserAcrossAllMethods();
         fieldCanBeWrittenFromOutsideThisPrimaryType = !fieldInfo.fieldInspection.get().isPrivate() &&
                 !fieldInfo.isExplicitlyFinal();
@@ -183,11 +182,14 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .fromAnnotationsIntoProperties(AnalyserIdentification.FIELD, false,
                         fieldInfo.fieldInspection.get().getAnnotations(), analyserContext.getE2ImmuAnnotationExpressions()));
 
-        analyserContext.methodAnalyserStream().forEach(analyser -> {
-            if (analyser.getMethodInfo().isStaticBlock()) {
-                myStaticBlocks.add(analyser);
-            } else if (analyser.getMethodInfo().typeInfo == fieldInfo.owner) {
-                myMethodsAndConstructors.add(analyser);
+        analyserContext.methodAnalyserStream(fieldInfo.owner.primaryType()).forEach(analyser -> {
+            // looping over all method analysers in the primary type; here, we want to restrict to the owner only
+            if (analyser.getMethodInfo().typeInfo == fieldInfo.owner) {
+                if (analyser.getMethodInfo().isStaticBlock()) {
+                    myStaticBlocks.add(analyser);
+                } else {
+                    myMethodsAndConstructors.add(analyser);
+                }
             }
         });
         myTypeAnalyser = analyserContext.getTypeAnalyser(fieldInfo.owner);
@@ -220,13 +222,14 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
     }
 
     private Stream<MethodAnalyser> allMethodsAndConstructors(TypeInfo enclosedIn, boolean alsoMyOwnConstructors) {
-        return analyserContext.methodAnalyserStream()
+        return analyserContext.methodAnalyserStream(primaryType)
                 .filter(ma -> !ma.getMethodInfo().isStaticBlock())
                 .filter(ma -> enclosedIn == null || ma.getMethodInfo().typeInfo.isEnclosedIn(enclosedIn))
                 .filter(ma -> alsoMyOwnConstructors ||
                         !(ma.getMethodInfo().typeInfo == fieldInfo.owner && ma.getMethodInfo().isConstructor()))
                 .flatMap(ma -> Stream.concat(Stream.of(ma),
-                        ma.getLocallyCreatedPrimaryTypeAnalysers().flatMap(PrimaryTypeAnalyser::methodAnalyserStream)));
+                        ma.getLocallyCreatedPrimaryTypeAnalysers()
+                                .flatMap(pta -> pta.methodAnalyserStream(primaryType))));
     }
 
     @Override
@@ -737,7 +740,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
     private boolean isReadInMethod(MethodAnalyser methodAnalyser) {
         boolean read = methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(VariableInfo::isRead);
         if (read) return true;
-        return methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers().flatMap(AnalyserContext::methodAnalyserStream)
+        return methodAnalyser.getLocallyCreatedPrimaryTypeAnalysers()
+                .flatMap(pta -> pta.methodAnalyserStream(primaryType))
                 .anyMatch(this::isReadInMethod);
     }
 

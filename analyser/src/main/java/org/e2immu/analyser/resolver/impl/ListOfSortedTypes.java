@@ -44,4 +44,14 @@ public class ListOfSortedTypes implements TypeCycle {
     public Stream<TypeInfo> primaryTypeStream() {
         return sortedTypes.stream().map(SortedType::primaryType);
     }
+
+    @Override
+    public int size() {
+        return sortedTypes.size();
+    }
+
+    @Override
+    public TypeInfo first() {
+        return sortedTypes.isEmpty() ? null : sortedTypes.get(0).primaryType();
+    }
 }

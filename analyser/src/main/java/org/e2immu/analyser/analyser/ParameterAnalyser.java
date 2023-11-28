@@ -22,7 +22,5 @@ import java.util.stream.Stream;
 public interface ParameterAnalyser extends Analyser {
     ParameterAnalysis getParameterAnalysis();
 
-    void initialize(Stream<FieldAnalyser> fieldAnalyserStream);
-
     ParameterInfo getParameterInfo();
 }

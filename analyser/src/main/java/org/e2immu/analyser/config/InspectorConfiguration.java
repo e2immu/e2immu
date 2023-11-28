@@ -26,7 +26,7 @@ public record InspectorConfiguration(boolean storeComments,
     public String toString() {
         return "InspectionConfiguration:" +
                 "\n    storeComments=" + storeComments +
-                "\n   graphDirectory='" + graphDirectory + "'";
+                "\n    graphDirectory='" + graphDirectory + "'";
     }
 
     @Container

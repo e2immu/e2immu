@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.TimedLogger;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
 import org.slf4j.Logger;
@@ -58,6 +59,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private final FlipSwitch setEndOfAnnotatedAPIAnalysis = new FlipSwitch();
 
     private final List<String> onDemandHistory = new ArrayList<>();
+    private final TimedLogger onDemandLogger = new TimedLogger(LOGGER, 1000L);
 
     public GlobalAnalyserContext(TypeContext typeContext,
                                  Configuration configuration,
@@ -231,15 +233,21 @@ public class GlobalAnalyserContext implements AnalyserContext {
         if (onDemandMode.isSet()) {
             synchronized (typeAnalyses) {
                 LOGGER.debug("On-demand shallow type analysis of {}", typeInfo);
-                onDemandHistory.add(typeInfo.fullyQualifiedName);
+                try {
+                    ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(typeInfo, typeInfo.primaryType(),
+                            this);
+                    shallowTypeAnalyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
+                    TypeAnalysis typeAnalysis = shallowTypeAnalyser.typeAnalysis.build();
+                    typeInfo.setAnalysis(typeAnalysis);
+                    typeAnalyses.put(typeInfo, typeAnalysis);
 
-                ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(typeInfo, typeInfo.primaryType(),
-                        this);
-                shallowTypeAnalyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
-                TypeAnalysis typeAnalysis = shallowTypeAnalyser.typeAnalysis.build();
-                typeInfo.setAnalysis(typeAnalysis);
-                typeAnalyses.put(typeInfo, typeAnalysis);
-                return typeAnalysis;
+                    onDemandHistory.add(typeInfo.fullyQualifiedName);
+                    onDemandLogger.info("On-demand analysis: {}", onDemandHistory.size());
+                    return typeAnalysis;
+                } catch (RuntimeException re) {
+                    LOGGER.error("Caught exception while starting shallow type analyser on {}", typeInfo.fullyQualifiedName);
+                    throw re;
+                }
             }
         }
         return null;
@@ -256,8 +264,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
                 onDemandHistory.add(fieldInfo.fullyQualifiedName);
 
                 TypeAnalysis ownerTypeAnalysis = getTypeAnalysis(fieldInfo.owner);
-                ShallowFieldAnalyser shallowFieldAnalyser = new ShallowFieldAnalyser(fieldInfo,
-                        fieldInfo.owner.primaryType(), ownerTypeAnalysis, this);
+                ShallowFieldAnalyser shallowFieldAnalyser = new ShallowFieldAnalyser(fieldInfo, ownerTypeAnalysis,
+                        this);
                 shallowFieldAnalyser.analyse(new Analyser.SharedState(0, BreakDelayLevel.NONE, null));
                 FieldAnalysis fa = shallowFieldAnalyser.getFieldAnalysis();
                 fieldInfo.setAnalysis(fa);

@@ -16,13 +16,12 @@ public abstract class FieldAnalyserImpl extends AbstractAnalyser implements Fiel
     protected final FieldInspection fieldInspection;
     protected final FieldAnalysisImpl.Builder fieldAnalysis;
 
-    public FieldAnalyserImpl(AnalyserContext analyserContext, TypeInfo primaryType,
-                             TypeAnalysis ownerTypeAnalysis, FieldInfo fieldInfo) {
+    public FieldAnalyserImpl(AnalyserContext analyserContext, TypeAnalysis ownerTypeAnalysis, FieldInfo fieldInfo) {
         super("Field " + fieldInfo.name, analyserContext);
         this.fieldInfo = fieldInfo;
         this.fqn = fieldInfo.fullyQualifiedName();
         this.fieldInspection = fieldInfo.fieldInspection.get();
-        this.primaryType = primaryType;
+        this.primaryType = fieldInfo.owner.primaryType();
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo,
                 ownerTypeAnalysis);
     }

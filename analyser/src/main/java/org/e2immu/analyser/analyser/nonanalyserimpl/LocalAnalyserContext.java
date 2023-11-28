@@ -71,8 +71,9 @@ public class LocalAnalyserContext implements AnalyserContext {
     }
 
     @Override
-    public Stream<MethodAnalyser> methodAnalyserStream() {
-        return Stream.concat(parent.methodAnalyserStream(), this.methodAnalysers.valueStream());
+    public Stream<MethodAnalyser> methodAnalyserStream(TypeInfo primaryType) {
+        assert methodAnalysers.stream().allMatch(e -> e.getKey().typeInfo.primaryType() == primaryType);
+        return Stream.concat(parent.methodAnalyserStream(primaryType), this.methodAnalysers.valueStream());
     }
 
     @Override
@@ -137,8 +138,9 @@ public class LocalAnalyserContext implements AnalyserContext {
     }
 
     @Override
-    public Stream<FieldAnalyser> fieldAnalyserStream() {
-        return Stream.concat(parent.fieldAnalyserStream(), this.fieldAnalysers.valueStream());
+    public Stream<FieldAnalyser> fieldAnalyserStream(TypeInfo typeInfo) {
+        return Stream.concat(parent.fieldAnalyserStream(typeInfo),
+                this.fieldAnalysers.valueStream().filter(fa -> fa.getFieldInfo().owner == typeInfo));
     }
 
     @Override

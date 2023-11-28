@@ -30,6 +30,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.AnalyserGenerator;
 import org.e2immu.analyser.resolver.TypeCycle;
 import org.e2immu.analyser.util.Pair;
+import org.e2immu.analyser.util.TimedLogger;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
@@ -57,7 +58,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final Map<TypeInfo, TypeAnalyser> typeAnalysers;
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
+    private final Map<TypeInfo, List<MethodAnalyser>> methodAnalysersPerPrimaryType;
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
+    private final Map<TypeInfo, List<FieldAnalyser>> fieldAnalysersPerType;
     private AnalyserResult.Builder analyserResultBuilder;
     private final Primitives primitives;
     private final ImportantClasses importantClasses;
@@ -80,11 +83,31 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         this.analysers = analyserGenerator.getAnalysers();
         this.primaryTypes = analyserGenerator.getPrimaryTypes();
         this.methodAnalysers = analyserGenerator.getMethodAnalysers();
+        this.methodAnalysersPerPrimaryType = new HashMap<>();
+        for (Map.Entry<MethodInfo, MethodAnalyser> entry : methodAnalysers.entrySet()) {
+            methodAnalysersPerPrimaryType.computeIfAbsent(entry.getKey().typeInfo.primaryType(),
+                    e -> new ArrayList<>()).add(entry.getValue());
+        }
         this.fieldAnalysers = analyserGenerator.getFieldAnalysers();
+        this.fieldAnalysersPerType = new HashMap<>();
+        for (Map.Entry<FieldInfo, FieldAnalyser> entry : fieldAnalysers.entrySet()) {
+            fieldAnalysersPerType.computeIfAbsent(entry.getKey().owner, e -> new ArrayList<>()).add(entry.getValue());
+        }
         this.typeAnalysers = analyserGenerator.getTypeAnalysers();
 
         // all important fields of the interface have been set.
-        analysers.forEach(Analyser::initialize);
+        int count = 0;
+        TimedLogger timedLogger = new TimedLogger(LOGGER, 1000L);
+        for (Analyser a : analysers) {
+            try {
+                a.initialize();
+                count++;
+                timedLogger.info("Initialized {} analysers", count);
+            } catch (RuntimeException re) {
+                LOGGER.error("Caught exception initializing analyser {}", a);
+                throw re;
+            }
+        }
 
         AnalyserComponents.Builder<Analyser, SharedState> builder = new AnalyserComponents.Builder<>();
         builder.setLimitCausesOfDelay(true);
@@ -170,7 +193,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public void analyse() {
         assert !isUnreachable();
         if (typeAnalysers.size() > 10) {
-            LOGGER.debug("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(),
+            LOGGER.info("Starting to process {} types, {} methods, {} fields", typeAnalysers.size(),
                     methodAnalysers.size(), fieldAnalysers.size());
         }
 
@@ -182,7 +205,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         do {
             delaySequence.add(breakDelayLevel);
 
-            LOGGER.debug(marker, "\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
+            LOGGER.info(marker, "\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
                     iteration, breakDelayLevel, name, delaySequence);
             analyserComponents.resetDelayHistogram();
 
@@ -316,8 +339,8 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     @Override
-    public Stream<FieldAnalyser> fieldAnalyserStream() {
-        return fieldAnalysers.values().stream();
+    public Stream<FieldAnalyser> fieldAnalyserStream(TypeInfo typeInfo) {
+        return fieldAnalysersPerType.getOrDefault(typeInfo, List.of()).stream();
     }
 
     @Override
@@ -330,8 +353,9 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     @Override
-    public Stream<MethodAnalyser> methodAnalyserStream() {
-        return methodAnalysers.values().stream();
+    public Stream<MethodAnalyser> methodAnalyserStream(TypeInfo primaryType) {
+        assert primaryType.isPrimaryType();
+        return methodAnalysersPerPrimaryType.getOrDefault(primaryType, List.of()).stream();
     }
 
     @Override

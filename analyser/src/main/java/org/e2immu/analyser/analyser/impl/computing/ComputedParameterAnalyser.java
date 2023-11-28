@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
@@ -61,8 +60,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     public static final String ANALYSE_CONTAINER_NO_ASSIGNMENT = "PA:analyseContainerNoAssignment";
     public static final String ANALYSE_INDEPENDENT_OF_RETURN_VALUE = "PA:independentOfReturnValue";
 
-    private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
-
     public ComputedParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super(analyserContext, parameterInfo);
         AnalyserComponents.Builder<String, SharedState> ac = new AnalyserComponents.Builder<String, SharedState>()
@@ -79,11 +76,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                 .add("followExtImm", this::followExternalImmutable);
         analyserComponents = ac.build();
 
-    }
-
-    @Override
-    public void initialize(Stream<FieldAnalyser> fieldAnalyserStream) {
-        this.fieldAnalysers = fieldAnalyserStream.collect(Collectors.toUnmodifiableMap(FieldAnalyser::getFieldInfo, fa -> fa));
     }
 
     @Override
@@ -470,7 +462,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             FieldInfo fieldInfo = e.getKey();
             DV assignedOrLinked = e.getValue();
             List<Property> propertiesToCopy = propertiesToCopy(assignedOrLinked);
-            FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
+            FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalyser(fieldInfo);
             if (fieldAnalyser != null) {
                 FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
 

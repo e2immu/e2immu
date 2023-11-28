@@ -53,7 +53,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return null;
     }
 
-    default Stream<MethodAnalyser> methodAnalyserStream() {
+    default Stream<MethodAnalyser> methodAnalyserStream(TypeInfo primaryType) {
         throw new UnsupportedOperationException();
     }
 
@@ -65,7 +65,7 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         throw new UnsupportedOperationException();
     }
 
-    default Stream<FieldAnalyser> fieldAnalyserStream() {
+    default Stream<FieldAnalyser> fieldAnalyserStream(TypeInfo typeInfo) {
         throw new UnsupportedOperationException();
     }
 
@@ -117,7 +117,12 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return methodInfo.methodInspection.get(methodInfo.fullyQualifiedName);
     }
 
-   default   boolean isStore() { return false; }
+    default boolean isStore() {
+        return false;
+    }
 
-   default void store(Analysis analysis) { throw new UnsupportedOperationException(); }
+    default void store(Analysis analysis) {
+        throw new UnsupportedOperationException();
+    }
+
 }

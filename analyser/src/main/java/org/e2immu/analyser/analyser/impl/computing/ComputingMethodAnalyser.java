@@ -80,7 +80,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private final AnalyserComponents<String, SharedState> analyserComponents;
     private final Set<PrimaryTypeAnalyser> locallyCreatedPrimaryTypeAnalysers = new HashSet<>();
 
-    private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
+    private List<FieldAnalyser> myFieldAnalysers;
 
     private final StatementSimplifier statementSimplifier = new StatementSimplifier();
 
@@ -208,13 +208,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     public void initialize() {
         super.initialize();
 
-        Map<FieldInfo, FieldAnalyser> myFieldAnalysers = new LinkedHashMap<>();
-        analyserContext.fieldAnalyserStream().forEach(analyser -> {
-            if (analyser.getFieldInfo().owner == methodInfo.typeInfo) {
-                myFieldAnalysers.put(analyser.getFieldInfo(), analyser);
-            }
-        });
-        this.myFieldAnalysers = Collections.unmodifiableMap(myFieldAnalysers);
+        myFieldAnalysers = analyserContext.fieldAnalyserStream(methodInfo.typeInfo).sorted().toList();
     }
 
     // called from primary type analyser
@@ -379,7 +373,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         Primitives primitives = methodAnalysis.primitives;
 
         TypeInfo typeInfo = methodInfo.typeInfo;
-        List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.values().stream()
+        List<FieldAnalysis> fieldAnalysesOfTypeInfo = myFieldAnalysers.stream()
                 .map(FieldAnalyser::getFieldAnalysis).toList();
 
         while (true) {
@@ -517,7 +511,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private AnalysisStatus preconditionAsInLazy(Primitives primitives, EvaluationResult context) {
         // code to detect the situation as in Lazy
         Precondition combinedPrecondition = Precondition.empty(methodAnalysis.primitives);
-        for (FieldAnalyser fieldAnalyser : myFieldAnalysers.values()) {
+        for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             if (fieldAnalyser.getFieldAnalysis().getProperty(Property.FINAL).valueIsFalse()) {
                 FieldReference fr = new FieldReferenceImpl(analyserContext, fieldAnalyser.getFieldInfo());
                 StatementAnalysis beforeAssignment = statementBeforeAssignment(fr);
