@@ -205,7 +205,7 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
         do {
             delaySequence.add(breakDelayLevel);
 
-            LOGGER.info(marker, "\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
+            LOGGER.debug(marker, "\n******\nStarting iteration {} (break? {}) of the primary type analyser on {}; sequence {}\n******",
                     iteration, breakDelayLevel, name, delaySequence);
             analyserComponents.resetDelayHistogram();
 

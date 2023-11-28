@@ -57,12 +57,14 @@ public class TestAnalyseMain {
                 .addClassPath("jmods/java.compiler.jmod")
                 .addClassPath("jmods/java.xml.jmod")
                 .addClassPath("jmods/java.net.http.jmod")
+                .addClassPath("../graph/build/classes/java/main")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/objectweb/asm")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/classic")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/jgrapht")
                 .build();
 
         AnalyserConfiguration analyserConfiguration = new AnalyserConfiguration.Builder()

@@ -105,7 +105,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Expression toEvaluate = toEvaluate(expressionsFromInitAndUpdate);
         EvaluationResult context = makeContext(sharedState.evaluationContext());
         
-        LOGGER.info("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
+        LOGGER.debug("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
         ForwardEvaluationInfo forwardEvaluationInfo = prepareForward(statement, structure);
 
         // here is a good breakpoint location, e.g. "4.0.1".equals(index())

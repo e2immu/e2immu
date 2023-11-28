@@ -40,13 +40,16 @@ public class Postmortem {
             LOGGER.error("Created directory {}", file.getParentFile().getAbsolutePath());
         }
         LOGGER.error("Writing postmortem file to {}", FILE);
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE))) {
-            for (String line : lines) {
-                bw.write(line);
-                bw.newLine();
+        // there could be another thread still "add"ing while we're writing here
+        synchronized (lines) {
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE))) {
+                for (String line : lines) {
+                    bw.write(line);
+                    bw.newLine();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 

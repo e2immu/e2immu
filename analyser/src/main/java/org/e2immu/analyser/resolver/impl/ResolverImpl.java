@@ -259,9 +259,9 @@ public class ResolverImpl implements Resolver {
                         Map<V<TypeInfo>, Long> weightedEdges = g.edges(from);
                         for (V<TypeInfo> to : edges.getValue()) {
                             long weight = weightedEdges.get(to);
-                         //   if (PackedInt.HIERARCHY.of(1) <= weight) {
-                                LOGGER.warn("Removing relation {} -> {} -> {}", from, PackedInt.nice((int)weight), to);
-                         //   }
+                            //   if (PackedInt.HIERARCHY.of(1) <= weight) {
+                            LOGGER.warn("Removing relation {} -> {} -> {}", from, PackedInt.nice((int) weight), to);
+                            //   }
                         }
                     }
                 }
@@ -273,11 +273,12 @@ public class ResolverImpl implements Resolver {
         G<TypeInfo> g = builtTypeGraph();
         // we do not attempt to break cycles here! That's, for now, part of an external activity.
         Linearize.Result<TypeInfo> res = Linearize.linearize(g, Linearize.LinearizationMode.ALL);
-        Stream<Stream<TypeInfo>> s1 = res.linearized().list().stream().map(set -> set.stream().map(V::t));
+        Stream<Stream<TypeInfo>> s1 = res.linearized().list().stream()
+                .flatMap(set -> set.stream().map(v -> Stream.of(v.t())));
         Stream<Stream<TypeInfo>> s2 = res.remainingCycles().cycles().stream()
                 .map(cycle -> cycle.vertices().stream().map(V::t));
         Stream<Stream<TypeInfo>> s3 = res.attachedToCycles().list().stream()
-                .map(set -> set.stream().map(V::t));
+                .flatMap(set -> set.stream().map(v -> Stream.of(v.t())));
         Stream<Stream<TypeInfo>> vertexStream = Stream.concat(s1, Stream.concat(s2, s3));
         List<TypeCycle> typeCycles = vertexStream.map(stream -> {
             List<SortedType> sortedTypes = stream.map(ti -> resolutionBuilders.get(ti).getSortedType())

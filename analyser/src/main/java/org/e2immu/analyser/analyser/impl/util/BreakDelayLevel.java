@@ -38,7 +38,7 @@ public enum BreakDelayLevel {
         return this == METHOD_OVERRIDE;
     }
 
-    private BreakDelayLevel from(int level) {
+    private static BreakDelayLevel from(int level) {
         return switch (level) {
             case 0 -> NONE;
             case 1 -> STATEMENT;
