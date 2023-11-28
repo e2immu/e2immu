@@ -144,9 +144,16 @@ class SimpleSet extends AbstractDelay {
         return causes.size();
     }
 
+    // Note: translation of CauseOfDelay not in that interface to avoid type dependency from CauseOfDelay to
+    // TranslationMap, InspectionProvider (see Test_Util_12_WeightedGraph)
     @Override
     public CausesOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return DelayFactory.createDelay(causesStream().map(c -> c.translate(inspectionProvider, translationMap)).collect(Collectors.toUnmodifiableSet()));
+        return DelayFactory.createDelay(causesStream().map(c -> {
+            if (c instanceof VariableCause vc) {
+                return vc.translate(inspectionProvider, translationMap);
+            }
+            return c;
+        }).collect(Collectors.toUnmodifiableSet()));
     }
 
     @Override

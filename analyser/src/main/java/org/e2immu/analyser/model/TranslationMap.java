@@ -15,7 +15,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.NotNull;
@@ -51,13 +50,6 @@ public interface TranslationMap {
     @NotNull(content = true)
     default List<Statement> translateStatement(InspectionProvider inspectionProvider, Statement statement) {
         return List.of(statement);
-    }
-
-    @NotNull
-    default Block translateBlock(InspectionProvider inspectionProvider, Block block) {
-        List<Statement> list = translateStatement(inspectionProvider, block);
-        if (list.size() != 1) throw new UnsupportedOperationException();
-        return (Block) list.get(0);
     }
 
     @NotNull
@@ -129,7 +121,10 @@ public interface TranslationMap {
      */
     default boolean translateAgain() { return false; }
 
-    default String modificationTimes(MethodCall beforeTranslation,
+    /*
+    Note: to avoid cyclic type dependencies, the first parameter takes 'Expression' rather than 'MethodCall'
+     */
+    default String modificationTimes(Expression methodCallBeforeTranslation,
                                      Expression translatedObject,
                                      List<Expression> translatedParameters) { return null; }
 }

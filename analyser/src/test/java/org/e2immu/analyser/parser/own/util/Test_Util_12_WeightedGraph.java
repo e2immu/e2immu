@@ -21,18 +21,23 @@ import org.e2immu.analyser.analyser.util.WeightedGraph;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.util.PackedIntMap;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.graph.analyser.PackedInt;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.TreeMap;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
@@ -183,6 +188,10 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
         };
 
         List<Class<?>> classes = List.of(
+                PackedIntMap.class,
+                TranslationMap.class,
+                InspectionProvider.class,
+
                 // target
                 WeightedGraph.class,
 

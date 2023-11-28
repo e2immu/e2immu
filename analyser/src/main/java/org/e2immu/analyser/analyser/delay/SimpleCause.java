@@ -81,9 +81,4 @@ public class SimpleCause implements CauseOfDelay {
     public boolean variableIsField(FieldInfo fieldInfo) {
         return location().getInfo() instanceof FieldInfo fi && fi == fieldInfo;
     }
-
-    @Override
-    public CauseOfDelay translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
-        return this;
-    }
 }

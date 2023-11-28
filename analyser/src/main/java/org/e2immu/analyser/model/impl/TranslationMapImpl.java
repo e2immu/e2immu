@@ -224,11 +224,16 @@ public class TranslationMapImpl implements TranslationMap {
         String modificationTimes(MethodCall beforeTranslation,
                                  Expression translatedObject, List<Expression> translatedParameters);
     }
+
     @Override
-    public String modificationTimes(MethodCall beforeTranslation,
+    public String modificationTimes(Expression methodCallBeforeTranslation,
                                     Expression translatedObject, List<Expression> translatedParameters) {
         if (modificationTimesHandler == null) return null;
-        return modificationTimesHandler.modificationTimes(beforeTranslation, translatedObject, translatedParameters);
+        // type cast: see interface spec: methodCallBeforeTranslation is of type Expression to avoid cyclic type dependencies
+        if (methodCallBeforeTranslation instanceof MethodCall beforeTranslation) {
+            return modificationTimesHandler.modificationTimes(beforeTranslation, translatedObject, translatedParameters);
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
