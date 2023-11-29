@@ -253,7 +253,19 @@ public class ComputeLinkedVariables {
         Cluster rvCluster = null;
         Variable rv = null;
 
-        for (Variable variable : variables) {
+        /*
+        Because 'This' variables do not link to others, but others my link to 'This', we must handle them last
+        in this variant of the algorithm. If not, we end up with "Cluster overlap" errors. See Container_10A,B,C
+         */
+        List<Variable> sorted = variables.stream().sorted((v1, v2) -> {
+            boolean v1This = v1 instanceof This;
+            boolean v2This = v2 instanceof This;
+            if (v1This && !v2This) return 1;
+            if (!v1This && v2This) return -1;
+            return v1.compareTo(v2);
+        }).toList();
+
+        for (Variable variable : sorted) {
             if (!done.contains(variable)) {
                 Map<Variable, DV> map = weightedGraph.links(variable, LINK_STATICALLY_ASSIGNED, false);
                 assert map.values().stream().allMatch(LINK_STATICALLY_ASSIGNED::equals);
@@ -266,7 +278,7 @@ public class ComputeLinkedVariables {
                     done.add(rv);
                 } else {
                     result.add(cluster);
-                    assert Collections.disjoint(map.keySet(), done) : "This is not good";
+                    assert Collections.disjoint(map.keySet(), done) : "Cluster overlap";
                     done.addAll(map.keySet());
                 }
             }

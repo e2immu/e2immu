@@ -39,7 +39,7 @@ public class Container_10C {
     public static class V implements Serializable {
         private final String key ;
         private final Object value ;
-        private boolean b;
+        private final boolean b;
 
         public V(String key, Object value, boolean b) {
             this.key = key;
@@ -60,9 +60,9 @@ public class Container_10C {
         }
     };
 
-    private class T {
+    private static class T {
 
-        private char s;
+        private final char s;
         private boolean hasMoreElements = false;
         private String current = null;
 
