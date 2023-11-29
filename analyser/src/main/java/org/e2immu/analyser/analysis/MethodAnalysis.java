@@ -122,11 +122,10 @@ public interface MethodAnalysis extends Analysis {
     }
 
     private DV modifiedMethodOrTempModifiedMethod() {
-        DV mm = getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_METHOD);
-        if (mm.isDelayed() && getMethodInfo().methodResolution.get().partOfCallCycle()) {
+        if (getMethodInfo().methodResolution.get().partOfCallCycle()) {
             return getPropertyFromMapDelayWhenAbsent(Property.TEMP_MODIFIED_METHOD);
         }
-        return mm;
+        return getPropertyFromMapDelayWhenAbsent(Property.MODIFIED_METHOD);
     }
 
     /*

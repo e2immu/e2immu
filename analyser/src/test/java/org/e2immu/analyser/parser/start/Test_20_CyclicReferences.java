@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -203,13 +204,23 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("methodC".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof This) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("methodE".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     Expression expression = d.statementAnalysis().stateData().valueOfExpressionGet();
-                    String expected = d.iteration() == 0 ? "<m:methodF>" : "instance type boolean";
+                    String expected = d.iteration() < 2 ? "<m:methodF>" : "instance type boolean";
                     assertEquals(expected, expression.toString());
-                    if (d.iteration() > 0) {
+                    if (d.iteration() >= 2) {
                         if (expression instanceof Instance i) {
                             assertTrue(i.identifier instanceof Identifier.PositionalIdentifier);
                         } else fail();
@@ -217,9 +228,42 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
                 }
             }
         };
+
+        // order of analysis: (constructor), getCount, methodC, methodD, methodE, methodF, field count, type CR_4
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if (d.methodInfo().name.startsWith("method")) {
+                MethodResolution methodResolution = d.methodInfo().methodResolution.get();
+                assertEquals("methodC, methodD, methodE, methodF", methodResolution.callCycleSorted());
+                assertEquals(methodResolution.callCycleSorted(), methodResolution.methodsOfOwnClassReachedSorted());
+                assertTrue(methodResolution.partOfCallCycle());
+                if ("methodC".equals(d.methodInfo().name)) {
+                    assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                    assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                }
+                if ("methodD".equals(d.methodInfo().name)) {
+                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                    assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                }
+                if ("methodE".equals(d.methodInfo().name)) {
+                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                    assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
+                }
+                if ("methodF".equals(d.methodInfo().name)) {
+                    assertFalse(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
+                    assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, DV.TRUE_DV, Property.TEMP_MODIFIED_METHOD);
+                }
+            }
+        };
+
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------", d.delaySequence());
         testClass("CyclicReferences_4", 0, 0, new DebugConfiguration.Builder()
-                // .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
