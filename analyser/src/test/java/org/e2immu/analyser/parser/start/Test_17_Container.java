@@ -414,9 +414,8 @@ public class Test_17_Container extends CommonTestRunner {
             if (CONTAINER_5.equals(d.methodInfo().name) &&
                     d.variable() instanceof ParameterInfo p && "coll5".equals(p.name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() < 3 ? "<mod:Collection<String>>"
-                            : "nullable instance type Collection<String>/*@Identity*/";
-                    assertEquals(expected, d.currentValue().toString());
+                    assertCurrentValue(d, 3,
+                            "nullable instance type Collection<String>/*@Identity*/");
                     String expectLinked = d.iteration() < 3 ? "this:-1" : "";
                     assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -425,7 +424,7 @@ public class Test_17_Container extends CommonTestRunner {
             int n = d.methodInfo().methodInspection.get().getParameters().size();
             if (CONTAINER_5.equals(d.methodInfo().name) && n == 0) {
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo().name)) {
-                    String expectValue = "new ArrayList<>()";
+                    String expectValue = "new ArrayList<>()/*0==this.size()*/";
                     assertEquals(expectValue, d.currentValue().toString());
                 }
             }
@@ -439,16 +438,25 @@ public class Test_17_Container extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "list".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
-                        String expectValue = "new ArrayList<>()";
+                        String expectValue = "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         // even with all the code in EvaluateParameter and MethodCall to transform new objects into instances,
                         // (see Modification_23, _24), we cannot see its effect here (because coll5 is NOT linked to list!!)
                         // However, the field "list" will have an "instance" as value!
-                        String expectValue = d.iteration() == 0 ? "<f:list>" : "new ArrayList<>()";
+                        String expectValue = d.iteration() == 0 ? "<f:list>" : "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                     }
+                }
+            }
+            if ("visit".equals(d.methodInfo().name)) {
+                assertEquals("0", d.statementId());
+                if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                    String expected = d.iteration() < 2 ? "<p:consumer>"
+                            : "nullable instance type Consumer<String>/*@Identity*//*@IgnoreMods*/";
+                    assertEquals(expected, d.currentValue().toString());
+                    assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
         };
@@ -480,10 +488,10 @@ public class Test_17_Container extends CommonTestRunner {
         };
 
         testClass(CONTAINER_5, 0, 0, new DebugConfiguration.Builder()
-                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 
@@ -697,8 +705,8 @@ public class Test_17_Container extends CommonTestRunner {
                             default -> "null";
                         };
                         // assertEquals(value, d.currentValue().toString());
-                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
-                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
             }

@@ -599,13 +599,28 @@ public class JavaUtil extends AnnotatedAPI {
         }
 
         @Modified
+        void add(int index, @NotNull E e) { }
+
+        @Modified
         boolean add(@NotNull E e) { return true; }
+
+        @Modified
+        boolean addAll(int index, @NotNull(content = true) @NotModified Collection<? extends E> coll) { return true; }
 
         @Modified
         boolean addAll(@NotNull(content = true) @NotModified Collection<? extends E> coll) { return true; }
 
         @Modified
         void clear() { }
+
+        @NotNull
+        public Object clone() { return null; }
+
+        boolean contains(@NotNull Object o) { return true; }
+
+
+        @NotModified
+        void forEach(@Independent(hc = true) @NotNull(content = true) Consumer<? super E> action) { }
     }
 
     @Container
