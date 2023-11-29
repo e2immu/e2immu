@@ -723,4 +723,11 @@ public class Test_17_Container extends CommonTestRunner {
         testClass("Container_10C", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
+
+    // infinite loop: no progress after 14 iterations
+    @Test
+    public void test_10D() throws IOException {
+        testClass("Container_10D", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
