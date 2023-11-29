@@ -106,7 +106,8 @@ public record Merge(EvaluationContext evaluationContext,
                     instance = ConstantExpression.nullValue(evaluationContext.getAnalyserContext().getPrimitives(),
                             fromAnalysis.getIdentifier(),
                             fieldReference.fieldInfo().type.bestTypeInfo());
-                    properties = evaluationContext.valuePropertiesOfNullConstant(fieldReference.parameterizedType());
+                    IsMyself isMyself = evaluationContext.isMyself(vii.variable());
+                    properties = evaluationContext.valuePropertiesOfNullConstant(isMyself, fieldReference.parameterizedType());
                 } else {
                     instance = fromAnalysis;
                     properties = evaluationContext.getValueProperties(instance);

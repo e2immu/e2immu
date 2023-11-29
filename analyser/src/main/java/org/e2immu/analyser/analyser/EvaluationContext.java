@@ -91,7 +91,10 @@ public interface EvaluationContext {
 
     // will have a more performant implementation in SAEvaluationContext,
     // because getVariableProperty is pretty expensive
-    Properties getProperties(Expression value, List<Property> properties, boolean duringEvaluation,
+    Properties getProperties(IsMyself isMyself,
+                             Expression value,
+                             List<Property> properties,
+                             boolean duringEvaluation,
                              boolean ignoreStateInConditionManager);
 
     /**
@@ -142,7 +145,7 @@ public interface EvaluationContext {
 
     Properties valuePropertiesOfFormalType(ParameterizedType formalType, DV notNullExpression);
 
-    Properties valuePropertiesOfNullConstant(ParameterizedType formalType);
+    Properties valuePropertiesOfNullConstant(IsMyself isMyself, ParameterizedType formalType);
 
     boolean disableEvaluationOfMethodCallsUsingCompanionMethods();
 

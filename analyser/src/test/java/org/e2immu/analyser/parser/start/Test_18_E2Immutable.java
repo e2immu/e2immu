@@ -94,9 +94,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 properties on a non-delayed value (null).
                  */
                 if (d.variable() instanceof FieldReference fr && "parent2".equals(fr.fieldInfo().name) && fr.scopeIsThis()) {
-                    String expected = d.iteration() < 3 ? "<wrapped:parent2>" : "null";
-                    assertEquals(expected, d.currentValue().toString());
-                    mustSeeIteration(d, 3);
+                    assertEquals("null", d.currentValue().toString());
                 }
             }
             // the constructor with 2 parameters

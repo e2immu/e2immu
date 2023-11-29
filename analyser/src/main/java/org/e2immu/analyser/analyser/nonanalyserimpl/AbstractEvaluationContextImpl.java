@@ -111,10 +111,10 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     }
 
     public Expression currentValue(Variable variable,
-                                    Expression scopeValue,
-                                    Expression indexValue,
-                                    Identifier identifier,
-                                    ForwardEvaluationInfo forwardEvaluationInfo) {
+                                   Expression scopeValue,
+                                   Expression indexValue,
+                                   Identifier identifier,
+                                   ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException("In " + getClass());
     }
 
@@ -133,11 +133,15 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
 
     // will have a more performant implementation in SAEvaluationContext,
     // because getVariableProperty is pretty expensive
-    public Properties getProperties(Expression value, List<Property> properties, boolean duringEvaluation,
-                                     boolean ignoreStateInConditionManager) {
+    public Properties getProperties(IsMyself isMyself,
+                                    Expression value,
+                                    List<Property> properties,
+                                    boolean duringEvaluation,
+                                    boolean ignoreStateInConditionManager) {
         Properties writable = Properties.writable();
         for (Property property : properties) {
-            DV v = getProperty(value, property, duringEvaluation, ignoreStateInConditionManager);
+            DV v = isMyself.toFalse(property) ? property.falseDv
+                    : getProperty(value, property, duringEvaluation, ignoreStateInConditionManager);
             writable.put(property, v);
         }
         return writable.immutable();
@@ -188,12 +192,14 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     public Properties getValueProperties(ParameterizedType formalType, Expression value, boolean ignoreConditionInConditionManager) {
         if (value.isInstanceOf(NullConstant.class)) {
             assert formalType != null : "Use other call!";
-            return valuePropertiesOfNullConstant(formalType);
+            IsMyself isMyself = isMyself(formalType);
+            return valuePropertiesOfNullConstant(isMyself, formalType);
         }
         if (value instanceof UnknownExpression ue && UnknownExpression.RETURN_VALUE.equals(ue.msg())) {
             return valuePropertiesOfFormalType(getCurrentMethod().getMethodInspection().getReturnType());
         }
-        return getProperties(value, VALUE_PROPERTIES, true, ignoreConditionInConditionManager);
+        IsMyself isMyself = formalType == null ? IsMyself.NO : isMyself(formalType);
+        return getProperties(isMyself, value, VALUE_PROPERTIES, true, ignoreConditionInConditionManager);
     }
 
     public Properties valuePropertiesOfFormalType(ParameterizedType formalType) {
@@ -215,13 +221,17 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         return properties;
     }
 
-    public Properties valuePropertiesOfNullConstant(ParameterizedType formalType) {
+    public Properties valuePropertiesOfNullConstant(IsMyself isMyself, ParameterizedType formalType) {
         AnalyserContext analyserContext = getAnalyserContext();
+        DV immutable = isMyself.toFalse(IMMUTABLE) ? IMMUTABLE.falseDv : analyserContext.typeImmutable(formalType);
+        DV independent = isMyself.toFalse(INDEPENDENT) ? INDEPENDENT.falseDv : analyserContext.typeIndependent(formalType);
+        DV container = isMyself.toFalse(CONTAINER) ? CONTAINER.falseDv : analyserContext.typeContainer(formalType);
+        DV notNull = AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv);
         return Properties.ofWritable(Map.of(
-                IMMUTABLE, analyserContext.typeImmutable(formalType),
-                INDEPENDENT, analyserContext.typeIndependent(formalType),
-                NOT_NULL_EXPRESSION, AnalysisProvider.defaultNotNull(formalType).maxIgnoreDelay(NOT_NULL_EXPRESSION.falseDv),
-                CONTAINER, analyserContext.typeContainer(formalType),
+                IMMUTABLE, immutable,
+                INDEPENDENT, independent,
+                NOT_NULL_EXPRESSION, notNull,
+                CONTAINER, container,
                 IDENTITY, IDENTITY.falseDv,
                 IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS.falseDv));
     }
@@ -368,9 +378,9 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     }
 
     public DependentVariable searchInEquivalenceGroupForLatestAssignment(DependentVariable variable,
-                                                                          Expression arrayValue,
-                                                                          Expression indexValue,
-                                                                          ForwardEvaluationInfo forwardEvaluationInfo) {
+                                                                         Expression arrayValue,
+                                                                         Expression indexValue,
+                                                                         ForwardEvaluationInfo forwardEvaluationInfo) {
         return variable;
     }
 
@@ -473,11 +483,11 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     }
 
     public Expression getVariableValue(Variable myself,
-                                        Expression scopeValue,
-                                        Expression indexValue,
-                                        Identifier identifier,
-                                        VariableInfo variableInfo,
-                                        ForwardEvaluationInfo forwardEvaluationInfo) {
+                                       Expression scopeValue,
+                                       Expression indexValue,
+                                       Identifier identifier,
+                                       VariableInfo variableInfo,
+                                       ForwardEvaluationInfo forwardEvaluationInfo) {
         return variableInfo.getValue();
     }
 

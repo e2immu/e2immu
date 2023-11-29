@@ -248,7 +248,8 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("valueOf".equals(d.methodInfo().name)) {
-                assertDv(d, 4, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
+                assertDv(d, 4, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {

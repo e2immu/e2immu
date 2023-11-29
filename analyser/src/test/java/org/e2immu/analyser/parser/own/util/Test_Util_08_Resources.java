@@ -179,7 +179,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> {
             String expected = switch (d.typeInfo().simpleName) {
                 case "Freezable" -> "----";
-                case "Trie" -> "-------";
+                case "Trie" -> "--------";
                 case "Resources" -> "-----S--S---S--";
                 default -> "";
             };

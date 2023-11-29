@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.start;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
@@ -25,6 +26,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
@@ -644,21 +646,70 @@ public class Test_17_Container extends CommonTestRunner {
 
     // ERROR: overwriting value property (@Container goes from not_container:1 to some delayed value)
     // even changing 'currentBag' into current generates the 'Cluster overlap' problem
+    // beyond that: 0.0.2.0.1.0.0 reassignment to 'current'
+    // PT in SAEvaluationContext.getProperties is NULL_CONSTANT (correctly) which is NOT myself
     @Test
     public void test_10A() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                if ("0.0.2.0.1.0.0".equals(d.statementId())) {
+                    ChangeData cd = d.findValueChange("current");
+                    assertFalse(cd.properties().containsKey(Property.CONTAINER));
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                if ("current".equals(d.variableName())) {
+                    // current is of type Container_10A, so isMyself must be YES!
+                    // all value properties in the statement analyser must be set to the default values
+                    if ("0.0.2.0.1.0.0".equals(d.statementId())) {
+                        String value = d.iteration() < 24 ? "<m:get>" : "current$0.0.2.get(subKey)";
+                        assertEquals(value, d.currentValue().toString());
+                        assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    }
+                }
+            }
+        };
         testClass("Container_10A", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     // ERROR: Cluster overlap (presence of List, even if it is only there because of an unused import statement!!)
+    // then: same error as in 10A, but in a different place
+    // then: no progress after 32 iterations,
     @Test
     public void test_10B() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    // current is of type Container_10A, so isMyself must be YES!
+                    // all value properties in the statement analyser must be set to the default values
+                    if ("0.0.3".equals(d.statementId())) {
+                        String value = switch (d.iteration()) {
+                            case 0 -> "<simplification>";
+                            case 1 -> "<m:hasMoreElements>?<m:hasMoreElements>?<simplification>:<m:get>:null";
+                            case 2, 3 -> "<wrapped:return get>";
+                            default -> "null";
+                        };
+                        // assertEquals(value, d.currentValue().toString());
+                        assertDv(d, 1, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
+                    }
+                }
+            }
+        };
         testClass("Container_10B", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     // ERROR: Changing value of @Immutable from mutable:1 to final_fields:5
-    // probably a different manifestation of the same underlying problem
+    // a different manifestation of the same underlying problem
     @Test
     public void test_10C() throws IOException {
         testClass("Container_10C", 0, 0, new DebugConfiguration.Builder()

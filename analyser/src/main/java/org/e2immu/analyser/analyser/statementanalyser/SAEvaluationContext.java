@@ -316,7 +316,10 @@ class SAEvaluationContext extends CommonEvaluationContext {
 
     // identical to getProperty, but then for multiple properties!
     @Override
-    public Properties getProperties(Expression value, List<Property> toCompute, boolean duringEvaluation,
+    public Properties getProperties(IsMyself isMyself,
+                                    Expression value,
+                                    List<Property> toCompute,
+                                    boolean duringEvaluation,
                                     boolean ignoreStateInConditionManager) {
 
         if (value instanceof IsVariableExpression ve) {
@@ -333,7 +336,7 @@ class SAEvaluationContext extends CommonEvaluationContext {
             DV dv;
             if (NOT_NULL_EXPRESSION == property) {
                 dv = nneForValue(value, ignoreStateInConditionManager);
-            } else if (isMyself(value.returnType()).toFalse(property)
+            } else if (isMyself.toFalse(property)
                     && !(value instanceof DelayedExpression de && de.getDoneOriginal() instanceof Lambda)) {
                 // NOTE: IDENTITY of self-types is not really a problem, therefore we enumerate the properties rather than
                 // taking all value properties (except NNE)
