@@ -893,6 +893,18 @@ class SAEvaluationContext extends CommonEvaluationContext {
                 return new VariableExpression(identifier, v);
             }
         }
+        // see Basics_31: self-references on fields
+        if (value.isDelayed()
+                && v instanceof FieldReference fieldReference
+                && !forwardEvaluationInfo.isAssignmentTarget()
+                && v.equals(forwardEvaluationInfo.getAssignmentTarget())) {
+            FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo());
+            DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
+            if (finalDV.isDelayed()) {
+                return value;
+            }
+            return expression;
+        }
         return value;
     }
 

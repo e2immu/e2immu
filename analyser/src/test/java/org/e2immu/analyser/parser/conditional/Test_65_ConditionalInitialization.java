@@ -222,7 +222,6 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                     if ("0.0.0".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "1+<f:i>";
-                            case 1 -> "<wrapped:i>";
                             default -> "1+ConditionalInitialization_4.i";
                         };
                         assertEquals(expected, d.currentValue().toString());

@@ -45,7 +45,7 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                 if (I.equals(d.variableName())) {
                     String expect = switch (d.iteration()) {
                         case 0 -> "1+<f:i>";
-                        case 1 -> "<wrapped:i>";
+                //        case 1 -> "<wrapped:i>";
                         default -> "1+i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());

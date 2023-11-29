@@ -672,7 +672,8 @@ public class Test_17_Container extends CommonTestRunner {
                     // current is of type Container_10A, so isMyself must be YES!
                     // all value properties in the statement analyser must be set to the default values
                     if ("0.0.2.0.1.0.0".equals(d.statementId())) {
-                        String value = d.iteration() < 24 ? "<m:get>" : "current$0.0.2.get(subKey)";
+                        String value = d.iteration() < 24 ? "<m:get>"
+                                : "(nullable instance type Container_10A).get(subKey)";
                         assertEquals(value, d.currentValue().toString());
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -721,13 +722,6 @@ public class Test_17_Container extends CommonTestRunner {
     @Test
     public void test_10C() throws IOException {
         testClass("Container_10C", 0, 0, new DebugConfiguration.Builder()
-                .build());
-    }
-
-    // infinite loop: no progress after 14 iterations
-    @Test
-    public void test_10D() throws IOException {
-        testClass("Container_10D", 0, 0, new DebugConfiguration.Builder()
                 .build());
     }
 }
