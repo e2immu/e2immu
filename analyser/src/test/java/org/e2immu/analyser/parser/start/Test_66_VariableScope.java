@@ -164,7 +164,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         assertEquals("instance type boolean?ioe:null", d.currentValue().toString());
-                        assertEquals("ioe:1", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("ioe:0", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }
@@ -1030,9 +1030,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                                 ? "<m:isEmpty>||<dv:scope-x:0.i>!=<m:length>?0:<m:length>"
                                 : "xs.isEmpty()||s.length()!=scope-x:0.i?0:s.length()";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = d.iteration() == 0
-                                ? "s:-1,scope-x:0.i:0,scope-x:0:-1,xs:-1"
-                                : "scope-x:0.i:0,scope-x:0:2";
+                        String linked = d.iteration() == 0 ? "s:-1,scope-x:0.i:-1,scope-x:0:-1,xs:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

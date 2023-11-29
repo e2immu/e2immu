@@ -56,34 +56,34 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "cause".equals(fr.fieldInfo().name)) {
                     if (fr.scopeIsThis()) {
                         // this.cause
-                        String expected = d.iteration() == 0 ? "<f:cause>" : "instance type Cause";
-                        assertEquals(expected, d.currentValue().toString());
                         if ("0.0.0".equals(d.statementId())) {
+                            String expected = d.iteration() < 2 ? "<f:cause>" : "instance type Cause";
+                            assertEquals(expected, d.currentValue().toString());
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                            assertLinked(d, it0("c:-1,o:-1,this:-1,vc.cause:-1,vc:-1"), it(1, ""));
+                            assertLinked(d, it(0, 1, "c:-1,o:-1,this:-1,vc.cause:-1,vc:-1"), it(2, ""));
                         }
                         if ("0".equals(d.statementId())) {
                             assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                             assertLinked(d,
                                     it(0, 1, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1,this:-1"),
-                                    it(2, 21, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1"),
-                                    it(22, ""));
+                                    it(2, 2, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1"),
+                                    it(3, ""));
                             assertTrue(d.variableInfoContainer().hasMerge());
                         }
                         if ("1".equals(d.statementId())) {
                             assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                             assertLinked(d,
                                     it(0, 1, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1,this:-1"),
-                                    it(2, 21, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1"),
-                                    it(22, ""));
+                                    it(2, 2, "o:-1,scope-vc:0.cause:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.location:-1,this.variable:-1"),
+                                    it(3, ""));
                         }
                     } else if ("vc".equals(fr.scope().toString())) {
                         // vc.cause
-                        String expected = d.iteration() == 0 ? "<f:vc.cause>" : "instance type Cause";
+                        String expected = d.iteration() < 2 ? "<f:vc.cause>" : "instance type Cause";
                         assertEquals(expected, d.currentValue().toString());
                         if ("0.0.0".equals(d.statementId())) {
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
-                            assertLinked(d, it0("c:-1,o:-1,this.cause:-1,this:-1,vc:-1"), it(1, "o:2,vc:2"));
+                            assertLinked(d, it(0, 1, "c:-1,o:-1,this.cause:-1,this:-1,vc:-1"), it(2, "o:2,vc:2"));
                         }
                         if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
                             fail();
@@ -93,41 +93,51 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                             assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                             assertLinked(d,
                                     it(0, 1, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1,this:-1"),
-                                    it(2, 21, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1"),
-                                    it(22, "o:2,scope-vc:0:2"));
+                                    it(2, 2, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1"),
+                                    it(3, "o:2,scope-vc:0:2"));
                             assertTrue(d.variableInfoContainer().hasMerge());
                         }
                         if ("1".equals(d.statementId())) {
                             assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                             assertLinked(d,
                                     it(0, 1, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1,this:-1"),
-                                    it(2, 21, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1"),
-                                    it(22, "o:2,scope-vc:0:2"));
+                                    it(2, 2, "o:-1,scope-vc:0.location:-1,scope-vc:0.variable:-1,scope-vc:0:-1,this.cause:-1,this.location:-1,this.variable:-1"),
+                                    it(3, "o:2,scope-vc:0:2"));
                         }
                     } else fail(fr.scope().toString());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "0==<m:compareTo>?<return value>:<m:compareTo>"
+                        String expected = d.iteration() < 2 ? "0==<m:compareTo>?<return value>:<m:compareTo>"
                                 : "0==cause.compareTo(o/*(VariableCause)*/.cause)?<return value>:cause.compareTo(o/*(VariableCause)*/.cause)";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.4".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "0==<m:compareTo>?0==<s:int>?<m:compareTo>:<s:int>:<m:compareTo>"
-                                : d.iteration() == 1 ? "0==<m:compareTo>?0==<m:compareTo>?<m:compareTo>:<s:int>:<m:compareTo>"
-                                : d.iteration() < 22 ? "0==cause.compareTo(o/*(VariableCause)*/.cause)?0==variable.compareTo(o/*(VariableCause)*/.variable)?<m:compareTo>:variable.compareTo(o/*(VariableCause)*/.variable):cause.compareTo(o/*(VariableCause)*/.cause)"
-                                : "0==cause.compareTo(o/*(VariableCause)*/.cause)?0==variable.compareTo(o/*(VariableCause)*/.variable)?location.compareTo(o/*(VariableCause)*/.location):variable.compareTo(o/*(VariableCause)*/.variable):cause.compareTo(o/*(VariableCause)*/.cause)";
-                        assertEquals(expected, d.currentValue().toString());
-                    }
-                    if ("0".equals(d.statementId()) && d.iteration() >= 22) {
-                        assertEquals("o instanceof VariableCause?0==cause.compareTo(scope-vc:0.cause)?0==variable.compareTo(scope-vc:0.variable)?location.compareTo(scope-vc:0.location):variable.compareTo(scope-vc:0.variable):cause.compareTo(scope-vc:0.cause):<return value>",
+                        assertCurrentValue(d, 3, "0==cause.compareTo(o/*(VariableCause)*/.cause)?0==variable.fullyQualifiedName().compareTo(o/*(VariableCause)*/.variable.fullyQualifiedName())?location.compareTo(o/*(VariableCause)*/.location):variable.fullyQualifiedName().compareTo(o/*(VariableCause)*/.variable.fullyQualifiedName()):cause.compareTo(o/*(VariableCause)*/.cause)");                    }
+                    if ("0".equals(d.statementId()) && d.iteration() >= 3) {
+                        assertEquals("o instanceof VariableCause?0==cause.compareTo(scope-vc:0.cause)?0==variable.fullyQualifiedName().compareTo(scope-vc:0.variable.fullyQualifiedName())?location.compareTo(scope-vc:0.location):variable.fullyQualifiedName().compareTo(scope-vc:0.variable.fullyQualifiedName()):cause.compareTo(scope-vc:0.cause):<return value>",
                                 d.currentValue().toString());
                     }
                 }
                 if ("0".equals(d.statementId())) {
-                    if (d.iteration() >= 22) {
+                    if (d.iteration() >= 3) {
                         assertTrue(d.variableInfo().linkedVariablesIsSet());
                         assertTrue(d.variableInfo().valueIsSet());
+                    }
+                }
+            }
+            if ("translate".equals(d.methodInfo().name) && "VariableCause".equals(d.methodInfo().typeInfo.simpleName)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<f:variable>==<m:translateVariable>?this:<s:VariableCause>";
+                            case 1 -> "<f:variable>==<m:translateVariable>?this:<new:VariableCause>";
+                            default -> "this";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        // no this:0 ?? linked variables of InlineConditional
+                        assertLinked(d, it(0, 1, "inspectionProvider:-1,this.cause:-1,this.location:-1,this.variable:-1,this:0,translated:-1,translationMap:-1"),
+                                it(2, "this:0"));
                     }
                 }
             }
@@ -143,7 +153,7 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
             if ("recursivelyComputeLinks".equals(d.methodInfo().name)) {
                 if ("3.0.0".equals(d.statementId())) {
                     DV guaranteedToBeReachedInMethod = d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod();
-                    if (d.iteration() < 40) {
+                    if (d.iteration() < 400) {
                         assertTrue(guaranteedToBeReachedInMethod.isDelayed());
                     } else {
                         assertEquals("", guaranteedToBeReachedInMethod.toString());
@@ -207,8 +217,8 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
 
         testSupportAndUtilClasses(classes,
                 0, 0, new DebugConfiguration.Builder()
-                   //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                    //    .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .build());

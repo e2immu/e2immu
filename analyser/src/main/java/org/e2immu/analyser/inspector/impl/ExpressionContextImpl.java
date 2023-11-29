@@ -610,7 +610,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     MethodInfo associatedAssignment = primitives.prePostFixToAssignment(operator);
                     return new Assignment(identifier, primitives,
                             exp, new IntConstant(primitives, identifier, 1), associatedAssignment, isPrefix,
-                            true, true, null, null);
+                            true, true, null);
                 }
                 return new UnaryOperator(identifier, operator, exp, UnaryOperator.precedence(unaryExpr.getOperator()));
             }
@@ -701,7 +701,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                     MethodInfo primitiveOperator = Assignment.operator(primitives, assignExpr.getOperator());
                     return new Assignment(identifier, primitives, target, value, primitiveOperator,
                             null, true, true,
-                            null, null);
+                            null);
                 }
                 return new Assignment(identifier, primitives, target, value);
             }

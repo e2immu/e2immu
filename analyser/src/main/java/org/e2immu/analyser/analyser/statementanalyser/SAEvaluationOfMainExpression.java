@@ -420,22 +420,14 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         EvaluationResult updatedContext;
         Expression toEvaluate;
         ForwardEvaluationInfo forwardEvaluationInfo;
-        Set<Variable> directAssignmentVariables;
         EvaluationResult hasAlreadyBeenEvaluated;
         if (currentReturnValue instanceof UnknownExpression) {
             // simplest situation
             toEvaluate = expression;
             updatedContext = context;
             forwardEvaluationInfo = structure.forwardEvaluationInfo();
-            directAssignmentVariables = null;
             hasAlreadyBeenEvaluated = result;
         } else {
-            /*
-            The reason we compute the directAssignmentVariables from the previous LV rather than from the current
-            translated expression is that the linked variables may be the product of a LV merge, which is different.
-            See AnalysisProvider_0 for a full example.
-             */
-            directAssignmentVariables = prev.getLinkedVariables().directAssignmentVariables();
             // substitute <return value> for the current expression, rather than rely on condition manager in eval context
             Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo().identifier,
                     returnVariable.returnType);
@@ -450,8 +442,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             hasAlreadyBeenEvaluated = null;
         }
         VariableExpression ve = new VariableExpression(methodInfo().identifier, new ReturnVariable(methodInfo()));
-        Assignment assignment = new Assignment(statementAnalysis.primitives(), ve, toEvaluate, hasAlreadyBeenEvaluated,
-                directAssignmentVariables);
+        Assignment assignment = new Assignment(statementAnalysis.primitives(), ve, toEvaluate, hasAlreadyBeenEvaluated);
         EvaluationResult evaluatedAssignment = assignment.evaluate(updatedContext, forwardEvaluationInfo);
         return new EvaluationResultImpl.Builder(context)
                 .compose(result)

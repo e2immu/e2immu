@@ -291,7 +291,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                                 statementAnalysis.primitives(),
                                 new VariableExpression(fieldInfo.getIdentifier(), fr),
                                 end, null, null, false,
-                                false, null, null);
+                                false, null);
                         assignments.add(assignment);
                         assigned = true;
                     }
@@ -305,7 +305,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                     Assignment assignment = new Assignment(assignmentIdentifier, statementAnalysis.primitives(),
                             new VariableExpression(fieldInfo.getIdentifier(), fr),
                             end, null, null, false,
-                            false, null, null);
+                            false, null);
                     assignments.add(assignment);
                 }
             }

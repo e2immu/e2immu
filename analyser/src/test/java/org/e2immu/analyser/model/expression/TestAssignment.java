@@ -61,17 +61,17 @@ public class TestAssignment {
         IntConstant one = IntConstant.one(primitives);
         Expression iPlusEquals1 = new Assignment(newId(), primitives, ve,
                 one, primitives.assignPlusOperatorInt(), null,
-                true, true, null, null);
+                true, true, null);
         assertEquals("i+=1", iPlusEquals1.minimalOutput());
 
         Expression iPlusEquals1AsPlusPlusI = new Assignment(newId(), primitives, ve,
                 one, primitives.assignPlusOperatorInt(), true,
-                true, true, null, null);
+                true, true, null);
         assertEquals("++i", iPlusEquals1AsPlusPlusI.minimalOutput());
 
         Expression iPlusEquals1AsIPlusPlus = new Assignment(newId(), primitives, ve,
                 one, primitives.assignPlusOperatorInt(), false,
-                true, true, null, null);
+                true, true, null);
         assertEquals("i++", iPlusEquals1AsIPlusPlus.minimalOutput());
     }
 
