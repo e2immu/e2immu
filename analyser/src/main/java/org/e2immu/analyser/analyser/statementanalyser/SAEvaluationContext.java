@@ -401,7 +401,9 @@ class SAEvaluationContext extends CommonEvaluationContext {
         if (directNN.equals(NULLABLE_DV)) {
             Expression valueIsNull = Equals.equals(Identifier.generate("nne equals"),
                     context, value, NullConstant.NULL_CONSTANT, false, ForwardEvaluationInfo.DEFAULT);
-            Expression evaluation = conditionManager.evaluate(context, valueIsNull, true);
+            // doingNullCheck == false stops the condition manager from entering a call cycle that leads to
+            // stack overflow, e.g., when analysing This.create(...) via the Test_WeightedGraph
+            Expression evaluation = conditionManager.evaluate(context, valueIsNull, false);
             if (evaluation.isBoolValueFalse()) {
                 // IMPROVE should not necessarily be ENN, could be ContentNN depending
                 return MultiLevel.EFFECTIVELY_NOT_NULL_DV.max(directNN);

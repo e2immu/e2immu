@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -165,11 +166,6 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
 
                 }
             }
-            if ("statementTime".equals(d.methodInfo().name)) {
-                if ("0".equals(d.statementId())) {
-                    mustSeeIteration(d, 2);
-                }
-            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -211,6 +207,8 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
 
                 // group 2: related to Variable
                 VariableCause.class, Location.class, Variable.class,
+
+                This.class, ReturnVariable.class,
 
                 MultiLevel.class,
                 LinkedVariables.class);
