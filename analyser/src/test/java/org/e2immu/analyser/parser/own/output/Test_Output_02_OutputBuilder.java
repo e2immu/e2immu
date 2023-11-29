@@ -169,10 +169,10 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> {
             String s = switch (d.typeInfo().simpleName) {
                 case "ElementarySpace" -> "-----";
-                case "Space" -> "------";
-                case "FormattingOptions" -> "-----";
+                case "Space" -> "-----";
+                case "FormattingOptions" -> "----";
                 case "OutputElement" -> "--";
-                case "Qualifier" -> "------";
+                case "Qualifier" -> "-";
                 case "Guide" -> "------";
                 case "TypeName" -> "-------";
                 case "OutputBuilder" -> "--------";

@@ -155,13 +155,13 @@ class MergeValueOfSingleVariable {
                         statementAnalysis.methodAnalysis().getMethodInfo().fullyQualifiedName, index);
                 throw throwable;
             }
-        } else if (destination.hasMerge()) {
-            assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
+        } //else if (destination.hasMerge()) {
+        //    assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
             // in previous iterations there was data for us, but now there isn't; copy from I/E into M
-            progress |= destination.copyFromEvalIntoMerge(groupPropertyValues);
-            linkedVariablesMap.put(renamed, destination.best(MERGE).getLinkedVariables());
-        } // else: see e.g. Lambda_19Merge; for now no reason to do anything more
-
+        //    progress |= destination.copyFromEvalIntoMerge(groupPropertyValues);
+        //    linkedVariablesMap.put(renamed, destination.best(MERGE).getLinkedVariables());
+        //} // else: see e.g. Lambda_19Merge; for now no reason to do anything more
+        // removed because of Link_0
         return new ProgressAndDelay(progress, delay);
     }
 

@@ -475,6 +475,11 @@ class JavaLang {
         }
 
         @Fluent
+        StringBuilder append(char[] buffer, int i, int j) {
+            return null;
+        }
+
+        @Fluent
         StringBuilder reverse() { return null; }
 
         int toString$Transfer$Len(int len) {

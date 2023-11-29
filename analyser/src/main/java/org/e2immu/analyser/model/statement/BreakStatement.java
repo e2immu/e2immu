@@ -28,6 +28,11 @@ public class BreakStatement extends BreakOrContinueStatement {
     }
 
     @Override
+    public String toString() {
+        return "BreakStatement{label=" + label + "}";
+    }
+
+    @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.BREAK);
         if (label != null) {

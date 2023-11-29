@@ -14,14 +14,20 @@
 
 package org.e2immu.analyser.parser.link;
 
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestLink extends CommonTestRunner {
 
@@ -32,10 +38,37 @@ public class TestLink extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                // 'start' stays out of the merge in 2.0.0
+                if (d.variable() instanceof ParameterInfo pi && "start".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "j:0"));
+                    }
+                    if ("2.0.0".equals(d.statementId())) {
+                        VariableInfo initial = d.variableInfoContainer().getPreviousOrInitial();
+                        assertLinked(d, initial.getLinkedVariables(), it(0, "j:0"));
+                        assertTrue(d.variableInfoContainer().hasMerge());
+                        assertLinked(d, it(0, "j:0"));
+                    }
+                    if ("2.0.0.0.2".equals(d.statementId())) {
+                        assertEquals("ExpressionAsStatement{class org.e2immu.analyser.model.expression.Assignment: j=i+1}",
+                                d.context().evaluationContext().getCurrentStatement().statement().toString());
+                        assertLinked(d, it0("buff:-1,buff[i]:-1,endPos:-1,i:-1,j:-1"), it(1, ""));
+                    }
+                    if ("2.0.0.0.3".equals(d.statementId()) || "2.0.0.0.4".equals(d.statementId())) {
+                        assertEquals("BreakStatement{label=null}",
+                                d.context().evaluationContext().getCurrentStatement().statement().toString());
+                        assertLinked(d, it0("buff:-1,buff[i]:-1,endPos:-1,i:-1,j:-1"), it(1, ""));
+                    }
+                }
+            }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         testClass("Link_0", 0, 0, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
