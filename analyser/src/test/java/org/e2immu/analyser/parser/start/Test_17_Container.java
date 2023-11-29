@@ -641,4 +641,25 @@ public class Test_17_Container extends CommonTestRunner {
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
+
+    // ERROR: overwriting value property (@Container goes from not_container:1 to some delayed value)
+    @Test
+    public void test_10A() throws IOException {
+        testClass("Container_10A", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // ERROR: this is not good (presence of List, even if it is only there because of an unused import statement!!)
+    @Test
+    public void test_10B() throws IOException {
+        testClass("Container_10B", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    // ERROR: this is not good, even though it is identical to 10A bar for the name of the class
+    @Test
+    public void test_10C() throws IOException {
+        testClass("Container_10C", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
 }
