@@ -405,7 +405,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         boolean progressSet;
         if (!detectBreakDelayInAssignment(variable, vic, changeData, valueToWrite,
-                valueToWritePossiblyDelayed, combined, sharedState.evaluationContext())) {
+                valueToWritePossiblyDelayed, combined, sharedState.context())) {
             // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
             // evaluation context
             if (LOGGER.isDebugEnabled() && valueToWritePossiblyDelayed.isDone()) {
@@ -607,7 +607,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                  Expression valueToWrite,
                                                  Expression valueToWritePossiblyDelayed,
                                                  Properties combined,
-                                                 EvaluationContext evaluationContext) {
+                                                 EvaluationResult context) {
         if (variable instanceof FieldReference target) {
             if (valueToWritePossiblyDelayed.isDelayed()) {
                 if (valueToWrite.isInstanceOf(NullConstant.class)) {
@@ -644,9 +644,21 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                 instance, combinedOrPrimitive, causes);
                         return true;
                     }
-                    if(statementAnalysis.recursivelyContainedIn(valueToWrite, variable)) {
+                    if (statementAnalysis.recursivelyContainedIn(valueToWrite, variable)) {
                         LOGGER.debug("Self reference on field");
-                        Properties valueProperties = evaluationContext.defaultValueProperties(target.parameterizedType());
+                        DV nne;
+                        if (valueToWrite instanceof DelayedExpression de) {
+                            nne = de.getDoneOriginal().getProperty(context, NOT_NULL_EXPRESSION, true);
+                        } else {
+                            nne = valueToWrite.getProperty(context, NOT_NULL_EXPRESSION, true);
+                        }
+                        Properties valueProperties;
+                        if (nne.isDone()) {
+                            valueProperties = context.evaluationContext().defaultValueProperties(target.parameterizedType(), nne);
+                        } else {
+                            // take the default NNE value for the type (null for all but the primitive types)
+                            valueProperties = context.evaluationContext().defaultValueProperties(target.parameterizedType());
+                        }
                         Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
                                 target.parameterizedType(), valueProperties);
                         LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
@@ -671,7 +683,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
         // move DWE to the front, if it is hidden somewhere deeper inside the expression
-        Expression e = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(evaluationContext.getAnalyserContext(),
+        Expression e = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(context.getAnalyserContext(),
                 valueToWritePossiblyDelayed);
         if (e instanceof DelayedWrappedExpression) {
             vic.setValue(e, null, combined, EVALUATION);

@@ -51,8 +51,7 @@ public class Test_00_Basics_31 extends CommonTestRunner {
     @Test
     public void testB() throws IOException {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
-        // FIXME not null
-        testClass("Basics_31B", 1, 1, new DebugConfiguration.Builder()
+        testClass("Basics_31B", 0, 0, new DebugConfiguration.Builder()
                         //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
@@ -100,9 +99,7 @@ public class Test_00_Basics_31 extends CommonTestRunner {
     @Test
     public void testD() throws IOException {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
-        // FIXME not null
-        testClass("Basics_31D", 1, 1, new DebugConfiguration.Builder()
-                        //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+        testClass("Basics_31D", 0, 0, new DebugConfiguration.Builder()
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().build());
@@ -111,9 +108,7 @@ public class Test_00_Basics_31 extends CommonTestRunner {
     @Test
     public void testE() throws IOException {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
-        // FIXME not null
-        testClass("Basics_31E", 1, 1, new DebugConfiguration.Builder()
-                        //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+        testClass("Basics_31E", 0, 0, new DebugConfiguration.Builder()
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().build());
