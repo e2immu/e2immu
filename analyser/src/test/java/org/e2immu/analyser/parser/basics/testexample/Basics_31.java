@@ -27,17 +27,4 @@ public class Basics_31 {
         this.c = s.substring(c.length());
         return s;
     }
-
-    public String method4() {
-        String res = this.c.substring(0, 10);
-        this.c = res.substring(1);
-        return "abc";
-    }
-
-    // this is the most complex case
-    public String method5() {
-        String res = this.c.substring(0, 10);
-        this.c = c.substring(11);
-        return res;
-    }
 }

@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.QualificationImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.slf4j.Logger;
@@ -406,7 +405,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         boolean progressSet;
         if (!detectBreakDelayInAssignment(variable, vic, changeData, valueToWrite,
-                valueToWritePossiblyDelayed, combined, sharedState.evaluationContext().getAnalyserContext())) {
+                valueToWritePossiblyDelayed, combined, sharedState.evaluationContext())) {
             // the field analyser con spot DelayedWrappedExpressions but cannot compute its value properties, as it does not have the same
             // evaluation context
             if (LOGGER.isDebugEnabled() && valueToWritePossiblyDelayed.isDone()) {
@@ -601,13 +600,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return valueToWrite;
     }
 
+
     private boolean detectBreakDelayInAssignment(Variable variable,
                                                  VariableInfoContainer vic,
                                                  ChangeData changeData,
                                                  Expression valueToWrite,
                                                  Expression valueToWritePossiblyDelayed,
                                                  Properties combined,
-                                                 InspectionProvider inspectionProvider) {
+                                                 EvaluationContext evaluationContext) {
         if (variable instanceof FieldReference target) {
             if (valueToWritePossiblyDelayed.isDelayed()) {
                 if (valueToWrite.isInstanceOf(NullConstant.class)) {
@@ -632,7 +632,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                      */
                     Properties combinedOrPrimitive = valueToWrite.returnType().isPrimitiveExcludingVoid() || valueToWrite instanceof StringConcat
                             ? EvaluationContext.PRIMITIVE_VALUE_PROPERTIES : combined;
-                    if (!combinedOrPrimitive.delays().isDelayed()) {
+                    if (combinedOrPrimitive.delays().isDone()) {
                         // we don't have a value, but can make a perfectly good "instance", with all the right value properties
 
                         // replace the DVE with a DelayedWrappedExpression referring to self
@@ -642,6 +642,17 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         CausesOfDelay causes = removeBreakButKeepDelayed(valueToWritePossiblyDelayed, breaks);
                         vic.createAndWriteDelayedWrappedExpressionForEval(Identifier.generate("dwe break init delay"),
                                 instance, combinedOrPrimitive, causes);
+                        return true;
+                    }
+                    if(valueToWrite.variables().contains(variable)) {
+                        LOGGER.debug("Self reference on field");
+                        Properties valueProperties = evaluationContext.defaultValueProperties(target.parameterizedType());
+                        Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
+                                target.parameterizedType(), valueProperties);
+                        LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
+                        CausesOfDelay causes = removeBreakButKeepDelayed(valueToWritePossiblyDelayed, breaks);
+                        vic.createAndWriteDelayedWrappedExpressionForEval(Identifier.generate("dwe break init delay"),
+                                instance, valueProperties, causes);
                         return true;
                     }
                 }
@@ -660,7 +671,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             }
         }
         // move DWE to the front, if it is hidden somewhere deeper inside the expression
-        Expression e = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(inspectionProvider, valueToWritePossiblyDelayed);
+        Expression e = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(evaluationContext.getAnalyserContext(),
+                valueToWritePossiblyDelayed);
         if (e instanceof DelayedWrappedExpression) {
             vic.setValue(e, null, combined, EVALUATION);
             return true;

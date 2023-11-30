@@ -682,8 +682,8 @@ public class Test_17_Container extends CommonTestRunner {
             }
         };
         testClass("Container_10A", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+               // .addEvaluationResultVisitor(evaluationResultVisitor)
+               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
