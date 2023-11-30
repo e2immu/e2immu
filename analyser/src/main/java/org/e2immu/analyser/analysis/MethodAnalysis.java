@@ -18,8 +18,10 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -219,8 +221,30 @@ public interface MethodAnalysis extends Analysis {
     }
 
     default List<VariableInfo> getFieldAsVariableAssigned(FieldInfo fieldInfo) {
-        return getFieldAsVariable(fieldInfo).stream().filter(VariableInfo::isAssigned)
-                .toList();
+        List<VariableInfo> result = new ArrayList<>();
+        for (VariableInfo vi : getFieldAsVariable(fieldInfo)) {
+            if (vi.isAssigned()) {
+                VariableInfo accept;
+                if (vi.isDelayed()
+                        && vi.getValue().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY,
+                        c -> c.variableIsField(fieldInfo) && getMethodInfo().equals(c.location().getInfo().getMethodInfo()))) {
+                    String latestAssignment = vi.getAssignmentIds().getLatestAssignment();
+                    StatementAnalysis saOfAssignment = getFirstStatement().navigateTo(StringUtil.stripStage(latestAssignment));
+                    VariableInfoContainer vic = saOfAssignment.findOrNull(vi.variable());
+                    Stage stage = Stage.from(StringUtil.stage(latestAssignment));
+                    VariableInfo viOfAssignment = vic.best(stage);
+                    if (viOfAssignment.valueIsSet()) {
+                        accept = viOfAssignment;
+                    } else {
+                        accept = vi; // stay where we are
+                    }
+                } else {
+                    accept = vi;
+                }
+                result.add(accept);
+            }
+        }
+        return result;
     }
 
     void markFirstIteration();

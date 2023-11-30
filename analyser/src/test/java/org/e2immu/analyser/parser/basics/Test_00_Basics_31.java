@@ -16,12 +16,15 @@
 package org.e2immu.analyser.parser.basics;
 
 
+import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
+import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -60,9 +63,36 @@ public class Test_00_Basics_31 extends CommonTestRunner {
     // more complex self-references
     @Test
     public void testC() throws IOException {
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("", d.delaySequence());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "c".equals(fr.fieldInfo().name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertCurrentValue(d, 1, "c$0.substring(11)");
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertCurrentValue(d, 2, "c$0.substring(11)");
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        assertCurrentValue(d, 2, "c$0.substring(0,10)");
+                    }
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("c".equals(d.fieldInfo().name)) {
+                String expected = switch (d.iteration()) {
+                    case 0 -> "initial:this.c@Method_method_0-C;values:this.c@Field_c";
+                    default -> "c$0.substring(11),c.toUpperCase()";
+                };
+                assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
+            }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
         testClass("Basics_31C", 0, 0, new DebugConfiguration.Builder()
-                        //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().build());
@@ -72,17 +102,18 @@ public class Test_00_Basics_31 extends CommonTestRunner {
     public void testD() throws IOException {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
         // FIXME not null
-        testClass("Basics_31D", 0, 0, new DebugConfiguration.Builder()
+        testClass("Basics_31D", 1, 1, new DebugConfiguration.Builder()
                         //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().build());
     }
+
     @Test
     public void testE() throws IOException {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
         // FIXME not null
-        testClass("Basics_31E", 0, 0, new DebugConfiguration.Builder()
+        testClass("Basics_31E", 1, 1, new DebugConfiguration.Builder()
                         //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
