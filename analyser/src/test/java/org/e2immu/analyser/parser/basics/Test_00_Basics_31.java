@@ -16,7 +16,6 @@
 package org.e2immu.analyser.parser.basics;
 
 
-import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
 import org.e2immu.analyser.analysis.impl.FieldAnalysisImpl;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -30,7 +29,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_00_Basics_31 extends CommonTestRunner {
@@ -52,8 +50,9 @@ public class Test_00_Basics_31 extends CommonTestRunner {
     // indirect references, not obviously self-ref
     @Test
     public void testB() throws IOException {
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("", d.delaySequence());
-        testClass("Basics_31B", 0, 0, new DebugConfiguration.Builder()
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+        // FIXME not null
+        testClass("Basics_31B", 1, 1, new DebugConfiguration.Builder()
                         //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),

@@ -1,6 +1,10 @@
 package org.e2immu.analyser.parser.basics.testexample;
 
+import org.e2immu.annotation.NotNull;
+
 public class Basics_31B {
+
+    @NotNull
     private String c;
 
     public Basics_31B(String c) {

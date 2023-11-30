@@ -201,6 +201,8 @@ public interface StatementAnalysis extends Analysis,
         return vi.getProperty(CONTEXT_MODIFIED);
     }
 
+    boolean recursivelyContainedIn(Expression expression, Variable variable);
+
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
     }
 

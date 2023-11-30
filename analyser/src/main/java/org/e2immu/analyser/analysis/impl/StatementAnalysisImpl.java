@@ -2021,4 +2021,25 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     public void setBrokeDelay() {
         if (!brokeDelay.isSet()) brokeDelay.set();
     }
+
+    @Override
+    public boolean recursivelyContainedIn(Expression expression, Variable variable) {
+        return recursivelyContainedIn(expression, variable, new HashSet<>());
+    }
+
+    private boolean recursivelyContainedIn(Expression expression, Variable variable, Set<Variable> done) {
+        for (Variable v : expression.variables()) {
+            if (done.add(v)) {
+                if (variable.equals(v)) {
+                    return true;
+                }
+                VariableInfoContainer vic = variables.getOrDefaultNull(v.fullyQualifiedName());
+                if (vic != null) {
+                    VariableInfo vi = vic.current();
+                    return recursivelyContainedIn(vi.getValue(), variable, done);
+                }
+            }
+        }
+        return false;
+    }
 }

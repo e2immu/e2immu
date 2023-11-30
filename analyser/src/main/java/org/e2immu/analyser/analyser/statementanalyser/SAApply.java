@@ -644,7 +644,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                 instance, combinedOrPrimitive, causes);
                         return true;
                     }
-                    if(valueToWrite.variables().contains(variable)) {
+                    if(statementAnalysis.recursivelyContainedIn(valueToWrite, variable)) {
                         LOGGER.debug("Self reference on field");
                         Properties valueProperties = evaluationContext.defaultValueProperties(target.parameterizedType());
                         Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
