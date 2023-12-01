@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
@@ -36,7 +35,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
@@ -207,7 +205,7 @@ public class Test_17_Container extends CommonTestRunner {
             }
         };
 
-        // warning to expect: the potential null pointer exception of s
+        // warning to expect: "potential null pointer exception" related to s
         testClass("Container_1", 0, 1, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -218,11 +216,9 @@ public class Test_17_Container extends CommonTestRunner {
 
     @Test
     public void test_2() throws IOException {
-        final String TYPE = "org.e2immu.analyser.parser.start.testexample.Container_2";
-        final String S = TYPE + ".s";
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if (S.equals(d.variableName()) && "addToS".equals(d.methodInfo().name)) {
+            if (("org.e2immu.analyser.parser.start.testexample.Container_2.s").equals(d.variableName())
+                    && "addToS".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }
@@ -689,12 +685,13 @@ public class Test_17_Container extends CommonTestRunner {
                 .build());
     }
 
-    // ERROR: Cluster overlap (presence of List, even if it is only there because of an unused import statement!!)
+    // The initial problem: Cluster overlap (presence of List, even if it is only there because of an unused import statement!!)
     // then: same error as in 10A, but in a different place
     // then: no progress after 32 iterations,
     // then: self-assignment -> Basics_31
     // then: looked like Lazy: eventual finality
     // then: tok <-> tok$2.0.0 -> Modification_31
+    // then: default non-null of recursive methods
     @Test
     public void test_10B() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -736,8 +733,8 @@ public class Test_17_Container extends CommonTestRunner {
                 if ("current".equals(d.variableName())) {
                     if ("0.0.2.0.1.0.0".equals(d.statementId())) {
                         assertCurrentValue(d, 3, "current$0.0.2.get(subKey$0.0.2.0.0)");
-                        // FIXME ??
-                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        // NULLABLE by default, recursive method
+                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -790,7 +787,7 @@ public class Test_17_Container extends CommonTestRunner {
                 .build());
     }
 
-    // ERROR: Changing value of @Immutable from mutable:1 to final_fields:5
+    // The initial problem: Changing value of @Immutable from mutable:1 to final_fields:5
     // a different manifestation of the same underlying problem
     @Test
     public void test_10C() throws IOException {

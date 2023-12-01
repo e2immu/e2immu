@@ -1252,10 +1252,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
-        boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
         boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-        if (recursiveCall || breakCallCycleDelay) {
-            return property == Property.CONTEXT_MODIFIED ? DV.FALSE_DV : property.bestDv;
+        boolean cycle = breakCallCycleDelay || recursiveCall(methodInfo, context.evaluationContext());
+        if (cycle) {
+            if (Property.NOT_NULL_EXPRESSION == property) {
+                return returnType().isPrimitiveExcludingVoid()
+                        ? MultiLevel.EFFECTIVELY_NOT_NULL_DV : MultiLevel.NULLABLE_DV;
+            }
+            if (Property.CONTEXT_MODIFIED == property) {
+                return DV.FALSE_DV;
+            }
+            return property.bestDv;
         }
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         // return the formal value
@@ -1264,13 +1271,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             IsMyself isMyself = context.evaluationContext().isMyself(concreteReturnType);
             if (isMyself.toFalse(property)) return property.falseDv;
 
-            boolean internalCycle = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-
             if (Property.IMMUTABLE == property) {
                 DynamicImmutableOfMethod dynamic = new DynamicImmutableOfMethod(context, methodInfo,
                         parameterExpressions, concreteReturnType);
-                DV dv = dynamic.dynamicImmutable(formal, methodAnalysis);
-                return internalCycle ? dv.maxIgnoreDelay(property.falseDv) : dv;
+                return dynamic.dynamicImmutable(formal, methodAnalysis);
             }
 
             if (Property.INDEPENDENT == property) {
@@ -1283,14 +1287,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 } else {
                     independent = formal;
                 }
-                return internalCycle ? independent.maxIgnoreDelay(property.falseDv) : independent;
+                return independent;
             }
 
             // formal can be a @NotNull contracted annotation on the method; we cannot dismiss it
             // problem is that it may have to be computed, which introduces an unresolved delay in the case of cyclic calls.
             DV fromConcrete = context.getAnalyserContext().defaultValueProperty(property, concreteReturnType);
-
-            if (internalCycle) return fromConcrete.maxIgnoreDelay(formal).max(property.falseDv);
             return fromConcrete.max(formal);
         }
         return formal;
