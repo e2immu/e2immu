@@ -349,7 +349,7 @@ public class Test_37_EventuallyE2Immutable extends CommonTestRunner {
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = "instance 0 type EventuallyE2Immutable_4<T>/*@Identity*/";
+                        String expected = "instance 1 type EventuallyE2Immutable_4<T>/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);

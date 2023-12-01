@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.Property.*;
@@ -740,17 +741,26 @@ class SAEvaluationContext extends CommonEvaluationContext {
     @Override
     public Expression acceptAndTranslatePrecondition(Identifier identifier, Expression precondition) {
         if (precondition.isBooleanConstant()) return null;
-        TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-        precondition.visit(e -> {
-            if (e instanceof VariableExpression ve && ve.isDependentOnStatementTime()) {
-                builder.put(ve, new VariableExpression(ve.identifier, ve.variable()));
-            } else if (e instanceof ExpandedVariable ev) {
-                builder.put(ev, new VariableExpression(ev.identifier, ev.getVariable()));
-            }
-        });
-        TranslationMap translationMap = builder.build();
-        Expression translated = precondition.translate(getAnalyserContext(), translationMap);
-        List<Variable> variables = translated.variables(DescendMode.NO);
+        Expression translated = precondition;
+        AtomicBoolean seenExpanded = new AtomicBoolean(true);
+        // do this max 2x: first time, scopes of expanded variables don't get translated (this$0 -> this)
+        while (seenExpanded.get()) {
+            seenExpanded.set(false);
+            TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
+            translated.visit(e -> {
+                // we're essentially dropping all suffixes, scopes, indices
+                if (e instanceof VariableExpression ve) {
+                    builder.put(ve, new VariableExpression(ve.identifier, ve.variable()));
+                } else if (e instanceof ExpandedVariable ev) {
+                    seenExpanded.set(true);
+                    builder.put(ev, new VariableExpression(ev.identifier, ev.getVariable()));
+                }
+            });
+            TranslationMap translationMap = builder.build();
+            translated = translated.translate(getAnalyserContext(), translationMap);
+        }
+        assert translated != null;
+        List<Variable> variables = translated.variables(DescendMode.YES_INCLUDE_THIS);
         if (variables.stream().allMatch(v -> v instanceof ParameterInfo
                 || v instanceof This
                 || v instanceof FieldReference)) {
