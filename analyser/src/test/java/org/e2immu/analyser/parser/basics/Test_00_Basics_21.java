@@ -178,6 +178,13 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                         d.methodAnalysis().methodLevelData().linksHaveBeenEstablished());
                 assertDv(d.p(0), 3, DV.FALSE_DV, CONTEXT_MODIFIED);
                 assertDv(d.p(0), 3, DV.FALSE_DV, MODIFIED_VARIABLE);
+
+                String expect = switch(d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=<precondition>&&<precondition>, causes=[]]";
+                    default -> "Precondition[expression=null==t, causes=[methodCall:get, methodCall:set]]";
+                };
+                assertEquals(expect, d.methodAnalysis().getPreconditionForEventual().toString());
             }
 
             if ("set".equals(d.methodInfo().name)) {

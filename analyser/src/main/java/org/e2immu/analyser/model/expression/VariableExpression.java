@@ -239,7 +239,12 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                         int statementTime = translated instanceof DelayedVariableExpression dve ? dve.statementTime : 0;
                         return DelayedVariableExpression.forField(newFr, statementTime, translated.causesOfDelay());
                     }
-                    return new VariableExpression(fr.scope().getIdentifier(), newFr, suffix, translated, null);
+                    return new VariableExpression(identifier, newFr, suffix, translated, null);
+                }
+                if (!translated.equals(scopeValue)) {
+                    // change the scopeValue to the translated one (see e.g. Basics_21.copy(),
+                    // which translates using RemoveSuffixesTranslationMap)
+                    return new VariableExpression(identifier, fr, suffix, translated, null);
                 }
             } else if (variable instanceof DependentVariable dv) {
                 Expression translatedScope = dv.arrayExpression().translate(inspectionProvider, translationMap);

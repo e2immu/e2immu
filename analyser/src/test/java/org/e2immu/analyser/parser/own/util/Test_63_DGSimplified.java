@@ -215,7 +215,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-S--S-SF--SFM-SFM-SFMT----SF---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-S--S-SF--SFM-SFMT----SF---", d.delaySequence());
 
         testClass("DGSimplified_0", 0, 1, new DebugConfiguration.Builder()
                 //  .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -246,16 +246,16 @@ public class Test_63_DGSimplified extends CommonTestRunner {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "nodeMap".equals(fr.fieldInfo().name)) {
                     if ("3".equals(d.statementId())) {
-                        assertDv(d, 29, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 26, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "dependsOn".equals(fr.fieldInfo().name)) {
                     if ("node".equals(fr.scope().toString())) {
                         if ("3".equals(d.statementId())) {
-                            assertCurrentValue(d, 29, "nullable instance type List<T>");
+                            assertCurrentValue(d, 26, "nullable instance type List<T>");
                         }
                         if ("3.0.0".equals(d.statementId())) { // forEach() call
-                            String expected = d.iteration() < 29 ? "<f:node.dependsOn>" : "nullable instance type List<T>";
+                            String expected = d.iteration() < 26 ? "<f:node.dependsOn>" : "nullable instance type List<T>";
                             assertEquals(expected, d.currentValue().toString());
                         }
                     } else if ("nodeMap.get(t)".equals(fr.scope().toString())) {
@@ -296,11 +296,11 @@ public class Test_63_DGSimplified extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("recursivelyComputeDependencies".equals(d.methodInfo().name)) {
-                assertDv(d, 29, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 26, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("accept".equals(d.methodInfo().name)) {
                 if ("$1".equals(d.methodInfo().typeInfo.simpleName)) { // recursivelyComputeDependencies
-                    assertDv(d, 31, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                    assertDv(d, 27, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 } else if ("$3".equals(d.methodInfo().typeInfo.simpleName)) {// visit
                     assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 }
@@ -312,7 +312,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 assertEquals(expected, ((FieldAnalysisImpl.Builder) d.fieldAnalysis()).sortedValuesString());
             }
         };
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-S--S-S--SF--SFM-SFM-SFMT------", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-S--S-S--SF--SFM-SFMT------", d.delaySequence());
         testClass("DGSimplified_1", 4, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -368,7 +368,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     String expected = switch (d.iteration()) {
                         case 0 -> "!<null-check>";
                         case 1, 2, 3, 4, 5, 6, 7, 8 -> "null!=<f:node.dependsOn>";
-                        default -> "null!=(nodeMap.get(t)).dependsOn";
+                        default -> "null!=(nodeMap.get(t$0)).dependsOn";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = switch (d.iteration()) {
@@ -381,7 +381,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
                 }
                 if ("0.0.1.0.0.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() < 9 ? "<m:contains>" : "set.contains(d)";
+                    String expected = d.iteration() < 9 ? "<m:contains>" : "set.contains(d$0.0.1.0.0)";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     String delays = d.iteration() < 9
                             ? "initial:node@Method_reverse_0.0.1.0.0-C;initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C"
@@ -405,7 +405,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 }
                 if ("node".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertCurrentValue(d, 9, "nodeMap.get(t)");
+                        assertCurrentValue(d, 9, "nodeMap.get(t$0)");
                         String linked = d.iteration() == 0 ? "set:-1,t:-1,this.nodeMap:-1,this:-1"
                                 : d.iteration() < 9 ? "this.nodeMap:-1,this:-1"
                                 : "this.nodeMap:3,this:4";
@@ -477,13 +477,13 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("1.0.2".equals(d.statementId())) {
                     String value = d.iteration() == 0 ? "!<null-check>"
                             : d.iteration() < 30 ? "null!=<f:node.dependsOn>"
-                            : "null!=(nodeMap.get(t)).dependsOn$2";
+                            : "null!=(nodeMap.get(t$1)).dependsOn$2";
                     assertEquals(value, d.evaluationResult().value().toString());
                 }
             }
             if ("sorted".equals(d.methodInfo().name)) {
                 if ("3.0.2.0.2".equals(d.statementId())) {
-                    String value = d.iteration() < 29 ? "!<m:isEmpty>" : "!cycle.isEmpty()";
+                    String value = d.iteration() < 29 ? "!<m:isEmpty>" : "!cycle$3.0.2.0.1.isEmpty()";
                     assertEquals(value, d.evaluationResult().value().toString());
                 }
             }
@@ -583,7 +583,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                 if ("result".equals(d.variableName())) {
                     if ("4.0.1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        String merge = d.iteration() < 5 ? "<vl:result>" : "instance type List<SortResult<T>>";
+                        String merge = d.iteration() < 5 ? "<vl:result>" : "instance 4.0.1 type List<SortResult<T>>";
                         if (d.iteration() >= 5) {
                             assertEquals("PositionalIdentifier[line=60, pos=13, endLine=74, endPos=13]",
                                     d.currentValue().getIdentifier().toString());
@@ -593,7 +593,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                     if ("4.0.2.1.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo vi = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String eval = d.iteration() < 2 ? "<vl:result>" : "instance type List<SortResult<T>>";
+                        String eval = d.iteration() < 2 ? "<vl:result>" : "instance 4.0.2.1.0 type List<SortResult<T>>";
                         assertEquals(eval, vi.getValue().toString());
                         if (d.iteration() >= 2) {
                             assertEquals("PositionalIdentifier[line=78, pos=17, endLine=78, endPos=80]",
@@ -602,7 +602,7 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         String merge = d.iteration() < 5
                                 ? "<vl:result>"
-                                : "(toDo$4.0.1.entrySet().isEmpty()?new LinkedList<>()/*0==this.size()*/:instance type List<T>).isEmpty()?instance type List<SortResult<T>>:instance type List<SortResult<T>>";
+                                : "(toDo$4.0.1.entrySet().isEmpty()?new LinkedList<>()/*0==this.size()*/:instance 4.0.1.0.3.0.0 type List<T>).isEmpty()?instance 4.0.1 type List<SortResult<T>>:instance 4.0.2.1.0.0.0 type List<SortResult<T>>";
                         assertEquals(merge, d.currentValue().toString());
                     }
                 }

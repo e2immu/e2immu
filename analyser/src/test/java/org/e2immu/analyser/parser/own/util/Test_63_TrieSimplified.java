@@ -1050,7 +1050,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         case 1, 2, 3 -> "null==<f:node.data>";
                         // TODO isn't this too complicated?
                         default ->
-                                "null==(strings.length>=1?null==node$1.map$0?new TrieNode<>():null==node$1.map$0.get(nullable instance 1 type String)?new TrieNode<>():node$1.map$0.get(nullable instance 1 type String):root).data$3";
+                                "null==(strings.length>=1?null==node.map$0?new TrieNode<>():null==node.map$0.get(nullable instance 1 type String)?new TrieNode<>():node.map$0.get(nullable instance 1 type String):root).data$3";
                     };
                     assertEquals(value, d.evaluationResult().value().toString());
                 }

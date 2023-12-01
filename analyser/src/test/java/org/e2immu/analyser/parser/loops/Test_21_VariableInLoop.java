@@ -90,7 +90,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                             case 1 ->
                                     "null==sa$1?<return value>:<m:isPresent>?<null-check>?<vl:sa>:<return value>:<vl:sa>";
                             default ->
-                                    "null==sa$1?<return value>:(sa$1.navigationData()).next.isPresent()?null==(sa$1.navigationData()).next.get().orElse(null)?sa$1:<return value>:sa$1";
+                                    "null==sa$1?<return value>:(sa$1.navigationData()).next.isPresent()?null==(sa.navigationData()).next.get().orElse(null)?sa$1:<return value>:sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
@@ -100,7 +100,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                             case 0 -> "(<m:isPresent>||<null-check>)&&(!<null-check>||<null-check>)?null:<v:sa>";
                             case 1 -> "(<m:isPresent>||<null-check>)&&(!<null-check>||<null-check>)?null:<vl:sa>";
                             default ->
-                                    "(((null==sa$1?firstStatementAnalyser:null!=(sa$1.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||null==(null==sa$1?firstStatementAnalyser:null!=(sa$1.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa$1.navigationData()).next.get().get():sa$1))&&(null!=((null==sa$1?firstStatementAnalyser:null!=(sa$1.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa$1.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null)||null==(null==sa$1?firstStatementAnalyser:null!=(sa$1.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa$1.navigationData()).next.get().get():sa$1))?null:null==sa$1?firstStatementAnalyser:null!=(sa$1.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa$1.navigationData()).next.get().get():sa$1";
+                                    "(((null==sa$1?firstStatementAnalyser:null!=(sa.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa.navigationData()).next.get().get():sa$1).navigationData()).next.isPresent()||null==(null==sa$1?firstStatementAnalyser:null!=(sa.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa.navigationData()).next.get().get():sa$1))&&(null!=((null==sa$1?firstStatementAnalyser:null!=(sa.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa.navigationData()).next.get().get():sa$1).navigationData()).next.get().orElse(null)||null==(null==sa$1?firstStatementAnalyser:null!=(sa.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa.navigationData()).next.get().get():sa$1))?null:null==sa$1?firstStatementAnalyser:null!=(sa.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa.navigationData()).next.get().get():sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -143,7 +143,7 @@ public class Test_21_VariableInLoop extends CommonTestRunner {
                             case 0 -> "<null-check>?firstStatementAnalyser:<m:get>";
                             case 1 -> "null==sa$1?firstStatementAnalyser:<s:StatementAnalyser>";
                             default ->
-                                    "null==sa$1?firstStatementAnalyser:null!=(sa$1.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa$1.navigationData()).next.get().get():sa$1";
+                                    "null==sa$1?firstStatementAnalyser:null!=(sa.navigationData()).next.get().orElse(null)&&(sa$1.navigationData()).next.isPresent()?(sa.navigationData()).next.get().get():sa$1";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         // nullable or content not null? delayed or not in iteration 0?

@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
+import org.e2immu.analyser.analyser.util.RemoveSuffixesTranslationMap;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.impl.StatementAnalysisImpl;
@@ -741,26 +742,9 @@ class SAEvaluationContext extends CommonEvaluationContext {
     @Override
     public Expression acceptAndTranslatePrecondition(Identifier identifier, Expression precondition) {
         if (precondition.isBooleanConstant()) return null;
-        Expression translated = precondition;
-        AtomicBoolean seenExpanded = new AtomicBoolean(true);
-        // do this max 2x: first time, scopes of expanded variables don't get translated (this$0 -> this)
-        while (seenExpanded.get()) {
-            seenExpanded.set(false);
-            TranslationMapImpl.Builder builder = new TranslationMapImpl.Builder();
-            translated.visit(e -> {
-                // we're essentially dropping all suffixes, scopes, indices
-                if (e instanceof VariableExpression ve) {
-                    builder.put(ve, new VariableExpression(ve.identifier, ve.variable()));
-                } else if (e instanceof ExpandedVariable ev) {
-                    seenExpanded.set(true);
-                    builder.put(ev, new VariableExpression(ev.identifier, ev.getVariable()));
-                }
-            });
-            TranslationMap translationMap = builder.build();
-            translated = translated.translate(getAnalyserContext(), translationMap);
-        }
-        assert translated != null;
-        List<Variable> variables = translated.variables(DescendMode.YES_INCLUDE_THIS);
+        RemoveSuffixesTranslationMap translationMap = new RemoveSuffixesTranslationMap(getAnalyserContext());
+        Expression translated = precondition.translate(getAnalyserContext(), translationMap);
+        List<Variable> variables = translated.variables(DescendMode.NO);
         if (variables.stream().allMatch(v -> v instanceof ParameterInfo
                 || v instanceof This
                 || v instanceof FieldReference)) {

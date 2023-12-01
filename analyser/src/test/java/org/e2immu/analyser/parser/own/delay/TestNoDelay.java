@@ -51,7 +51,7 @@ public class TestNoDelay extends CommonTestRunner {
             if (MIN_IN_CAUSES_OF_DELAY.equals(d.methodInfo().fullyQualifiedName)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("1".equals(d.statementId())) {
-                        assertEquals("other.isInitialDelay()?this:other", d.currentValue().toString());
+                        assertEquals("other.isInitialDelay()?this$0:other", d.currentValue().toString());
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
@@ -104,7 +104,7 @@ public class TestNoDelay extends CommonTestRunner {
                 }
             }
             if (MIN_IN_CAUSES_OF_DELAY.equals(d.methodInfo().fullyQualifiedName)) {
-                String expected = d.iteration() == 0 ? "<m:max>" : "/*inline max*/other.isInitialDelay()?this:other";
+                String expected = d.iteration() == 0 ? "<m:max>" : "/*inline max*/other.isInitialDelay()?this$0:other";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue()
                         .toString());
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);

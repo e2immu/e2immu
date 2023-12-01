@@ -131,9 +131,9 @@ public class Test_Util_12_WeightedGraph extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
-                            case 0 -> "<f:variable>==<m:translateVariable>?this:<s:VariableCause>";
-                            case 1 -> "<f:variable>==<m:translateVariable>?this:<new:VariableCause>";
-                            default -> "this";
+                            case 0 -> "<f:variable>==<m:translateVariable>?this$0:<s:VariableCause>";
+                            case 1 -> "<f:variable>==<m:translateVariable>?this$0:<new:VariableCause>";
+                            default -> "this$0";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         // no this:0 ?? linked variables of InlineConditional

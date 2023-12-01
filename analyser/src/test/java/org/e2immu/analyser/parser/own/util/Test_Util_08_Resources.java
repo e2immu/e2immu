@@ -71,7 +71,7 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 }
                 if ("1.0.3.0.2.0.1".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "<m:endsWith>&&0==<delayed array length>"
-                            : "file.getName().endsWith(\".annotated_api\")&&0==packageParts.length";
+                            : "file$1.0.3.0.2.getName().endsWith(\".annotated_api\")&&0==packageParts.length";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
                 if ("1.0.3.0.2.0.1.0.2".equals(d.statementId())) {
@@ -123,17 +123,17 @@ public class Test_Util_08_Resources extends CommonTestRunner {
                 }
                 if ("name".equals(d.variableName())) {
                     if ("1.0.3.0.2.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:getName>" : "file.getName()";
+                        String expected = d.iteration() == 0 ? "<m:getName>" : "file$1.0.3.0.2.getName()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1.0.3.0.2.0.1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:getName>" : "file.getName()";
+                        String expected = d.iteration() == 0 ? "<m:getName>" : "file$1.0.3.0.2.getName()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("partsFromFile".equals(d.variableName())) {
                     if ("1.0.3.0.2.0.1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:split>" : "file.getName().split(\"\\\\.\")";
+                        String expected = d.iteration() == 0 ? "<m:split>" : "file$1.0.3.0.2.getName().split(\"\\\\.\")";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
