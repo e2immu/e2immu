@@ -109,11 +109,11 @@ public class Test_21_Range_4 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         Expression accordingToState = d.context().evaluationContext().getVariableValue(d.variable(),
                                 null, null, Identifier.CONSTANT, d.variableInfo(), ForwardEvaluationInfo.DEFAULT);
-                        String expect2 = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect2 = d.iteration() == 0 ? "<v:i>" : "instance 1 type int";
                         assertEquals(expect2, accordingToState.toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -151,17 +151,17 @@ public class Test_21_Range_4 extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? "1==<v:i>" : "1==i$1";
                     assertEquals(expect, d.state().toString());
-                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&1==<v:i>" : "1==i$1";
+                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&1==<v:i>" : "1==i$1&&(1==i||10==i)";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
             }
             if ("method3".equals(d.methodInfo().name)) {
                 if ("2".equals(d.statementId())) {
-                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&10==<v:i>" : "10==i";
+                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&10==<v:i>" : "10==i$1&&(1==i||10==i)";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&10==<v:i>" : "10==i";
+                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&10==<v:i>" : "10==i$1&&(1==i||10==i)";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
             }
