@@ -164,7 +164,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             }
             if ("level2".equals(d.fieldInfo().name)) {
                 assertDv(d, DV.TRUE_DV, FINAL);
-                String expected = d.iteration() == 0 ? "<f:level2>" : "[99,instance type int]";
+                String expected = d.iteration() == 0 ? "<f:level2>" : "[99,instance 1 type int]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 if (d.iteration() > 0) {
                     assertTrue(d.fieldAnalysis().getValue() instanceof MultiValue);
@@ -396,7 +396,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
     public void test_7() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
-                String expectValue = d.iteration() == 0 ? "<m:setI>" : "<no return value>";
+                String expectValue = d.iteration() < 2 ? "<m:setI>" : "<no return value>";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -464,12 +464,16 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 assertHc(d, 0, "");
             }
         };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("E2Immutable_7", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

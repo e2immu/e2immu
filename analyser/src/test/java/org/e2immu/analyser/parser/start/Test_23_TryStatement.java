@@ -68,7 +68,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     // meaning: no idea, but not null
                     assertTrue(d.currentValue() instanceof Instance);
-                    assertEquals("instance type String", d.currentValue().toString());
+                    assertEquals("instance 0 type String", d.currentValue().toString());
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                 }
             }
@@ -88,7 +88,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                assertEquals("instance type String", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("instance 0 type String", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -111,7 +111,7 @@ public class Test_23_TryStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "npe".equals(d.variableName())) {
                 if ("1.1.0".equals(d.statementId())) {
-                    assertEquals("instance type NullPointerException", d.currentValue().toString());
+                    assertEquals("instance 1.1.0 type NullPointerException", d.currentValue().toString());
                 }
             }
         };
@@ -208,10 +208,10 @@ public class Test_23_TryStatement extends CommonTestRunner {
                         assertEquals("\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("instance type boolean?<return value>:\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
+                        assertEquals("instance 1 type boolean?<return value>:\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("instance type boolean?null:\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
+                        assertEquals("instance 1 type boolean?null:\"Hi\"+Integer.parseInt(s)", d.currentValue().toString());
                     }
                 }
             }
@@ -219,10 +219,10 @@ public class Test_23_TryStatement extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("instance type boolean", d.conditionManagerForNextStatement().state().toString());
+                    assertEquals("instance 1 type boolean", d.conditionManagerForNextStatement().state().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals("instance type boolean", d.state().toString());
+                    assertEquals("instance 1 type boolean", d.state().toString());
                 }
             }
         };

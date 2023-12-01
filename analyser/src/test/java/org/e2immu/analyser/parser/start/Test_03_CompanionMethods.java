@@ -172,12 +172,12 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("instance type ArrayList<String>/*1==this.size()&&this.contains(\"a\")*/",
+                    assertEquals("instance 1 type ArrayList<String>/*1==this.size()&&this.contains(\"a\")*/",
                             d.currentValue().toString());
                     assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(IMMUTABLE));
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals("instance type ArrayList<String>/*2==this.size()&&this.contains(\"a\")&&this.contains(\"b\")*/",
+                    assertEquals("instance 2 type List<String>/*2==this.size()&&this.contains(\"a\")&&this.contains(\"b\")*/",
                             d.currentValue().toString());
                 }
             }
@@ -249,7 +249,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "sb".equals(d.variableName())) {
-                assertEquals("instance type StringBuilder/*5==this.length()*/",
+                assertEquals("instance 0 type StringBuilder/*5==this.length()*/",
                         d.currentValue().toString());
             }
         };
@@ -296,16 +296,20 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                     assertEquals("new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
-                if (Set.of("01", "04").contains(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&1==this.size()&&this.contains(\"a\")*/",
-                            d.currentValue().toString(), "statement " + d.statementId());
+                if ("01".equals(d.statementId())) {
+                    assertEquals("instance 01 type HashSet<String>/*AnnotatedAPI.isKnown(true)&&1==this.size()&&this.contains(\"a\")*/",
+                            d.currentValue().toString());
+                }
+                if ("04".equals(d.statementId())) {
+                    assertEquals("instance 04 type Set<String>/*AnnotatedAPI.isKnown(true)&&1==this.size()&&this.contains(\"a\")*/",
+                            d.currentValue().toString());
                 }
                 if ("07".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&2==this.size()&&this.contains(\"a\")&&this.contains(\"b\")*/",
+                    assertEquals("instance 07 type Set<String>/*AnnotatedAPI.isKnown(true)&&2==this.size()&&this.contains(\"a\")&&this.contains(\"b\")*/",
                             d.currentValue().toString());
                 }
                 if ("11".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&2==this.size()&&this.contains(\"a\")&&this.contains(\"b\")*/",
+                    assertEquals("instance 11 type Set<String>/*AnnotatedAPI.isKnown(true)&&2==this.size()&&this.contains(\"a\")&&this.contains(\"b\")*/",
                             d.currentValue().toString());
                 }
             }
@@ -394,11 +398,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                             d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*this.contains(\"a\")&&1-this.size()+strings.size()>=0&&this.size()>=strings.size()*/",
+                    assertEquals("instance 2 type HashSet<String>/*this.contains(\"a\")&&1-this.size()+strings.size()>=0&&this.size()>=strings.size()*/",
                             d.currentValue().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
+                    assertEquals("instance 4 type Set<String>/*AnnotatedAPI.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
             }
@@ -455,15 +459,15 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("01".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&1==this.size()&&this.contains(\"a\")*/",
+                    assertEquals("instance 01 type HashSet<String>/*AnnotatedAPI.isKnown(true)&&1==this.size()&&this.contains(\"a\")*/",
                             d.currentValue().toString());
                 }
                 if ("04".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&0==this.size()&&!this.contains(\"a\")*/",
+                    assertEquals("instance 04 type Set<String>/*AnnotatedAPI.isKnown(true)&&0==this.size()&&!this.contains(\"a\")*/",
                             d.currentValue().toString());
                 }
                 if ("09".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*AnnotatedAPI.isKnown(true)&&1==this.size()&&!this.contains(\"a\")&&this.contains(\"c\")*/", d.currentValue().toString());
+                    assertEquals("instance 09 type Set<String>/*AnnotatedAPI.isKnown(true)&&1==this.size()&&!this.contains(\"a\")&&this.contains(\"c\")*/", d.currentValue().toString());
                 }
             }
         };
@@ -487,13 +491,13 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("5".equals(d.statementId())) {
-                    assertEquals("instance type HashSet<String>/*this.size()>=in.size()*/", d.currentValue().toString());
+                    assertEquals("instance 5 type Set<String>/*this.size()>=in.size()*/", d.currentValue().toString());
                 }
             }
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "8".equals(d.statementId())) {
-                assertEquals("set.size()", d.evaluationResult().value().toString());
+                assertEquals("set$5.size()", d.evaluationResult().value().toString());
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -526,7 +530,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "$1".equals(d.methodInfo().typeInfo.simpleName)) {
                 if ("0".equals(d.statementId())) {
                     assertEquals(2, d.evaluationResult().changeData().size());
-                    assertEquals("instance type boolean", d.evaluationResult().value().toString());
+                    assertEquals("instance 0 type boolean", d.evaluationResult().value().toString());
                 }
             }
         };
@@ -546,11 +550,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                         // with state, but the state based on pre == null (>=1, rather than == 1)
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals("instance type HashSet<String>/*this.size()>=1&&this.contains(s)*/", eval.getValue().toString());
+                        assertEquals("instance 0 type Set<String>/*this.size()>=1&&this.contains(s)*/", eval.getValue().toString());
                         // no change after block
                         String expected = d.iteration() == 0
-                                ? "instance type boolean?<v:set>:instance type HashSet<String>"
-                                : "instance type boolean?instance type HashSet<String>/*this.size()>=1&&this.contains(s)*/:instance type HashSet<String>";
+                                ? "instance 0 type boolean?<v:set>:instance 0 type HashSet<String>"
+                                : "instance 0 type boolean?instance 0 type Set<String>/*this.size()>=1&&this.contains(s)*/:instance 0 type HashSet<String>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

@@ -218,7 +218,7 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
             if ("methodE".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     Expression expression = d.statementAnalysis().stateData().valueOfExpressionGet();
-                    String expected = d.iteration() < 2 ? "<m:methodF>" : "instance type boolean";
+                    String expected = d.iteration() < 2 ? "<m:methodF>" : "instance 0.0.0 type boolean";
                     assertEquals(expected, expression.toString());
                     if (d.iteration() >= 2) {
                         if (expression instanceof Instance i) {

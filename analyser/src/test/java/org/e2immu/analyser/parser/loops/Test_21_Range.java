@@ -40,53 +40,53 @@ public class Test_21_Range extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertRange(d, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i]",
-                            "i<10&&i>=0");
+                    assertRange(d, "NumericRange[startIncl=0, endExcl=10, increment=1, variableExpression=i$0]",
+                            "i$0<10&&i$0>=0");
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertTrue(d.condition().isDelayed());
                     } else {
-                        assertEquals("i<10&&i>=0", d.condition().toString());
+                        assertEquals("i$0<10&&i$0>=0", d.condition().toString());
                     }
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         assertTrue(d.condition().isDelayed());
                     } else {
-                        assertEquals("i<10&&i>=0", d.condition().toString());
-                        assertEquals("i<10&&i>=0", d.absoluteState().toString());
+                        assertEquals("i$0<10&&i$0>=0", d.condition().toString());
+                        assertEquals("i$0<10&&i$0>=0", d.absoluteState().toString());
                     }
                 }
             }
             if ("method2".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertRange(d, "NumericRange[startIncl=0, endExcl=11, increment=1, variableExpression=i]",
-                            "i<11&&i>=0");
+                    assertRange(d, "NumericRange[startIncl=0, endExcl=11, increment=1, variableExpression=i$0]",
+                            "i$0<11&&i$0>=0");
                 }
             }
             if ("method3".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertRange(d, "NumericRange[startIncl=0, endExcl=12, increment=1, variableExpression=i]",
-                            "i<12&&i>=0");
+                    assertRange(d, "NumericRange[startIncl=0, endExcl=12, increment=1, variableExpression=i$0]",
+                            "i$0<12&&i$0>=0");
                 }
             }
             if ("method4".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertRange(d, "NumericRange[startIncl=13, endExcl=-1, increment=-1, variableExpression=i]",
-                            "i<14&&i>=0");
+                    assertRange(d, "NumericRange[startIncl=13, endExcl=-1, increment=-1, variableExpression=i$0]",
+                            "i$0<14&&i$0>=0");
                 }
             }
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertRange(d, "NumericRange[startIncl=0, endExcl=14, increment=4, variableExpression=i]",
-                            "0==i%4&&i<14&&i>=0");
+                    assertRange(d, "NumericRange[startIncl=0, endExcl=14, increment=4, variableExpression=i$0]",
+                            "0==i$0%4&&i$0<14&&i$0>=0");
                 }
             }
             if ("method6".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertRange(d, "NumericRange[startIncl=11, endExcl=0, increment=-2, variableExpression=i]",
-                            "1==i%2&&i>=1&&i<12");
+                    assertRange(d, "NumericRange[startIncl=11, endExcl=0, increment=-2, variableExpression=i$0]",
+                            "1==i$0%2&&i$0>=1&&i$0<12");
                 }
             }
         };
@@ -111,7 +111,7 @@ public class Test_21_Range extends CommonTestRunner {
             }
             if ("method3".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    Range range = assertRange(d, "NumericRange[startIncl=1, endExcl=10, increment=20, variableExpression=i]", "1==i");
+                    Range range = assertRange(d, "NumericRange[startIncl=1, endExcl=10, increment=20, variableExpression=i$0]", "1==i$0");
                     if (d.iteration() > 0) {
                         assertNotNull(range);
                         assertEquals(1, range.loopCount());

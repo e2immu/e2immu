@@ -105,14 +105,14 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertFalse(d.methodInfo().methodResolution.get().overrides().isEmpty());
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
 
-                String expected = "(instance type String).equals(name)";
+                String expected = "(instance 0 type String).equals(name)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("valueOf".equals(d.methodInfo().name)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 String expect = d.iteration() < 4 ? "<m:valueOf>"
-                        : "Arrays.stream(Enum_0.values()).filter(instance type $1).findFirst().orElseThrow()";
+                        : "Arrays.stream(Enum_0.values()).filter(instance 0 type $1).findFirst().orElseThrow()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 mustSeeIteration(d, 4);
 
@@ -123,7 +123,7 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
             }
             if ("isThree".equals(d.methodInfo().name)) {
-                String expect = d.iteration() < 4 ? "<m:isThree>" : "Enum_0.THREE==this";
+                String expect = d.iteration() < 4 ? "<m:isThree>" : "Enum_0.THREE==this$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
                 mustSeeIteration(d, 4);
             }

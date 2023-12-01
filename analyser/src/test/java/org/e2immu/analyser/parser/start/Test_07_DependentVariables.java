@@ -139,7 +139,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     String expectValue = switch (d.iteration()) {
                         case 0 -> "<dv:xs[index]>";
                         case 1 -> "<v:xs[index]>/*{DL this:-1,xs:-1}*/";
-                        default -> "xs[index]";
+                        default -> "xs[index]$0";
                     };
                     assertEquals(expectValue, d.currentValue().minimalOutput());
 
@@ -151,7 +151,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 }
                 if (d.variable() instanceof DependentVariable dv) {
                     assertEquals("xs[index]", dv.simpleName);
-                    String expected = d.iteration() < 2 ? "<v:xs[index]>/*{DL this:-1,xs:-1}*/" : "nullable instance type X/*{L this:2,xs:2}*/";
+                    String expected = d.iteration() < 2 ? "<v:xs[index]>/*{DL this:-1,xs:-1}*/" : "nullable instance 0 type X/*{L this:2,xs:2}*/";
                     assertEquals(expected, d.currentValue().toString());
                     // DVE has no linking info (so this.xs:-1) goes out in iteration 0
                     String linked = d.iteration() < 2 ? "this.xs:-1,this:-1" : "this.xs:2,this:2";
@@ -208,7 +208,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             if ("xs".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0 ? "p:-1,xs[index]:-1" : "p:4";
                 assertEquals(expected, d.fieldAnalysis().getLinkedVariables().toString());
-                assertEquals("instance type X[]", d.fieldAnalysis().getValue().toString());
+                assertEquals("instance 1 type X[]", d.fieldAnalysis().getValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
             }
             if ("i".equals(d.fieldInfo().name)) {
@@ -266,7 +266,8 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     assertLinked(d,
                             it0("index:-1,this.xs:-1,this:-1,xs[index]:0"),
-                            it(1, "this.xs:2,this:2,xs[index]:0"));
+                            it1("this.xs:-1,this:-1,xs[index]:0"),
+                            it(2, "this.xs:2,this:2,xs[index]:0"));
                 }
             }
         };
@@ -291,7 +292,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:getX>" : "/*inline getX*/xs[index]";
+                String expected = d.iteration() < 2 ? "<m:getX>" : "/*inline getX*/xs[index]$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
@@ -303,10 +304,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("DependentVariables_2", 0, 1, new DebugConfiguration.Builder()
-             //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-             //   .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-            //    .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-            //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -318,7 +319,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() == 0
                             ? "<v:bs[0]>||<v:bs[1]>||<v:bs[2]>||<v:bs[3]>"
-                            : "bs[0]||bs[1]||bs[2]||bs[3]";
+                            : "bs[0]$0||bs[1]$0||bs[2]$0||bs[3]$0";
                     assertEquals(expected, d.evaluationResult().value().minimalOutput());
                 }
             }
@@ -328,14 +329,14 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 if ("bs[0]".equals(d.variable().simpleName())) {
                     assertEquals("org.e2immu.analyser.parser.start.testexample.DependentVariables_3.method(boolean[]):0:bs[0]",
                             d.variable().fullyQualifiedName());
-                    assertCurrentValue(d, 1, "instance type boolean");
+                    assertCurrentValue(d, 1, "instance 0 type boolean");
                 }
                 if ("added".equals(d.variableName())) {
                     if ("0.0.0".equals(d.statementId())) {
                         assertEquals("false", d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<dv:bs[0]>" : "bs[0]";
+                        String expected = d.iteration() == 0 ? "<dv:bs[0]>" : "bs[0]$0";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.2.0.2".equals(d.statementId())) {
@@ -343,13 +344,13 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<dv:bs[1]>?<v:added>:<dv:bs[0]>" : "bs[0]||bs[1]";
+                        String expected = d.iteration() == 0 ? "<dv:bs[1]>?<v:added>:<dv:bs[0]>" : "bs[0]$0||bs[1]$0";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.3".equals(d.statementId())) {
                         String expected = d.iteration() == 0
                                 ? "<dv:bs[1]>||<dv:bs[2]>?<v:added>:<dv:bs[0]>"
-                                : "bs[0]||bs[1]||bs[2]";
+                                : "bs[0]$0||bs[1]$0||bs[2]$0";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -362,15 +363,15 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 } else fail();
             }
             if ("0.0.1.0.0".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "<dv:bs[0]>" : "bs[0]";
+                String expected = d.iteration() == 0 ? "<dv:bs[0]>" : "bs[0]$0";
                 assertEquals(expected, d.absoluteState().toString());
             }
             if ("0.0.2.0.0".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "<dv:bs[1]>" : "bs[1]";
+                String expected = d.iteration() == 0 ? "<dv:bs[1]>" : "bs[1]$0";
                 assertEquals(expected, d.absoluteState().toString());
             }
             if ("0.0.3.0.0".equals(d.statementId())) {
-                String expected = d.iteration() == 0 ? "<dv:bs[2]>" : "bs[2]";
+                String expected = d.iteration() == 0 ? "<dv:bs[2]>" : "bs[2]$0";
                 assertEquals(expected, d.absoluteState().toString());
             }
         };
@@ -409,7 +410,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                     assertEquals("12", d.currentValue().toString());
                 } else if ("array[org.e2immu.analyser.parser.start.testexample.DependentVariables_4.method(int):0:a]".equals(d.variableName())) {
                     assertEquals("3", d.statementId());
-                    assertEquals("instance type int", d.currentValue().toString());
+                    assertEquals("instance 3 type int", d.currentValue().toString());
                 } else if (!(d.variable() instanceof This)) {
                     fail("This variable should not be produced: " + d.variableName() + "; statement " + d.statementId());
                 }

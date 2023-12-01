@@ -62,17 +62,17 @@ public class Test_21_Range_4 extends CommonTestRunner {
                         if (d.variableInfoContainer().variableNature() instanceof VariableNature.VariableDefinedOutsideLoop v) {
                             assertEquals("1", v.statementIndex());
                         } else fail();
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         // NOTE: not 10, we're not doing the assignment, the value 10 is in the state
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -83,7 +83,7 @@ public class Test_21_Range_4 extends CommonTestRunner {
                         assertEquals(expectReturn, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:0" : "1==i?5:0";
+                        String expectReturn = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&1==<v:i>?5:0" : "1==i$1?5:0";
                         assertEquals(expectReturn, d.currentValue().toString());
                     }
                 }
@@ -93,13 +93,13 @@ public class Test_21_Range_4 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // in the current implementation, the state is  "1==i||10==i" (see below).
                         // so we cannot yet deduce that "i" must be 1
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
                         // however, after the assert statement, we must conclude that i==1,
                         // again value remains in the state, is not copied (SAEvalOfMainExpression.makeContext)
-                        String expect = d.iteration() == 0 ? "<v:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<v:i>" : "instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -149,9 +149,9 @@ public class Test_21_Range_4 extends CommonTestRunner {
                     assertEquals(expect, d.state().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "1==<v:i>" : "1==i";
+                    String expect = d.iteration() == 0 ? "1==<v:i>" : "1==i$1";
                     assertEquals(expect, d.state().toString());
-                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&1==<v:i>" : "1==i";
+                    String expectAbs = d.iteration() == 0 ? "<s:boolean>&&1==<v:i>" : "1==i$1";
                     assertEquals(expectAbs, d.absoluteState().toString());
                 }
             }

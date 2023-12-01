@@ -98,11 +98,11 @@ public class Test_05_Final extends CommonTestRunner {
                 if (THIS.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertEquals("0:M", d.variableInfo().getReadId());
-                        assertEquals("instance type " + FINAL_CHECKS, d.currentValue().toString());
+                        assertEquals("instance 0 type " + FINAL_CHECKS, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("1-E", d.variableInfo().getReadId());
-                        assertEquals("instance type " + FINAL_CHECKS, d.currentValue().toString());
+                        assertEquals("instance 0 type " + FINAL_CHECKS, d.currentValue().toString());
                     }
                 }
                 if (S1.equals(d.variableName())) {

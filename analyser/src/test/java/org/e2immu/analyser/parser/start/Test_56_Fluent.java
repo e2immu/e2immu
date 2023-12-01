@@ -77,7 +77,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     }
                     if ("1".equals(d.statementId())) {
-                        String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(instance type Builder).build()";
+                        String value = "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(instance 1 type Builder).build()";
                         assertCurrentValue(d, 28, value);
 
                         String expectLinks = d.iteration() < 28 ? "instanceCopy:-1" : "instanceCopy:1";
@@ -141,7 +141,7 @@ public class Test_56_Fluent extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
 
                 String expect = d.iteration() < 28 ? "<m:copyOf>"
-                        : "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(instance type Builder).build()";
+                        : "instanceCopy instanceof Fluent_0?instanceCopy/*(Fluent_0)*/:(instance 1 type Builder).build()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
 
@@ -160,7 +160,7 @@ public class Test_56_Fluent extends CommonTestRunner {
 
                 assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expect = d.iteration() < 22 ? "<m:from>" : "this/*(Builder)*/";
+                String expect = d.iteration() < 22 ? "<m:from>" : "this$0/*(Builder)*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 22, DV.TRUE_DV, Property.FLUENT);

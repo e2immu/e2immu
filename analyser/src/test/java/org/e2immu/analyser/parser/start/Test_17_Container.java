@@ -737,7 +737,7 @@ public class Test_17_Container extends CommonTestRunner {
                     if ("0.0.2.0.1.0.0".equals(d.statementId())) {
                         assertCurrentValue(d, 3, "current$0.0.2.get(subKey$0.0.2.0.0)");
                         // FIXME ??
-                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }

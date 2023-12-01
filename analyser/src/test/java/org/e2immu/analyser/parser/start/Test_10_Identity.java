@@ -169,17 +169,17 @@ public class Test_10_Identity extends CommonTestRunner {
             if ("idem".equals(d.methodInfo().name)) {
                 assertEquals(DV.FALSE_DV, d.methodAnalysis().getProperty(Property.MODIFIED_METHOD));
                 assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
-                String expect = d.iteration() == 0 ? "<m:idem>" : "s";
+                String expect = d.iteration() == 0 ? "<m:idem>" : "/*inline idem*/s";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 assertDv(d.p(0), 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
             }
             if ("idem2".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
 
-                String expect = d.iteration() == 0 ? "<m:idem2>" : "s/*@NotNull*/";
+                String expect = d.iteration() < 2 ? "<m:idem2>" : "/*inline idem2*/s/*@NotNull*/";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d.p(0), 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_PARAMETER);
@@ -187,9 +187,9 @@ public class Test_10_Identity extends CommonTestRunner {
         };
 
         testClass("Identity_1", 0, 0, new DebugConfiguration.Builder()
-                        //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        //      .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
@@ -257,7 +257,11 @@ public class Test_10_Identity extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 // double property wrapper
-                String expect = d.iteration() == 0 ? "<m:equals>?<m:idem>:<p:s>" : "s";
+                String expect = switch(d.iteration()) {
+                    case 0 -> "<m:equals>?<m:idem>:<p:s>";
+                    case 1 -> "\"a\".equals(s)?<m:idem>:s";
+                    default -> "s";
+                };
                 assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
@@ -283,20 +287,20 @@ public class Test_10_Identity extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("idem2".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 2, DV.TRUE_DV, Property.IDENTITY);
             }
             if ("idem4".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.FALSE_DV, Property.MODIFIED_METHOD);
-                assertDv(d, 1, DV.TRUE_DV, Property.IDENTITY);
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertDv(d, 3, DV.TRUE_DV, Property.IDENTITY);
             }
         };
 
         testClass("Identity_3", 0, 0, new DebugConfiguration.Builder()
-                //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //  .addTypeMapVisitor(typeMapVisitor)
-                //  .addEvaluationResultVisitor(evaluationResultVisitor)
-                //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
