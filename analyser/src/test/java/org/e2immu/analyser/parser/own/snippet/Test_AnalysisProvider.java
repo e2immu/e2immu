@@ -593,7 +593,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(callCycle, methodResolution
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
 
-                String expected = d.iteration() < 5 ? "<m:a>" : "nullable instance type DV";
+                String expected = d.iteration() < 5 ? "<m:a>" : "nullable instance 0 type DV";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("b".equals(d.methodInfo().name)) {

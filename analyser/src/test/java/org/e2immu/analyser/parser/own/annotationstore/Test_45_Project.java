@@ -56,14 +56,14 @@ public class Test_45_Project extends CommonTestRunner {
                         case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
                         default ->
-                                "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
+                                "(entry$2.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry$2.getValue()).read&&(entry$2.getValue()).read.isBefore((entry$2.getValue()).updated)";
                     };
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                     ChangeData changeData = d.findValueChangeByToString("container.read");
                     assertEquals(d.iteration() < 2, changeData.getProperty(Property.CONTEXT_NOT_NULL).isDelayed());
                 }
                 if ("2.0.1.0.1.0.0".equals(d.statementId())) {
-                    String expected = d.iteration() < 3 ? "<m:put>" : "result$2.put(entry.getKey(),(entry.getValue()).value)";
+                    String expected = d.iteration() < 3 ? "<m:put>" : "result$2.put(entry$2.getKey(),(entry$2.getValue()).value)";
                     assertEquals(expected, d.evaluationResult().getExpression().toString());
                 }
                 if ("3".equals(d.statementId())) {
@@ -115,7 +115,7 @@ public class Test_45_Project extends CommonTestRunner {
                         case 0 -> "!<null-check>&&<m:isAfter>&&<m:isBefore>";
                         case 1 -> "null!=<f:container.read>&&<m:isAfter>&&<m:isBefore>";
                         default ->
-                                "(entry.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry.getValue()).read&&(entry.getValue()).read.isBefore((entry.getValue()).updated)";
+                                "(entry$2.getValue()).read.plusMillis(readWithinMillis).isAfter(now$2)&&null!=(entry$2.getValue()).read&&(entry$2.getValue()).read.isBefore((entry$2.getValue()).updated)";
                     };
                     assertEquals(expectedCondition, d.condition().toString());
                     assertEquals("true", d.state().toString());

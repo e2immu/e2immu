@@ -277,7 +277,7 @@ public class Test_Util_07_Trie extends CommonTestRunner {
             }
             if ("goTo".equals(d.methodInfo().name) && params == 2) {
                 String expected = d.iteration() < 4 ? "<m:goTo>"
-                        : "-1-(instance type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1.get(nullable instance type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String)).map$1)?null:-1-(instance type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance type String):root";
+                        : "-1-(instance 1 type int)+upToPosition>=0&&(null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance 1.0.1 type String)).map$1.get(nullable instance 1.0.1 type String)||null==(null==node$1.map$0?node$1:node$1.map$0.get(nullable instance 1.0.1 type String)).map$1)?null:-1-(instance 1 type int)+upToPosition>=0?null==node$1.map$0?node$1:node$1.map$0.get(nullable instance 1.0.1 type String):root";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);

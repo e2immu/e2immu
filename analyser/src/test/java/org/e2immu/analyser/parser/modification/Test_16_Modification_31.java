@@ -50,7 +50,7 @@ public class Test_16_Modification_31 extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertCurrentValue(d, 0, "instance 2 type I");
+                        assertCurrentValue(d, 0, "instance 2 type I/*@Identity*/");
                     }
                 }
             }

@@ -74,7 +74,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                 }
                 if ("8.0.4.0.0".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "<m:combine>" :
-                            "Forward.combine(list.get(pos$8) instanceof Symbol?Forward.combine(lastOneWasSpace$8,list.get(pos$8)/*(Symbol)*/.left().elementarySpace(options)):nullable instance type ElementarySpace,list.get(pos$8)/*(Space)*/.elementarySpace(options))";
+                            "Forward.combine(list.get(pos$8) instanceof Symbol?Forward.combine(lastOneWasSpace$8,list.get(pos$8)/*(Symbol)*/.left().elementarySpace(options)):nullable instance 8 type ElementarySpace,list.get(pos$8)/*(Space)*/.elementarySpace(options))";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -92,7 +92,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
             }
             if ("split".equals(d.variableName())) {
                 String expected = d.iteration() == 0 ? "<instanceOf:Symbol>?<dv:scope-scope-54:25:8.0.3.split>:<vl:split>"
-                        : "list.get(pos$8) instanceof Symbol?scope-scope-54:25:8.0.3.split:nullable instance type Split";
+                        : "list.get(pos$8) instanceof Symbol?scope-scope-54:25:8.0.3.split:nullable instance 8 type Split";
                 if ("8.0.3.0.0".equals(d.statementId()) || "8.0.3.0.5".equals(d.statementId())) {
                     String v = d.iteration() == 0 ? "<f:symbol.left().split>" : "(list.get(pos$8)/*(Symbol)*/.left()).split";
                     assertEquals(v, d.currentValue().toString());
@@ -107,7 +107,7 @@ public class Test_Output_03_FormatterForward extends CommonTestRunner {
                         case 0 -> "<instanceOf:Symbol>?<dv:scope-scope-54:25:8.0.3.split>:<vl:split>";
                         case 1 -> "<new:ForwardInfo>";
                         default ->
-                                "outputElement instanceof Symbol symbol?scope-scope-54:25:8.0.3.split:nullable instance type Split";
+                                "outputElement instanceof Symbol symbol?scope-scope-54:25:8.0.3.split:nullable instance 8 type Split";
                     };
                     assertEquals(v, d.currentValue().toString());
                 }

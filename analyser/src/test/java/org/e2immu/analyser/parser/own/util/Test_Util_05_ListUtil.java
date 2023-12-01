@@ -43,7 +43,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             if ("compare".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     // because hasNext is a modifying method
-                    String expect = d.iteration() < 6 ? "!<m:hasNext>" : "!instance type boolean";
+                    String expect = d.iteration() < 6 ? "!<m:hasNext>" : "!instance 1.0.0 type boolean";
                     assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
@@ -93,7 +93,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                                 it(2, "builder:3,list:3,lists:3"));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("nullable instance type T", d.currentValue().toString());
+                        assertEquals("nullable instance 1.0.0 type T", d.currentValue().toString());
                         assertTrue(d.variableInfo().isAssigned());
                     }
                     if ("1".equals(d.statementId())) {
@@ -120,13 +120,13 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                         assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() < 6 ? "<vl:it2>" : "instance type Iterator<T>";
+                        String expected = d.iteration() < 6 ? "<vl:it2>" : "instance 1.0.0 type Iterator<T>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 6, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() < 6 ? "values1.isEmpty()?values2.iterator():<vl:it2>"
-                                : "values1.isEmpty()?values2.iterator():instance type Iterator<T>";
+                                : "values1.isEmpty()?values2.iterator():instance 1.0.1 type Iterator<T>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 6, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
@@ -151,11 +151,12 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
             }
             if ("joinLists".equals(d.methodInfo().name)) {
                 if ("it2".equals(d.variableName())) {
-                    String expected = d.iteration() < 9 ? "<vl:it2>" : "instance type Iterator<L>";
                     if ("2.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() < 9 ? "<vl:it2>" : "instance 2.0.0 type Iterator<L>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("2.0.1".equals(d.statementId())) {
+                        String expected = d.iteration() < 9 ? "<vl:it2>" : "instance 2.0.1 type Iterator<L>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }

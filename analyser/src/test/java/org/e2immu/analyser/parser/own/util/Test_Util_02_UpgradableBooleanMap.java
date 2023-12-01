@@ -223,7 +223,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             }
             if ("of".equals(d.methodInfo().name) && n == 1) {
                 String expected = d.iteration() < 21 ? "<m:of>"
-                        : "null==maps||maps.length<1?new UpgradableBooleanMap<>():instance type UpgradableBooleanMap<T>";
+                        : "null==maps||maps.length<1?new UpgradableBooleanMap<>():instance 1.0.0.0.0 type UpgradableBooleanMap<T>";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 22, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
 
