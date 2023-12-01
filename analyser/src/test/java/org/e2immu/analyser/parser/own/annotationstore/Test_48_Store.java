@@ -69,7 +69,7 @@ public class Test_48_Store extends CommonTestRunner {
                         // EVAL level
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
                         assertEquals("body:2", eval.getLinkedVariables().toString());
-                        assertEquals("nullable instance type Entry<String,Object>", eval.getValue().toString());
+                        assertEquals("nullable instance 0 type Entry<String,Object>", eval.getValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, eval.getProperty(Property.CONTEXT_NOT_NULL));
                     }
                 }
@@ -278,7 +278,7 @@ public class Test_48_Store extends CommonTestRunner {
                 if ("entry".equals(d.variableName())) {
                     assertNotEquals("2", d.statementId());
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
-                    String expectValue = "nullable instance type Entry<String,Object>";
+                    String expectValue = "nullable instance 1 type Entry<String,Object>";
                     assertEquals(expectValue, d.currentValue().toString(), d.statementId());
                 }
                 if ("countUpdated".equals(d.variableName())) {
@@ -292,15 +292,15 @@ public class Test_48_Store extends CommonTestRunner {
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "!projectName.equals(entry.getValue())||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
-                                : "!projectName.equals(entry.getValue())||null==projectName?1+countUpdated$1:instance type int";
+                                ? "!projectName.equals(entry$1.getValue())||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
+                                : "!projectName.equals(entry$1.getValue())||null==projectName?1+countUpdated$1:instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                         assertEquals(d.iteration() == 0, d.currentValue().isDelayed());
                     }
                     if ("1".equals(d.statementId()) || "2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
-                                ? "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
-                                : "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance type Entry<String,Object>).getValue())||null==projectName?1+countUpdated$1:instance type int";
+                                ? "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance 1 type Entry<String,Object>).getValue())||null==projectName?1+<v:countUpdated>:<vl:countUpdated>"
+                                : "body.entrySet().isEmpty()?0:!projectName.equals((nullable instance 1 type Entry<String,Object>).getValue())||null==projectName?1+countUpdated$1:instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }

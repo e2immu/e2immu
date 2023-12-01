@@ -558,13 +558,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 if ("res".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?9==<m:getValue>?4:<vl:res>:3"
-                                : "map$0.entrySet().isEmpty()?3:9==(instance type Entry<String,Integer>).getValue()?4:instance type int";
+                                : "map$0.entrySet().isEmpty()?3:9==(instance 1 type Entry<String,Integer>).getValue()?4:instance 1 type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("entry".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<vl:entry>" : "instance type Entry<String,Integer>";
+                        String expected = d.iteration() == 0 ? "<vl:entry>" : "instance 1 type Entry<String,Integer>";
                         assertEquals(expected, d.currentValue().toString());
                         assertFalse(d.variableInfo().getProperties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
@@ -646,7 +646,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
             if ("1.0.1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<m:getValue>" : "entry.getValue()";
+                String expectValue = d.iteration() == 0 ? "<m:getValue>" : "entry$1.getValue()";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -661,11 +661,11 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                             case 1 ->
                                     "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
                             default ->
-                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                                    "kvStore$0.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:0==scope-container:1.0.1.read||queried.contains((instance 1 type Entry<String,Container>).getKey())?instance 1 type Map<String,String>:instance 1.0.1.0.1.0.0 type Map<String,String>";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() >= 2) {
-                            assertEquals("[kvStore]", d.currentValue()
+                            assertEquals("[kvStore, org.e2immu.analyser.parser.loops.testexample.Loops_18.method(java.util.Set<String>):0:queried, scope-container:1.0.1, scope-container:1.0.1, scope-container:1.0.1.read]", d.currentValue()
                                     .variableStream().map(Variable::toString)
                                     .sorted().toList().toString());
                         }
