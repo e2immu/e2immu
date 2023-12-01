@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ public class Test_16_Modification_23 extends CommonTestRunner {
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<mod:Set<String>>"
-                                : "instance type HashMap<String,Integer>";
+                                : "instance 2 type HashMap<String,Integer>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -69,8 +70,13 @@ public class Test_16_Modification_23 extends CommonTestRunner {
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<mod:Set<String>>"
-                                : "instance type HashMap<String,Integer>";
+                                : "instance 1 type HashMap<String,Integer>";
                         assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        assertCurrentValue(d, 1, "middle$1.size()");
                     }
                 }
             }

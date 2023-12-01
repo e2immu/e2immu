@@ -73,7 +73,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
                         String expected = d.iteration() == 0 ? "<f:s2>"
-                                : "instance type HashSet<String>/*this.size()>=1&&this.contains(s)*/";
+                                : "instance 2 type Set<String>/*this.size()>=1&&this.contains(s)*/";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {

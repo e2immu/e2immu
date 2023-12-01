@@ -111,6 +111,26 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
     }
 
+    public record ModifiedVariable(String assignmentId) implements Suffix {
+        @Override
+        public String toString() {
+            return "$" + assignmentId;
+        }
+
+        @Override
+        public OutputBuilder output() {
+            return new OutputBuilder().add(new Text("$" + assignmentId));
+        }
+
+        @Override
+        public int compareTo(Suffix o) {
+            if (o instanceof ModifiedVariable mv) {
+                return assignmentId.compareTo(mv.assignmentId);
+            }
+            return -1;
+        }
+    }
+
     private final Variable variable;
     private final Suffix suffix;
     // only used when the variable is a FieldReference, with !isStatic, OR a DependentVariable
@@ -305,7 +325,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                     replacement = DelayedExpression.forArrayAccessValue(dv.getIdentifier(), dv.parameterizedType,
                             new VariableExpression(dv.getIdentifier(), dv), delays.merge(lv.causesOfDelay()));
                 } else {
-                    Expression instance = Instance.forArrayAccess(dv.getIdentifier(), dv.parameterizedType, properties);
+                    Expression instance = Instance.forArrayAccess(dv.getIdentifier(),
+                            context.evaluationContext().statementIndex(), dv.parameterizedType, properties);
                     if (lv.isEmpty()) {
                         replacement = instance;
                     } else {

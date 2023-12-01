@@ -294,10 +294,11 @@ public class Lambda extends BaseExpression implements Expression {
             boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
             boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
             boolean firstInCycle = breakCallCycleDelay || recursiveCall;
+            String statementIndex = context.evaluationContext().statementIndex();
             if (firstInCycle) {
-                result = makeInstance(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                result = makeInstance(statementIndex, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
             } else {
-                result = withLocalAnalyser(parameterizedType, methodAnalysis);
+                result = withLocalAnalyser(statementIndex, parameterizedType, methodAnalysis);
             }
         }
 
@@ -305,7 +306,9 @@ public class Lambda extends BaseExpression implements Expression {
         return builder.build();
     }
 
-    private Expression withLocalAnalyser(ParameterizedType parameterizedType, MethodAnalysis methodAnalysis) {
+    private Expression withLocalAnalyser(String statementIndex,
+                                         ParameterizedType parameterizedType,
+                                         MethodAnalysis methodAnalysis) {
         Expression result;
         if (methodInfo.hasReturnValue()) {
             Expression srv = methodAnalysis.getSingleReturnValue();
@@ -327,7 +330,7 @@ public class Lambda extends BaseExpression implements Expression {
                     // modifying method, we cannot simply substitute; or: non-modifying, too complex
                     DV nne = MultiLevel.composeOneLevelMoreNotNull(nneParam);
                     assert nne.isDone();
-                    result = makeInstance(parameterizedType, nne);
+                    result = makeInstance(statementIndex, parameterizedType, nne);
                 }
             } else {
                 CausesOfDelay causes = srv.causesOfDelay().merge(modified.causesOfDelay()).merge(nneParam.causesOfDelay());
@@ -335,12 +338,12 @@ public class Lambda extends BaseExpression implements Expression {
             }
         } else {
             // the lambda
-            result = makeInstance(parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            result = makeInstance(statementIndex, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }
         return result;
     }
 
-    private Expression makeInstance(ParameterizedType parameterizedType, DV nne) {
+    private Expression makeInstance(String statementIndex, ParameterizedType parameterizedType, DV nne) {
         Expression result;
         Properties valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, nne,
                 Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
@@ -348,7 +351,7 @@ public class Lambda extends BaseExpression implements Expression {
                 Property.CONTAINER, MultiLevel.CONTAINER_DV,
                 Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
                 Property.IDENTITY, Property.IDENTITY.falseDv));
-        result = Instance.forGetInstance(identifier, parameterizedType, valueProperties);
+        result = Instance.forGetInstance(identifier, statementIndex, parameterizedType, valueProperties);
         return result;
     }
 

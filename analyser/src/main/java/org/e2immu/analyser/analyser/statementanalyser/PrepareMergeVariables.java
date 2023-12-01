@@ -223,8 +223,8 @@ class PrepareMergeVariables {
             // they will be replaced soon in applyTranslations()
             // on the other hand, we will already avoid self-references!
             // NOTE: Instance is based on identifier and type
-
-            outOfScopeValue = Instance.forMerge(identifier, best.variable().parameterizedType(), bestProperties);
+            outOfScopeValue = Instance.forMerge(identifier, evaluationContext.statementIndex(),
+                    best.variable().parameterizedType(), bestProperties);
             // the following rule works fine for VS_10, but may be too limited
             // TODO should we loop over all VDOL's, add them to the translation map?
             if (isVariableInLoopDefinedOutside(best.getValue())) {

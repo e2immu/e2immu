@@ -885,7 +885,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             Expression varVal = context.currentValue(variable);
                             if ((cc = varVal.asInstanceOf(ConstructorCall.class)) != null && cc.constructor() != null) {
                                 Properties valueProperties = context.evaluationContext().getValueProperties(cc);
-                                i = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
+                                i = Instance.forMethodResult(cc.identifier, context.evaluationContext().statementIndex(),
+                                        cc.returnType(), valueProperties);
                             } else if (varVal instanceof PropertyWrapper pw && pw.hasState()) {
                                 // drop this state -- IMPROVE we won't do any companion code here at the moment
                                 i = pw.unwrapState();
@@ -917,16 +918,26 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                 Expression original) {
         Expression createInstanceBasedOn;
         Expression newInstance;
-        if (objectValue.isInstanceOf(Instance.class) ||
-                objectValue.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor()) {
+        String statementIndex = context.evaluationContext().statementIndex();
+
+        if (objectValue.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor()) {
             newInstance = unwrap(objectValue);
             createInstanceBasedOn = null;
+        } else if (objectValue.isInstanceOf(Instance.class)) {
+            Expression unwrapped = unwrap(objectValue);
+            newInstance = unwrapped instanceof Instance unwrappedInstance
+                    && statementIndex.equals(unwrappedInstance.getIndex()) ? unwrapped : null;
+            createInstanceBasedOn = objectValue;
         } else if (ive != null) {
             Expression current = context.currentValue(ive.variable());
-            if (current.isInstanceOf(Instance.class) || current.isInstanceOf(ConstructorCall.class)
-                    && methodInfo.isConstructor()) {
+            if (current.isInstanceOf(ConstructorCall.class) && methodInfo.isConstructor()) {
                 newInstance = unwrap(current);
                 createInstanceBasedOn = null;
+            } else if (current.isInstanceOf(Instance.class)) {
+                Expression unwrapped = unwrap(current);
+                newInstance = unwrapped instanceof Instance unwrappedInstance
+                        && statementIndex.equals(unwrappedInstance.getIndex()) ? unwrapped : null;
+                createInstanceBasedOn = current;
             } else {
                 createInstanceBasedOn = current;
                 newInstance = null;
@@ -948,7 +959,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             original, causesOfDelay, Map.of());
                 }
             }
-            newInstance = Instance.forGetInstance(objectValue.getIdentifier(), objectValue.returnType(), valueProperties);
+            newInstance = Instance.forGetInstance(objectValue.getIdentifier(),
+                    statementIndex, objectValue.returnType(), valueProperties);
         }
         return newInstance;
     }

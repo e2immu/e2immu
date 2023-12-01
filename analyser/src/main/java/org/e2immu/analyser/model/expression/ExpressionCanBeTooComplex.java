@@ -39,24 +39,25 @@ public abstract class ExpressionCanBeTooComplex extends BaseExpression implement
     // and one per assignment. Even though the And may be too complex, we should not ignore READ/ASSIGNED AT
     // information
     public static Expression reducedComplexity(Identifier identifier,
-                                               EvaluationResult evaluationContext,
+                                               EvaluationResult context,
                                                List<Expression> expressions,
                                                Expression[] values) {
-        ParameterizedType booleanType = evaluationContext.getPrimitives().booleanParameterizedType();
+        ParameterizedType booleanType = context.getPrimitives().booleanParameterizedType();
 
         CausesOfDelay causesOfDelay = Arrays.stream(values).map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         Expression instance = causesOfDelay.isDelayed()
-                ? DelayedExpression.forTooComplex(identifier, booleanType, EmptyExpression.EMPTY_EXPRESSION, causesOfDelay)
-                : Instance.forTooComplex(identifier, booleanType);
+                ? DelayedExpression.forTooComplex(identifier, booleanType, EmptyExpression.EMPTY_EXPRESSION,
+                causesOfDelay)
+                : Instance.forTooComplex(identifier, context.evaluationContext().statementIndex(), booleanType);
 
         // IMPORTANT: instance has to be the last one, it determines type, delay, etc.
         Stream<Expression> components = Stream.concat(Arrays.stream(values), expressions.stream())
-                .flatMap(e -> collect(evaluationContext.getAnalyserContext(), e).stream());
+                .flatMap(e -> collect(context.getAnalyserContext(), e).stream());
         Expression[] newExpressions = Stream.concat(components.distinct().sorted(), Stream.of(instance))
                 .toArray(Expression[]::new);
         MultiExpression multiExpression = new MultiExpression(newExpressions);
-        return new MultiExpressions(identifier, evaluationContext.getAnalyserContext(), multiExpression);
+        return new MultiExpressions(identifier, context.getAnalyserContext(), multiExpression);
     }
 
     /*

@@ -371,7 +371,8 @@ public class Assignment extends BaseExpression implements Expression {
                     context.evaluationContext().getInitialStatementTime(), causes);
         }
         Properties valueProperties = context.evaluationContext().defaultValueProperties(target.returnType());
-        return Instance.forVariableInLoopDefinedOutside(identifier, target.returnType(), valueProperties);
+        return Instance.forVariableInLoopDefinedOutside(identifier, context.evaluationContext().statementIndex(),
+                target.returnType(), valueProperties);
     }
 
     // in a normal assignment, we use the "unevaluated" variable
@@ -458,7 +459,8 @@ public class Assignment extends BaseExpression implements Expression {
                     instance = DelayedExpression.forDelayedValueProperties(identifier, returnType,
                             fieldReference.scope(), causesOfDelay, Properties.EMPTY);
                 } else {
-                    instance = Instance.forGetInstance(identifier, returnType, valueProperties);
+                    instance = Instance.forGetInstance(identifier, context.evaluationContext().statementIndex(),
+                            returnType, valueProperties);
                 }
                 LinkedVariables lvs = fieldReference.scope().linkedVariables(context);
                 builder.modifyingMethodAccess(fieldReference.scopeVariable(), instance, lvs);

@@ -101,14 +101,14 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (THIS.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
-                        assertEquals("instance type Basics_3", d.currentValue().toString());
+                        assertEquals("instance 0 type Basics_3", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfo().getAssignmentIds().hasNotYetBeenAssigned());
                         assertEquals("0.0.0" + E, d.variableInfo().getReadId());
                         assertFalse(d.variableInfoContainer().hasMerge());
                         if (d.iteration() > 0) {
-                            assertEquals("instance type Basics_3", d.currentValue().toString());
+                            assertEquals("instance 0 type Basics_3", d.currentValue().toString());
                         }
                     }
                     if ("0.0.1".equals(d.statementId())) {
@@ -117,14 +117,14 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         assertFalse(d.variableInfoContainer().hasMerge());
                         assertEquals("0.0.1" + E, d.variableInfo().getReadId());
                         if (d.iteration() > 0) {
-                            assertEquals("instance type Basics_3", d.currentValue().toString());
+                            assertEquals("instance 0 type Basics_3", d.currentValue().toString());
                         }
                     }
                     if ("0.1.0".equals(d.statementId())) {
                         assertTrue(d.variableInfo().getAssignmentIds().hasNotYetBeenAssigned());
                         assertEquals("0.1.0" + E, d.variableInfo().getReadId());
                         if (d.iteration() > 0) {
-                            assertEquals("instance type Basics_3", d.currentValue().toString());
+                            assertEquals("instance 0 type Basics_3", d.currentValue().toString());
                         }
                     }
                     assertTrue(d.variableInfo().getLinkedVariables().isEmpty());

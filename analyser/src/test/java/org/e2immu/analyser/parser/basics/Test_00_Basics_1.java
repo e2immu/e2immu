@@ -113,7 +113,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                     assertFalse(d.variableInfoContainer().hasEvaluation());
                     assertFalse(d.variableInfoContainer().hasMerge());
 
-                    String expectValue = "instance type Basics_1";
+                    String expectValue = "instance 0 type Basics_1";
                     assertEquals(expectValue, d.currentValue().toString());
 
                     assertDv(d, MUTABLE_DV, CONTEXT_IMMUTABLE);

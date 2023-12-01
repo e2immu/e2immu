@@ -47,7 +47,7 @@ public class Test_16_Modification_26 extends CommonTestRunner {
             if ("addAll".equals(d.methodInfo().name)) {
                 if ("e".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("instance type Entry<A,List<B>>", d.currentValue().toString());
+                        assertEquals("instance 1 type Entry<A,List<B>>", d.currentValue().toString());
                         assertEquals("src:2", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1.1.0".equals(d.statementId())) { // else block
@@ -60,14 +60,15 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && pi.name.equals("destination")) {
-                    assertEquals("nullable instance type Map<A,List<B>>", d.currentValue().toString());
                     if ("0".equals(d.statementId())) {
+                        assertEquals("nullable instance type Map<A,List<B>>", d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1.0.0".equals(d.statementId())) {
+                        assertEquals("instance 1.0.1.0.0 type Map<A,List<B>>", d.currentValue().toString());
                         assertEquals("e:4,src:4", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1.1.0".equals(d.statementId())) {
@@ -78,12 +79,12 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                 }
                 if ("inDestination".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("destination.get(e.getKey())", d.currentValue().toString());
+                        assertEquals("destination.get(e$1.getKey())", d.currentValue().toString());
                         assertEquals("destination:3", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("1.0.1.1.0".equals(d.statementId())) { // else block
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        assertEquals("instance type List<B>/*e.getValue().size()==this.size()*/",
+                        assertEquals("instance 1.0.1.1.0 type List<B>/*e$1.getValue().size()==this.size()*/",
                                 eval.getValue().toString());
                         assertEquals("destination:3,e:4,src:4", eval.getLinkedVariables().toString());
                         assertEquals(DV.TRUE_DV, eval.getProperty(Property.CONTEXT_MODIFIED));
@@ -100,8 +101,8 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                     }
                     // 2nd branch, merge of an if-statement
                     if ("1.0.1.1.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "instance type boolean||<vl:change>"
-                                : "instance type boolean||instance type boolean";
+                        String expected = d.iteration() == 0 ? "instance 1.0.1.1.0 type boolean||<vl:change>"
+                                : "instance 1.0.1.1.0 type boolean||instance 1 type boolean";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
@@ -109,8 +110,8 @@ public class Test_16_Modification_26 extends CommonTestRunner {
                     // merge of the two above
                     if ("1.0.1".equals(d.statementId())) {
                         String expected = d.iteration() == 0
-                                ? "instance type boolean||<vl:change>||null==destination.get(e.getKey())"
-                                : "instance type boolean||instance type boolean||null==destination.get(e.getKey())";
+                                ? "instance 1.0.1.1.0 type boolean||<vl:change>||null==destination.get(e$1.getKey())"
+                                : "instance 1.0.1.1.0 type boolean||instance 1 type boolean||null==destination.get(e$1.getKey())";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());

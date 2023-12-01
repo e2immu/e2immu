@@ -294,7 +294,8 @@ public class EvaluateParameters {
                         && (cc = varVal.asInstanceOf(ConstructorCall.class)) != null
                         && cc.constructor() != null) {
                     Properties valueProperties = context.evaluationContext().getValueProperties(cc);
-                    newInstance = Instance.forMethodResult(cc.identifier, cc.returnType(), valueProperties);
+                    newInstance = Instance.forMethodResult(cc.identifier, context.evaluationContext().statementIndex(),
+                            cc.returnType(), valueProperties);
                 } else if (varVal instanceof PropertyWrapper pw && pw.hasState()) {
                     // drop this state -- IMPROVE we won't do any companion code here at the moment
                     newInstance = pw.unwrapState();

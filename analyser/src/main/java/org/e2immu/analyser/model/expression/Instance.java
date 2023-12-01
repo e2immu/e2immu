@@ -42,72 +42,78 @@ import java.util.function.Predicate;
 public final class Instance extends BaseExpression implements Expression {
     private final ParameterizedType parameterizedType;
     private final Properties valueProperties;
+    private final String index;
 
-    public static Expression forArrayAccess(Identifier identifier, ParameterizedType parameterizedType,
+    public static Expression forArrayAccess(Identifier identifier,
+                                            String index,
+                                            ParameterizedType parameterizedType,
                                             Properties properties) {
-        return new Instance(identifier, parameterizedType, properties);
+        return new Instance(identifier, index, parameterizedType, properties);
     }
 
     public static Expression forUnspecifiedLoopCondition(String index, Primitives primitives) {
-        return new Instance(Identifier.loopCondition(index), primitives.booleanParameterizedType(),
+        return new Instance(Identifier.loopCondition(index), index, primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
-    public static Expression forUnspecifiedCondition(Identifier identifier, Primitives primitives) {
-        return new Instance(identifier, primitives.booleanParameterizedType(),
+    public static Expression forUnspecifiedCondition(Identifier identifier, String index, Primitives primitives) {
+        return new Instance(identifier, index, primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
     public static Expression forMethodResult(Identifier identifier,
+                                             String index,
                                              ParameterizedType parameterizedType,
                                              Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, valueProperties);
+        return new Instance(identifier, index, parameterizedType, valueProperties);
     }
 
     public static Expression forSelfAssignmentBreakInit(Identifier identifier,
+                                                        String index,
                                                         ParameterizedType parameterizedType,
                                                         Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, valueProperties);
+        return new Instance(identifier, index, parameterizedType, valueProperties);
     }
 
     public static Expression forMerge(Identifier identifier,
+                                      String index,
                                       ParameterizedType parameterizedType,
                                       Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, valueProperties);
+        return new Instance(identifier, index, parameterizedType, valueProperties);
     }
 
-    public static Expression forUnspecifiedCatchCondition(Primitives primitives, Identifier identifier) {
-        return new Instance(identifier, primitives.booleanParameterizedType(),
+    public static Expression forUnspecifiedCatchCondition(Primitives primitives, Identifier identifier, String index) {
+        return new Instance(identifier, index, primitives.booleanParameterizedType(),
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
     public static Instance forTesting(ParameterizedType parameterizedType) {
-        return new Instance(Identifier.generate("test instance"), parameterizedType,
+        return new Instance(Identifier.generate("test instance"), "0", parameterizedType,
                 EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
     // never null, never more interesting.
     public static Instance forCatchOrThis(String index, Variable variable, Properties properties) {
         ParameterizedType parameterizedType = variable.parameterizedType();
-        return new Instance(VariableIdentifier.variable(variable, index), parameterizedType, properties);
+        return new Instance(VariableIdentifier.variable(variable, index), index, parameterizedType, properties);
     }
 
-    public static Instance forLoopVariable(Identifier identifier, Variable variable, Properties valueProperties) {
+    public static Instance forLoopVariable(Identifier identifier, String index, Variable variable, Properties valueProperties) {
         ParameterizedType parameterizedType = variable.parameterizedType();
-        return new Instance(identifier, parameterizedType, valueProperties);
+        return new Instance(identifier, index, parameterizedType, valueProperties);
     }
 
     /*
     not-null always in properties
      */
     public static Instance initialValueOfParameter(ParameterInfo parameterInfo, Properties valueProperties) {
-        return new Instance(VariableIdentifier.variable(parameterInfo), parameterInfo.parameterizedType,
-                valueProperties);
+        return new Instance(VariableIdentifier.variable(parameterInfo), VariableInfoContainer.NOT_YET_READ,
+                parameterInfo.parameterizedType, valueProperties);
     }
 
     // null-status derived from variable in evaluation context
     public static Instance genericMergeResult(String index, Variable variable, Properties valueProperties) {
-        return new Instance(VariableIdentifier.variable(variable, index), variable.parameterizedType(),
+        return new Instance(VariableIdentifier.variable(variable, index), index, variable.parameterizedType(),
                 valueProperties);
     }
 
@@ -133,7 +139,8 @@ public final class Instance extends BaseExpression implements Expression {
             return DelayedExpression.forArrayAccessValue(identifier, variable.parameterizedType(),
                     new VariableExpression(identifier, variable), delays);
         }
-        return new Instance(identifier, variable.parameterizedType(), properties);
+        return new Instance(identifier, context.evaluationContext().statementIndex(), variable.parameterizedType(),
+                properties);
     }
 
     /*
@@ -142,33 +149,39 @@ public final class Instance extends BaseExpression implements Expression {
    cannot be null, we're applying a method on it.
     */
     public static Instance forGetInstance(Identifier identifier,
+                                          String index,
                                           ParameterizedType parameterizedType,
                                           Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, valueProperties);
+        return new Instance(identifier, index, parameterizedType, valueProperties);
     }
 
     public static Instance forVariableInLoopDefinedOutside(Identifier identifier,
+                                                           String index,
                                                            ParameterizedType parameterizedType,
                                                            Properties valueProperties) {
-        return new Instance(identifier, parameterizedType, valueProperties);
+        return new Instance(identifier, index, parameterizedType, valueProperties);
     }
 
     // must only be used by ExpressionCanBeTooComplex.reducedComplexity
     public static Instance forTooComplex(Identifier identifier,
+                                         String index,
                                          ParameterizedType parameterizedType) {
-        return new Instance(identifier, parameterizedType, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
+        return new Instance(identifier, index, parameterizedType, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
     }
 
     public static Instance forTooComplex(Identifier identifier,
+                                         String index,
                                          ParameterizedType parameterizedType,
                                          Properties properties) {
-        return new Instance(identifier, parameterizedType, properties);
+        return new Instance(identifier, index, parameterizedType, properties);
     }
 
     public Instance(Identifier identifier,
+                    String index,
                     ParameterizedType parameterizedType,
                     Properties valueProperties) {
         super(identifier, 3);
+        this.index = index;
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.valueProperties = valueProperties;
         assert internalChecks();
@@ -177,7 +190,8 @@ public final class Instance extends BaseExpression implements Expression {
     public static Instance forField(FieldInfo fieldInfo,
                                     ParameterizedType type,
                                     Properties properties) {
-        return new Instance(fieldInfo.getIdentifier(), type == null ? fieldInfo.type : type, properties);
+        return new Instance(fieldInfo.getIdentifier(), VariableInfoContainer.NOT_YET_READ,
+                type == null ? fieldInfo.type : type, properties);
     }
 
     private boolean internalChecks() {
@@ -223,7 +237,7 @@ public final class Instance extends BaseExpression implements Expression {
 
         ParameterizedType translatedType = translationMap.translateType(this.parameterizedType);
         if (translatedType == this.parameterizedType) return this;
-        return new Instance(identifier, translatedType, valueProperties);
+        return new Instance(identifier, index, translatedType, valueProperties);
     }
 
     @Override
@@ -281,7 +295,7 @@ public final class Instance extends BaseExpression implements Expression {
         OutputBuilder outputBuilder = new OutputBuilder();
 
         // To help debug problems of overwriting values, replace "instance" (or add) the identifier.compact() string
-        Text text = new Text(text() + "instance type " + parameterizedType.printSimple());
+        Text text = new Text(text() + "instance" + modifiedText() + "type " + parameterizedType.printSimple());
         outputBuilder.add(text);
 
         if (qualification == Qualification.FULLY_QUALIFIED_NAME) {
@@ -297,6 +311,13 @@ public final class Instance extends BaseExpression implements Expression {
             }
         }
         return outputBuilder;
+    }
+
+    private String modifiedText() {
+        if (index != null && !index.equals(VariableInfoContainer.NOT_YET_READ)) {
+            return " " + index + " ";
+        }
+        return " ";
     }
 
     private String text() {
@@ -333,6 +354,10 @@ public final class Instance extends BaseExpression implements Expression {
 
     public Properties valueProperties() {
         return valueProperties;
+    }
+
+    public String getIndex() {
+        return index;
     }
 
     @Override

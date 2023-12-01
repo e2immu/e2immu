@@ -1,5 +1,7 @@
 package org.e2immu.analyser.parser.start.testexample;
 
+import org.e2immu.annotation.Modified;
+
 public class Container_10A {
 
     public Container_10A get(String key) {
@@ -21,7 +23,9 @@ public class Container_10A {
 
     private static class T {
         private final char s;
+        @Modified
         private boolean hasMoreElements;
+        @Modified
         private String current;
 
         public T(String value, char s) {

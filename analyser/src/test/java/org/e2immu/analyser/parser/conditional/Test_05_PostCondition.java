@@ -23,9 +23,9 @@ public class Test_05_PostCondition extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("addConstant".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("PostCondition[expression=set.size()>=5, index=1]",
+                    assertEquals("PostCondition[expression=set$0.size()>=5, index=1]",
                             d.statementAnalysis().stateData().getPostCondition().toString());
-                    assertEquals("[PostCondition[expression=set.size()>=5, index=1]]",
+                    assertEquals("[PostCondition[expression=set$0.size()>=5, index=1]]",
                             d.statementAnalysis().methodLevelData().getPostConditions().toString());
                 }
             }
@@ -34,13 +34,13 @@ public class Test_05_PostCondition extends CommonTestRunner {
             if ("addConstant".equals(d.methodInfo().name)) {
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.methodAnalysis().getPrecondition().toString());
-                assertEquals("[PostCondition[expression=set.size()>=5, index=1]]",
+                assertEquals("[PostCondition[expression=set$0.size()>=5, index=1]]",
                         d.methodAnalysis().getPostConditions().toString());
             }
             if ("addConstant2".equals(d.methodInfo().name)) {
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.methodAnalysis().getPrecondition().toString());
-                assertEquals("PostCondition[expression=set.size()>=5, index=1], PostCondition[expression=set.size()>=6, index=3]",
+                assertEquals("PostCondition[expression=set$0.size()>=5, index=1], PostCondition[expression=set$2.size()>=6, index=3]",
                         d.methodAnalysis().postConditionsSortedToString());
             }
         };
@@ -55,9 +55,9 @@ public class Test_05_PostCondition extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("addConstant".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("PostCondition[expression=set.size()>=5, index=1.0.0]",
+                    assertEquals("PostCondition[expression=set$0.size()>=5, index=1.0.0]",
                             d.statementAnalysis().stateData().getPostCondition().toString());
-                    assertEquals("[PostCondition[expression=set.size()>=5, index=1.0.0]]",
+                    assertEquals("[PostCondition[expression=set$0.size()>=5, index=1.0.0]]",
                             d.statementAnalysis().methodLevelData().getPostConditions().toString());
                 }
             }
@@ -65,14 +65,14 @@ public class Test_05_PostCondition extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("addConstant".equals(d.methodInfo().name)) {
                 assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
-                assertEquals("PostCondition[expression=set.size()>=5, index=1.0.0]",
+                assertEquals("PostCondition[expression=set$0.size()>=5, index=1.0.0]",
                         d.methodAnalysis().postConditionsSortedToString());
             }
             if ("addConstant2".equals(d.methodInfo().name)) {
                 assertEquals("Precondition[expression=true, causes=[]]",
                         d.methodAnalysis().getPrecondition().toString());
 
-                assertEquals("PostCondition[expression=set.size()>=5, index=1.0.0], PostCondition[expression=set.size()>=6, index=3.0.0]",
+                assertEquals("PostCondition[expression=set$0.size()>=5, index=1.0.0], PostCondition[expression=set$2.size()>=6, index=3.0.0]",
                         d.methodAnalysis().postConditionsSortedToString());
 
             }

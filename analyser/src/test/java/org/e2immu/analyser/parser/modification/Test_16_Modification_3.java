@@ -54,7 +54,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     assertTrue(d.evaluationResult().causesOfDelay().isDelayed());
                 } else {
-                    assertEquals("instance type boolean", d.evaluationResult().value().toString());
+                    assertEquals("instance 1 type boolean", d.evaluationResult().value().toString());
                     DV v = d.evaluationResult().changeData().entrySet().stream()
                             .filter(e -> e.getKey().fullyQualifiedName().equals("local3"))
                             .map(Map.Entry::getValue)
@@ -117,7 +117,7 @@ public class Test_16_Modification_3 extends CommonTestRunner {
                         assertTrue(d.variableInfo().isRead());
                         assertLinked(d, it(0, "local3:0,this:3"));
                         String expectValue = d.iteration() == 0 ? SET3_DELAYED
-                                : "instance type HashSet<String>/*this.size()>=1&&this.contains(v)*/";
+                                : "instance 1 type Set<String>/*this.size()>=1&&this.contains(v)*/";
                         assertEquals(expectValue, d.variableInfo().getValue().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }

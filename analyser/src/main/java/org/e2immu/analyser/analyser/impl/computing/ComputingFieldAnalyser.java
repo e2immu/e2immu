@@ -1325,7 +1325,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                             Property.IDENTITY, proxy.getProperty(Property.IDENTITY),
                             IGNORE_MODIFICATIONS, proxy.getProperty(IGNORE_MODIFICATIONS)
                     ));
-                    effectivelyFinalValue = constructorCall.removeConstructor(valueProperties, fieldAnalysis.primitives);
+                    effectivelyFinalValue = constructorCall.removeConstructor(VariableInfoContainer.NOT_YET_READ,
+                            valueProperties, fieldAnalysis.primitives);
                 } else {
                     effectivelyFinalValue = constructorCall;
                 }

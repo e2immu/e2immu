@@ -351,7 +351,8 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testLoops7() {
-        Instance i1 = Instance.forLoopVariable(Identifier.CONSTANT, vi, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
+        Instance i1 = Instance.forLoopVariable(Identifier.CONSTANT, "0",
+                vi, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
         Expression iMinusOne = Sum.sum(context, i, newInt(-1));
         Expression iGtI1 = GreaterThanZero.greater(context, iMinusOne, i1, true);
         assertEquals("-1-(instance type int)+i>=0", iGtI1.toString());
@@ -375,7 +376,8 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testLoops1() {
-        Instance i1 = Instance.forLoopVariable(Identifier.CONSTANT, vi, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
+        Instance i1 = Instance.forLoopVariable(Identifier.CONSTANT, "0", vi,
+                EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
 
         // -1-(instance type int)+i>=1
         Expression s1 = Sum.sum(context, newInt(-1), Negation.negate(context, i1));

@@ -40,7 +40,7 @@ public class Test_16_Modification_24 extends CommonTestRunner {
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("2".equals(d.statementId())) {
-                        assertEquals("instance type HashMap<String,Integer>", d.currentValue().toString());
+                        assertEquals("instance 2 type HashMap<String,Integer>", d.currentValue().toString());
                     }
                 }
                 if ("keySet".equals(d.variableName())) {
@@ -50,7 +50,7 @@ public class Test_16_Modification_24 extends CommonTestRunner {
                         assertEquals("in:4,middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertEquals("instance type Set<String>", d.currentValue().toString());
+                        assertEquals("instance 2 type Set<String>", d.currentValue().toString());
                         assertEquals("in:4,middle:2", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
@@ -63,7 +63,7 @@ public class Test_16_Modification_24 extends CommonTestRunner {
                     // now comes a method call modifying the keySet, which is dependent on middle
                     // IMPORTANT: 2 because the statement simplifier has introduced an intermediate variable.
                     if ("2".equals(d.statementId())) {
-                        assertEquals("instance type HashMap<String,Integer>", d.currentValue().toString());
+                        assertEquals("instance 2 type HashMap<String,Integer>", d.currentValue().toString());
                     }
                 }
             }

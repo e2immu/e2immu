@@ -96,7 +96,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 if (d.variable() instanceof This) {
                     assertEquals(TYPE + ".this", d.variableName());
                     assertTrue(d.variableInfo().isRead());
-                    assertEquals("instance type Basics_0", d.currentValue().toString());
+                    assertEquals("instance 0 type Basics_0", d.currentValue().toString());
                     assertDvInitial(d, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     assertDv(d, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     return;

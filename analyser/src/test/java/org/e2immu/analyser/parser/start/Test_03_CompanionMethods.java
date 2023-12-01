@@ -112,7 +112,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     }
 
 
-    public static final String INSTANCE_SIZE_1_CONTAINS = "instance type ArrayList<String>/*1==this.size()&&this.contains(\"a\")*/";
+    public static final String INSTANCE_SIZE_1_CONTAINS = "instance 1 type ArrayList<String>/*1==this.size()&&this.contains(\"a\")*/";
 
     @Test
     public void test1() throws IOException {

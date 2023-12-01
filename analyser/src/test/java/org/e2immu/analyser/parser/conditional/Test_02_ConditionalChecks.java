@@ -38,8 +38,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_02_ConditionalChecks extends CommonTestRunner {
 
-    public static final String RETURN_VALUE = "(null!=o||o==this)&&(o.getClass()==this.getClass()||o==this)&&(o==this||o/*(ConditionalChecks_4)*/.i==i)";
-
     public Test_02_ConditionalChecks() {
         super(false);
     }
@@ -322,12 +320,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if (RETURN5.equals(d.variableName())) {
-                        assertEquals("<return value>||o==this", d.currentValue().toString());
+                        assertEquals("<return value>||o==this$0", d.currentValue().toString());
                     }
                 }
                 if ("1".equals(d.statementId())) {
                     if (RETURN5.equals(d.variableName())) {
-                        assertEquals("null!=o&&<return value>&&o.getClass()==this.getClass()||o==this",
+                        assertEquals("null!=o&&<return value>&&o.getClass()==this.getClass()||o==this$0",
                                 d.currentValue().toString());
                     }
                 }
@@ -349,8 +347,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                     if (RETURN5.equals(d.variableName())) {
                         String expectValue = switch (d.iteration()) {
                             case 0 ->
-                                    "(null!=o||o==this)&&(o.getClass()==this.getClass()||o==this)&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                            default -> RETURN_VALUE;
+                                    "(null!=o||o==this$0)&&(o.getClass()==this.getClass()||o==this$0)&&(o==this$0||<f:i>==<f:conditionalChecks.i>)";
+                            default -> "(null!=o||o==this$0)&&(o.getClass()==this.getClass()||o==this$0)&&(o==this$0||o/*(ConditionalChecks_4)*/.i==i)";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                         mustSeeIteration(d, 2);
@@ -364,17 +362,17 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 // the escape mechanism does NOT kick in!
                 if ("0".equals(d.statementId())) {
-                    assertEquals("o!=this", d.absoluteState().toString());
+                    assertEquals("o!=this$0", d.absoluteState().toString());
                 } else if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("o==this", d.absoluteState().toString());
+                    assertEquals("o==this$0", d.absoluteState().toString());
                 } else if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("o!=this&&(null==o||o.getClass()!=this.getClass())", d.absoluteState().toString());
+                    assertEquals("o!=this$0&&(null==o||o.getClass()!=this.getClass())", d.absoluteState().toString());
                 } else {
-                    assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
+                    assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this$0", d.absoluteState().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     assertFalse(d.allowBreakDelay());
-                    assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
+                    assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this$0", d.absoluteState().toString());
                 }
             }
         };
@@ -390,7 +388,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("o==this", d.evaluationResult().value().toString());
+                    assertEquals("o==this$0", d.evaluationResult().value().toString());
                     assertFalse(d.haveSetProperty(O5, CONTEXT_NOT_NULL));
                 }
                 if ("0.0.0".equals(d.statementId())) {
@@ -414,8 +412,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("3".equals(d.statementId())) {
                     String expectValueString = switch (d.iteration()) {
                         case 0 ->
-                                "(null!=o||o==this)&&(o.getClass()==this.getClass()||o==this)&&(o==this||<f:i>==<f:conditionalChecks.i>)";
-                        default -> RETURN_VALUE;
+                                "(null!=o||o==this$0)&&(o.getClass()==this.getClass()||o==this$0)&&(o==this$0||<f:i>==<f:conditionalChecks.i>)";
+                        default -> "(null!=o||o==this$0)&&(o.getClass()==this.getClass()||o==this$0)&&(o==this$0||o/*(ConditionalChecks_4)*/.i==i)";
                     };
                     assertEquals(expectValueString, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());

@@ -61,13 +61,13 @@ public class Test_00_Basics_28 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals(0, d.variableInfo().getModificationTimeOrNegative());
                         assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertEquals("instance type Builder", d.currentValue().toString());
+                        assertEquals("instance 0 type Builder", d.currentValue().toString());
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         int expect = d.iteration() == 0 ? VariableInfoImpl.NO_MODIFICATION_TIME : 1;
                         assertEquals(expect, modTime);
-                        assertEquals("instance type Builder", d.currentValue().toString());
+                        assertEquals("instance 1.0.0 type Builder", d.currentValue().toString());
                     }
                     if ("1.1.0".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);

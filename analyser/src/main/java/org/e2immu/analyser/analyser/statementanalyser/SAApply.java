@@ -561,7 +561,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             value = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
         } else {
             Identifier identifier = statement().getIdentifier();
-            value = Instance.forVariableInLoopDefinedOutside(identifier, variable.parameterizedType(), valueProperties);
+            value = Instance.forVariableInLoopDefinedOutside(identifier, index(), variable.parameterizedType(),
+                    valueProperties);
         }
         boolean progress;
         if (vic.hasEvaluation() && vic.best(EVALUATION).getValue().isDelayed()) {
@@ -637,7 +638,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
                         // replace the DVE with a DelayedWrappedExpression referring to self
                         Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
-                                target.parameterizedType(), combinedOrPrimitive);
+                                index(), target.parameterizedType(), combinedOrPrimitive);
                         LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
                         CausesOfDelay causes = removeBreakButKeepDelayed(valueToWritePossiblyDelayed, breaks);
                         vic.createAndWriteDelayedWrappedExpressionForEval(Identifier.generate("dwe break init delay"),
@@ -660,7 +661,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                             valueProperties = context.evaluationContext().defaultValueProperties(target.parameterizedType());
                         }
                         Expression instance = Instance.forSelfAssignmentBreakInit(Identifier.generate("dwe break self assignment"),
-                                target.parameterizedType(), valueProperties);
+                                index(), target.parameterizedType(), valueProperties);
                         LOGGER.debug("Return wrapped expression to break value delay on {} in {}", target, index());
                         CausesOfDelay causes = removeBreakButKeepDelayed(valueToWritePossiblyDelayed, breaks);
                         vic.createAndWriteDelayedWrappedExpressionForEval(Identifier.generate("dwe break init delay"),

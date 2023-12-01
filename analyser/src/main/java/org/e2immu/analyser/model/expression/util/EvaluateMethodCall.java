@@ -216,7 +216,7 @@ public class EvaluateMethodCall {
             return fluent;
         }
 
-        Expression nameInEnum = computeNameInEnum(objectValue);
+        Expression nameInEnum = computeNameInEnum(context.evaluationContext().statementIndex(), objectValue);
         if (nameInEnum != null) {
             return builder.setExpression(nameInEnum).build();
         }
@@ -262,7 +262,8 @@ public class EvaluateMethodCall {
                 return delay(builder, methodInfo, concreteReturnType, objectValue, delays,
                         context.evaluationContext().breakDelayLevel());
             }
-            methodValue = Instance.forMethodResult(methodCall.getIdentifier(), concreteReturnType, valueProperties);
+            methodValue = Instance.forMethodResult(methodCall.getIdentifier(),
+                    context.evaluationContext().statementIndex(), concreteReturnType, valueProperties);
         }
         return builder.setExpression(methodValue).build();
     }
@@ -332,7 +333,7 @@ public class EvaluateMethodCall {
     name is always dedicated.
     valueOf is only dedicated when there are no annotated APIs (it "implementation" uses the Stream class)
      */
-    private Expression computeNameInEnum(Expression objectValue) {
+    private Expression computeNameInEnum(String statementIndex, Expression objectValue) {
         boolean isName = "name".equals(methodInfo.name);
         boolean isValueOf = "valueOf".equals(methodInfo.name);
         if (!isName && !isValueOf) return null;
@@ -346,7 +347,8 @@ public class EvaluateMethodCall {
                 return new StringConstant(primitives, fr.fieldInfo().name);
             }
             Properties valueProperties = EvaluationContext.PRIMITIVE_VALUE_PROPERTIES;
-            return Instance.forGetInstance(identifier, primitives.stringParameterizedType(), valueProperties);
+            return Instance.forGetInstance(identifier, statementIndex, primitives.stringParameterizedType(),
+                    valueProperties);
         }
         MethodInspection methodInspection = analyserContext.getMethodInspection(methodInfo);
         if (methodInspection.getMethodBody().structure.haveStatements()) {
@@ -360,7 +362,7 @@ public class EvaluateMethodCall {
         if (delayed.isDelayed()) {
             return DelayedExpression.forValueOf(parameterizedType, methodCall, delayed);
         }
-        return Instance.forGetInstance(identifier, parameterizedType, valueProperties);
+        return Instance.forGetInstance(identifier, statementIndex, parameterizedType, valueProperties);
     }
 
     private EvaluationResult computeEvaluationOfEquals(MethodInfo methodInfo,

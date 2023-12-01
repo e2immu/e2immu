@@ -530,7 +530,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         Filter.FilterResult<FieldReference> filterResult = filter.filter(state,
                                 filter.individualFieldClause(analyserContext, true));
                         Expression inResult = filterResult.accepted().get(fr);
-                        if (inResult != null) {
+                        if (inResult != null && currentValueInContradictionWith(context, inResult, fr)) {
                             Precondition pc = new Precondition(inResult, List.of(new Precondition.StateCause()));
                             combinedPrecondition = combinedPrecondition.combine(context, pc);
                         }
@@ -542,6 +542,28 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodInfo, combinedPrecondition);
         methodAnalysis.setPreconditionForEventual(combinedPrecondition);
         return DONE;
+    }
+
+    private boolean currentValueInContradictionWith(EvaluationResult context,
+                                                    Expression inResultAboutFr,
+                                                    FieldReference fr) {
+        VariableInfo vi = methodAnalysis.getLastStatement().findOrNull(fr, Stage.MERGE);
+        Expression valueFr = vi.getValue();
+        if (valueFr instanceof NullConstant && inResultAboutFr.equalsNotNull()) {
+            return true; // obvious contradiction
+        }
+        if (inResultAboutFr.equalsNull()) {
+            DV nne = vi.getProperty(NOT_NULL_EXPRESSION);
+            if (nne.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
+                return true; // contradiction
+            }
+        }
+        if (valueFr.returnType().isBooleanOrBoxedBoolean()) {
+            Expression and = And.and(context, valueFr, inResultAboutFr);
+            return and.isBoolValueFalse();
+        }
+        // what else?
+        return false;
     }
 
     private static final Pattern INDEX_PATTERN = Pattern.compile("(\\d+)(-C|-E|:M)");
@@ -653,7 +675,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                  whether the result is something sensible or not.
                  */
                 assert value.isDone();
-                valueWithInline = createInlinedMethod(value);
+                valueWithInline = createInlinedMethod(sharedState.evaluationContext.statementIndex(), value);
                 if (valueWithInline.isDelayed()) {
                     return delayedSrv(concreteReturnType, value, value.causesOfDelay(), true);
                 }
@@ -749,7 +771,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         INDEPENDENT, methodAnalysis.getPropertyFromMapNeverDelay(INDEPENDENT),
                         CONTAINER, methodAnalysis.getPropertyFromMapNeverDelay(CONTAINER)
                 ));
-                Expression instance = Instance.forMethodResult(methodInfo.getIdentifier(), methodInfo.returnType(), valueProps);
+                Expression instance = Instance.forMethodResult(methodInfo.getIdentifier(),
+                        sharedState.evaluationContext.statementIndex(), methodInfo.returnType(), valueProps);
                 methodAnalysis.setSingleReturnValue(instance);
                 methodAnalysis.setProperty(Property.IDENTITY, valueProps.get(IDENTITY));
                 methodAnalysis.setProperty(IGNORE_MODIFICATIONS, valueProps.get(IGNORE_MODIFICATIONS));
@@ -914,12 +937,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     /*
     Create an inlined method based on the returned value
      */
-    private Expression createInlinedMethod(Expression value) {
+    private Expression createInlinedMethod(String statementIndex, Expression value) {
         assert value.isDone();
         if (value.getComplexity() > Expression.COMPLEXITY_LIMIT_OF_INLINED_METHOD) {
             VariableInfo variableInfo = getReturnAsVariable();
             Properties properties = variableInfo.valueProperties();
-            return Instance.forTooComplex(value.getIdentifier(), value.returnType(), properties);
+            return Instance.forTooComplex(value.getIdentifier(), statementIndex, value.returnType(), properties);
         }
         return InlinedMethod.of(methodInfo, value, analyserContext);
     }

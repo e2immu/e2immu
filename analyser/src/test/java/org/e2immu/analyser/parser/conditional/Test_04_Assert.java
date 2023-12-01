@@ -94,7 +94,7 @@ public class Test_04_Assert extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("3".equals(d.statementId())) {
-                        assertEquals("other instanceof NotDelayed?this:<return value>",
+                        assertEquals("other instanceof NotDelayed?this$0:<return value>",
                                 d.currentValue().toString());
                         assertEquals("this:0", d.variableInfo().getLinkedVariables().toString());
                     }
@@ -111,8 +111,8 @@ public class Test_04_Assert extends CommonTestRunner {
                     }
                     if ("5".equals(d.statementId())) {
                         String value = switch (d.iteration()) {
-                            case 0, 1 -> "<instanceOf:NotDelayed>?this:<m:addProgress>";
-                            default -> "other instanceof NotDelayed?this:null";
+                            case 0, 1 -> "<instanceOf:NotDelayed>?this$0:<m:addProgress>";
+                            default -> "other instanceof NotDelayed?this$0:null";
                         };
                         assertEquals(value, d.currentValue().toString());
                         // there should not be a STATICALLY_ASSIGNED here: it is the result of a method call
@@ -146,7 +146,7 @@ public class Test_04_Assert extends CommonTestRunner {
                     if ("5".equals(d.statementId())) {
                         String value = d.iteration() < 2
                                 ? "limit&&(-1+other.numberOfDelays()>=<f:LIMIT>||-1-<f:LIMIT>+<m:numberOfDelays>>=0)?<s:SimpleSet>:<s:CausesOfDelay>"
-                                : "this";
+                                : "this$0";
                         assertEquals(value, d.currentValue().toString());
                         String linked = switch (d.iteration()) {
                             case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,other:-1,this:0";

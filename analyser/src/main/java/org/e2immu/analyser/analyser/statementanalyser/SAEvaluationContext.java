@@ -890,7 +890,12 @@ class SAEvaluationContext extends CommonEvaluationContext {
                 }
             }
             if (isInstance) {
-                return new VariableExpression(identifier, v);
+                String statementIndex = value.asInstanceOf(Instance.class).getIndex();
+                VariableExpression.Suffix suffix = statementIndex != null && !VariableInfoContainer.NOT_YET_READ.equals(statementIndex)
+                        ? new VariableExpression.ModifiedVariable(statementIndex) : VariableExpression.NO_SUFFIX;
+                Expression sv = expression instanceof VariableExpression ve ? ve.getScopeValue() : null;
+                Expression iv = expression instanceof VariableExpression ve ? ve.getIndexValue() : null;
+                return new VariableExpression(identifier, v, suffix, sv, iv);
             }
         }
         // see Basics_31: self-references on fields

@@ -51,7 +51,7 @@ public class Test_53_ReturnValue extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("nextInt".equals(d.methodInfo().name)) {
                 if (d.iteration() >= 4) {
-                    assertEquals("instance type int%max", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("instance 0 type int%max", d.methodAnalysis().getSingleReturnValue().toString());
                 }
             }
         };

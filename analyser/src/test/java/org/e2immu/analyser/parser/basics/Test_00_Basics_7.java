@@ -318,7 +318,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                 assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(FINAL));
                 assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.fieldAnalysis().getProperty(EXTERNAL_NOT_NULL));
                 String sortedValues = d.iteration() == 0 ? "[15 delays]"
-                        : "(b?p:0)<10?1+(b?p:0):b?p:0,instance type int,instance type int,instance type int";
+                        : "(b?p:0)<10?1+(b?p:0):b?p:0,instance 1.0.1 type int,instance 1.0.1 type int,instance 2 type int";
                 assertEquals(sortedValues, ((FieldAnalysisImpl.Builder) (d.fieldAnalysis())).sortedValuesString());
                 assertDv(d, 1, MultiLevel.NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
             }

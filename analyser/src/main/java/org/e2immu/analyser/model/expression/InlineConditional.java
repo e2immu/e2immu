@@ -245,7 +245,8 @@ public class InlineConditional extends BaseExpression implements Expression {
                 condition.variableStream()).collect(Collectors.toUnmodifiableSet());
         if (condition.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
-            condition = Instance.forUnspecifiedCondition(getIdentifier(), context.getPrimitives());
+            condition = Instance.forUnspecifiedCondition(getIdentifier(), context.evaluationContext().statementIndex(),
+                    context.getPrimitives());
         }
         Expression conditionAfterState = context.evaluationContext().getConditionManager()
                 .evaluate(context, condition, false);

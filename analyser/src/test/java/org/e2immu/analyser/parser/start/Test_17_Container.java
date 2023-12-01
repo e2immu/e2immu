@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
@@ -672,8 +673,7 @@ public class Test_17_Container extends CommonTestRunner {
                     // current is of type Container_10A, so isMyself must be YES!
                     // all value properties in the statement analyser must be set to the default values
                     if ("0.0.2.0.1.0.0".equals(d.statementId())) {
-                        String value = d.iteration() < 24 ? "<m:get>"
-                                : "(nullable instance type Container_10A).get(subKey)";
+                        String value = d.iteration() < 4 ? "<m:get>" : "current$0.0.2.get(subKey)";
                         assertEquals(value, d.currentValue().toString());
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -681,17 +681,29 @@ public class Test_17_Container extends CommonTestRunner {
                 }
             }
         };
-        testClass("Container_10A", 0, 0, new DebugConfiguration.Builder()
-               // .addEvaluationResultVisitor(evaluationResultVisitor)
-               // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+        // the 1 warning is correct: this.current can be null
+        testClass("Container_10A", 0, 1, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     // ERROR: Cluster overlap (presence of List, even if it is only there because of an unused import statement!!)
     // then: same error as in 10A, but in a different place
     // then: no progress after 32 iterations,
+    // then: self-assignment -> Basics_31
+    // then: looked like Lazy: eventual finality
+    // then: tok <-> tok$2.0.0 -> Modification_31
     @Test
     public void test_10B() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                if ("0.0.2.0.1".equals(d.statementId())) {
+                    String expected = d.iteration() < 2 ? "<m:hasMoreElements>" : "tok.hasMoreElements()";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
@@ -705,15 +717,52 @@ public class Test_17_Container extends CommonTestRunner {
                             case 2, 3 -> "<wrapped:return get>";
                             default -> "null";
                         };
-                        // assertEquals(value, d.currentValue().toString());
+                        assertEquals(value, d.currentValue().toString());
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                     }
                 }
+                if ("tok".equals(d.variableName())) {
+                    if ("0.0.2.0.0".equals(d.statementId())) {
+                        assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
             }
         };
-        testClass("Container_10B", 0, 0, new DebugConfiguration.Builder()
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name)) {
+                if ("0.0.2.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "-1!=key.indexOf('.')&&<m:hasMoreElements>"
+                            : "-1!=key.indexOf('.')&&tok$0.0.2.hasMoreElements()";
+                    assertEquals(expected, d.absoluteState().toString());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("nextElement".equals(d.methodInfo().name)) {
+                assertEquals("Precondition[expression=true, causes=[]]", d.methodAnalysis().getPrecondition().toString());
+                String pcEventual = d.iteration() < 3 ? "Precondition[expression=<precondition>, causes=[]]"
+                        : "Precondition[expression=true, causes=[]]";
+                assertEquals(pcEventual, d.methodAnalysis().getPreconditionForEventual().toString());
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("T".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().approvedPreconditionsImmutableIsEmpty());
+                assertTrue(d.typeAnalysis().getApprovedPreconditionsFinalFields().isEmpty());
+            }
+        };
+
+        // the 5 warnings are all valid
+        testClass("Container_10B", 0, 5, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 
@@ -721,7 +770,8 @@ public class Test_17_Container extends CommonTestRunner {
     // a different manifestation of the same underlying problem
     @Test
     public void test_10C() throws IOException {
-        testClass("Container_10C", 0, 0, new DebugConfiguration.Builder()
+        // the 5 warnings are correct
+        testClass("Container_10C", 0, 5, new DebugConfiguration.Builder()
                 .build());
     }
 }

@@ -108,13 +108,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 anonymousClass, arrayInitializer);
     }
 
-    public Expression removeConstructor(Properties valueProperties, Primitives primitives) {
+    public Expression removeConstructor(String index, Properties valueProperties, Primitives primitives) {
         assert arrayInitializer == null;
         CausesOfDelay causesOfDelay = valueProperties.delays();
         if (causesOfDelay.isDelayed()) {
             return DelayedExpression.forInstanceOf(identifier, primitives, parameterizedType, this, causesOfDelay);
         }
-        return new Instance(identifier, parameterizedType, valueProperties);
+        return new Instance(identifier, index, parameterizedType, valueProperties);
     }
 
     public ConstructorCall copy(List<Expression> newParameterExpressions) {
@@ -370,7 +370,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public Expression generify(EvaluationContext evaluationContext) {
         if (anonymousClass == null && constructor != null) {
             Properties valueProperties = evaluationContext.getValueProperties(this);
-            return removeConstructor(valueProperties, evaluationContext.getPrimitives());
+            return removeConstructor(evaluationContext.statementIndex(), valueProperties, evaluationContext.getPrimitives());
         }
         return this;
     }

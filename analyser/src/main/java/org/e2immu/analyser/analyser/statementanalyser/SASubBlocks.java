@@ -793,7 +793,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             for (Structure s : structure.subStatements()) {
                 if (s.statementExecution() == StatementExecution.CONDITIONALLY) {
                     Identifier identifier = tryStatement.catchClauses.get(cnt++).k.identifier;
-                    booleanVars.add(Instance.forUnspecifiedCatchCondition(context.getPrimitives(), identifier));
+                    booleanVars.add(Instance.forUnspecifiedCatchCondition(context.getPrimitives(), identifier,
+                            context.evaluationContext().statementIndex()));
                     conditionVariables.addAll(s.expression().variables(DescendMode.NO));
                 }
             }

@@ -185,7 +185,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 assertTrue(d.haveMarkRead(THIS));
             }
             if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
-                String expectEvalString = d.iteration() == 0 ? "<m:add>" : "instance type boolean";
+                String expectEvalString = d.iteration() == 0 ? "<m:add>" : "instance 0 type boolean";
                 assertEquals(expectEvalString, d.evaluationResult().value().toString());
             }
         };
