@@ -90,7 +90,7 @@ public class Test_01_Loops_0 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<vl:i>" : "instance type int";
+                    String expect = d.iteration() == 0 ? "<vl:i>" : "instance 2 type int";
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("2.0.1".equals(d.statementId())) {

@@ -38,7 +38,7 @@ public class Test_01_Loops_4 extends CommonTestRunner {
     public void test_4() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "!<loopIsNotEmptyCondition>||!<c:boolean>" : "1!=instance type int";
+                String expected = d.iteration() == 0 ? "!<loopIsNotEmptyCondition>||!<c:boolean>" : "1!=instance 0 type int";
                 if ("0".equals(d.statementId())) {
                     assertEquals(expected, d.state().toString());
                     assertNull(d.haveError(Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
@@ -70,14 +70,14 @@ public class Test_01_Loops_4 extends CommonTestRunner {
 
                     if ("0.0.0.0.0".equals(d.statementId())) {
                         assertFalse(d.variableInfoContainer().hasEvaluation());
-                        String expected = "instance type int";
+                        String expected = "instance 0 type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("instance type int", d.currentValue().toString());
+                        assertEquals("instance 0 type int", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        assertEquals("instance type int", d.currentValue().toString());
+                        assertEquals("instance 0 type int", d.currentValue().toString());
                         assertEquals("0-E", d.variableInfo().getReadId());
                         assertFalse(d.variableInfoContainer().hasMerge());
                     }
@@ -89,21 +89,21 @@ public class Test_01_Loops_4 extends CommonTestRunner {
                         assertEquals("4", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<c:boolean>?4:<return value>" : "1==i?4:<return value>";
+                        String expected = d.iteration() == 0 ? "<c:boolean>?4:<return value>" : "1==i$0?4:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasMerge());
                         // there should be no i here anymore!!
                         String expect = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>?4:<return value>" :
-                                "1==instance type int?4:<return value>";
+                                "1==instance 0 type int?4:<return value>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         // we do not want 0 here!
                         String expect = d.iteration() == 0
                                 ? "<loopIsNotEmptyCondition>&&<c:boolean>?4:0"
-                                : "1==instance type int?4:0";
+                                : "1==instance 0 type int?4:0";
                         assertEquals(expect, d.currentValue().toString());
                         String expectVars = d.iteration() == 0 ? "[i]" : "[]";
                         assertEquals(expectVars, d.currentValue().variables().toString());
@@ -115,11 +115,11 @@ public class Test_01_Loops_4 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    String expectValue = "i<10";
+                    String expectValue = "i$0<10";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = "1==i";
+                    String expectValue = "1==i$0";
                     assertEquals(expectValue, d.evaluationResult().value().toString());
                 }
             }

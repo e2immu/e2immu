@@ -1,6 +1,9 @@
 package org.e2immu.analyser.parser.start.testexample;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
 public class Container_10A {
 
@@ -21,11 +24,13 @@ public class Container_10A {
         return null;
     }
 
+    @Container
+    @Independent
     private static class T {
         private final char s;
-        @Modified
+        @NotModified // but assigned!
         private boolean hasMoreElements;
-        @Modified
+        @NotModified // but assigned
         private String current;
 
         public T(String value, char s) {
@@ -38,6 +43,7 @@ public class Container_10A {
             return this.hasMoreElements;
         }
 
+        @Modified
         public String nextElement() {
             if (!this.hasMoreElements) {
                 return null;

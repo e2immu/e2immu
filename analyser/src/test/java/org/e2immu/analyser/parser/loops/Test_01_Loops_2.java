@@ -56,7 +56,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                 }
                 // res = s, only statement in loop
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("s", d.evaluationResult().value().toString());
+                    assertEquals("s$1", d.evaluationResult().value().toString());
                 }
             }
         };
@@ -69,7 +69,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                     assertEquals("java.lang.String", d.variableInfo().variable()
                             .parameterizedType().typeInfo.fullyQualifiedName);
                     if ("1".equals(d.statementId())) {
-                        String expectValue = "instance type String";
+                        String expectValue = "instance 1 type String";
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         assertFalse(d.variableInfoContainer().hasMerge());
 
@@ -79,7 +79,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
-                        assertEquals("instance type String", d.currentValue().toString());
+                        assertEquals("instance 1 type String", d.currentValue().toString());
 
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
 
@@ -93,7 +93,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                             assertEquals("1", outside.statementIndex());
                         } else fail();
 
-                        assertEquals("s", d.currentValue().toString());
+                        assertEquals("s$1", d.currentValue().toString());
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         assertEquals("s:0", d.variableInfo().getLinkedVariables().toString());
                     }
@@ -102,7 +102,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                             assertEquals("1", outside.statementIndex());
                         } else fail();
                         // loop is guaranteed to be executed, so this value overwrites the one from statement 0
-                        assertEquals("instance type String", d.currentValue().toString());
+                        assertEquals("instance 1 type String", d.currentValue().toString());
                     }
 
                     if ("2".equals(d.statementId())) {
@@ -110,7 +110,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                             assertEquals("", normal.parentBlockIndex);
                         } else fail();
 
-                        assertEquals("instance type String", d.currentValue().toString());
+                        assertEquals("instance 1 type String", d.currentValue().toString());
                         assertEquals("", d.variableInfo().getLinkedVariables().toString());
 
                         assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
@@ -119,7 +119,7 @@ public class Test_01_Loops_2 extends CommonTestRunner {
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("2".equals(d.statementId())) {
-                        assertEquals("res", d.currentValue().toString());
+                        assertEquals("res$1", d.currentValue().toString());
 
                         assertEquals("res:0", d.variableInfo().getLinkedVariables().toString());
 

@@ -874,7 +874,12 @@ class SAEvaluationContext extends CommonEvaluationContext {
                 Expression iv = expression instanceof VariableExpression ve ? ve.getIndexValue() : null;
                 // variables in loop defined outside
                 if (isInstance) {
-                    VariableExpression.Suffix suffix2 = new VariableExpression.VariableInLoop(outside.statementIndex());
+                    // give priority to modifications inside the loop
+                    String statementIndex = value.asInstanceOf(Instance.class).getIndex();
+                    boolean priority = statementIndex.compareTo(outside.statementIndex()) > 0;
+                    VariableExpression.Suffix suffix2 = priority
+                            ? new VariableExpression.ModifiedVariable(statementIndex)
+                            : new VariableExpression.VariableInLoop(outside.statementIndex());
                     return new VariableExpression(expression.getIdentifier(), v, suffix2, sv, iv);
                 }
                 // do not return a value when it has not yet been written to

@@ -62,7 +62,7 @@ public class Test_17_Container extends CommonTestRunner {
                     assertTrue(d.evaluationResult().causesOfDelay().isDone());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:add>" : "instance type boolean";
+                    String expected = d.iteration() == 0 ? "<m:add>" : "instance 1 type boolean";
                     assertEquals(d.iteration() == 0, d.evaluationResult().causesOfDelay().isDelayed());
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
@@ -87,7 +87,7 @@ public class Test_17_Container extends CommonTestRunner {
                         assertFalse(d.variableInfoContainer().isReadInThisStatement());
 
                         String expected = d.iteration() == 0 ? "<p:p>"
-                                : "nullable instance type Set<String>/*@Identity*//*this.size()>=1&&this.contains(toAdd)*/";
+                                : "instance 1 type Set<String>/*@Identity*//*this.size()>=1&&this.contains(toAdd)*/";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
                         assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
@@ -254,7 +254,7 @@ public class Test_17_Container extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
-                String expectValue = d.iteration() == 0 ? "<m:add>" : "instance type boolean";
+                String expectValue = d.iteration() == 0 ? "<m:add>" : "instance 1.0.0 type boolean";
                 assertEquals(expectValue, d.evaluationResult().value().toString());
             }
         };
@@ -657,6 +657,7 @@ public class Test_17_Container extends CommonTestRunner {
     // even changing 'currentBag' into current generates the 'Cluster overlap' problem
     // beyond that: 0.0.2.0.1.0.0 reassignment to 'current'
     // PT in SAEvaluationContext.getProperties is NULL_CONSTANT (correctly) which is NOT myself
+    // then: see Mod_31
     @Test
     public void test_10A() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -673,7 +674,7 @@ public class Test_17_Container extends CommonTestRunner {
                     // current is of type Container_10A, so isMyself must be YES!
                     // all value properties in the statement analyser must be set to the default values
                     if ("0.0.2.0.1.0.0".equals(d.statementId())) {
-                        String value = d.iteration() < 4 ? "<m:get>" : "current$0.0.2.get(subKey)";
+                        String value = d.iteration() < 4 ? "<m:get>" : "current$0.0.2.get(subKey$0.0.2.0.0)";
                         assertEquals(value, d.currentValue().toString());
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                         assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -698,8 +699,13 @@ public class Test_17_Container extends CommonTestRunner {
     public void test_10B() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
+                if ("0.0.2".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<m:hasMoreElements>" : "tok$0.0.2.hasMoreElements()";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
                 if ("0.0.2.0.1".equals(d.statementId())) {
-                    String expected = d.iteration() < 2 ? "<m:hasMoreElements>" : "tok.hasMoreElements()";
+                    // the modification takes priority over the loop
+                    String expected = d.iteration() < 2 ? "<m:hasMoreElements>" : "tok$0.0.2.0.0.hasMoreElements()";
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }
@@ -714,7 +720,7 @@ public class Test_17_Container extends CommonTestRunner {
                         String value = switch (d.iteration()) {
                             case 0 -> "<simplification>";
                             case 1 -> "<m:hasMoreElements>?<m:hasMoreElements>?<simplification>:<m:get>:null";
-                            case 2, 3 -> "<wrapped:return get>";
+                            case 2 -> "<wrapped:return get>";
                             default -> "null";
                         };
                         assertEquals(value, d.currentValue().toString());
@@ -727,6 +733,13 @@ public class Test_17_Container extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
+                if ("current".equals(d.variableName())) {
+                    if ("0.0.2.0.1.0.0".equals(d.statementId())) {
+                        assertCurrentValue(d, 3, "current$0.0.2.get(subKey$0.0.2.0.0)");
+                        // FIXME ??
+                        assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
             }
         };
 
@@ -735,6 +748,14 @@ public class Test_17_Container extends CommonTestRunner {
                 if ("0.0.2.0.0".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "-1!=key.indexOf('.')&&<m:hasMoreElements>"
                             : "-1!=key.indexOf('.')&&tok$0.0.2.hasMoreElements()";
+                    assertEquals(expected, d.absoluteState().toString());
+                }
+                if ("0.0.2.0.1.0.0".equals(d.statementId())) {
+                    String expected = switch (d.iteration()) {
+                        case 0 -> "-1!=key.indexOf('.')&&<m:hasMoreElements>";
+                        case 1 -> "-1!=key.indexOf('.')&&<m:hasMoreElements>&&tok$0.0.2.hasMoreElements()";
+                        default -> "-1!=key.indexOf('.')&&tok$0.0.2.0.0.hasMoreElements()&&tok$0.0.2.hasMoreElements()";
+                    };
                     assertEquals(expected, d.absoluteState().toString());
                 }
             }
@@ -746,6 +767,9 @@ public class Test_17_Container extends CommonTestRunner {
                 String pcEventual = d.iteration() < 3 ? "Precondition[expression=<precondition>, causes=[]]"
                         : "Precondition[expression=true, causes=[]]";
                 assertEquals(pcEventual, d.methodAnalysis().getPreconditionForEventual().toString());
+            }
+            if ("get".equals(d.methodInfo().name)) {
+                assertDv(d, 3, MultiLevel.NULLABLE_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 

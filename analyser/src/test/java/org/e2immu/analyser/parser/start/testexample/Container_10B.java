@@ -15,9 +15,9 @@ public class Container_10B {
         if (key.indexOf('.') != -1) {
             T tok = new T(key, '.');
             Container_10B current = this;
-            while (tok.hasMoreElements()) {
+            while (tok.hasMoreElements()) { // 0.0.2
                 String subKey = tok.nextElement();
-                if (tok.hasMoreElements()) {
+                if (tok.hasMoreElements()) { // 0.0.2.0.1
                     current = current.get(subKey);
                     if (current == null) {
                         return null;
