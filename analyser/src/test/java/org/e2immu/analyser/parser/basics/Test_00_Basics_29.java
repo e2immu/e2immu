@@ -41,7 +41,7 @@ public class Test_00_Basics_29 extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("t".equals(d.variableName())) {
                     if ("3".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<v:array[i]>" : "array[i]";
+                        String expected = d.iteration() == 0 ? "<v:array[i]>" : "array[0]$3";
                         assertEquals(expected, d.currentValue().toString());
                         if (d.iteration() > 0) {
                             assertTrue(d.currentValue().getIdentifier() instanceof Identifier.PositionalIdentifier);

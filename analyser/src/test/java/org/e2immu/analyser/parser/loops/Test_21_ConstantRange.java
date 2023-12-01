@@ -38,14 +38,14 @@ public class Test_21_ConstantRange extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("\"c\".equals(s)||<return value>", d.currentValue().toString());
+                        assertEquals("\"c\".equals(s$0)||<return value>", d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expected = "input.length>=1?\"c\".equals(nullable instance type String)||<return value>:<return value>";
+                        String expected = "input.length>=1?\"c\".equals(nullable instance 0 type String)||<return value>:<return value>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = "\"c\".equals(nullable instance type String)&&input.length>=1";
+                        String expected = "\"c\".equals(nullable instance 0 type String)&&input.length>=1";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -54,7 +54,7 @@ public class Test_21_ConstantRange extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    String expected = "input.length<1||!\"c\".equals(nullable instance type String)";
+                    String expected = "input.length<1||!\"c\".equals(nullable instance 0 type String)";
                     assertEquals(expected, d.state().toString());
                 }
             }
@@ -70,7 +70,7 @@ public class Test_21_ConstantRange extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("s.equals(\"c\")", d.evaluationResult().value().toString());
+                    assertEquals("s$0.equals(\"c\")", d.evaluationResult().value().toString());
                 }
             }
         };
@@ -86,11 +86,11 @@ public class Test_21_ConstantRange extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("0.0.0.0.0".equals(d.statementId())) {
-                    assertEquals("s.equals(\"c\")", d.condition().toString());
+                    assertEquals("s$0.equals(\"c\")", d.condition().toString());
                     assertEquals("false", d.absoluteState().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("s.equals(\"a\")||s.equals(\"b\")", d.condition().toString());
+                    assertEquals("s$0.equals(\"a\")||s$0.equals(\"b\")", d.condition().toString());
                 }
             }
         };

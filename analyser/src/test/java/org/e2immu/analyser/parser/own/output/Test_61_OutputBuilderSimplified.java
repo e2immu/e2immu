@@ -152,7 +152,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     }
                     if ("2.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<p:a>"
-                                : "nullable instance type OutputBuilderSimplified_3/*@Identity*/";
+                                : "instance 2.0.0 type OutputBuilderSimplified_3/*@Identity*/";
                         assertEquals(expected, d.currentValue().toString(),
                                 "Statement " + d.statementId() + " it " + d.iteration());
                     }
@@ -751,8 +751,8 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                     case 0 ->
                             "context-modified=constructor-to-instance@Method_apply_2.0.0-E;initial:Space.NONE@Method_apply_1-C;initial:end@Method_apply_3-E;initial:t@Method_apply_2.0.0-E;link@NOT_YET_SET;srv@Method_apply, context-not-null=[22 delays], read=true:1";
                     case 1 ->
-                            "context-modified=constructor-to-instance@Method_apply_4-E;initial:Space.NONE@Method_apply_1-C;initial@Field_NONE;link:outputElements@Method_add_1:M;link:this.list@Method_add_1:M;srv@Method_apply, context-not-null=[11 delays], read=true:1";
-                    case 2  -> "context-modified=true:1, context-not-null=srv@Method_apply, read=true:1";
+                            "context-modified=[12 delays], context-not-null=[13 delays], read=true:1";
+                    case 2  -> "context-modified=true:1, context-not-null=cnn@Parameter_aa, read=true:1";
                     default -> "context-modified=true:1, context-not-null=nullable:1, read=true:1";
                 };
                 assertEquals(expected, d.statementAnalysis()

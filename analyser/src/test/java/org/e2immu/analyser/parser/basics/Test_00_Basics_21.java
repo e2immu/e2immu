@@ -78,6 +78,9 @@ public class Test_00_Basics_21 extends CommonTestRunner {
                 }
             }
             if ("set".equals(d.methodInfo().name)) {
+                if("0".equals(d.statementId())) {
+                    assertEquals("null==t", d.evaluationResult().value().toString());
+                }
                 if ("1.0.1".equals(d.statementId())) {
                     assertEquals("t", d.evaluationResult().value().toString());
                 }
@@ -179,12 +182,30 @@ public class Test_00_Basics_21 extends CommonTestRunner {
 
             if ("set".equals(d.methodInfo().name)) {
                 assertEquals(DV.TRUE_DV, d.methodAnalysis().getProperty(MODIFIED_METHOD));
+                String pc = d.iteration() < 2 ? "Precondition[expression=<null-check>, causes=[escape]]"
+                        : "Precondition[expression=null!=t$0&&null==t$1.0.0, causes=[escape]]";
+                assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
+                String pc4e = switch(d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=<null-check>, causes=[escape]]";
+                    default -> "Precondition[expression=null!=t$0, causes=[escape]]";
+                };
+                assertEquals(pc4e, d.methodAnalysis().getPreconditionForEventual().toString());
             }
 
             if ("get".equals(d.methodInfo().name)) {
                 assertDv(d, DV.FALSE_DV, MODIFIED_METHOD);
-                String expect = d.iteration() <= 1 ? "<m:get>" : "t$0";
+                String expect = d.iteration() < 2 ? "<m:get>" : "t$0";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
+                String pc = d.iteration() < 2 ? "Precondition[expression=!<null-check>, causes=[escape]]"
+                        : "Precondition[expression=null!=t$0, causes=[escape]]";
+                assertEquals(pc, d.methodAnalysis().getPrecondition().toString());
+                String pc4e = switch(d.iteration()) {
+                    case 0 -> "Precondition[expression=<precondition>, causes=[]]";
+                    case 1 -> "Precondition[expression=!<null-check>, causes=[escape]]";
+                    default -> "Precondition[expression=null!=t$0, causes=[escape]]";
+                };
+                assertEquals(pc4e, d.methodAnalysis().getPreconditionForEventual().toString());
             }
 
             if ("isSet".equals(d.methodInfo().name)) {

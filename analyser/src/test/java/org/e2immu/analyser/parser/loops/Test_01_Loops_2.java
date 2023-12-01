@@ -134,8 +134,8 @@ public class Test_01_Loops_2 extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 DV execution = d.statementAnalysis().flowData().getGuaranteedToBeReachedInCurrentBlock();
                 if ("1.0.0".equals(d.statementId())) {
-                    assertEquals("s.equals(\"a\")||s.equals(\"b\")||s.equals(\"c\")", d.condition().toString());
-                    assertEquals("s.equals(\"a\")||s.equals(\"b\")||s.equals(\"c\")", d.absoluteState().toString());
+                    assertEquals("s$1.equals(\"a\")||s$1.equals(\"b\")||s$1.equals(\"c\")", d.condition().toString());
+                    assertEquals("s$1.equals(\"a\")||s$1.equals(\"b\")||s$1.equals(\"c\")", d.absoluteState().toString());
                     assertEquals(ALWAYS, execution);
                 }
             }

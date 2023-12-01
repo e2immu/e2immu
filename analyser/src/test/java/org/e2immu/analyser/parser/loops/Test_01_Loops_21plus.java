@@ -88,7 +88,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("2.0.1.0.2".equals(d.statementId())) {
                         String expected = d.iteration() <= 3
                                 ? "<array-access:String[]>"
-                                : "instance type String[]";
+                                : "instance 2.0.1.0.2 type String[]";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() < 4
                                 ? "array:-1,array[i][j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
@@ -108,16 +108,16 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
 
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
-                        String prevValue = d.iteration() == 0 ? "<array-access:String>" : "nullable instance type String";
+                        String prevValue = d.iteration() == 0 ? "<array-access:String>" : "nullable instance 2.0.1 type String";
                         assertEquals(prevValue, prev.getValue().toString());
 
                         String mergeValue = switch (d.iteration()) {
                             case 0 ->
                                     "<loopIsNotEmptyCondition>&&<loopIsNotEmptyCondition>?<m:charAt>+\"->\"+<m:charAt>:<array-access:String>";
                             case 1, 2, 3 ->
-                                    "-1-<oos:i>+n>0&&-1-<oos:j>+m>=0?<m:charAt>+\"->\"+<m:charAt>:nullable instance type String";
+                                    "-1-<oos:i>+n>0&&-1-<oos:j>+m>=0?<m:charAt>+\"->\"+<m:charAt>:nullable instance 2.0.1 type String";
                             default ->
-                                    "-1-(instance type int)+m>=0&&-1!(-1-(instance type int)+m>=0?instance type int:instance type int)+n>0?outer$2.0.1.charAt((-1-(instance type int)+m>=0?instance type int:instance type int)%outer$2.0.1.length())+\"->\"+(-1-(instance type int)+m>=0?instance type String:\"xzy\").charAt(instance type int%(-1-(instance type int)+m>=0?instance type String:\"xzy\").length()):nullable instance type String";
+                                    "-1-(instance 2.0.1 type int)+m>=0&&-1!(-1-(instance 2.0.1 type int)+m>=0?instance 2.0.1 type int:instance 2 type int)+n>0?outer$2.0.1.charAt((-1-(instance 2.0.1 type int)+m>=0?instance 2.0.1 type int:instance 2 type int)%outer$2.0.1.length())+\"->\"+(-1-(instance 2.0.1 type int)+m>=0?instance 2.0.1 type String:\"xzy\").charAt(instance 2.0.1 type int%(-1-(instance 2.0.1 type int)+m>=0?instance 2.0.1 type String:\"xzy\").length()):nullable instance 2.0.1 type String";
                         };
                         assertEquals(mergeValue, d.currentValue().toString());
                     }
@@ -127,21 +127,21 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasMerge());
 
                         VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
-                        String prevValue = d.iteration() == 0 ? "<array-access:String>" : "nullable instance type String";
+                        String prevValue = d.iteration() == 0 ? "<array-access:String>" : "nullable instance 2.0.1 type String";
                         assertEquals(prevValue, prev.getValue().toString());
                         String mergeValue = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>?<m:charAt>+\"->\"+<m:charAt>:<array-access:String>";
                             case 1, 2, 3 ->
-                                    "-1-<oos:j>+m>=0?<m:charAt>+\"->\"+<m:charAt>:nullable instance type String";
+                                    "-1-<oos:j>+m>=0?<m:charAt>+\"->\"+<m:charAt>:nullable instance 2.0.1 type String";
                             default ->
-                                    "-1-(instance type int)+m>=0?outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(instance type int%inner$2.0.1.length()):nullable instance type String";
+                                    "-1-(instance 2.0.1 type int)+m>=0?outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(instance 2.0.1 type int%inner$2.0.1.length()):nullable instance 2.0.1 type String";
                         };
                         assertEquals(mergeValue, d.currentValue().toString());
                     }
                     if ("2.0.1.0.2".equals(d.statementId())) {
                         String expected = d.iteration() <= 3
                                 ? "<m:charAt>+\"->\"+<m:charAt>"
-                                : "outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(j%inner$2.0.1.length())";
+                                : "outer$2.0.1.charAt(i$2.0.1%outer$2.0.1.length())+\"->\"+inner$2.0.1.charAt(j$2.0.1%inner$2.0.1.length())";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() < 4
                                 ? "array:-1,array[i]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
@@ -156,7 +156,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                     if ("2.0.1.0.2".equals(d.statementId())) {
-                        String expected = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
+                        String expected = d.iteration() < 4 ? "<vl:array>" : "instance 2.0.1 type String[][]";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() < 4
                                 ? "array[i]:-1,array[i][j]:-1,i:-1,inner:-1,innerMod:-1,j:-1,outer:-1,outerMod:-1"
@@ -171,14 +171,15 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                     if ("2.0.1".equals(d.statementId())) {
                         String expected = switch (d.iteration()) {
                             case 0 -> "<vl:array>";
-                            case 1, 2, 3 -> "-1-<oos:j>+m>=0?<vl:array>:instance type String[][]";
-                            default -> "-1-(instance type int)+m>=0?instance type String[][]:instance type String[][]";
+                            case 1, 2, 3 -> "-1-<oos:j>+m>=0?<vl:array>:instance 2 type String[][]";
+                            default ->
+                                    "-1-(instance 2.0.1 type int)+m>=0?instance 2.0.1 type String[][]:instance 2 type String[][]";
                         };
                         assertEquals(expected, d.currentValue().toString());
 
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String expectedE = d.iteration() == 0 ? "<vl:array>" : "instance type String[][]";
+                        String expectedE = d.iteration() == 0 ? "<vl:array>" : "instance 2.0.1 type String[][]";
                         assertEquals(expectedE, eval.getValue().toString());
                         assertEquals("", eval.getLinkedVariables().toString());
 
@@ -239,7 +240,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             case 0 -> "<loopIsNotEmptyCondition>?<vl:array>:new String[n][m]";
                             case 1, 2, 3 -> "-1-<oos:i>+n>0?<vl:array>:new String[n][m]";
                             default ->
-                                    "-1!(-1-(instance type int)+m>=0?instance type int:instance type int)+n>0?-1-(instance type int)+m>=0?instance type String[][]:instance type String[][]:new String[n][m]";
+                                    "-1!(-1-(instance 2.0.1 type int)+m>=0?instance 2.0.1 type int:instance 2 type int)+n>0?-1-(instance 2.0.1 type int)+m>=0?instance 2.0.1 type String[][]:instance 2 type String[][]:new String[n][m]";
                         };
                         assertEquals(expected, d.currentValue().toString());
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
@@ -254,7 +255,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                         assertEquals(d.iteration() >= 4, DV.TRUE_DV.equals(override));
 
                         assertLinked(d, it(0, 3, "array[i]:-1,array[i][j]:-1"), it(4, ""));
-                        String expected = d.iteration() < 4 ? "<vl:array>" : "instance type String[][]";
+                        String expected = d.iteration() < 4 ? "<vl:array>" : "instance 2.0.1 type String[][]";
                         assertEquals(expected, d.currentValue().toString());
 
                         // TRUE instead of false, at the moment, because we don't have a proper guessing
@@ -265,7 +266,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 if ("array[i]".equals(d.variableName())) {
                     if ("2.0.1.0.2".equals(d.statementId())) {
                         assertDv(d, 4, DV.FALSE_DV, CONTEXT_MODIFIED);
-                        String value = d.iteration() < 4 ? "<array-access:String[]>" : "instance type String[]";
+                        String value = d.iteration() < 4 ? "<array-access:String[]>" : "instance 2.0.1.0.2 type String[]";
                         assertEquals(value, d.currentValue().toString());
                         assertLinked(d, it(0, 3, "array:-1,array[i][j]:-1"),
                                 it(4, "array:3"));
@@ -294,7 +295,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         }
                         if ("2.0.0".equals(d.statementId())) {
-                            String expected = d.iteration() == 0 ? "<vl:array>" : "instance type String[][]";
+                            String expected = d.iteration() == 0 ? "<vl:array>" : "instance 2 type String[][]";
                             assertEquals(expected, d.currentValue().toString());
                             // IMPROVE even though after the assignment, it has become content not null
                             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
@@ -305,7 +306,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         }
                         if ("2.0.2.0.2".equals(d.statementId())) {
-                            String expected = d.iteration() < 4 ? "<vl:array[i]>" : "instance type String[]";
+                            String expected = d.iteration() < 4 ? "<vl:array[i]>" : "instance 2.0.2 type String[]";
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         }
@@ -333,13 +334,14 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                             assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         }
                         if ("2.0.0".equals(d.statementId())) {
-                            String expected = d.iteration() == 0 ? "<vl:array>" : "instance type String[][]";
+                            String expected = d.iteration() == 0 ? "<vl:array>" : "instance 2 type String[][]";
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                         }
                     } else if ("array[i]".equals(d.variableName())) {
                         if ("2.0.1.0.2".equals(d.statementId())) {
-                            String expected = d.iteration() < 4 ? "<array-access:String[]>" : "nullable instance type String[]";
+                            String expected = d.iteration() < 4 ? "<array-access:String[]>"
+                                    : "nullable instance 2.0.1.0.2 type String[]";
                             assertEquals(expected, d.currentValue().toString());
                             assertDv(d, 4, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                         }
@@ -398,7 +400,7 @@ public class Test_01_Loops_21plus extends CommonTestRunner {
                 }
                 if ("x".equals(d.variableName())) {
                     if ("4".equals(d.statementId())) {
-                        String expected = d.iteration() <= 4 ? "<vl:x>" : "instance type X";
+                        String expected = d.iteration() <= 4 ? "<vl:x>" : "instance 4 type X";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                     }

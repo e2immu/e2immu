@@ -61,7 +61,7 @@ public class Test_01_Loops_20 extends CommonTestRunner {
                 if ("s".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
                         assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.LoopVariable);
-                        assertCurrentValue(d, 1, "nullable instance type String");
+                        assertCurrentValue(d, 1, "nullable instance 1 type String");
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "out".equals(fr.fieldInfo().name)) {

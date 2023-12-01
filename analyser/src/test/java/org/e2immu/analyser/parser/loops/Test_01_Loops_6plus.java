@@ -90,7 +90,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                 }
                 if ("i".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<vl:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<vl:i>" : "instance 1 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
@@ -182,14 +182,14 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() <= 1 ? "<vl:set>" : "instance type Set<String>";
+                        String expected = d.iteration() <= 1 ? "<vl:set>" : "instance 1.0.0 type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() <= 1
                                 ? "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:set>"
-                                : "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Set<String>";
+                                : "list.isEmpty()?new HashSet<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance 1.0.0 type Set<String>";
                         assertEquals(expected, d.currentValue().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
@@ -271,16 +271,16 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("3.0.1.0.1.0.0".equals(d.statementId())) {
                         // important: because we're in a loop, we're not just adding one element; therefore,
                         // we cannot keep count, and erase all state
-                        String expect = d.iteration() < 2 ? "<vl:result>" : "instance type Map<String,String>";
+                        String expect = d.iteration() < 2 ? "<vl:result>" : "instance 3.0.1.0.1.0.0 type Map<String,String>";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("4".equals(d.statementId())) {
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                         String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1,queried:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("5".equals(d.statementId())) {
-                        assertDv(d, 5, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -292,15 +292,17 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                         String expectValue = switch (d.iteration()) {
                             case 0, 1 ->
                                     "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:<vl:result>";
+                            case 2, 3 ->
+                                    "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:queried.contains((instance 3 type Entry<String,String>).getKey())||<m:compareTo><1?instance 3 type Map<String,String>:instance 3.0.1.0.1.0.0 type Map<String,String>";
                             default ->
-                                    "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:instance type Map<String,String>";
+                                    "map.entrySet().isEmpty()?new HashMap<>()/*AnnotatedAPI.isKnown(true)&&0==this.size()*/:queried.contains((instance 3 type Entry<String,String>).getKey())||(instance 3 type Entry<String,String>).getValue().compareTo(now$3.toString())<1?instance 3 type Map<String,String>:instance 3.0.1.0.1.0.0 type Map<String,String>";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "ZoneOffset.UTC:-1,map:-1,now:-1,queried:-1,result:0"
                                 : "result:0";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, MultiLevel.NULLABLE_DV, CONTEXT_NOT_NULL);
-                        assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
+                        assertDv(d, 4, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -327,7 +329,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             assertEquals(DV.TRUE_DV, utc.getProperty(MODIFIED_VARIABLE));
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----S", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-", d.delaySequence());
 
         // potential null pointer exception: both "now" and the result of the "now()" call
         testClass("Loops_11", 0, 2, new DebugConfiguration.Builder()
@@ -396,7 +398,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("2.0.0".equals(d.statementId())) {
                         // the 0 is inaccessible, because inside loop 2, i$2 is read rather than i
                         // this you can see in the "j"-"2.0.0" value
-                        String expect = d.iteration() == 0 ? "<vl:i>" : "instance type int";
+                        String expect = d.iteration() == 0 ? "<vl:i>" : "instance 2 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -407,13 +409,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("2.0.0".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? "3==<v:i>?10:<vl:j>"
                                 // note: we lose the 9 because of SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
-                                : "3==i$2?10:instance type int";
+                                : "3==i$2?10:instance 2 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                     if ("2.0.1".equals(d.statementId()) || "2.0.2".equals(d.statementId())) {
                         String expect = d.iteration() == 0
                                 ? "3==<v:i>?10:6==<v:i>?11:<vl:j>"
-                                : "3==i$2?10:6==i$2?11:instance type int";
+                                : "3==i$2?10:6==i$2?11:instance 2 type int";
                         assertEquals(expect, d.currentValue().toString());
                     }
                 }
@@ -451,13 +453,13 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     }
                     if ("1.0.0".equals(d.statementId())) {
                         // instead of in terms of i, we have an expression in terms of p: MergeHelper.rewriteConditionFromLoopVariableToParameter
-                        String expected = d.iteration() == 0 ? "<c:boolean>?4:<vl:res>" : "p<10&&p>=0&&i==p?4:instance type int";
+                        String expected = d.iteration() == 0 ? "<c:boolean>?4:<vl:res>" : "p<10&&p>=0&&i$1==p?4:instance 1 type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         // value is not 4! p could be greater than 10, and then i can never reach p
                         String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>?<c:boolean>?4:<vl:res>:3"
-                                : "instance type int<10&&instance type int>=0?p<10&&p>=0&&instance type int==p?4:instance type int:3";
+                                : "instance 1 type int<10&&instance 1 type int>=0?p<10&&p>=0&&instance 1 type int==p?4:instance 1 type int:3";
                         // TODO ugly, but solvable; all instances are equal to each other
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -477,15 +479,15 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.0.0.0".equals(d.statementId())) {
-                    String condition = d.iteration() == 0 ? "<c:boolean>" : "i==p";
+                    String condition = d.iteration() == 0 ? "<c:boolean>" : "i$1==p";
                     assertEquals(condition, d.condition().toString());
-                    String absState = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>" : "i<10&&i>=0&&i==p";
+                    String absState = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>" : "i$1<10&&i$1>=0&&i$1==p";
                     assertEquals(absState, d.absoluteState().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    String condition = d.iteration() == 0 ? "<loopIsNotEmptyCondition>" : "i<10&&i>=0";
+                    String condition = d.iteration() == 0 ? "<loopIsNotEmptyCondition>" : "i$1<10&&i$1>=0";
                     assertEquals(condition, d.condition().toString());
-                    String absState = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&!<c:boolean>" : "i<10&&i>=0&&i!=p";
+                    String absState = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&!<c:boolean>" : "i$1<10&&i$1>=0&&i$1!=p";
                     assertEquals(absState, d.absoluteState().toString());
                 }
                 if ("1".equals(d.statementId())) {
@@ -498,7 +500,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     String breakStmtIndex = list.get(0).getKey();
                     assertEquals("1.0.0.0.1", breakStmtIndex);
                     Expression state = list.get(0).getValue().get();
-                    String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>" : "i<10&&i>=0&&i==p";
+                    String expected = d.iteration() == 0 ? "<loopIsNotEmptyCondition>&&<c:boolean>" : "i$1<10&&i$1>=0&&i$1==p";
                     assertEquals(expected, state.toString());
                 }
             }
@@ -515,17 +517,17 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("res".equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "9==entry.getValue()?4:<vl:res>" : "9==entry.getValue()?4:instance type int";
+                        String expected = d.iteration() == 0 ? "9==entry$1.getValue()?4:<vl:res>" : "9==entry$1.getValue()?4:instance 1 type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
-                        String expectEval = d.iteration() == 0 ? "<vl:res>" : "instance type int";
+                        String expectEval = d.iteration() == 0 ? "<vl:res>" : "instance 1 type int";
                         assertEquals(expectEval, eval.getValue().toString());
 
                         String expected = d.iteration() == 0
-                                ? "map.entrySet().isEmpty()?3:9==(instance type Entry<String,Integer>).getValue()?4:<vl:res>"
-                                : "map.entrySet().isEmpty()?3:9==(instance type Entry<String,Integer>).getValue()?4:instance type int";
+                                ? "map.entrySet().isEmpty()?3:9==(instance 1 type Entry<String,Integer>).getValue()?4:<vl:res>"
+                                : "map.entrySet().isEmpty()?3:9==(instance 1 type Entry<String,Integer>).getValue()?4:instance 1 type int";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -535,7 +537,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("1.0.0".equals(d.statementId())) {
                     assertEquals("!map.entrySet().isEmpty()", d.condition().toString());
-                    assertEquals("9!=entry.getValue()&&!map.entrySet().isEmpty()", d.absoluteState().toString());
+                    assertEquals("9!=entry$1.getValue()&&!map.entrySet().isEmpty()", d.absoluteState().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals("true", d.condition().toString());
