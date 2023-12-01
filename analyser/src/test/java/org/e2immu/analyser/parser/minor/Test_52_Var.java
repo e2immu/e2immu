@@ -121,7 +121,7 @@ public class Test_52_Var extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("sw".equals(d.variableName())) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("instance type StringWriter", d.currentValue().toString());
+                    assertEquals("instance 0.0.0 type StringWriter", d.currentValue().toString());
                     assertTrue(d.variableInfoContainer().variableNature() instanceof VariableNature.TryResource);
                 } else if ("0".equals(d.statementId())) {
                     assertEquals("new StringWriter()", d.variableInfoContainer()
@@ -133,7 +133,7 @@ public class Test_52_Var extends CommonTestRunner {
             }
             if (d.variable() instanceof ReturnVariable) {
                 if ("0.0.0".equals(d.statementId())) {
-                    assertEquals("(instance type StringWriter/*{L sw:0}*/).toString()", d.currentValue().toString());
+                    assertEquals("(instance 0.0.0 type StringWriter/*{L sw:0}*/).toString()", d.currentValue().toString());
                     // explicit as result of the method, rather than governed by the type
                     assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, d.getProperty(Property.IMMUTABLE));
                 }

@@ -166,7 +166,7 @@ public class Test_41_E2InContext extends CommonTestRunner {
                     };
                     assertDv(d, delay, 3, MultiLevel.EVENTUALLY_IMMUTABLE_AFTER_MARK_DV, Property.CONTEXT_IMMUTABLE);
 
-                    String expected = d.iteration() <= 2 ? "<f:eventually>" : "instance type Eventually<String>";
+                    String expected = d.iteration() <= 2 ? "<f:eventually>" : "instance 0 type Eventually<String>";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }

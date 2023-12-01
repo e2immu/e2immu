@@ -948,19 +948,27 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         if (createInstanceBasedOn != null) {
             ParameterizedType returnType = createInstanceBasedOn.returnType();
-            Properties valueProperties = context.evaluationContext().defaultValueProperties(returnType,
+            Properties defaultValueProperties = context.evaluationContext().defaultValueProperties(returnType,
                     MultiLevel.EFFECTIVELY_NOT_NULL_DV);
-            CausesOfDelay causesOfDelay = valueProperties.delays();
+            CausesOfDelay causesOfDelay = defaultValueProperties.delays();
+            Properties valueProperties;
+            Instance instance;
             if (causesOfDelay.isDelayed()) {
                 if (context.evaluationContext().isMyself(returnType).toFalse(Property.IMMUTABLE)) {
-                    valueProperties = context.evaluationContext().valuePropertiesOfFormalType(returnType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                    valueProperties = context.evaluationContext().valuePropertiesOfFormalType(returnType,
+                            MultiLevel.EFFECTIVELY_NOT_NULL_DV);
                 } else {
                     return DelayedExpression.forMethod(identifier, methodInfo, objectValue.returnType(),
                             original, causesOfDelay, Map.of());
                 }
+            } else if ((instance = createInstanceBasedOn.asInstanceOf(Instance.class)) != null) {
+                DV identity = instance.valueProperties().getOrDefault(Property.IDENTITY, DV.FALSE_DV);
+                valueProperties = defaultValueProperties.combineSafely(Properties.of(Map.of(Property.IDENTITY, identity)));
+            } else {
+                valueProperties = defaultValueProperties;
             }
-            newInstance = Instance.forGetInstance(objectValue.getIdentifier(),
-                    statementIndex, objectValue.returnType(), valueProperties);
+            newInstance = Instance.forGetInstance(objectValue.getIdentifier(), statementIndex, objectValue.returnType(),
+                    valueProperties);
         }
         return newInstance;
     }

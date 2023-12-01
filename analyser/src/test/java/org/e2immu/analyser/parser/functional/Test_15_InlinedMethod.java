@@ -25,7 +25,6 @@ import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.TypeMapVisitor;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -159,10 +158,10 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
                     assertEquals(expected, d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
                 } else if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
                     assertFalse(inlinedMethod.containsVariableFields());
-                    assertEquals("variableField.getI()", inlinedMethod.expression().toString());
+                    assertEquals("variableField$1.getI()", inlinedMethod.expression().toString());
                 } else fail();
 
-                String expect = d.iteration() <= 1 ? "<m:expand>" : "/*inline expand*/variableField.getI()";
+                String expect = d.iteration() <= 1 ? "<m:expand>" : "/*inline expand*/variableField$1.getI()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -176,11 +175,11 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expand".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline expand*/variableField.getI()",
+                assertEquals("/*inline expand*/variableField$1.getI()",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("doNotExpand".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("/*inline doNotExpand*/variableField.getI()",
+                assertEquals("/*inline doNotExpand*/variableField$1.getI()",
                         d.methodAnalysis().getSingleReturnValue().toString());
                 // non-modifying, so inlined!
                 assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
@@ -203,11 +202,11 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("get".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/input[index]";
+                String expected = d.iteration() == 0 ? "<m:get>" : "/*inline get*/input[index]$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() > 0) {
                     if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                        assertEquals("index, input, input[index]", inlinedMethod.variablesOfExpressionSorted());
+                        assertEquals("index, input, input[index]$0", inlinedMethod.variablesOfExpressionSorted());
                     } else fail();
                 }
             }

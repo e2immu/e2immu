@@ -48,7 +48,7 @@ public class Test_57_Lambda_AAPI extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if ("list".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:computeIfAbsent>" : "instance type LinkedList<V>";
+                        String expected = d.iteration() == 0 ? "<m:computeIfAbsent>" : "instance 0 type LinkedList<V>";
                         assertEquals(expected, d.currentValue().toString());
                         // TODO this should be CONTENT_NOT_NULL
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);

@@ -69,7 +69,7 @@ public class Test_64_StaticBlock extends CommonTestRunner {
                         assertTrue(d.variableInfoContainer().hasEvaluation());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expected = "instance type HashMap<String,String>";
+                        String expected = "instance 1 type HashMap<String,String>";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -88,7 +88,7 @@ public class Test_64_StaticBlock extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("map".equals(d.fieldInfo().name)) {
-                String expected = d.iteration() == 0 ? "<f:map>" : "instance type HashMap<String,String>";
+                String expected = d.iteration() == 0 ? "<f:map>" : "instance 1 type HashMap<String,String>";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };

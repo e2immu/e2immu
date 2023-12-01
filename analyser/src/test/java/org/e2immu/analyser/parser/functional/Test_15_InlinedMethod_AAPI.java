@@ -51,7 +51,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("i+r", d.evaluationResult().value().toString());
+                    assertEquals("i+r$0", d.evaluationResult().value().toString());
                     assertTrue(d.evaluationResult().value() instanceof Sum);
                 }
             }
@@ -60,18 +60,18 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("plusRandom".equals(d.methodInfo().name)) {
 
                 if (d.methodAnalysis().getSingleReturnValue() instanceof Sum) {
-                    assertEquals("i+r", d.methodAnalysis().getSingleReturnValue().toString());
+                    assertEquals("i+r$0", d.methodAnalysis().getSingleReturnValue().toString());
                 } else {
                     fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
                 assertDv(d, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("difference31".equals(d.methodInfo().name)) {
-                assertEquals("instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("instance 0 type int-(instance 0 type int)", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name)) {
-                // and not 0!!!
-                assertEquals("instance type int-(instance type int)", d.methodAnalysis().getSingleReturnValue().toString());
+                // and not 0, even if they have the same statement index! Their identifier is different
+                assertEquals("instance 0 type int-(instance 0 type int)", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -94,7 +94,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
                 if ("1".equals(d.statementId())) {
-                    assertEquals("i+r", d.evaluationResult().value().toString());
+                    assertEquals("i+r$0", d.evaluationResult().value().toString());
                     assertTrue(d.evaluationResult().value() instanceof Sum);
                 }
             }
@@ -103,7 +103,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("plusRandom".equals(d.methodInfo().name)) {
 
                 if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("/*inline plusRandom*/i+r", inlinedMethod.toString());
+                    assertEquals("/*inline plusRandom*/i+r$0", inlinedMethod.toString());
                 } else {
                     fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
                 }
@@ -130,7 +130,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
                         case 0 -> "<p:i>+<m:nextInt>";
-                        default -> "i+r";
+                        default -> "i+r$0";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertTrue(d.evaluationResult().value() instanceof Sum);
@@ -139,17 +139,17 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:plusRandom>" : "i+r";
+                String expected = d.iteration() == 0 ? "<m:plusRandom>" : "i+r$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 if (d.iteration() >= 1) assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof Sum);
                 assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
             }
             if ("difference31".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:difference31>" : "instance type int-(instance type int)";
+                String expected = d.iteration() == 0 ? "<m:difference31>" : "instance 0 type int-(instance 0 type int)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:difference11>" : "instance type int-(instance type int)";
+                String expected = d.iteration() == 0 ? "<m:difference11>" : "instance 0 type int-(instance 0 type int)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -167,14 +167,14 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 if ("numParameters".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() < 2 ? "<m:size>"
-                                : "inspectionProvider.getMethodInspection(this).getParameters().size()";
+                                : "inspectionProvider.getMethodInspection(this$0).getParameters().size()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
                 if ("parameters".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() < 2 ? "<m:getParameters>"
-                                : "inspectionProvider.getMethodInspection(this).getParameters()";
+                                : "inspectionProvider.getMethodInspection(this$0).getParameters()";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -183,7 +183,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                         assertValue(d,
                                 it0("(<m:equals>||<m:equals>)&&(<m:isLong>||<m:equals>)"),
                                 it(1, 2, "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||<m:isLong>)"),
-                                it(3, "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||(inspectionProvider.getMethodInspection(this).getParameters().get(0)).parameterizedType.isLong())"));
+                                it(3, "(\"equals\".equals(name)||\"wait\".equals(name))&&(\"equals\".equals(name)||(inspectionProvider.getMethodInspection(this$0).getParameters().get(0)).parameterizedType.isLong())"));
                     }
                 }
             }
@@ -192,7 +192,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "1==<m:size>"
-                            : "1==inspectionProvider.getMethodInspection(this).getParameters().size()";
+                            : "1==inspectionProvider.getMethodInspection(this$0).getParameters().size()";
                     assertEquals(expected, d.statementAnalysis().stateData().valueOfExpressionGet().toString());
                 }
             }
@@ -306,7 +306,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertTrue(d.evaluationResult().causesOfDelay().isDone());
             }
             if ("variables".equals(d.methodInfo().name)) {
-                String expected = "this.subElements().stream().flatMap(instance type $1).collect(Collectors.toList())";
+                String expected = "this.subElements().stream().flatMap(instance 0 type $1).collect(Collectors.toList())";
                 assertEquals(expected, d.evaluationResult().value().toString());
                 assertEquals("", d.evaluationResult().causesOfDelay().toString());
 
@@ -339,7 +339,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             }
             if ("compareTo".equals(d.methodInfo().name) && "BinaryOperator".equals(d.methodInfo().typeInfo.simpleName)) {
                 if (d.variable() instanceof This) {
-                    assertCurrentValue(d, 0, "instance type BinaryOperator");
+                    assertCurrentValue(d, 0, "instance 0 type BinaryOperator");
                 }
             }
         };
@@ -368,7 +368,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
 
-                String expected = "this.subElements().stream().flatMap(instance type $1).collect(Collectors.toList())";
+                String expected = "this.subElements().stream().flatMap(instance 0 type $1).collect(Collectors.toList())";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("compare".equals(d.methodInfo().name)) {
@@ -464,7 +464,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
             if ("typesReferenced".equals(d.methodInfo().name) && "Expression".equals(d.methodInfo().typeInfo.simpleName)) {
                 assertFalse(d.methodInfo().hasImplementations());
                 String expected = d.iteration() < 4 ? "<m:typesReferenced>"
-                        : "List.of().stream().flatMap(instance type $1).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->Objects.requireNonNull(t);}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})";
+                        : "List.of().stream().flatMap(instance 0 type $1).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return t->Objects.requireNonNull(t);}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("supplier".equals(d.methodInfo().name)) {
@@ -519,7 +519,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
                 assertFalse(d.methodInfo().hasImplementations());
 
                 String expected = d.iteration() < 4 ? "<m:typesReferenced>"
-                        : "List.of().stream().flatMap(instance type $1).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return Objects::requireNonNull;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})";
+                        : "List.of().stream().flatMap(instance 0 type $1).collect(new Collector<>(){public Supplier<UpgradableBooleanMap<T>> supplier(){return UpgradableBooleanMap::new;}public BiConsumer<UpgradableBooleanMap<T>,Entry<T,Boolean>> accumulator(){return (map,e)->{... debugging ...};}public BinaryOperator<UpgradableBooleanMap<T>> combiner(){return UpgradableBooleanMap::putAll;}public Function<UpgradableBooleanMap<T>,UpgradableBooleanMap<T>> finisher(){return Objects::requireNonNull;}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT,Characteristics.IDENTITY_FINISH,Characteristics.UNORDERED);}})";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -541,7 +541,7 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("immutableConcat".equals(d.methodInfo().name)) {
                 String expected = d.iteration() < 2 ? "<m:immutableConcat>"
-                        : "List.copyOf(lists.length>=1?instance type List<T>:new LinkedList<>()/*0==this.size()*/)";
+                        : "List.copyOf(lists.length>=1?instance 1.0.0 type boolean?instance 1.0.0.0.0 type List<T>:instance 1 type List<T>:new LinkedList<>()/*0==this.size()*/)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("concatImmutable".equals(d.methodInfo().name)) {

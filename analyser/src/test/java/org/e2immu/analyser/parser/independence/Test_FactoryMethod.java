@@ -147,7 +147,7 @@ public class Test_FactoryMethod extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "t:-1"), it(2, ""));
-                        assertCurrentValue(d, 1, "instance type FactoryMethod_1<T>");
+                        assertCurrentValue(d, 1, "instance 1 type FactoryMethod_1<T>");
                     }
                 }
             }
@@ -162,7 +162,7 @@ public class Test_FactoryMethod extends CommonTestRunner {
             }
 
             if ("of".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 3 ? "<m:of>" : "/*inline of*/f";
+                String expected = d.iteration() < 3 ? "<m:of>" : "/*inline of*/f$1";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

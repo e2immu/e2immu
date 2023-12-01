@@ -119,7 +119,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 if (d.variable() instanceof This thisVar) {
                     if ("Lambda_2".equals(thisVar.typeInfo.simpleName)) {
                         if ("1".equals(d.statementId())) {
-                            assertEquals("instance type Lambda_2", d.currentValue().toString());
+                            assertEquals("instance 0 type Lambda_2", d.currentValue().toString());
                         }
                     }
                 }
@@ -131,7 +131,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("j".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<m:get>" : "f.get()";
+                        String expect = d.iteration() == 0 ? "<m:get>" : "f$0.get()";
                         assertEquals(expect, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "f:-1,this:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -139,7 +139,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("f".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<m:get>" : "instance type $1";
+                        String expected = d.iteration() == 0 ? "<m:get>" : "instance 0 type $1";
                         assertEquals(expected, d.currentValue().toString());
                         String linked = d.iteration() == 0 ? "this:-1" : "";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
@@ -153,7 +153,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name) && d.iteration() > 0) {
                 Expression srv = d.methodAnalysis().getSingleReturnValue();
-                assertEquals("f.get()*i$0", srv.toString());
+                assertEquals("f$0.get()*i$0", srv.toString());
             }
         };
         testClass("Lambda_2", 0, 0, new DebugConfiguration.Builder()
@@ -168,7 +168,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<s:int>" : "f.get()";
+                        String expect = d.iteration() == 0 ? "<s:int>" : "f$1.get()";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "f:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -176,7 +176,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("f".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:$1>" : "instance type $1";
+                        String expected = d.iteration() == 0 ? "<s:$1>" : "instance 1 type $1";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -208,7 +208,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:f.get()*i$0";
+                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:f$1.get()*i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
@@ -243,7 +243,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<s:int>" : "f.get()";
+                        String expect = d.iteration() == 0 ? "<s:int>" : "f$1.get()";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "f:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -330,7 +330,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:f.get()*i$0";
+                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:f$1.get()*i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -375,7 +375,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 Expression e = d.methodAnalysis().getSingleReturnValue();
                 if (d.iteration() > 0) {
-                    assertEquals("instance type $1", e.toString());
+                    assertEquals("instance 0 type $1", e.toString());
                 } else {
                     assertTrue(d.methodAnalysis().getSingleReturnValue().isDelayed());
                 }

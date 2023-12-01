@@ -266,7 +266,7 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "generator".equals(fr.fieldInfo().name)) {
                     assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    assertCurrentValue(d, 1, "instance type AtomicInteger");
+                    assertCurrentValue(d, 1, "instance 0 type AtomicInteger");
                 }
             }
             if (d.methodInfo().isConstructor() && n == 0) {

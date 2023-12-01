@@ -160,7 +160,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("fullyQualifiedName".equals(d.fieldInfo().name)) {
                 String expected = d.iteration() == 0 ? "<f:fullyQualifiedName>" :
-                        "[instance type String,instance type String,\"\".equals(packageName1)?simpleName1:packageName1+\".\"+simpleName1,\"\".equals(packageName2)?simpleName2:packageName2+\".\"+simpleName2]";
+                        "[instance 2 type String,instance 2 type String,\"\".equals(packageName1)?simpleName1:packageName1+\".\"+simpleName1,\"\".equals(packageName2)?simpleName2:packageName2+\".\"+simpleName2]";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
             }
         };
