@@ -129,8 +129,6 @@ public class TestExternal extends CommonTestRunner {
             }
         };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
-
-        // TODO three null-pointer warnings because we don't follow the link?? IMPROVE that should only be 1
         testClass("External_1", 1, 1, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -143,13 +141,32 @@ public class TestExternal extends CommonTestRunner {
     //new: p:0
     @Test
     public void test_2() throws IOException {
-
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
-        // TODO should only be 1 null-pointer warning
         testClass("External_2", 1, 1, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 
+    // starting error: Caught exception analysing statement 0.0.0.0.0 of org.e2immu.analyser.parser.external.testexample.External_3.startDocument()
+    // at org.e2immu.analyser.analysis.impl.StateDataImpl.internalAllDoneCheck(StateDataImpl.java:78)
+    @Test
+    public void test_3() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
+        testClass("External_3", 1, 1, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // starting error: java.lang.UnsupportedOperationException: ? have index 11, looking for 9
+    // in SASubBlocks:291, Caught exception in method analyser: org.e2immu.analyser.parser.external.testexample.External_4.encode(byte[])
+    @Test
+    public void test_4() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
+        testClass("External_4", 1, 1, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
 }
