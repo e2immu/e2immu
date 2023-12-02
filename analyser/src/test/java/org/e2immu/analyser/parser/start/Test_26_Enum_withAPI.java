@@ -64,8 +64,8 @@ public class Test_26_Enum_withAPI extends CommonTestRunner {
             }
             if ("test".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo name && "name".equals(name.name)) {
-                    assertEquals(MultiLevel.NOT_INVOLVED_DV, d.getProperty(Property.EXTERNAL_IMMUTABLE));
-                    assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.EXTERNAL_NOT_NULL));
+                    assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_IMMUTABLE);
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                 }
             }
         };

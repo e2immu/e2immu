@@ -423,7 +423,7 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 }
                 if ("typesPerPackage".equals(d.variableName())) {
                     if ("1.0.2".equals(d.statementId())) {
-                        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                        assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
                     }
                 }
             }

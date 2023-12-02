@@ -97,10 +97,25 @@ public class TestExternal extends CommonTestRunner {
                         assertLinked(d, it0("NOT_YET_SET"), it(1, "filter:0,h:2"));
                     }
                 }
+                if ("p".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d,  MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertLinked(d, it0("NOT_YET_SET"), it(1, "process:0"));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertLinked(d, it0("NOT_YET_SET"), it(1, "process:0"));
+                    }
+                }
                 if (d.variable() instanceof ParameterInfo pi && "filter".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         assertLinked(d, it0("NOT_YET_SET"), it(1, "f:0,h:2"));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "process".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it0("NOT_YET_SET"), it(1, "process:0"));
                     }
                 }
             }

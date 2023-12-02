@@ -311,7 +311,7 @@ public class ComputeLinkedVariables {
                     ? property.falseDv
                     : returnValueCluster.variables.stream().map(propertyValues::get)
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
-                    .reduce(DV.FALSE_DV, DV::max);
+                    .reduce(property.valueWhenAbsent(), DV::max);
             if (rvSummary.isDelayed()) {
                 causes = causes.merge(rvSummary.causesOfDelay());
             }
@@ -335,7 +335,7 @@ public class ComputeLinkedVariables {
                 summary = extraDelay.merge(conditionDelayMarker);
             }
             if(!Collections.disjoint(linkingNotYetSet, cluster.variables) && summary.isDone()) {
-                summary = DelayFactory.initialDelay();
+                summary = LinkedVariables.NOT_YET_SET_DELAY;
             }
             /*
             1st of 2 pieces of code that ensure that once a context property has reached its highest value in the
