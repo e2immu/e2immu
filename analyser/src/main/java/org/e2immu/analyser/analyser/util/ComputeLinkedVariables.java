@@ -326,7 +326,7 @@ public class ComputeLinkedVariables {
             DV summary = cluster.variables.stream()
                     .map(propertyValues::get)
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
-                    .reduce(DV.FALSE_DV, DV::max);
+                    .reduce(property.valueWhenAbsent(), DV::max);
 
             // extraDelay: when merging, but the conditions of the different merge constituents are not yet done
             // currently only for CM; example: TrieSimplified_0, _1_2, _1_2bis
@@ -334,7 +334,9 @@ public class ComputeLinkedVariables {
                 CausesOfDelay conditionDelayMarker = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(stage), CauseOfDelay.Cause.CONDITION));
                 summary = extraDelay.merge(conditionDelayMarker);
             }
-
+            if(!Collections.disjoint(linkingNotYetSet, cluster.variables) && summary.isDone()) {
+                summary = DelayFactory.initialDelay();
+            }
             /*
             1st of 2 pieces of code that ensure that once a context property has reached its highest value in the
             previous statement, it should have it in this statement as well.
@@ -440,7 +442,8 @@ public class ComputeLinkedVariables {
             }
             VariableInfo vi1 = vic.getPreviousOrInitial();
             DV previous = vi1.getProperty(property);
-            if (property.propertyType == Property.PropertyType.CONTEXT && property.bestDv.equals(previous)) {
+            boolean contextProperty = property.propertyType == Property.PropertyType.CONTEXT;
+            if (contextProperty && property.bestDv.equals(previous)) {
                 /*
                 Second of code that ensures that once a context property has reached its highest value,
                 it should keep it in subsequent statements. Note that this
@@ -453,7 +456,7 @@ public class ComputeLinkedVariables {
             } else if (current.isDelayed()) {
                 try {
                     DV inMap = propertyValues.get(variable);
-                    if (property.bestDv.equals(inMap) && extraDelayIsDone) {
+                    if (contextProperty && property.bestDv.equals(inMap) && extraDelayIsDone) {
                         // whatever happens, this value cannot get better (e.g., TRUE in CM)
                         vic.setProperty(property, property.bestDv, stage);
                         progress = true;

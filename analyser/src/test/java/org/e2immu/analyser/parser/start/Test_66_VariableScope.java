@@ -93,7 +93,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0";
                             case 1 -> "instance 1.0.2 type int<10&&instance 1.0.2 type int>=0?j$1.0.2+<m:nextInt>:0";
-                            default -> "instance 1.0.2 type int<10&&instance 1.0.2 type int>=0?instance 1.0.2.0.0 type int+j$1.0.2:0";
+                            default ->
+                                    "instance 1.0.2 type int<10&&instance 1.0.2 type int>=0?instance 1.0.2.0.0 type int+j$1.0.2:0";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     } else if (!"1.0.3".equals(d.statementId())) {
@@ -105,7 +106,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         String expect = switch (d.iteration()) {
                             case 0 -> "<loopIsNotEmptyCondition>?<v:j>+<m:nextInt>:0";
                             case 1 -> "instance 1.0.2 type int<10&&instance 1.0.2 type int>=0?j$1.0.2+<m:nextInt>:0";
-                            default -> "instance 1.0.2 type int<10&&instance 1.0.2 type int>=0?instance 1.0.2.0.0 type int+j$1.0.2:0";
+                            default ->
+                                    "instance 1.0.2 type int<10&&instance 1.0.2 type int>=0?instance 1.0.2.0.0 type int+j$1.0.2:0";
                         };
                         assertEquals(expect, d.currentValue().toString());
                     }
@@ -418,6 +420,11 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 if ("scope-perPackage:1".equals(d.variableName())) {
                     assertEquals("1", d.statementId());
                     assertDv(d, 3, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                }
+                if ("typesPerPackage".equals(d.variableName())) {
+                    if ("1.0.2".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.MUTABLE_DV, Property.CONTEXT_IMMUTABLE);
+                    }
                 }
             }
         };

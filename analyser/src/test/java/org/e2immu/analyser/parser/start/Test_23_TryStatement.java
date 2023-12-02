@@ -191,6 +191,13 @@ public class Test_23_TryStatement extends CommonTestRunner {
                     }
                 }
             }
+            if ("test".equals(d.methodInfo().name) && "writeLine".equals(d.enclosingMethod().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "writer".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                }
+            }
         };
 
         testClass("TryStatement_5", 0, 0, new DebugConfiguration.Builder()

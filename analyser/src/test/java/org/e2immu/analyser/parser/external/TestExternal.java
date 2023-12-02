@@ -14,8 +14,10 @@
 
 package org.e2immu.analyser.parser.external;
 
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
@@ -26,8 +28,7 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestExternal extends CommonTestRunner {
 
@@ -78,8 +79,30 @@ public class TestExternal extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                // 'start' stays out of the merge in 2.0.0
-
+                if (d.variable() instanceof ParameterInfo pi && "filter".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertLinked(d, it(0, "f:0"));
+                    }
+                    if ("3".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertLinked(d, it(0, "f:0,h:2"));
+                    }
+                }
+            }
+            if ("report".equals(d.methodInfo().name)) {
+                if ("f".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertLinked(d, it0("NOT_YET_SET"), it(1, "filter:0,h:2"));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "filter".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertLinked(d, it0("NOT_YET_SET"), it(1, "f:0,h:2"));
+                    }
+                }
             }
         };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
