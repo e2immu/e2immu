@@ -332,7 +332,8 @@ public class Test_66_VariableScope extends CommonTestRunner {
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
 
                         String linked = switch (d.iteration()) {
-                            case 0, 1, 2 -> "doImport:-1,typeInfo:-1";
+                            case 0 -> "NOT_YET_SET";
+                            case 1, 2 -> "doImport:-1,typeInfo:-1";
                             default -> "";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());

@@ -699,7 +699,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(eval2Linked, eval2.getLinkedVariables().toString());
 
                         String linked = switch (d.iteration()) {
-                            case 0 -> "Space.NONE:-1,a.list:-1,a:-1,b.list:-1,b:-1,end:-1,notStart:-1,start:-1";
+                            case 0 -> "NOT_YET_SET";
                             case 1 -> "a:-1";
                             default -> "a:2"; // !!
                         };

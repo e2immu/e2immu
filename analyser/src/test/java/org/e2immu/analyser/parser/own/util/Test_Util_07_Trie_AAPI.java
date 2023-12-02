@@ -118,7 +118,7 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
                 String eventual = switch (d.iteration()) {
                     case 0 -> "[DelayedEventual:initial@Class_Trie]";
-                    case 1 -> "[DelayedEventual:[26 delays]]";
+                    case 1 -> "[DelayedEventual:[21 delays]]";
                     case 2 -> "[DelayedEventual:[14 delays]]";
                     case 3 -> "[DelayedEventual:[16 delays]]";
                     case 4 -> "[DelayedEventual:[16 delays]]";

@@ -456,7 +456,11 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "parent".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertCurrentValue(d, 4, "nullable instance type C");
-                    String linked = d.iteration() < 4 ? "parent.condition:-1,this:-1" : "";
+                    String linked = switch (d.iteration()) {
+                        case 0 -> "NOT_YET_SET";
+                        case 1, 2, 3 -> "parent.condition:-1,this:-1";
+                        default -> "";
+                    };
                     assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                 }

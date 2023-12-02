@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser.external.testexample;
 
+import org.e2immu.annotation.Independent;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.ContentHandler;
@@ -28,10 +29,12 @@ public class External_2 extends XMLFilterImpl {
         });
     }
 
+    @Independent
     public interface ProcessElement {
         void process(Element element, XMLFilter filter) throws SAXException;
     }
 
+    @Independent
     public interface Result {
         void report(External_2 ext) throws SAXException;
     }
