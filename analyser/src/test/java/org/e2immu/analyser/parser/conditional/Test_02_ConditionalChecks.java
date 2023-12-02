@@ -171,7 +171,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
     /*
@@ -206,7 +206,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         testClass("ConditionalChecks_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
     @Test
@@ -289,14 +289,14 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
 
     @Test
     public void test3() throws IOException {
         testClass("ConditionalChecks_3", 0, 0, new DebugConfiguration.Builder()
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
 
@@ -443,7 +443,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
     // FIXME this is not good, ways too many iterations; cause = augmentGraph in ComputeLinkedVariables
@@ -484,7 +484,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 //  .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 //  .addBreakDelayVisitor(breakDelayVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
     @Test
@@ -559,7 +559,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
     @Test
@@ -616,7 +616,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
     @Test
@@ -694,6 +694,6 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 }

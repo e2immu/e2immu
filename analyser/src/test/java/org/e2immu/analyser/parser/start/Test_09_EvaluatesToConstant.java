@@ -248,7 +248,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                         //  .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                new AnalyserConfiguration.Builder().build());
     }
 
 }

@@ -355,14 +355,14 @@ public class TestComparisons extends CommonAbstractValue {
                 vi, EvaluationContext.PRIMITIVE_VALUE_PROPERTIES);
         Expression iMinusOne = Sum.sum(context, i, newInt(-1));
         Expression iGtI1 = GreaterThanZero.greater(context, iMinusOne, i1, true);
-        assertEquals("-1-(instance type int)+i>=0", iGtI1.toString());
+        assertEquals("-1-(instance 0 type int)+i>=0", iGtI1.toString());
         Expression iLeI2 = GreaterThanZero.less(context, i, i1, true);
-        assertEquals("instance type int>=i", iLeI2.toString());
+        assertEquals("instance 0 type int>=i", iLeI2.toString());
         assertEquals("false", newAndAppend(iGtI1, iLeI2).toString());
         assertEquals("false", newAndAppend(iLeI2, iGtI1).toString());
 
         Expression iGeI1 = GreaterThanZero.greater(context, i, i1, true);
-        assertEquals("instance type int==i", newAndAppend(iGeI1, iLeI2).toString());
+        assertEquals("instance 0 type int==i", newAndAppend(iGeI1, iLeI2).toString());
     }
 
     @Test
@@ -384,22 +384,22 @@ public class TestComparisons extends CommonAbstractValue {
         Expression s2 = Sum.sum(context, s1, i);
         Expression e1 = GreaterThanZero.greater(context, s2, newInt(1), true);
         if (e1 instanceof GreaterThanZero gt) {
-            assertEquals("-2-(instance type int)+i", gt.expression().toString());
+            assertEquals("-2-(instance 0 type int)+i", gt.expression().toString());
         } else fail();
 
-        assertEquals("-2-(instance type int)+i>=0", e1.toString());
+        assertEquals("-2-(instance 0 type int)+i>=0", e1.toString());
         GreaterThanZero.XB extract1 = ((GreaterThanZero) e1).extract(context);
-        assertEquals("-(instance type int)+i", extract1.x().toString());
+        assertEquals("-(instance 0 type int)+i", extract1.x().toString());
         assertEquals(2.0d, extract1.b());
         assertFalse(extract1.lessThan());
 
         // 1+instance type int>=i
         Expression s3 = Sum.sum(context, newInt(1), i1);
         Expression e2 = GreaterThanZero.greater(context, s3, i, true);
-        assertEquals("1+instance type int>=i", e2.toString());
+        assertEquals("1+instance 0 type int>=i", e2.toString());
 
         GreaterThanZero.XB extract2 = ((GreaterThanZero) e2).extract(context);
-        assertEquals("instance type int-i", extract2.x().toString());
+        assertEquals("instance 0 type int-i", extract2.x().toString());
         assertEquals(-1.0d, extract2.b());
         assertFalse(extract2.lessThan());
 

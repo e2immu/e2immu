@@ -1,4 +1,4 @@
-package org.e2immu.analyser.parser.link.testexample;
+package org.e2immu.analyser.parser.external.testexample;
 
 import org.e2immu.annotation.Independent;
 import org.e2immu.annotation.Modified;
@@ -6,13 +6,13 @@ import org.e2immu.annotation.NotNull;
 
 // essential to the test a t m are INITIAL, switch;
 // error: cannot change LVs anymore
-public class Link_0 {
+public class External_0 {
     static final int INITIAL = 10;
 
     @Modified
     private final StringBuilder sb;
 
-    Link_0() {
+    External_0() {
         sb = new StringBuilder(INITIAL);
     }
 

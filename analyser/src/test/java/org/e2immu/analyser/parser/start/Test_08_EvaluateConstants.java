@@ -102,7 +102,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
 
@@ -194,7 +194,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 
 }

@@ -129,7 +129,7 @@ public class Test_10_Identity extends CommonTestRunner {
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                         .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                new AnalyserConfiguration.Builder().build());
     }
 
     @Test
@@ -192,7 +192,7 @@ public class Test_10_Identity extends CommonTestRunner {
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                new AnalyserConfiguration.Builder().build());
     }
 
     @Test
@@ -249,7 +249,7 @@ public class Test_10_Identity extends CommonTestRunner {
                         .addTypeMapVisitor(typeMapVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
-                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+                new AnalyserConfiguration.Builder().build());
     }
 
     @Test

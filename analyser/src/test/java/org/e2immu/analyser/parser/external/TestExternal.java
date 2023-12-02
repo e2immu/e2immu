@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.parser.link;
+package org.e2immu.analyser.parser.external;
 
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -29,9 +29,9 @@ import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestLink extends CommonTestRunner {
+public class TestExternal extends CommonTestRunner {
 
-    public TestLink() {
+    public TestExternal() {
         super(true);
     }
 
@@ -66,11 +66,42 @@ public class TestLink extends CommonTestRunner {
         };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
-        testClass("Link_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("External_0", 0, 0, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
+    // starting error: Property context-not-null, current nullable:1, new not_null:5 overwriting property value CLV
+    @Test
+    public void test_1() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                // 'start' stays out of the merge in 2.0.0
+
+            }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
+        testClass("External_1", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    // starting error: java.lang.IllegalStateException: Cannot change statically assigned for variable org.e2immu.analyser.parser.external.testexample.External_3.postAccumulate(org.xml.sax.XMLFilter,org.e2immu.analyser.parser.external.testexample.External_3.ProcessElement):1:process
+    //old: p:-1
+    //new: p:0
+    @Test
+    public void test_2() throws IOException {
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
+        testClass("External_2", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
 
 }
