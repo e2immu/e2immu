@@ -105,7 +105,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                             "nullable instance type String");
                     // string occurs in a not-null context, but one of the values is nullable
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(CONTEXT_NOT_NULL));
-                    assertFalse(d.properties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
+                    assertDv(d, DV.FALSE_DV, CNN_TRAVELS_TO_PRECONDITION);
                     assertDv(d, 1, MultiLevel.NULLABLE_DV, EXTERNAL_NOT_NULL);
                     assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
                 }

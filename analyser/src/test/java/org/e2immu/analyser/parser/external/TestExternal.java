@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.external;
 
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -89,10 +90,17 @@ public class TestExternal extends CommonTestRunner {
                         assertLinked(d, it(0, "f:0,h:2"));
                     }
                 }
+                if("f".equals(d.variableName())) {
+                    if("0".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);
+                    }
+                }
             }
             if ("report".equals(d.methodInfo().name)) {
                 if ("f".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
+                        assertDv(d, 2, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);
+
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         assertLinked(d, it0("NOT_YET_SET"), it(1, "filter:0,h:2"));
                     }
@@ -123,7 +131,7 @@ public class TestExternal extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
         // TODO three null-pointer warnings because we don't follow the link?? IMPROVE that should only be 1
-        testClass("External_1", 1, 3, new DebugConfiguration.Builder()
+        testClass("External_1", 1, 1, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -139,7 +147,7 @@ public class TestExternal extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
         // TODO should only be 1 null-pointer warning
-        testClass("External_2", 1, 2, new DebugConfiguration.Builder()
+        testClass("External_2", 1, 1, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

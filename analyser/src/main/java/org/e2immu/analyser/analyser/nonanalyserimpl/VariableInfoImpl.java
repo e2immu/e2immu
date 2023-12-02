@@ -172,6 +172,13 @@ public class VariableInfoImpl implements VariableInfo {
                 Collectors.toUnmodifiableMap(p -> p, this::getProperty)));
     }
 
+    @Override
+    public Properties valuePropertiesAndExtraForEnclosing() {
+        Stream<Property> stream = Stream.concat(EvaluationContext.VALUE_PROPERTIES.stream(),
+                Stream.of(CNN_TRAVELS_TO_PRECONDITION));
+        return Properties.of(stream.collect(Collectors.toUnmodifiableMap(p -> p, this::getProperty)));
+    }
+
     private static final List<Property> CONTEXT_PROPERTIES = List.of(CONTEXT_IMMUTABLE, CONTEXT_CONTAINER, CONTEXT_MODIFIED,
             CONTEXT_NOT_NULL);
 

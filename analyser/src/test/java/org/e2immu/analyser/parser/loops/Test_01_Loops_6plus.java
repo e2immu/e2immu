@@ -566,7 +566,7 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
                     if ("1.0.0".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<vl:entry>" : "instance 1 type Entry<String,Integer>";
                         assertEquals(expected, d.currentValue().toString());
-                        assertFalse(d.variableInfo().getProperties().containsKey(CNN_TRAVELS_TO_PRECONDITION));
+                        assertDv(d, DV.FALSE_DV, CNN_TRAVELS_TO_PRECONDITION);
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, CONTEXT_NOT_NULL);
                     }
                 }

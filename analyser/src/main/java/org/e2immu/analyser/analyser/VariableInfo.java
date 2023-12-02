@@ -114,6 +114,9 @@ public interface VariableInfo {
     @NotNull
     Properties valueProperties();
 
+    @NotNull
+    Properties valuePropertiesAndExtraForEnclosing();
+
     default boolean isAssignedAt(String index) {
         return getAssignmentIds().getLatestAssignmentIndex().equals(index);
     }

@@ -26,10 +26,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -642,16 +639,17 @@ public class ComputeLinkedVariables {
                             analyserContext, v, cnnTravelsToFields);
                     return either.isRight() && !either.getRight().isEmpty();
                 });
-                if (activate) {
-                    for (Variable variable : cluster.variables) {
-                        VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
+                for (Variable variable : cluster.variables) {
+                    VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
+                    if (vic.variableNature() != VariableNature.FROM_ENCLOSING_METHOD) {
                         DV current = vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION,
                                 null);
                         if (current == null) {
-                            vic.setProperty(Property.CNN_TRAVELS_TO_PRECONDITION, DV.TRUE_DV, Stage.EVALUATION);
+                            vic.setProperty(Property.CNN_TRAVELS_TO_PRECONDITION, DV.fromBoolDv(activate),
+                                    Stage.EVALUATION);
                             change = true;
                         }
-                    }
+                    } // else: set in StatementAnalysisImpl.initIteration1Plus
                 }
             }
             // note: ignores the returnValueCluster

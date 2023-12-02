@@ -619,8 +619,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         // E2Immutable_7 shows that we cannot simply keep copying in LVs
                         // there's sufficient guarantee that copying in can work, but as soon as some statements are DONE,
                         // we need to be more careful
-                        LinkedVariables lv = hereInitial.getLinkedVariables().isDone() ? null : viInClosure.getLinkedVariables();
-                        here.safeSetValue(viInClosure.getValue(), lv, viInClosure.valueProperties(), INITIAL);
+                        LinkedVariables lv = hereInitial.getLinkedVariables().isDone() ? null
+                                : viInClosure.getLinkedVariables();
+                        // External_1 shows why we also need to copy the CNN_TRAVELS_TO_PRECONDITION property
+                        here.safeSetValue(viInClosure.getValue(), lv, viInClosure.valuePropertiesAndExtraForEnclosing(),
+                                INITIAL);
                     }
                 } // else: it is perfectly possible for variables to be returned by variablesFromClosure that were not
                 // present in the initial call in iteration 0 (see Warnings_5, VariableScope_5, e.g.)
@@ -1621,7 +1624,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     VariableInfo previousOrInitial = vic.getPreviousOrInitial(); // IN_NNC was computed using the previous values!
                     VariableInfo eval = vic.best(EVALUATION);
                     DV cnnTravelsToPc = eval.getProperty(CNN_TRAVELS_TO_PRECONDITION);
-                    if (previousOrInitial.valueIsSet() && !cnnTravelsToPc.valueIsTrue()) {
+                    // note: only when cnnTravelsToPc is done!
+                    if (previousOrInitial.valueIsSet() && cnnTravelsToPc.valueIsFalse()) {
                         DV externalNotNull = previousOrInitial.getProperty(Property.EXTERNAL_NOT_NULL);
                         DV notNullExpression;
                         // a bit of an exception: the not-null of the pattern variable sits in the expression, and

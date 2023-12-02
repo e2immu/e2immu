@@ -229,7 +229,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
             }
         };
 
-        testClass("WGSimplified_1", 2, 1, new DebugConfiguration.Builder()
+        testClass("WGSimplified_1", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
@@ -295,7 +295,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
             }
         };
 
-        testClass("WGSimplified_2", 0, 4, new DebugConfiguration.Builder()
+        testClass("WGSimplified_2", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
@@ -328,7 +328,7 @@ public class Test_63_WGSimplified extends CommonTestRunner {
         };
 
         // unused variables, potential null pointer exceptions
-        testClass("WGSimplified_3", 2, 4, new DebugConfiguration.Builder()
+        testClass("WGSimplified_3", 2, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
