@@ -666,10 +666,7 @@ public class TypeMapImpl implements TypeMap {
             tiReadLock.lock();
             try {
                 TypeData typeData = typeInspections.get(typeInfo.fullyQualifiedName);
-                if (!typeData.getInspectionState().isDone()) {
-                    getTypeInspection(typeInfo);
-                }
-                return typeData.methodInspectionsGet(distinguishingName);
+                return typeData == null ? null : typeData.methodInspectionsGet(distinguishingName);
             } finally {
                 tiReadLock.unlock();
             }
@@ -854,6 +851,7 @@ public class TypeMapImpl implements TypeMap {
             }
         }
 
+        @SuppressWarnings("unused")
         public void writePostmortem() {
             assert postmortem != null;
             postmortem.write();

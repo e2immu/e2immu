@@ -79,14 +79,16 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
         public FieldInspection getFieldInspection(FieldInfo fieldInfo) {
             TypeData td = localTypeMap.get(fieldInfo.owner.fullyQualifiedName);
             if (td != null) {
-                return td.fieldInspectionsGet(fieldInfo);
+                FieldInspection fieldInspection = td.fieldInspectionsGet(fieldInfo);
+                if (fieldInspection != null) {
+                    return fieldInspection;
+                }
             }
-            return typeContext.getFieldInspection(fieldInfo);
+            return typeContext.typeMap.getFieldInspection(fieldInfo);
         }
 
         @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
-            // avoid going outside!!
             return getOrCreate(typeInfo.fullyQualifiedName, LoadMode.NOW);
         }
 
@@ -94,9 +96,13 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
         public MethodInspection getMethodInspection(MethodInfo methodInfo) {
             TypeData td = localTypeMap.get(methodInfo.typeInfo.fullyQualifiedName);
             if (td != null) {
-                return td.methodInspectionsGet(methodInfo.distinguishingName);
+                MethodInspection methodInspection = td.methodInspectionsGet(methodInfo.distinguishingName);
+                if (methodInspection != null) {
+                    return methodInspection;
+                }
             }
-            return typeContext.getMethodInspection(methodInfo);
+            // try outside
+            return typeContext.typeMap.getMethodInspection(methodInfo);
         }
 
         @Override
@@ -209,7 +215,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                 }
             } else {
                 TypeInfo typeInfo = typeDataInMap.getTypeInspectionBuilder().typeInfo();
-                if(typeInfo.packageNameOrEnclosingType.isRight()) {
+                if (typeInfo.packageNameOrEnclosingType.isRight()) {
                     // ensure that the enclosing type is inspected first! (TestByteCodeInspectorCommonsPool)
                     getTypeInspection(typeInfo.primaryType());
                 }
