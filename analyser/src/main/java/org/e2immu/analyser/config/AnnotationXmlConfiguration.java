@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.e2immu.analyser.config.Configuration.NL_TAB;
+
 public record AnnotationXmlConfiguration(boolean writeAnnotationXml,
                                          List<String> writeAnnotationXmlPackages,
                                          List<String> readAnnotationXmlPackages,
@@ -29,10 +31,10 @@ public record AnnotationXmlConfiguration(boolean writeAnnotationXml,
     @Override
     public String toString() {
         return "AnnotationXmlConfiguration:" +
-                "\n    writeAnnotationXml=" + writeAnnotationXml +
-                ",\n    writeAnnotationXmlPackages=" + writeAnnotationXmlPackages +
-                ",\n    readAnnotationXmlPackages=" + readAnnotationXmlPackages +
-                ",\n    writeAnnotationXmlDir='" + writeAnnotationXmlDir + '\'';
+                NL_TAB + "writeAnnotationXml=" + writeAnnotationXml +
+                NL_TAB + "writeAnnotationXmlPackages=" + writeAnnotationXmlPackages +
+                NL_TAB + "readAnnotationXmlPackages=" + readAnnotationXmlPackages +
+                NL_TAB + "writeAnnotationXmlDir='" + writeAnnotationXmlDir + '\'';
     }
 
     public boolean isReadAnnotationXmlPackages() {

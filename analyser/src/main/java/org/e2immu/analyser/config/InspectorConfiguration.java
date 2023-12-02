@@ -19,14 +19,16 @@ import org.e2immu.annotation.Fluent;
 
 import java.io.File;
 
+import static org.e2immu.analyser.config.Configuration.NL_TAB;
+
 public record InspectorConfiguration(boolean storeComments,
                                      String graphDirectory) {
 
     @Override
     public String toString() {
         return "InspectionConfiguration:" +
-                "\n    storeComments=" + storeComments +
-                "\n    graphDirectory='" + graphDirectory + "'";
+                NL_TAB + "graphDirectory=" + (graphDirectory == null ? "" : "'" + graphDirectory + "'") +
+                NL_TAB + "storeComments=" + storeComments;
     }
 
     @Container

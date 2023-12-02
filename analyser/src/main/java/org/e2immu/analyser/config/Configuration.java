@@ -45,22 +45,22 @@ public record Configuration(InputConfiguration inputConfiguration,
                             DebugConfiguration debugConfiguration) {
 
     public static final String EQUALS = "org.e2immu.analyser.EQUALS";
+    static final String NL_TAB = "\n    ";
 
     @Override
     public String toString() {
         return "Configuration:" +
-                "\n    logTargets: " + logTargets.stream().map(Object::toString).collect(Collectors.joining(",")) +
-                "\n    quiet: " + quiet +
-                "\n    ignoreErrors: " + ignoreErrors +
-                "\n    parallel: " + parallel +
-                "\n" +
+                NL_TAB + "ignoreErrors=" + ignoreErrors +
+                NL_TAB + "logTargets=" + logTargets.stream().map(Object::toString).collect(Collectors.joining(",")) +
+                NL_TAB + "parallel=" + parallel +
+                NL_TAB + "quiet=" + quiet +
+                NL_TAB + "skipAnalysis=" + skipAnalysis + "\n" +
+                analyserConfiguration + "\n" +
+                annotatedAPIConfiguration + "\n" +
+                annotationXmlConfiguration + "\n" +
                 inputConfiguration + "\n" +
                 inspectorConfiguration + "\n" +
-                analyserConfiguration + "\n" +
-                debugConfiguration + "\n" +
-                uploadConfiguration + "\n" +
-                annotatedAPIConfiguration + "\n" +
-                annotationXmlConfiguration;
+                uploadConfiguration;
     }
 
     // the equals method is here primarily for testing! It should include all fields

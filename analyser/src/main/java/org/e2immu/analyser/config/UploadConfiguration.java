@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.e2immu.analyser.config.Configuration.NL_TAB;
+
 public record UploadConfiguration(boolean upload, String annotationServerUrl, String projectName,
                                   List<String> uploadPackages) {
     public static final String DEFAULT_ANNOTATION_SERVER_URL = "http://localhost:8281/v1";
@@ -32,18 +34,14 @@ public record UploadConfiguration(boolean upload, String annotationServerUrl, St
     @Override
     public String toString() {
         return "UploadConfiguration:" +
-                "\n    upload=" + upload +
-                ",\n    annotationServerUrl='" + annotationServerUrl + '\'' +
-                ",\n    projectName='" + projectName + '\'' +
-                ",\n    uploadPackages=" + uploadPackages;
+                NL_TAB + "upload=" + upload +
+                NL_TAB + "annotationServerUrl='" + annotationServerUrl + '\'' +
+                NL_TAB + "projectName='" + projectName + '\'' +
+                NL_TAB + "uploadPackages=" + uploadPackages;
     }
 
     public String createUrlWithProjectName(String action) {
-        try {
-            return annotationServerUrl + "/" + action + "/" + URLEncoder.encode(projectName, StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException ex) {
-            throw new RuntimeException(ex.getCause());
-        }
+        return annotationServerUrl + "/" + action + "/" + URLEncoder.encode(projectName, StandardCharsets.UTF_8);
     }
 
     public boolean accept(String packageOfType) {

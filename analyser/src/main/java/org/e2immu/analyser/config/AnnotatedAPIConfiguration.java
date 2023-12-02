@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.e2immu.analyser.config.Configuration.NL_TAB;
+
 public record AnnotatedAPIConfiguration(boolean disabled,
                                         // read
                                         List<String> annotatedAPISourceDirs,
@@ -121,13 +123,13 @@ public record AnnotatedAPIConfiguration(boolean disabled,
     @Override
     public String toString() {
         return "AnnotatedAPIConfiguration:" +
-                "\n    disabled=" + disabled +
-                ",\n    annotatedAPISourceDirs=" + annotatedAPISourceDirs +
-                ",\n    readAnnotatedAPIPackages=" + readAnnotatedAPIPackages +
-                ",\n    reportWarnings=" + reportWarnings +
-                ",\n    writeMode=" + writeMode +
-                ",\n    writeAnnotatedAPIPackages=" + writeAnnotatedAPIPackages +
-                ",\n    writeAnnotatedAPIsDir='" + writeAnnotatedAPIsDir + '\'' +
-                ",\n    destinationPackage='" + destinationPackage + '\'';
+                NL_TAB + "disabled=" + disabled +
+                NL_TAB + "annotatedAPISourceDirs=" + annotatedAPISourceDirs +
+                NL_TAB + "readAnnotatedAPIPackages=" + readAnnotatedAPIPackages +
+                NL_TAB + "reportWarnings=" + reportWarnings +
+                NL_TAB + "writeMode=" + writeMode +
+                NL_TAB + "writeAnnotatedAPIPackages=" + writeAnnotatedAPIPackages +
+                NL_TAB + "writeAnnotatedAPIsDir='" + writeAnnotatedAPIsDir + '\'' +
+                NL_TAB + "destinationPackage='" + destinationPackage + '\'';
     }
 }

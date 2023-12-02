@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.e2immu.analyser.config.Configuration.NL_TAB;
+
 public record InputConfiguration(List<String> sources,
                                  List<String> classPathParts,
                                  List<String> restrictSourceToPackages,
@@ -37,11 +39,11 @@ public record InputConfiguration(List<String> sources,
     @Override
     public String toString() {
         return "InputConfiguration:" +
-                "\n    sources: " + sources +
-                ",\n    sourceEncoding: " + sourceEncoding.displayName() +
-                ",\n    classPathParts: " + classPathParts +
-                ",\n    restrictSourceToPackages: " + restrictSourceToPackages +
-                ",\n    alternativeJREDirectory: " + (alternativeJREDirectory == null ? "<default>" : alternativeJREDirectory);
+                NL_TAB + "sources=" + sources +
+                NL_TAB + "sourceEncoding=" + sourceEncoding.displayName() +
+                NL_TAB + "restrictSourceToPackages=" + restrictSourceToPackages +
+                NL_TAB + "classPathParts=" + classPathParts +
+                NL_TAB + "alternativeJREDirectory=" + (alternativeJREDirectory == null ? "<default>" : alternativeJREDirectory);
     }
 
     @Container

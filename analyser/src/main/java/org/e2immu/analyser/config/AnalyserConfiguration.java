@@ -16,8 +16,9 @@ package org.e2immu.analyser.config;
 
 import org.e2immu.annotation.Container;
 
-public record AnalyserConfiguration(boolean skipTransformations,
-                                    boolean computeContextPropertiesOverAllMethods,
+import static org.e2immu.analyser.config.Configuration.NL_TAB;
+
+public record AnalyserConfiguration(boolean computeContextPropertiesOverAllMethods,
                                     boolean computeFieldAnalyserAcrossAllMethods,
                                     boolean forceExtraDelayForTesting,
                                     boolean forceAlphabeticAnalysisInPrimaryType,
@@ -25,7 +26,6 @@ public record AnalyserConfiguration(boolean skipTransformations,
 
     @Container(builds = AnalyserConfiguration.class)
     public static class Builder {
-        private boolean skipTransformations;
 
         // see @NotNull in FieldAnalyser for an explanation
         private boolean computeContextPropertiesOverAllMethods;
@@ -33,11 +33,6 @@ public record AnalyserConfiguration(boolean skipTransformations,
         private boolean forceExtraDelayForTesting;
         private boolean forceAlphabeticAnalysisInPrimaryType;
         private boolean normalizeMore;
-
-        public Builder setSkipTransformations(boolean skipTransformations) {
-            this.skipTransformations = skipTransformations;
-            return this;
-        }
 
         public Builder setNormalizeMore(boolean normalizeMore) {
             this.normalizeMore = normalizeMore;
@@ -65,7 +60,7 @@ public record AnalyserConfiguration(boolean skipTransformations,
         }
 
         public AnalyserConfiguration build() {
-            return new AnalyserConfiguration(skipTransformations,
+            return new AnalyserConfiguration(
                     computeContextPropertiesOverAllMethods,
                     computeFieldAnalyserAcrossAllMethods,
                     forceExtraDelayForTesting,
@@ -77,10 +72,10 @@ public record AnalyserConfiguration(boolean skipTransformations,
     @Override
     public String toString() {
         return "AnalyserConfiguration:" +
-                "\n    skipTransformations=" + skipTransformations +
-                "\n    computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods +
-                "\n    computeFieldAnalyserAcrossAllMethods=" + computeFieldAnalyserAcrossAllMethods +
-                "\n    forceExtraDelayForTesting=" + forceExtraDelayForTesting +
-                "\n    normalizeMore=" + normalizeMore;
+                NL_TAB + "computeContextPropertiesOverAllMethods=" + computeContextPropertiesOverAllMethods +
+                NL_TAB + "computeFieldAnalyserAcrossAllMethods=" + computeFieldAnalyserAcrossAllMethods +
+                NL_TAB + "forceAlphabeticAnalysisInPrimaryType=" + forceAlphabeticAnalysisInPrimaryType +
+                NL_TAB + "forceExtraDelayForTesting=" + forceExtraDelayForTesting +
+                NL_TAB + "normalizeMore=" + normalizeMore;
     }
 }
