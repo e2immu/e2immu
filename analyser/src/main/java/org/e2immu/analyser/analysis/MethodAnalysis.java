@@ -163,6 +163,10 @@ public interface MethodAnalysis extends Analysis {
         return getPostConditions().stream().map(Object::toString).sorted().collect(Collectors.joining(", "));
     }
 
+    default int pad() {
+        return getFirstStatement().index().length();
+    }
+
     record Eventual(CausesOfDelay causesOfDelay,
                     Set<FieldInfo> fields,
                     boolean mark,

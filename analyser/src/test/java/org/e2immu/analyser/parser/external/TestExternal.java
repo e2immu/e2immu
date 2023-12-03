@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -90,8 +91,8 @@ public class TestExternal extends CommonTestRunner {
                         assertLinked(d, it(0, "f:0,h:2"));
                     }
                 }
-                if("f".equals(d.variableName())) {
-                    if("0".equals(d.statementId())) {
+                if ("f".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
                         assertDv(d, DV.TRUE_DV, Property.CNN_TRAVELS_TO_PRECONDITION);
                     }
                 }
@@ -107,7 +108,7 @@ public class TestExternal extends CommonTestRunner {
                 }
                 if ("p".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertDv(d,  MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                         assertLinked(d, it0("NOT_YET_SET"), it(1, "process:0"));
                     }
                     if ("1".equals(d.statementId())) {
@@ -161,11 +162,20 @@ public class TestExternal extends CommonTestRunner {
 
     // starting error: java.lang.UnsupportedOperationException: ? have index 11, looking for 9
     // in SASubBlocks:291, Caught exception in method analyser: org.e2immu.analyser.parser.external.testexample.External_4.encode(byte[])
+    // then: parameter should not be assigned to (b in checkLine)
+
     @Test
     public void test_4() throws IOException {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
-
-        testClass("External_4", 1, 1, new DebugConfiguration.Builder()
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("encode".equals(d.methodInfo().name)) {
+                int dot = d.statementId().indexOf('.');
+                String firstPart = dot < 0 ? d.statementId() : d.statementId().substring(0, dot);
+                assertEquals(2, firstPart.length());
+            }
+        };
+        testClass("External_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

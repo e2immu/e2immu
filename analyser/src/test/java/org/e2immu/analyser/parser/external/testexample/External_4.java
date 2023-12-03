@@ -42,7 +42,7 @@ public class External_4 extends FilterOutputStream {
     }
 
     private int encode(byte[] b) {
-        int i = 0;
+        int i = 0; // 00
         b[i++] = alphabet[(buffer[0] >> 2) & 0x3f];
         if (!oneLine) {
             i += checkLine(b, i);
@@ -62,7 +62,7 @@ public class External_4 extends FilterOutputStream {
         for (int j = 0; j < buffer.length; buffer[j++] = 0) {
             ;
         }
-        position = 0;
-        return i;
+        position = 0; // 10
+        return i; // 11
     }
 }

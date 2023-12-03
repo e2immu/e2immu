@@ -156,6 +156,9 @@ public class JavaIo {
     @Independent(absent = true)
     static class FilterOutputStream$ {
 
+        @NotNull
+        protected OutputStream out;
+
         FilterOutputStream$(@Modified @Independent(absent = true) @NotNull OutputStream out) {
 
         }

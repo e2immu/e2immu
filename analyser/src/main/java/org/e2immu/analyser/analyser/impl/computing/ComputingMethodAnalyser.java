@@ -41,6 +41,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -576,7 +577,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (m.matches()) {
                 int index = Integer.parseInt(m.group(1)) - 1;
                 if (index >= 0) {
-                    String id = "" + index; // TODO numeric padding to same length
+                    String id = StringUtil.padDigits(index, methodAnalysis.pad());
                     return findStatementAnalyser(id).getStatementAnalysis();
                 }
             }

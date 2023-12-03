@@ -349,7 +349,7 @@ public class Assignment extends BaseExpression implements Expression {
             expression = e2.resultOfExpression;
         }
 
-        markModified(builder, context, newVariableTarget);
+        markModified(builder, context, newVariableTarget, false);
         LinkedVariables lvAfterDelay = computeLinkedVariables(context, finalValue);
         builder.assignment(newVariableTarget, finalValue, lvAfterDelay);
 
@@ -435,7 +435,8 @@ public class Assignment extends BaseExpression implements Expression {
         return new E2(resultOfExpression, operationResult.value());
     }
 
-    private void markModified(EvaluationResultImpl.Builder builder, EvaluationResult context, Variable at) {
+    private void markModified(EvaluationResultImpl.Builder builder, EvaluationResult context, Variable at,
+                              boolean inRecursion) {
         // see if we need to raise an error (writing out to fields outside our class, etc.)
         if (at instanceof FieldReference fieldReference) {
 
@@ -467,9 +468,11 @@ public class Assignment extends BaseExpression implements Expression {
 
                 // IMPROVE: recursion also in markModified --  but what about the code above?
                 // recurse!
-                markModified(builder, context, fieldReference.scopeVariable());
+                markModified(builder, context, fieldReference.scopeVariable(), true);
             }
-        } else if (at instanceof ParameterInfo parameterInfo) {
+        } else if (at instanceof ParameterInfo parameterInfo && !inRecursion) {
+            // if we're in the recursion, we're assigning either a field of the parameter, or an array value
+            // see e.g. External_4
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         } else if (at instanceof DependentVariable dv) {
             Variable arrayVariable = dv.arrayVariable();
@@ -479,7 +482,7 @@ public class Assignment extends BaseExpression implements Expression {
 
                 // IMPROVE: recursion also in markModified
                 // recurse!
-                markModified(builder, context, arrayVariable);
+                markModified(builder, context, arrayVariable, true);
             }
         }
     }

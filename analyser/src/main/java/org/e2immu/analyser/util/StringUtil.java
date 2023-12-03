@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class StringUtil {
 
+    public static final String AWFULLY_LONG_METHOD = "?? awfully long method";
+
     private StringUtil() {
         // nothing here, cannot be instantiated
         throw new UnsupportedOperationException();
@@ -80,12 +82,50 @@ public class StringUtil {
             if (i < 10) return "0" + s;
             return s;
         }
-        if (n <= 1000) {
+        if (n <= 1_000) {
             if (i < 10) return "00" + s;
             if (i < 100) return "0" + s;
             return s;
         }
-        throw new UnsupportedOperationException("?? awfully long method");
+        if (n <= 10_000) {
+            if (i < 10) return "000" + s;
+            if (i < 100) return "00" + s;
+            if (i < 1_000) return "0" + s;
+            return s;
+        }
+        throw new UnsupportedOperationException(AWFULLY_LONG_METHOD);
+    }
+
+    @NotNull
+    public static String padDigits(int i, int n) {
+        if (i < 10) {
+            return switch (n) {
+                case 1 -> "" + i;
+                case 2 -> "0" + i;
+                case 3 -> "00" + i;
+                case 4 -> "000" + i;
+                default -> throw new UnsupportedOperationException(AWFULLY_LONG_METHOD);
+            };
+        }
+        if (i < 100) {
+            return switch (n) {
+                case 2 -> "" + i;
+                case 3 -> "0" + i;
+                case 4 -> "00" + i;
+                default -> throw new UnsupportedOperationException(AWFULLY_LONG_METHOD);
+            };
+        }
+        if (i < 1_000) {
+            return switch (n) {
+                case 3 -> "" + i;
+                case 4 -> "0" + i;
+                default -> throw new UnsupportedOperationException(AWFULLY_LONG_METHOD);
+            };
+        }
+        if (i < 10_000 && n == 4) {
+            return "0" + i;
+        }
+        throw new UnsupportedOperationException(AWFULLY_LONG_METHOD);
     }
 
     @NotNull
