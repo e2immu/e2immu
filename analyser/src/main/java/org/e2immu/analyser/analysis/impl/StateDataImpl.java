@@ -112,16 +112,15 @@ public class StateDataImpl implements StateData {
         }
     }
 
-    public boolean setAbsoluteState(EvaluationContext evaluationContext) {
+    public Expression setAbsoluteState(EvaluationContext evaluationContext) {
         ConditionManager conditionManager = evaluationContext.getConditionManager();
         Expression absoluteState = conditionManager.absoluteState(EvaluationResultImpl.from(evaluationContext));
         if (absoluteState.isDelayed()) {
             this.absoluteState.setVariable(absoluteState);
         } else if (this.absoluteState.isVariable()) {
             this.absoluteState.setFinal(absoluteState);
-            return true;
         }
-        return false;
+        return absoluteState;
     }
 
     public Expression getAbsoluteState() {

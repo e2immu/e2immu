@@ -31,7 +31,7 @@ public interface StateData {
 
     void makeUnreachable(Primitives primitives);
 
-    boolean setAbsoluteState(EvaluationContext evaluationContext);
+    Expression setAbsoluteState(EvaluationContext evaluationContext);
 
     Expression getAbsoluteState();
 

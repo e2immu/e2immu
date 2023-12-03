@@ -153,9 +153,20 @@ public class TestExternal extends CommonTestRunner {
     // at org.e2immu.analyser.analysis.impl.StateDataImpl.internalAllDoneCheck(StateDataImpl.java:78)
     @Test
     public void test_3() throws IOException {
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
-        testClass("External_3", 1, 1, new DebugConfiguration.Builder()
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("startDocument".equals(d.methodInfo().name)) {
+                if ("0.0.0.0.0".equals(d.statementId())) {
+                    String expected = d.iteration() < 4 ? "!instance 0.0.0 type boolean&&<null-check>"
+                            : "!instance 0.0.0 type boolean&&null==document$0";
+                    assertEquals(expected, d.statementAnalysis().stateData().getAbsoluteState().toString());
+                }
+            }
+        };
+
+        testClass("External_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -163,7 +174,6 @@ public class TestExternal extends CommonTestRunner {
     // starting error: java.lang.UnsupportedOperationException: ? have index 11, looking for 9
     // in SASubBlocks:291, Caught exception in method analyser: org.e2immu.analyser.parser.external.testexample.External_4.encode(byte[])
     // then: parameter should not be assigned to (b in checkLine)
-
     @Test
     public void test_4() throws IOException {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());

@@ -1,5 +1,7 @@
 package org.e2immu.analyser.parser.external.testexample;
 
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotNull;
 import org.w3c.dom.Document;
 import org.xml.sax.*;
 import org.xml.sax.helpers.XMLFilterImpl;
@@ -13,6 +15,7 @@ public class External_3 extends XMLFilterImpl {
 
     private Document document;
 
+    @NotNull
     private static DocumentBuilder createDocumentBuilder() {
         try {
             return DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -21,6 +24,7 @@ public class External_3 extends XMLFilterImpl {
         }
     }
 
+    @Modified
     @Override
     public void startDocument() throws SAXException {
         if (document == null) {

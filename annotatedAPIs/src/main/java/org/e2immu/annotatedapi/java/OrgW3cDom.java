@@ -25,5 +25,7 @@ public class OrgW3cDom {
         @Modified
         Node appendChild(Node newNode);
 
+        @Modified
+        Node removeChild(Node node);
     }
 }

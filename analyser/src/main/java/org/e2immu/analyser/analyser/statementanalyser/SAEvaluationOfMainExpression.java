@@ -78,7 +78,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     }
 
     private AnalysisStatus evaluationOfMainExpression0(StatementAnalyserSharedState sharedState) {
-        statementAnalysis.stateData().setAbsoluteState(sharedState.evaluationContext());
+        Expression absoluteState = statementAnalysis.stateData().setAbsoluteState(sharedState.evaluationContext());
 
         List<Expression> expressionsFromInitAndUpdate = new SAInitializersAndUpdaters(statementAnalysis)
                 .initializersAndUpdaters(sharedState.forwardAnalysisInfo(), sharedState.evaluationContext());
@@ -105,7 +105,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Expression toEvaluate = toEvaluate(expressionsFromInitAndUpdate);
         EvaluationResult context = makeContext(sharedState.evaluationContext());
         
-        LOGGER.debug("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(), methodInfo().fullyQualifiedName);
+        LOGGER.debug("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(),
+                methodInfo().fullyQualifiedName);
         ForwardEvaluationInfo forwardEvaluationInfo = prepareForward(statement, structure);
 
         // here is a good breakpoint location, e.g. "4.0.1".equals(index())
@@ -140,21 +141,23 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             statementAnalysis.stateData().setStaticSideEffect(staticSideEffect);
             sseDelay = staticSideEffect.causesOfDelay();
         }
-        ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(post.causes).merge(sseDelay);
+        ProgressAndDelay endResult = ennStatus.combine(statusPost).merge(post.causes).merge(sseDelay)
+                .merge(absoluteState.causesOfDelay());
         return endResult.toAnalysisStatus();
     }
 
     private ForwardEvaluationInfo prepareForward(Statement statement, Structure structure) {
+        ForwardEvaluationInfo fwd = structure.forwardEvaluationInfo();
         if (statement instanceof ReturnStatement) {
             // code identical to snippet in Assignment.evaluate, to prepare for value evaluation
-            ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())
+            ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(fwd)
                     .setAssignmentTarget(new ReturnVariable(methodInfo()));
             if (methodInfo().returnType().isPrimitiveExcludingVoid()) {
                 fwdBuilder.setCnnNotNull();
             }
             return fwdBuilder.build();
         }
-        return structure.forwardEvaluationInfo();
+        return fwd;
     }
 
     private EvaluationResult updateResultInCertainCases(Statement statement,
