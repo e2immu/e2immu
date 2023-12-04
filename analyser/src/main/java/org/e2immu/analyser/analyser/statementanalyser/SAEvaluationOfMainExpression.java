@@ -240,8 +240,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             CausesOfDelay stateForLoop = addLoopReturnStatesToState(sharedState);
             Expression condition = sharedState.localConditionManager().condition();
             StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
-            if (correspondingLoop != null &&
-                    correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+            if (correspondingLoop != null
+                    && correspondingLoop.isLoop()
+                    && correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
                 statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
             }
             return new Post(value, stateForLoop);
@@ -305,15 +306,15 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             progress = true;
         }
         if (statementAnalysis.statement() instanceof BreakStatement breakStatement) {
-            if (statementAnalysis.parent().statement() instanceof SwitchStatementOldStyle) {
-                return ProgressWrapper.of(progress, causes);
+            StatementAnalysisImpl.FindLoopResult loopOrSwitch = statementAnalysis.findLoopByLabel(breakStatement);
+            if(!loopOrSwitch.isLoop()) {
+                return ProgressWrapper.of(progress, causes); // FIXME this may have to change to fix SwitchStatement_8
             }
-            StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
-            Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), correspondingLoop.steps());
-            progress |= correspondingLoop.statementAnalysis().stateData().addStateOfInterrupt(index(), state);
+            Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), loopOrSwitch.steps());
+            progress |= loopOrSwitch.statementAnalysis().stateData().addStateOfInterrupt(index(), state);
             if (state.isDelayed()) return ProgressWrapper.of(progress, state.causesOfDelay());
             Expression condition = sharedState.localConditionManager().condition();
-            if (correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+            if (loopOrSwitch.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
                 statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
             }
         } else if (statement() instanceof LocalClassDeclaration) {
@@ -340,7 +341,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
     private CausesOfDelay addLoopReturnStatesToState(StatementAnalyserSharedState sharedState) {
         StatementAnalysis.FindLoopResult loop = statementAnalysis.findLoopByLabel(null);
-        if (loop != null) {
+        if (loop != null && loop.isLoop()) {
             Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), loop.steps());
             Expression notState = Negation.negate(sharedState.context(), state);
             loop.statementAnalysis().stateData().addStateOfReturnInLoop(index(), notState);

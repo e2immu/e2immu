@@ -18,10 +18,7 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.StatementExecution;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.statement.SwitchEntry;
-import org.e2immu.analyser.model.statement.SwitchStatementNewStyle;
-import org.e2immu.analyser.model.statement.SwitchStatementOldStyle;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.NewSwitchStatement_0;
 import org.e2immu.analyser.resolver.testexample.OldSwitchStatement_0;
@@ -44,12 +41,16 @@ public class TestOldSwitchStatement extends CommonTest {
         assertEquals("dataType", stmt.expression.toString());
         assertEquals(3, stmt.switchLabels.size());
         assertSame(StatementExecution.ALWAYS, stmt.structure.statementExecution());
+        assertEquals("a", stmt.label());
 
         SwitchStatementOldStyle.SwitchLabel se3 = stmt.switchLabels.get(0);
         assertEquals("3", se3.expression().toString());
 
         SwitchStatementOldStyle.SwitchLabel se4 = stmt.switchLabels.get(1);
         assertEquals("4", se4.expression().toString());
+        BreakStatement bs4 = stmt.structure.block().structure.statements().get(2).asInstanceOf(BreakStatement.class);
+        assertEquals("a", bs4.goToLabel());
+        assertEquals("b", bs4.label);
 
         SwitchStatementOldStyle.SwitchLabel sed = stmt.switchLabels.get(2);
         assertEquals("<default>", sed.expression().toString());

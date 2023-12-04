@@ -31,17 +31,17 @@ public class ExpressionAsStatement extends StatementWithExpression {
     private final boolean synthetic;
 
     public ExpressionAsStatement(Identifier identifier, Expression expression) {
-        this(identifier, expression, null, false);
+        this(identifier, null, expression, null, false);
     }
 
-    public ExpressionAsStatement(Identifier identifier, Expression expression, Comment comment, boolean synthetic) {
-        super(identifier, createCodeOrganization(expression, comment), expression);
+    public ExpressionAsStatement(Identifier identifier, String label, Expression expression, Comment comment, boolean synthetic) {
+        super(identifier, label, createCodeOrganization(expression, comment), expression);
         this.synthetic = synthetic;
     }
 
     @Override
     public Statement replaceComment(Comment newCommentOrNullToRemove) {
-        return new ExpressionAsStatement(identifier, expression, newCommentOrNullToRemove, synthetic);
+        return new ExpressionAsStatement(identifier, label, expression, newCommentOrNullToRemove, synthetic);
     }
 
     @Override
@@ -88,7 +88,8 @@ public class ExpressionAsStatement extends StatementWithExpression {
         if (haveDirectTranslation(direct, this)) return direct;
 
         Expression translated = expression.translate(inspectionProvider, translationMap);
-        if (translated != expression) return List.of(new ExpressionAsStatement(identifier, translated));
+        if (translated != expression) return List.of(new ExpressionAsStatement(identifier, label, translated,
+                structure.comment(), synthetic));
         return List.of(this);
     }
 

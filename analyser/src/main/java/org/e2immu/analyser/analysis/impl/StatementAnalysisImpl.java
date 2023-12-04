@@ -114,7 +114,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         methodLevelData.makeUnreachable(primitives);
         if (statement() instanceof ReturnStatement) {
             StatementAnalysis.FindLoopResult loop = findLoopByLabel(null);
-            if (loop != null) {
+            if (loop != null && loop.isLoop()) {
                 loop.statementAnalysis().stateData().stateOfReturnInLoopUnreachable(index());
             }
         }
@@ -1312,14 +1312,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
      */
     @Override
     public FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue) {
+        boolean noLabel = breakOrContinue == null || breakOrContinue.goToLabel() == null;
         StatementAnalysis sa = this;
         int cnt = 0;
         while (sa != null) {
-            if (sa.statement() instanceof LoopStatement loop &&
-                    (breakOrContinue == null
-                            || !breakOrContinue.hasALabel()
-                            || loop.label != null && loop.label.equals(breakOrContinue.label))) {
-                return new FindLoopResult(sa, cnt);
+            boolean isSwitch = sa.statement() instanceof SwitchStatementOldStyle
+                    || sa.statement() instanceof SwitchStatementNewStyle;
+            boolean isLoop = sa.statement() instanceof LoopStatement;
+            if (isLoop || isSwitch) {
+                if (noLabel || statement.label() != null && statement.label().equals(breakOrContinue.goToLabel())) {
+                    return new FindLoopResult(sa, cnt, isLoop);
+                }
             }
             sa = sa.parent();
             cnt++;

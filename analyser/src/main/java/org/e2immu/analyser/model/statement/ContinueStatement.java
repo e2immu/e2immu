@@ -23,15 +23,15 @@ import java.util.Objects;
 
 public class ContinueStatement extends BreakOrContinueStatement {
 
-    public ContinueStatement(Identifier identifier, String label, Comment comment) {
-        super(identifier, label, comment);
+    public ContinueStatement(Identifier identifier, String labelOfStatement, String goToLabel, Comment comment) {
+        super(identifier, labelOfStatement, goToLabel, comment);
     }
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.CONTINUE);
-        if (label != null) {
-            outputBuilder.add(Space.ONE).add(new Text(label));
+        if (goToLabel != null) {
+            outputBuilder.add(Space.ONE).add(new Text(goToLabel));
         }
         outputBuilder.add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
         return outputBuilder;
@@ -41,14 +41,14 @@ public class ContinueStatement extends BreakOrContinueStatement {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj instanceof ContinueStatement other) {
-            return identifier.equals(other.identifier) && Objects.equals(label, other.label);
+            return identifier.equals(other.identifier) && Objects.equals(goToLabel, other.goToLabel);
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, label);
+        return Objects.hash(identifier, goToLabel);
     }
 
     @Override

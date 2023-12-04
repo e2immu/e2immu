@@ -29,10 +29,10 @@ public class AssertStatement extends StatementWithStructure {
 
     public final Expression message; // can be null
 
-    public AssertStatement(Identifier identifier, Expression check, Expression message) {
+    public AssertStatement(Identifier identifier, String label, Expression check, Expression message) {
         // IMPORTANT NOTE: we're currently NOT adding message!
         // we regard it as external to the code
-        super(identifier, new Structure.Builder()
+        super(identifier, label, new Structure.Builder()
                 .setExpression(check)
                 .setExpressionIsCondition(true)
                 .build());
@@ -67,7 +67,7 @@ public class AssertStatement extends StatementWithStructure {
         Expression tex = structure.expression().translate(inspectionProvider, translationMap);
         Expression msg = message == null ? null : message.translate(inspectionProvider, translationMap);
         if (tex == structure.expression() && msg == message) return List.of(this);
-        return List.of(new AssertStatement(identifier, tex, msg));
+        return List.of(new AssertStatement(identifier, label, tex, msg));
     }
 
     @Override

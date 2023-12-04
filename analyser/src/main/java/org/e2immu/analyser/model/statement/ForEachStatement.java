@@ -40,14 +40,14 @@ public class ForEachStatement extends LoopStatement {
                             Identifier.PositionalIdentifier positionOfExpression,
                             Block block,
                             Comment comment) {
-        super(identifier, new Structure.Builder()
+        super(identifier, label, new Structure.Builder()
                 .setStatementExecution(ForEachStatement::computeExecution)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .addInitialisers(List.of(localVariableCreation))
                 .setExpression(expression)
                 .setBlock(block)
                 .setComment(comment)
-                .build(), label);
+                .build());
         this.positionOfExpression = positionOfExpression;
     }
 

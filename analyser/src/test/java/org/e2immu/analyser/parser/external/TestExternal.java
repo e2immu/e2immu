@@ -60,7 +60,7 @@ public class TestExternal extends CommonTestRunner {
                         assertLinked(d, it0("buff:-1,buff[i]:-1,endPos:-1,i:-1,j:-1"), it(1, ""));
                     }
                     if ("2.0.0.0.3".equals(d.statementId()) || "2.0.0.0.4".equals(d.statementId())) {
-                        assertEquals("BreakStatement{label=null}",
+                        assertEquals("BreakStatement{goTo=null}",
                                 d.context().evaluationContext().getCurrentStatement().statement().toString());
                         assertLinked(d, it0("buff:-1,buff[i]:-1,endPos:-1,i:-1,j:-1"), it(1, ""));
                     }

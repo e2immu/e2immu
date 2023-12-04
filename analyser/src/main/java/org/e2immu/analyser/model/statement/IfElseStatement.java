@@ -34,17 +34,18 @@ public class IfElseStatement extends StatementWithExpression {
     public final Block elseBlock;
 
     public IfElseStatement(Identifier identifier,
+                           String label,
                            Expression expression,
                            Block ifBlock,
                            Block elseBlock,
                            Comment comment) {
-        super(identifier, createCodeOrganization(expression, ifBlock, elseBlock, comment), expression);
+        super(identifier, label, createCodeOrganization(expression, ifBlock, elseBlock, comment), expression);
         this.elseBlock = elseBlock;
     }
 
     @Override
     public Statement replaceComment(Comment newCommentOrNullToRemove) {
-        return new IfElseStatement(identifier, expression, structure.block(), elseBlock, newCommentOrNullToRemove);
+        return new IfElseStatement(identifier, label, expression, structure.block(), elseBlock, newCommentOrNullToRemove);
     }
 
     @Override
@@ -103,7 +104,7 @@ public class IfElseStatement extends StatementWithExpression {
         List<Statement> translatedIf = structure.block().translate(inspectionProvider, translationMap);
         List<Statement> translatedElse = elseBlock.translate(inspectionProvider, translationMap);
 
-        return List.of(new IfElseStatement(identifier,
+        return List.of(new IfElseStatement(identifier, label,
                 translatedExpression,
                 ensureBlock(structure.block().getIdentifier(), translatedIf),
                 ensureBlock(elseBlock.identifier, translatedElse), structure.comment()));

@@ -32,7 +32,7 @@ public class WhileStatement extends LoopStatement {
                           Expression expression,
                           Block block,
                           Comment comment) {
-        super(identifier, new Structure.Builder()
+        super(identifier, label, new Structure.Builder()
                 .setStatementExecution((v, ec) -> {
                     if (v.isDelayed()) return v.causesOfDelay();
                     if (v.isBoolValueFalse()) return FlowDataConstants.NEVER;
@@ -44,7 +44,7 @@ public class WhileStatement extends LoopStatement {
                 .setExpressionIsCondition(true)
                 .setBlock(block)
                 .setComment(comment)
-                .build(), label);
+                .build());
     }
 
     @Override

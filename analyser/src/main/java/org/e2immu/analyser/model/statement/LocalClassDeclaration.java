@@ -32,7 +32,7 @@ public class LocalClassDeclaration extends StatementWithStructure {
                                  TypeInfo typeInfo,
                                  List<MethodInspection> methodAndConstructorInspections,
                                  Comment comment) {
-        super(identifier, comment);
+        super(identifier,  null, comment);
         this.typeInfo = typeInfo;
         this.methodAndConstructorInspections = methodAndConstructorInspections;
         assert methodAndConstructorInspections.stream().noneMatch(Objects::isNull);

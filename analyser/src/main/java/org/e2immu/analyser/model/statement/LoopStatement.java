@@ -21,11 +21,9 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public abstract class LoopStatement extends StatementWithExpression {
-    public final String label;
 
-    protected LoopStatement(Identifier identifier, Structure structure, String label) {
-        super(identifier, structure, structure.expression());
-        this.label = label;
+    protected LoopStatement(Identifier identifier, String label, Structure structure) {
+        super(identifier, label, structure, structure.expression());
     }
 
     @Override

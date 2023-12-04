@@ -56,12 +56,13 @@ public class TryStatement extends StatementWithStructure {
     private final List<? extends Element> subElements;
 
     public TryStatement(Identifier identifier,
+                        String label,
                         List<Expression> resources,
                         Block tryBlock,
                         List<Pair<CatchParameter, Block>> catchClauses,
                         Block finallyBlock,
                         Comment comment) {
-        super(identifier, codeOrganization(resources, tryBlock, catchClauses, finallyBlock, comment));
+        super(identifier, label, codeOrganization(resources, tryBlock, catchClauses, finallyBlock, comment));
         this.resources = List.copyOf(resources);
         this.catchClauses = List.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
@@ -141,7 +142,7 @@ public class TryStatement extends StatementWithStructure {
                 .collect(Collectors.toList());
         List<Statement> translatedFinally = finallyBlock.translate(inspectionProvider, translationMap);
 
-        return List.of(new TryStatement(identifier, resources,
+        return List.of(new TryStatement(identifier, label, resources,
                 ensureBlock(structure.block().identifier, translatedBlock),
                 translatedCatchClauses,
                 ensureBlock(finallyBlock.identifier, translatedFinally),

@@ -179,7 +179,7 @@ public class TestTypeInfoStream {
                                                 new VariableExpression(newId(), new LocalVariableReference(mapLocalVariable, creationExpression)),
                                                 null,
                                                 new Block.BlockBuilder(newId())
-                                                        .addStatement(new IfElseStatement(newId(),
+                                                        .addStatement(new IfElseStatement(newId(), null,
                                                                 new BooleanConstant(primitives, true),
                                                                 new Block.BlockBuilder(newId()).build(),
                                                                 Block.emptyBlock(newId()),

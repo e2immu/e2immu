@@ -61,9 +61,10 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     public final List<SwitchLabel> switchLabels;
     public final List<Expression> labelExpressions;
 
-    public SwitchStatementOldStyle(Identifier identifier, Expression selector, Block block, List<SwitchLabel> switchLabels,
+    public SwitchStatementOldStyle(Identifier identifier, String label,
+                                   Expression selector, Block block, List<SwitchLabel> switchLabels,
                                    Comment comment) {
-        super(identifier, new Structure.Builder()
+        super(identifier, label, new Structure.Builder()
                 .setExpression(selector)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementExecution(StatementExecution.ALWAYS)
@@ -88,7 +89,7 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
         List<SwitchLabel> translatedLabels = switchLabels.stream()
                 .map(l -> l.translate(inspectionProvider, translationMap))
                 .collect(Collectors.toList());
-        return List.of(new SwitchStatementOldStyle(identifier, translatedExpression,
+        return List.of(new SwitchStatementOldStyle(identifier, label, translatedExpression,
                 ensureBlock(structure.block().identifier, structure.block().translate(inspectionProvider, translationMap)),
                 translatedLabels, structure.comment()));
     }

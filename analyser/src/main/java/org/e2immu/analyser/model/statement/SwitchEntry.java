@@ -42,7 +42,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
     private SwitchEntry(Identifier identifier,
                         Primitives primitives,
                         Structure structure, Expression switchVariableAsExpression, List<Expression> labels) {
-        super(identifier, structure);
+        super(identifier, null, structure);
         this.labels = labels;
         this.switchVariableAsExpression = switchVariableAsExpression;
         this.primitives = primitives;

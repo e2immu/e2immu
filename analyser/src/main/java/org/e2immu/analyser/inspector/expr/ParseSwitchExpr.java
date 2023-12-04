@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
@@ -195,7 +194,13 @@ public class ParseSwitchExpr {
         return builder.build();
     }
 
-    private static Statement switchCaseToStatement(ExpressionContext newExpressionContext, ForwardReturnTypeInfo forwardReturnTypeInfo, Expression selector, InspectionProvider ip, com.github.javaparser.ast.stmt.SwitchEntry switchEntry, List<Expression> labels, boolean isDefault) {
+    private static Statement switchCaseToStatement(ExpressionContext newExpressionContext,
+                                                   ForwardReturnTypeInfo forwardReturnTypeInfo,
+                                                   Expression selector,
+                                                   InspectionProvider ip,
+                                                   com.github.javaparser.ast.stmt.SwitchEntry switchEntry,
+                                                   List<Expression> labels,
+                                                   boolean isDefault) {
         Expression or = SwitchEntry.generateConditionExpression(ip.getPrimitives(), labels, selector);
         Statement statement;
         com.github.javaparser.ast.stmt.SwitchEntry.Type type = switchEntry.getType();
@@ -211,7 +216,7 @@ public class ParseSwitchExpr {
                 ThrowStmt throwStmt = st.asThrowStmt();
                 com.github.javaparser.ast.expr.Expression e = throwStmt.getExpression();
                 Expression expression = newExpressionContext.parseExpression(e, forwardReturnTypeInfo);
-                returnStatement = new ThrowStatement(Identifier.from(e), expression, null);
+                returnStatement = new ThrowStatement(Identifier.from(e), null, expression, null);
             } else {
                 throw new UnsupportedOperationException();
             }
@@ -219,14 +224,14 @@ public class ParseSwitchExpr {
                 statement = returnStatement;
             } else {
                 Block ifBlock = new Block.BlockBuilder(Identifier.from(switchEntry)).addStatement(returnStatement).build();
-                statement = new IfElseStatement(Identifier.from(switchEntry), or, ifBlock,
+                statement = new IfElseStatement(Identifier.from(switchEntry), null, or, ifBlock,
                         Block.emptyBlock(Identifier.generate("empty switch block")), null);
             }
         } else if (type == com.github.javaparser.ast.stmt.SwitchEntry.Type.BLOCK) {
             Block exec = newExpressionContext.parseBlockOrStatement(switchEntry.getStatements().get(0));
             if (isDefault) statement = exec;
             else {
-                statement = new IfElseStatement(Identifier.from(switchEntry), or, exec,
+                statement = new IfElseStatement(Identifier.from(switchEntry), null, or, exec,
                         Block.emptyBlock(Identifier.generate("empty switch entry")), null);
             }
         } else {
@@ -242,7 +247,7 @@ public class ParseSwitchExpr {
         TypeInspection typeInspection = ip.getTypeInspection(runtimeException);
         MethodInfo constructor = typeInspection.constructors().stream()
                 .filter(m -> ip.getMethodInspection(m).getParameters().isEmpty()).findFirst().orElseThrow();
-        return new ThrowStatement(identifier, ConstructorCall.objectCreation(identifier, null, constructor,
+        return new ThrowStatement(identifier, null, ConstructorCall.objectCreation(identifier, null, constructor,
                 runtimeException.asParameterizedType(ip), Diamond.NO, List.of()), null);
     }
 }

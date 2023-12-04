@@ -203,7 +203,7 @@ public interface StatementAnalysis extends Analysis,
 
     boolean recursivelyContainedIn(Expression expression, Variable variable);
 
-    record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
+    record FindLoopResult(StatementAnalysis statementAnalysis, int steps, boolean isLoop) {
     }
 
     DV isReturnOrEscapeAlwaysExecutedInCurrentBlock(boolean escapeOnly);

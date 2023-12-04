@@ -25,8 +25,8 @@ public abstract class StatementWithExpression extends StatementWithStructure {
 
     public final Expression expression;
 
-    protected StatementWithExpression(Identifier identifier, Structure structure, Expression expression) {
-        super(identifier, structure);
+    protected StatementWithExpression(Identifier identifier, String label, Structure structure, Expression expression) {
+        super(identifier, label, structure);
         this.expression = expression;
     }
 }

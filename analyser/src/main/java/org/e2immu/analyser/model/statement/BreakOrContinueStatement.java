@@ -21,15 +21,15 @@ import org.e2immu.analyser.model.Identifier;
 import java.util.function.Predicate;
 
 public abstract class BreakOrContinueStatement extends StatementWithStructure {
-    public final String label;
+    public final String goToLabel;
 
-    public BreakOrContinueStatement(Identifier identifier, String label, Comment comment) {
-        super(identifier, comment);
-        this.label = label;
+    public BreakOrContinueStatement(Identifier identifier, String labelOfStatement, String goToLabel, Comment comment) {
+        super(identifier, labelOfStatement, comment);
+        this.goToLabel = goToLabel;
     }
 
-    public boolean hasALabel() {
-        return label != null;
+    public String goToLabel() {
+        return goToLabel;
     }
 
     @Override

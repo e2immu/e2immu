@@ -233,11 +233,11 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                             } // else: this is possible, when we're parsing a lambda
                             return parseExpressionStartVoid(e);
                         }).orElse(EmptyExpression.EMPTY_EXPRESSION);
-                newStatement = new ReturnStatement(identifier, expression, comment);
+                newStatement = new ReturnStatement(identifier, labelOfStatement, expression, comment);
             } else if (statement.isYieldStmt()) {
                 Expression expr = parseExpression(((YieldStmt) statement).getExpression(),
                         Objects.requireNonNull(typeOfEnclosingSwitchExpression));
-                newStatement = new YieldStatement(identifier, expr, comment);
+                newStatement = new YieldStatement(identifier, labelOfStatement, expr, comment);
             } else if (statement.isExpressionStmt()) {
                 /*
                  see Constructor_15 for why we don't start off with a VOID context; see also MethodCall_14: sometimes
@@ -246,7 +246,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 ParameterizedType jlo = typeContext.getPrimitives().objectParameterizedType();
                 ForwardReturnTypeInfo fwd = new ForwardReturnTypeInfo(jlo, false, TypeParameterMap.EMPTY);
                 Expression expression = parseExpression(statement.asExpressionStmt().getExpression(), fwd);
-                newStatement = new ExpressionAsStatement(identifier, expression, comment, false);
+                newStatement = new ExpressionAsStatement(identifier, labelOfStatement, expression, comment, false);
                 variableContext.addAll(expression.newLocalVariables());
             } else if (statement.isForEachStmt()) {
                 newStatement = ParseForEachStmt.parse(this, labelOfStatement, (ForEachStmt) statement, comment);
@@ -256,35 +256,35 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 ExpressionContextImpl context = newVariableContext("block");
                 newStatement = context.parseBlockOrStatement(statement, labelOfStatement);
             } else if (statement.isIfStmt()) {
-                newStatement = ifThenElseStatement((IfStmt) statement, identifier, comment);
+                newStatement = ifThenElseStatement((IfStmt) statement, identifier, labelOfStatement, comment);
             } else if (statement.isSynchronizedStmt()) {
-                newStatement = synchronizedStatement((SynchronizedStmt) statement, identifier, comment);
+                newStatement = synchronizedStatement((SynchronizedStmt) statement, identifier, labelOfStatement, comment);
             } else if (statement.isThrowStmt()) {
-                newStatement = new ThrowStatement(identifier, parseExpressionStartVoid(statement.asThrowStmt().getExpression()),
-                        comment);
+                newStatement = new ThrowStatement(identifier, labelOfStatement,
+                        parseExpressionStartVoid(statement.asThrowStmt().getExpression()), comment);
             } else if (statement.isLocalClassDeclarationStmt()) {
                 newStatement = localClassDeclaration((LocalClassDeclarationStmt) statement, identifier, comment);
             } else if (statement.isExplicitConstructorInvocationStmt()) {
                 // this( ... )
                 newStatement = explicitConstructorInvocation((ExplicitConstructorInvocationStmt) statement, identifier, comment);
             } else if (statement.isTryStmt()) {
-                newStatement = tryStatement(statement.asTryStmt(), identifier, comment);
+                newStatement = tryStatement(statement.asTryStmt(), identifier, labelOfStatement, comment);
             } else if (statement.isContinueStmt()) {
-                String label = statement.asContinueStmt().getLabel().map(SimpleName::asString).orElse(null);
-                newStatement = new ContinueStatement(identifier, label, comment);
+                String goTo = statement.asContinueStmt().getLabel().map(SimpleName::asString).orElse(null);
+                newStatement = new ContinueStatement(identifier,labelOfStatement, goTo, comment);
             } else if (statement.isBreakStmt()) {
-                String label = statement.asBreakStmt().getLabel().map(SimpleName::asString).orElse(null);
-                newStatement = new BreakStatement(identifier, label, comment);
+                String goTo = statement.asBreakStmt().getLabel().map(SimpleName::asString).orElse(null);
+                newStatement = new BreakStatement(identifier, labelOfStatement, goTo, comment);
             } else if (statement.isDoStmt()) {
                 newStatement = doStatement(labelOfStatement, statement.asDoStmt(), identifier, comment);
             } else if (statement.isForStmt()) {
                 newStatement = forStatement(labelOfStatement, statement.asForStmt(), identifier, comment);
             } else if (statement.isAssertStmt()) {
-                newStatement = assertStatement(statement.asAssertStmt(), identifier);
+                newStatement = assertStatement(statement.asAssertStmt(), identifier, labelOfStatement);
             } else if (statement.isEmptyStmt()) {
-                newStatement = new EmptyStatement(identifier, comment);
+                newStatement = new EmptyStatement(identifier, labelOfStatement, comment);
             } else if (statement.isSwitchStmt()) {
-                newStatement = switchStatement(statement.asSwitchStmt(), identifier, comment);
+                newStatement = switchStatement(statement.asSwitchStmt(), identifier, labelOfStatement, comment);
             } else if (statement.isUnparsableStmt()) {
                 LOGGER.warn("Skipping unparsable statement at {}", statement.getBegin());
                 newStatement = null;
@@ -301,7 +301,9 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         }
     }
 
-    private org.e2immu.analyser.model.Statement switchStatement(@NotNull SwitchStmt switchStmt, Identifier identifier,
+    private org.e2immu.analyser.model.Statement switchStatement(@NotNull SwitchStmt switchStmt,
+                                                                Identifier identifier,
+                                                                String labelOfStatement,
                                                                 Comment comment) {
         Expression selector = parseExpressionStartVoid(switchStmt.getSelector());
         ExpressionContextImpl newExpressionContext;
@@ -315,17 +317,18 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
             newExpressionContext = this;
         }
         if (switchStmt.getEntries().isEmpty()) {
-            return new SwitchStatementNewStyle(identifier, selector, List.of(), comment);
+            return new SwitchStatementNewStyle(identifier, labelOfStatement, selector, List.of(), comment);
         }
         if (switchStmt.getEntries().stream().anyMatch(e ->
                 e.getType() == com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP)) {
-            return switchStatementOldStyle(newExpressionContext, selector, switchStmt, identifier, comment);
+            return switchStatementOldStyle(newExpressionContext, selector, switchStmt, identifier, labelOfStatement,
+                    comment);
         }
         List<SwitchEntry> entries = switchStmt.getEntries()
                 .stream()
                 .map(entry -> newExpressionContext.switchEntry(selector, entry))
                 .collect(Collectors.toList());
-        return new SwitchStatementNewStyle(identifier, selector, entries, comment);
+        return new SwitchStatementNewStyle(identifier, labelOfStatement, selector, entries, comment);
     }
 
     /*
@@ -335,6 +338,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                                                                         Expression selector,
                                                                         SwitchStmt switchStmt,
                                                                         Identifier identifier,
+                                                                        String labelOfStatement,
                                                                         Comment comment) {
         List<SwitchStatementOldStyle.SwitchLabel> labels = new ArrayList<>();
         Block.BlockBuilder blockBuilder = new Block.BlockBuilder(identifier);
@@ -360,7 +364,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 }
             }
         }
-        return new SwitchStatementOldStyle(identifier, selector, blockBuilder.build(), labels, comment);
+        return new SwitchStatementOldStyle(identifier, labelOfStatement, selector, blockBuilder.build(), labels, comment);
     }
 
     @Override
@@ -418,13 +422,16 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         return new ForStatement(identifier, label, initializers, condition, updaters, block, comment);
     }
 
-    private org.e2immu.analyser.model.Statement assertStatement(AssertStmt assertStmt, Identifier identifier) {
+    private org.e2immu.analyser.model.Statement assertStatement(AssertStmt assertStmt, Identifier identifier, String labelOfStatement) {
         Expression check = parseExpression(assertStmt.getCheck(), ForwardReturnTypeInfo.expectBoolean(typeContext));
         Expression message = assertStmt.getMessage().map(this::parseExpressionStartVoid).orElse(null);
-        return new AssertStatement(identifier, check, message);
+        return new AssertStatement(identifier, labelOfStatement, check, message);
     }
 
-    private org.e2immu.analyser.model.Statement tryStatement(TryStmt tryStmt, Identifier identifier, Comment comment) {
+    private org.e2immu.analyser.model.Statement tryStatement(TryStmt tryStmt,
+                                                             Identifier identifier,
+                                                             String labelOfStatement,
+                                                             Comment comment) {
         List<Expression> resources = new ArrayList<>();
         ExpressionContextImpl tryExpressionContext = newVariableContext("try-resources");
         for (com.github.javaparser.ast.expr.Expression resource : tryStmt.getResources()) {
@@ -469,7 +476,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         }
         Block finallyBlock = tryStmt.getFinallyBlock().map(this::parseBlockOrStatement)
                 .orElse(Block.emptyBlock(Identifier.generate("empty finally block")));
-        return new TryStatement(identifier, resources, tryBlock, catchClauses, finallyBlock, comment);
+        return new TryStatement(identifier, labelOfStatement, resources, tryBlock, catchClauses, finallyBlock, comment);
     }
 
     private org.e2immu.analyser.model.Statement whileStatement(String label,
@@ -520,14 +527,18 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
 
     private org.e2immu.analyser.model.Statement synchronizedStatement(SynchronizedStmt statement,
                                                                       Identifier identifier,
+                                                                      String labelOfStatement,
                                                                       Comment comment) {
         Expression expression = parseExpressionStartVoid(statement.getExpression());
         ExpressionContext context = newVariableContext("synchronized-block");
         Block block = context.parseBlockOrStatement(statement.getBody());
-        return new SynchronizedStatement(identifier, expression, block, comment);
+        return new SynchronizedStatement(identifier, labelOfStatement, expression, block, comment);
     }
 
-    private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement, Identifier identifier, Comment comment) {
+    private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement,
+                                                                    Identifier identifier,
+                                                                    String labelOfStatement,
+                                                                    Comment comment) {
         Expression conditional = parseExpression(statement.getCondition(),
                 ForwardReturnTypeInfo.expectBoolean(typeContext));
         ExpressionContext ifContext = newVariableContext("if-block");
@@ -539,7 +550,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         } else {
             elseBlock = Block.emptyBlock(identifier);
         }
-        return new IfElseStatement(identifier, conditional, ifBlock, elseBlock, comment);
+        return new IfElseStatement(identifier, labelOfStatement, conditional, ifBlock, elseBlock, comment);
     }
 
     @Override

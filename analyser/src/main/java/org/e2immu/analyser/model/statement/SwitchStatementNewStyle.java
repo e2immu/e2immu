@@ -31,10 +31,11 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
     public final List<SwitchEntry> switchEntries;
 
     public SwitchStatementNewStyle(Identifier identifier,
+                                   String label,
                                    Expression selector,
                                    List<SwitchEntry> switchEntries,
                                    Comment comment) {
-        super(identifier, codeOrganization(selector, switchEntries, comment), selector);
+        super(identifier, label, codeOrganization(selector, switchEntries, comment), selector);
         this.switchEntries = List.copyOf(switchEntries);
     }
 
@@ -68,7 +69,7 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
         List<SwitchEntry> translatedEntries = switchEntries.stream()
                 .map(l -> (SwitchEntry) l.translate(inspectionProvider, translationMap).get(0)).toList();
 
-        return List.of(new SwitchStatementNewStyle(identifier, translatedVariable, translatedEntries,
+        return List.of(new SwitchStatementNewStyle(identifier, label, translatedVariable, translatedEntries,
                 structure.comment()));
     }
 

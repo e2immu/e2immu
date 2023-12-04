@@ -28,6 +28,12 @@ public interface Statement extends Element {
 
     Structure getStructure();
 
+    String label();
+
+    default boolean hasLabel() {
+        return label() != null;
+    }
+
     List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap);
 
     default boolean haveDirectTranslation(List<Statement> resultOfTranslation, Statement statement) {

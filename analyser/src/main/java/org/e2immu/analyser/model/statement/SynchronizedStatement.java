@@ -28,10 +28,11 @@ import java.util.function.Predicate;
 public class SynchronizedStatement extends StatementWithExpression {
 
     public SynchronizedStatement(Identifier identifier,
+                                 String label,
                                  Expression expression,
                                  Block block,
                                  Comment comment) {
-        super(identifier, new Structure.Builder()
+        super(identifier, label, new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementExecution(StatementExecution.ALWAYS)
@@ -73,7 +74,7 @@ public class SynchronizedStatement extends StatementWithExpression {
             return List.of(this);
         }
         if (translatedBlock.size() == 1 && translatedBlock.get(0) instanceof Block block) {
-            return List.of(new SynchronizedStatement(identifier, tex, block, structure.comment()));
+            return List.of(new SynchronizedStatement(identifier, label, tex, block, structure.comment()));
         }
         throw new UnsupportedOperationException();
     }

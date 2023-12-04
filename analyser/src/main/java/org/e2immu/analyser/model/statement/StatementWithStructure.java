@@ -21,16 +21,19 @@ import org.e2immu.analyser.model.impl.ElementImpl;
 
 public abstract class StatementWithStructure extends ElementImpl implements Statement {
     public final Structure structure;
+    public final String label;
     public static final Structure EMPTY_CODE_ORGANIZATION = new Structure.Builder().build();
 
-    public StatementWithStructure(Identifier identifier, Comment comment) {
+    public StatementWithStructure(Identifier identifier, String label, Comment comment) {
         super(identifier);
         structure = comment == null ? EMPTY_CODE_ORGANIZATION : new Structure.Builder().setComment(comment).build();
+        this.label = label;
     }
 
-    public StatementWithStructure(Identifier identifier, Structure structure) {
+    public StatementWithStructure(Identifier identifier, String label, Structure structure) {
         super(identifier);
         this.structure = structure;
+        this.label = label;
     }
 
     @Override
@@ -38,4 +41,8 @@ public abstract class StatementWithStructure extends ElementImpl implements Stat
         return structure;
     }
 
+    @Override
+    public String label() {
+        return label;
+    }
 }

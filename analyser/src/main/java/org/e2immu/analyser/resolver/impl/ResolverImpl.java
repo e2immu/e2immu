@@ -785,7 +785,7 @@ public class ResolverImpl implements Resolver {
                     VariableExpression parameter = new VariableExpression(parameterInfo.identifier, parameterInfo);
                     Assignment assignment = new Assignment(inspectionProvider.getPrimitives(), target, parameter);
                     Identifier id = Identifier.generate("synthetic assignment compact constructor");
-                    blockBuilder.addStatement(new ExpressionAsStatement(id, assignment, null, true));
+                    blockBuilder.addStatement(new ExpressionAsStatement(id, null, assignment, null, true));
                 }
             }
         };

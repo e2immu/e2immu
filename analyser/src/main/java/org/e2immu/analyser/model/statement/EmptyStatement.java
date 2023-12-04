@@ -24,8 +24,8 @@ import java.util.function.Predicate;
 
 public class EmptyStatement extends StatementWithStructure {
 
-    public EmptyStatement(Identifier identifier, Comment comment) {
-        super(identifier, comment);
+    public EmptyStatement(Identifier identifier, String label, Comment comment) {
+        super(identifier, label, comment);
     }
 
     @Override

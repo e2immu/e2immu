@@ -28,13 +28,11 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 public class YieldStatement extends StatementWithExpression {
-    public YieldStatement(Identifier identifier, Expression expression) {
-        this(identifier, expression, null);
-    }
 
-    public YieldStatement(Identifier identifier, Expression expression, Comment comment) {
-        super(identifier, new Structure.Builder()
+    public YieldStatement(Identifier identifier, String label, Expression expression, Comment comment) {
+        super(identifier, label, new Structure.Builder()
                 .setExpression(expression)
+                .setComment(comment)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(), expression);
     }
 
@@ -73,7 +71,7 @@ public class YieldStatement extends StatementWithExpression {
             return List.of(new ReturnStatement(identifier, tex));
         }
         if (tex == expression) return List.of(this);
-        return List.of(new YieldStatement(identifier, tex));
+        return List.of(new YieldStatement(identifier, label, tex, structure.comment()));
     }
 
     @Override

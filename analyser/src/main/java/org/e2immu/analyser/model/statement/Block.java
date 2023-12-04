@@ -30,18 +30,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 public class Block extends StatementWithStructure {
-    public final String label;
 
     public static Block emptyBlock(Identifier identifier) {
         return new Block(identifier, List.of(), null, null);
     }
 
     private Block(Identifier identifier, @NotNull List<Statement> statements, String label, Comment comment) {
-        super(identifier, new Structure.Builder()
+        super(identifier, label, new Structure.Builder()
                 .setStatementExecution(StatementExecution.ALWAYS)
                 .setComment(comment)
                 .setStatements(statements).build());
-        this.label = label;
     }
 
     @Override

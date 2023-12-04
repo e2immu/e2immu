@@ -36,7 +36,7 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
                                          MethodInfo methodInfo,
                                          List<Expression> parameterExpressions,
                                          Comment comment) {
-        super(identifier, new Structure.Builder()
+        super(identifier, null, new Structure.Builder()
                 .setUpdaters(parameterExpressions)
                 .setComment(comment)
                 .build());

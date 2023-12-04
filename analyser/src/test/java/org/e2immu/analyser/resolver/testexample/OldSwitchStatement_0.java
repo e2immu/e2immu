@@ -4,6 +4,7 @@ public class OldSwitchStatement_0 {
 
     public static String method(int dataType) {
         String s;
+        a:
         switch (dataType) {
 
             case 3: {
@@ -13,7 +14,8 @@ public class OldSwitchStatement_0 {
 
             case 4:
                 s = "z";
-                break;
+                b:
+                break a;
 
             default:
                 s = "y";

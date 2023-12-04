@@ -29,11 +29,11 @@ import java.util.function.Predicate;
 
 public class ReturnStatement extends StatementWithExpression {
     public ReturnStatement(Identifier identifier, Expression expression) {
-        this(identifier, expression, null);
+        this(identifier, null, expression, null);
     }
 
-    public ReturnStatement(Identifier identifier, Expression expression, Comment comment) {
-        super(identifier,
+    public ReturnStatement(Identifier identifier, String label, Expression expression, Comment comment) {
+        super(identifier, label,
                 new Structure.Builder().setExpression(expression)
                         .setComment(comment)
                         .setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(),
@@ -42,7 +42,7 @@ public class ReturnStatement extends StatementWithExpression {
 
     @Override
     public Statement replaceComment(Comment newCommentOrNullToRemove) {
-        return new ReturnStatement(identifier, expression, newCommentOrNullToRemove);
+        return new ReturnStatement(identifier, label, expression, newCommentOrNullToRemove);
     }
 
     @Override
