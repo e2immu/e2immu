@@ -189,4 +189,15 @@ public class TestExternal extends CommonTestRunner {
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
+
+    // starting error: java.lang.UnsupportedOperationException: ? no delays, and initial return expression even
+    // though return statements are reachable
+    @Test
+    public void test_5() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-", d.delaySequence());
+
+        testClass("External_5", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
 }

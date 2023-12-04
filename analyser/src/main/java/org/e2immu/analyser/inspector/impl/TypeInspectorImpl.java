@@ -176,6 +176,8 @@ public class TypeInspectorImpl implements TypeInspector {
                     doEnumDeclaration(expressionContext, ed);
                 } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
                     doClassOrInterfaceDeclaration(expressionContext, cid);
+                } else if (typeDeclaration instanceof AnnotationDeclaration ad) {
+                    doAnnotationDeclaration(ad);
                 }
 
                 for (Modifier modifier : typeDeclaration.getModifiers()) {
@@ -345,6 +347,10 @@ public class TypeInspectorImpl implements TypeInspector {
             }
             doImplementedTypes(expressionContext, cid.getImplementedTypes());
         }
+    }
+
+    private void doAnnotationDeclaration(AnnotationDeclaration ad) {
+        builder.setTypeNature(TypeNature.ANNOTATION);
     }
 
     /**

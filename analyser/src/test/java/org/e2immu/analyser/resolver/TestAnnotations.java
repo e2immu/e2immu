@@ -18,6 +18,7 @@ package org.e2immu.analyser.resolver;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.e2immu.analyser.resolver.testexample.a.Resource;
@@ -125,5 +126,30 @@ public class TestAnnotations extends CommonTest {
         assertEquals(3, ae.expressions().size());
         assertEquals("@Resource(name=Annotations_4.XX,lookup=Annotations_4.ZZ,authenticationType=AuthenticationType.CONTAINER)",
                 ae.toString());
+    }
+
+
+    @Test
+    public void test_5() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Annotations_5.class);
+        TypeInfo typeInfo = typeMap.get(Annotations_5.class);
+        assertNotNull(typeInfo);
+        TypeInspection ti = typeInfo.typeInspection.get();
+        assertTrue(ti.isAnnotation());
+        assertEquals(2, ti.getAnnotations().size());
+        AnnotationExpression a0 = ti.getAnnotations().get(0);
+        assertEquals("java.lang.annotation.Target", a0.typeInfo().fullyQualifiedName);
+        AnnotationExpression a1 = ti.getAnnotations().get(1);
+        assertEquals("java.lang.annotation.Retention", a1.typeInfo().fullyQualifiedName);
+
+        MethodInfo value = typeInfo.findUniqueMethod("value", 0);
+        assertEquals("Type Class<?>", value.returnType().toString());
+        assertTrue(value.methodInspection.get().getMethodBody().isEmpty());
+
+        MethodInfo extra = typeInfo.findUniqueMethod("extra", 0);
+        assertEquals("Type String", extra.returnType().toString());
+        if(extra.methodInspection.get().getMethodBody().structure.statements().get(0) instanceof ReturnStatement rs) {
+            assertEquals("\"!\"", rs.expression.toString());
+        } else fail();
     }
 }

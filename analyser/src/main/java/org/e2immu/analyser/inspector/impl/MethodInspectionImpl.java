@@ -150,6 +150,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         List<MethodModifier> result = new ArrayList<>();
         Access access = getAccess();
         boolean inInterface = methodInfo.typeInfo.isInterface();
+        boolean inAnnotation = methodInfo.typeInfo.typeInspection.get().isAnnotation();
         boolean isAbstract = methodInfo.isAbstract();
         boolean isDefault = methodInfo.isDefault();
         if (access != Access.PACKAGE && !(inInterface && (isAbstract || isDefault))) {
@@ -161,7 +162,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             };
             result.add(accessModifier);
         }
-        if (inInterface) {
+        if (inInterface || inAnnotation) {
             if (isDefault) result.add(MethodModifier.DEFAULT);
         } else {
             if (isAbstract) result.add(MethodModifier.ABSTRACT);

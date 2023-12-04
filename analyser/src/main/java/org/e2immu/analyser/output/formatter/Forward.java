@@ -44,7 +44,6 @@ public class Forward {
         ElementarySpace lastOneWasSpace = ElementarySpace.NICE; // used to avoid writing double spaces
         Split split = Split.NEVER;
         boolean wroteOnce = false; // don't write a space at the beginning of the line
-        boolean allowBreak = false; // write until the first allowed space
         while (pos < end && ((outputElement = list.get(pos)) != Space.NEWLINE)) {
             String string;
 
@@ -56,7 +55,6 @@ public class Forward {
                 string = symbol.symbol();
                 spaceAfterWriting = symbol.right().elementarySpace(options);
                 splitAfterWriting = symbol.right().split;
-                if (split == Split.NEVER) allowBreak = false;
             } else {
                 spaceAfterWriting = ElementarySpace.RELAXED_NONE;
                 splitAfterWriting = Split.NEVER;
@@ -70,13 +68,12 @@ public class Forward {
             if (outputElement instanceof Space space) {
                 lastOneWasSpace = combine(lastOneWasSpace, space.elementarySpace(options));
                 split = split.easiest(space.split);
-                allowBreak |= outputElement != Space.NONE;
             } else if (outputElement instanceof Guide guide) {
                 if (chars >= maxChars) return false;
                 // empty string indicates that there is a Guide on this position
                 // split means nothing here
                 if (writer.apply(new ForwardInfo(pos, chars, null, Split.NEVER, guide, false))) return true;
-            } else if (string.length() > 0) {
+            } else if (!string.isEmpty()) {
                 boolean writeSpace = lastOneWasSpace != ElementarySpace.NONE &&
                         lastOneWasSpace != ElementarySpace.RELAXED_NONE && wroteOnce;
                 String stringToWrite = writeSpace ? (" " + string) : string;
@@ -85,7 +82,6 @@ public class Forward {
                 lastOneWasSpace = spaceAfterWriting;
                 split = splitAfterWriting;
                 wroteOnce = true;
-                allowBreak = split != Split.NEVER;
                 chars += string.length() + (writeSpace ? 1 : 0);
             }
             ++pos;

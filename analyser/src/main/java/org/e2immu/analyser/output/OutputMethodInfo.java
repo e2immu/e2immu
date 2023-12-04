@@ -19,6 +19,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.QualificationImpl;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -80,6 +81,14 @@ public class OutputMethodInfo {
         MethodAnalysis methodAnalysisOrNull = analysisProvider.getMethodAnalysis(methodInfo);
         if (methodInfo.isAbstract()) {
             afterAnnotations.add(Symbol.SEMICOLON);
+        } else if (TypeNature.ANNOTATION == methodInfo.typeInfo.typeInspection.get().typeNature()) {
+            // default value when the method is not abstract
+            OutputBuilder expression = inspection.getMethodBody().getStructure().statements().get(0)
+                    .asInstanceOf(ReturnStatement.class).expression.output(qualification);
+            afterAnnotations.add(Space.ONE)
+                    .add(new Text(Keyword.DEFAULT.keyword()))
+                    .add(Space.ONE)
+                    .add(expression).add(Symbol.SEMICOLON);
         } else {
             Qualification bodyQualification = makeBodyQualification(qualification, inspection);
             StatementAnalysis firstStatement = methodAnalysisOrNull != null ? methodAnalysisOrNull.getFirstStatement() : null;

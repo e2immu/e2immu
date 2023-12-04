@@ -72,8 +72,12 @@ public class MethodInspectorImpl implements MethodInspector {
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         String name = amd.getNameAsString();
         LOGGER.debug("Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
-        MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(Identifier.from(amd), typeInfo, name,
-                MethodInfo.MethodType.METHOD);
+        Identifier identifier = Identifier.from(amd);
+        Expression expression = amd.getDefaultValue().map(expressionContext::parseExpressionStartVoid)
+                .orElse(EmptyExpression.EMPTY_EXPRESSION);
+        MethodInfo.MethodType methodType = expression.isEmpty() ? MethodInfo.MethodType.ABSTRACT_METHOD
+                : MethodInfo.MethodType.METHOD;
+        MethodInspection.Builder tempBuilder = new MethodInspectionImpl.Builder(identifier, typeInfo, name, methodType);
         MethodInspection.Builder builder = fqnIsKnown(expressionContext.typeContext(), tempBuilder, false);
         assert builder != null;
 
@@ -82,9 +86,13 @@ public class MethodInspectorImpl implements MethodInspector {
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
         if (fullInspection) {
             addModifiers(builder, amd.getModifiers());
-            Expression expression = amd.getDefaultValue().map(expressionContext::parseExpressionStartVoid).orElse(EmptyExpression.EMPTY_EXPRESSION);
-            Block body = new Block.BlockBuilder(Identifier.generate("annotation block"))
-                    .addStatement(new ReturnStatement(Identifier.generate("annotation return"), expression)).build();
+            Block body;
+            if (expression.isEmpty()) {
+                body = Block.emptyBlock(identifier);
+            } else {
+                ReturnStatement rs = new ReturnStatement(Identifier.generate("annotation return"), expression);
+                body = new Block.BlockBuilder(expression.getIdentifier()).addStatement(rs).build();
+            }
             builder.setInspectedBlock(body);
             ParameterizedType returnType = ParameterizedTypeFactory.from(expressionContext.typeContext(), amd.getType());
             builder.setReturnType(returnType);

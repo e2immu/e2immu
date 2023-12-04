@@ -155,9 +155,6 @@ public interface WithInspectionAndAnalysis {
                 }
             }
         }
-        if (perAnnotation.size() > 1) {
-            perAnnotation.sort(Comparator.comparing(a -> a.findTypeName().simpleName()));
-        }
         return perAnnotation.stream();
     }
 

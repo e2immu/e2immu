@@ -4,6 +4,7 @@ public record Keyword(String keyword) implements OutputElement {
 
     public static final Keyword ABSTRACT = new Keyword("abstract");
     public static final Keyword ASSERT = new Keyword("assert");
+    public static final Keyword AT_INTERFACE = new Keyword("@interface");
     public static final Keyword BREAK = new Keyword("break");
     public static final Keyword CASE = new Keyword("case");
     public static final Keyword CATCH = new Keyword("catch");

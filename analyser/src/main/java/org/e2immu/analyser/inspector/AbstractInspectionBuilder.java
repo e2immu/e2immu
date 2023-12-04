@@ -40,7 +40,7 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection, Inspec
 
     @Override
     public List<AnnotationExpression> getAnnotations() {
-        return List.copyOf(annotations.toImmutableSet());
+        return annotations.stream().toList();
     }
 
     @Override

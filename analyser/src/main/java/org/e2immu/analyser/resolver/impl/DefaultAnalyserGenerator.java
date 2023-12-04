@@ -63,7 +63,8 @@ public class DefaultAnalyserGenerator implements AnalyserGenerator {
                     if (mfs instanceof TypeInfo typeInfo && !typeInfo.typeAnalysis.isSet()) {
                         TypeAnalyser typeAnalyser;
                         TypeInfo primaryType = sortedType.primaryType();
-                        if (inAnnotatedAPI || typeInfo.isInterface(analyserContext)) {
+                        TypeNature typeNature = analyserContext.getTypeInspection(typeInfo).typeNature();
+                        if (inAnnotatedAPI || TypeNature.INTERFACE == typeNature || TypeNature.ANNOTATION == typeNature) {
                             typeAnalyser = new ShallowTypeAnalyser(typeInfo, primaryType, analyserContext);
                         } else if (typeInfo.isAggregated()) {
                             typeAnalyser = new AggregatingTypeAnalyser(typeInfo, primaryType, analyserContext);

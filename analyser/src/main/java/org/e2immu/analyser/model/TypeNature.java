@@ -18,7 +18,7 @@ import org.e2immu.analyser.output.Keyword;
 
 public enum TypeNature {
 
-    ANNOTATION(null),
+    ANNOTATION(Keyword.AT_INTERFACE),
     CLASS(Keyword.CLASS),
     ENUM(Keyword.ENUM),
     INTERFACE(Keyword.INTERFACE),
