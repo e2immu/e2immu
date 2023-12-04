@@ -104,7 +104,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         // Too dangerous to use CommaExpression.comma, because it filters out constants etc.!
         Expression toEvaluate = toEvaluate(expressionsFromInitAndUpdate);
         EvaluationResult context = makeContext(sharedState.evaluationContext());
-        
+
         LOGGER.debug("Eval it {} main {} in {}", sharedState.evaluationContext().getIteration(), index(),
                 methodInfo().fullyQualifiedName);
         ForwardEvaluationInfo forwardEvaluationInfo = prepareForward(statement, structure);
@@ -207,6 +207,10 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
 
     private Post postProcess(Statement statement, StatementAnalyserSharedState sharedState, Expression value) {
         assert value != null; // EmptyExpression in case there really is no value
+
+        if (statement instanceof ForStatement fs && fs.expression.isEmpty()) {
+            return new Post(new BooleanConstant(sharedState.context().getPrimitives(), true), CausesOfDelay.EMPTY);
+        }
 
         if (statement instanceof IfElseStatement || statement instanceof AssertStatement) {
             if (value.isDone()) {

@@ -327,4 +327,13 @@ public class TestExternal extends CommonTestRunner {
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
+
+    @Test
+    public void test_9() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-", d.delaySequence());
+
+   //     testClass("External_9", 0, 1, new DebugConfiguration.Builder()
+   //             .addBreakDelayVisitor(breakDelayVisitor)
+   //             .build());
+    }
 }
