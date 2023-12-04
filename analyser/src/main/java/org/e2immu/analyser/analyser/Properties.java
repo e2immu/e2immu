@@ -243,4 +243,16 @@ public class Properties implements Comparable<Properties> {
     public String sortedToString() {
         return stream().map(Object::toString).sorted().collect(Collectors.joining(", "));
     }
+
+    public Properties delayValueProperties(CausesOfDelay causesOfDelay) {
+        Map<Property, DV> newMap = new HashMap<>();
+        for (Map.Entry<Property, DV> entry : map.entrySet()) {
+            if (entry.getKey().propertyType == Property.PropertyType.VALUE) {
+                newMap.put(entry.getKey(), causesOfDelay);
+            } else {
+                newMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return Properties.of(newMap);
+    }
 }

@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -197,6 +198,33 @@ public class TestExternal extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-", d.delaySequence());
 
         testClass("External_5", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // starting error: Changing value of @Independent from not_involved:0 to dependent:1
+    @Test
+    public void test_6() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-------", d.delaySequence());
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("startDocument".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "currentNode".equals(fr.fieldInfo().name)) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<f:document>";
+                            case 1, 2, 3 -> "<wrapped:document>";
+                            default ->
+                                    "null==document$0?External_6.documentBuilder.newDocument():null==(nullable instance type Document).getDocumentElement()?nullable instance type Document:instance 0.1.0.0.0 type Document";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 4, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                    }
+                }
+            }
+        };
+        testClass("External_6", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

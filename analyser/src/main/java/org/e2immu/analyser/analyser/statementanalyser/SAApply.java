@@ -687,7 +687,11 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Expression e = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(context.getAnalyserContext(),
                 valueToWritePossiblyDelayed);
         if (e instanceof DelayedWrappedExpression) {
-            vic.setValue(e, null, combined, EVALUATION);
+            boolean isNotMyself = context.evaluationContext().isMyself(variable) == IsMyself.NO;
+            // Example isNotMyself: External_6; example isMyself: Container_10ABC
+            // the general situation is that there cannot be value properties when there is no value yet
+            Properties delayedValueProperties = isNotMyself ? combined.delayValueProperties(e.causesOfDelay()) : combined;
+            vic.setValue(e, null, delayedValueProperties, EVALUATION);
             return true;
         }
         return false;
