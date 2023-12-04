@@ -228,4 +228,63 @@ public class TestExternal extends CommonTestRunner {
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
+
+    // starting error: overwriting value: Property context-not-null, current nullable:1, new not_null:5
+    // problem in explicit constructor invocation this(...)
+    @Test
+    public void test_7() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            int n = d.methodInfo().methodInspection.get().getParameters().size();
+            if (d.methodInfo().isConstructor() && n == 1) {
+                if (d.variable() instanceof FieldReference fr && "K".equals(fr.fieldInfo().name)) {
+                    assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                }
+            }
+            if (d.methodInfo().isConstructor() && n == 2) {
+                if (d.variable() instanceof ParameterInfo pi && "key".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                    }
+                }
+            }
+        };
+
+        testClass("External_7", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // starting error: Changing value of @Independent from dependent:1 to independent:21
+    // runs OK when 'else' keyword is removed on line 15
+    @Test
+    public void test_8A() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-", d.delaySequence());
+
+        testClass("External_8A", 0, 1, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // variant: even with removed keyword, it fails; here, we have introduced a Pattern variable list
+    @Test
+    public void test_8B() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-", d.delaySequence());
+
+        testClass("External_8B", 0, 1, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // variant: when using 2 pattern variables, it does not fail
+    @Test
+    public void test_8C() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-", d.delaySequence());
+
+        testClass("External_8C", 0, 1, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
 }

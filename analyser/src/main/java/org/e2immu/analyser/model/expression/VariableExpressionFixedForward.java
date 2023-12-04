@@ -18,8 +18,10 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
+import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 /*
@@ -28,8 +30,10 @@ Specific use in ECI (see SAInitializersAndUpdaters)
 public class VariableExpressionFixedForward extends VariableExpression {
     private final ForwardEvaluationInfo forwardEvaluationInfo;
 
-    public VariableExpressionFixedForward(ParameterInfo parameterInfo, ForwardEvaluationInfo forwardEvaluationInfo) {
-        super(parameterInfo.identifier, parameterInfo);
+    public VariableExpressionFixedForward(Identifier identifier,
+                                          Variable variable,
+                                          ForwardEvaluationInfo forwardEvaluationInfo) {
+        super(identifier, variable);
         this.forwardEvaluationInfo = forwardEvaluationInfo;
     }
 

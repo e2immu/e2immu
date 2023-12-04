@@ -230,7 +230,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
         if (hardCoded != null) {
             return hardCoded;
         }
-        if (onDemandMode.isSet()) {
+        if (onDemandMode.isSet() && typeInfo.typeInspection.isSet()) {
             synchronized (typeAnalyses) {
                 LOGGER.debug("On-demand shallow type analysis of {}", typeInfo);
                 try {

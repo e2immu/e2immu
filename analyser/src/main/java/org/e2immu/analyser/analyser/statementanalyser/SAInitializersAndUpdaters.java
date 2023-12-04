@@ -226,7 +226,7 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
             indicate that variables in the arguments (typically, parameters of the constructor with the ECI) are read
             See e.g. ECI_7 (ECI 6 also goes through this, but never in the weMustWait state.)
             */
-            if (updater instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi) {
+            if (updater instanceof VariableExpression ve) {
                 Map<Property, DV> contextProperties;
                 if (weMustWait) {
                     DV dv = DelayFactory.createDelay(causeOfDelay);
@@ -245,7 +245,8 @@ record SAInitializersAndUpdaters(StatementAnalysis statementAnalysis) {
                 ForwardEvaluationInfo forwardEvaluationInfo = new ForwardEvaluationInfo.Builder()
                         .addProperties(contextProperties)
                         .build();
-                VariableExpression newVe = new VariableExpressionFixedForward(pi, forwardEvaluationInfo);
+                VariableExpression newVe = new VariableExpressionFixedForward(ve.identifier, ve.variable(),
+                        forwardEvaluationInfo);
                 assignments.add(newVe);
             } else if (!updater.isConstant()) {
                 assignments.add(updater);

@@ -37,6 +37,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
@@ -390,12 +392,14 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
             if ("C".equals(d.methodInfo().name) && n == 0) {
                 assertEquals("0", d.statementId()); // ECI!
                 if (d.variable() instanceof FieldReference fr && "E2".equals(fr.fieldInfo().name)) {
-                    String linked = d.iteration() <= 2 ? "this.state:-1" : "this.state:1";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it0("this.state:-1,this:-1"),
+                            it(1, 2, "this.state:-1"),
+                            it(3, "this.state:1"));
                 }
                 if (d.variable() instanceof FieldReference fr && "condition".equals(fr.fieldInfo().name)) {
-                    String linked = d.iteration() <= 2 ? "UnknownExpression.E1:-1" : "UnknownExpression.E1:1";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it0("UnknownExpression.E1:-1,this:-1"),
+                            it(1, 2, "UnknownExpression.E1:-1"),
+                            it(3, "UnknownExpression.E1:1"));
                     String expected = switch (d.iteration()) {
                         case 0 -> "<f:E1>"; // Objects.requireNotNull(E1), identity + @NN property
                         case 1 -> "<vp:E1:container@Record_UnknownExpression>";
@@ -406,8 +410,9 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                     assertEquals(expected, d.currentValue().toString());
                 }
                 if (d.variable() instanceof FieldReference fr && "state".equals(fr.fieldInfo().name)) {
-                    String linked = d.iteration() <= 2 ? "UnknownExpression.E2:-1" : "UnknownExpression.E2:1";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it0("UnknownExpression.E2:-1,this:-1"),
+                            it(1, 2, "UnknownExpression.E2:-1"),
+                            it(3, "UnknownExpression.E2:1"));
                     String expected = switch (d.iteration()) {
                         case 0 -> "<f:E2>";
                         case 1 -> "<vp:E2:container@Record_UnknownExpression>";
@@ -610,7 +615,7 @@ public class Test_34_ExplicitConstructorInvocation extends CommonTestRunner {
                             assertNull(dve.hardCodedPropertyOrNull(Property.CONTEXT_NOT_NULL));
                         } else fail();
                     }
-                    assertDv(d, 0, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
+                    assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                 }
             }
         };
