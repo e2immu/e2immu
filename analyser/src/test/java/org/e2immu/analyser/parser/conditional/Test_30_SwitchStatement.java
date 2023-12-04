@@ -21,16 +21,12 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_30_SwitchStatement extends CommonTestRunner {
     public Test_30_SwitchStatement() {
@@ -110,7 +106,15 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.statementId().startsWith("1.")) {
+                    assertEquals("{}", d.statementAnalysis().flowData().interruptsFlowGet().toString());
+                }
+            }
+        };
         testClass("SwitchStatement_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -175,6 +179,32 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         };
         testClass("SwitchStatement_7", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_8() throws IOException {
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.statementId().startsWith("1.0.0")) {
+                    assertEquals("3==i", d.absoluteState().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    assertEquals("{}", d.statementAnalysis().flowData().interruptsFlowGet().toString());
+                }
+                if (d.statementId().startsWith("1.0.1")) {
+                    assertEquals("4==i", d.absoluteState().toString());
+                }
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-", d.delaySequence());
+
+        testClass("SwitchStatement_8", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

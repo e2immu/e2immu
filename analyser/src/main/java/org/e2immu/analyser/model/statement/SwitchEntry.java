@@ -126,6 +126,17 @@ public abstract class SwitchEntry extends StatementWithStructure {
             super(identifier, primitives, new Structure.Builder()
                     .setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
                     .setStatements(statements == null ? List.of() : statements)
+                    .setStatementExecution(new StatementExecution() {
+                        @Override
+                        public DV apply(Expression expression, EvaluationResult evaluationResult) {
+                            return SwitchEntry.statementExecution(labels, expression, evaluationResult);
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "StatementsEntry.ComputedStatementExecution[" + labels + "]";
+                        }
+                    })
                     .build(), switchVariableAsExpression, labels);
         }
 
@@ -199,7 +210,17 @@ public abstract class SwitchEntry extends StatementWithStructure {
             super(identifier, primitives,
                     new Structure.Builder()
                             .setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
-                            .setStatementExecution((x, y) -> SwitchEntry.statementExecution(labels, x, y))
+                            .setStatementExecution(new StatementExecution() {
+                                @Override
+                                public DV apply(Expression expression, EvaluationResult evaluationResult) {
+                                    return SwitchEntry.statementExecution(labels, expression, evaluationResult);
+                                }
+
+                                @Override
+                                public String toString() {
+                                    return "BlockEntry.ComputedStatementExecution[" + labels + "]";
+                                }
+                            })
                             .setBlock(block)
                             .build(),
                     switchVariableAsExpression, labels);

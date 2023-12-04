@@ -16,9 +16,15 @@ package org.e2immu.analyser.parser.conditional;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_55_NewSwitchStatement extends CommonTestRunner {
     public Test_55_NewSwitchStatement() {
@@ -40,6 +46,55 @@ public class Test_55_NewSwitchStatement extends CommonTestRunner {
     @Test
     public void test_2() throws IOException {
         testClass("NewSwitchStatement_2", 0, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("s".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("<not yet assigned>", d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertEquals("\"x\"", d.currentValue().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        assertEquals("instance 1 type String", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d-> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    assertEquals("dataType==3", d.condition().toString());
+                }
+                if ("1.1.0".equals(d.statementId())) {
+                    assertEquals("dataType==4", d.condition().toString());
+                }
+                if ("1.2.0".equals(d.statementId())) {
+                    assertEquals("!(dataType==3)&&!(dataType==4)", d.condition().toString());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = "/*inline method*/s$1";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--", d.delaySequence());
+
+        testClass("NewSwitchStatement_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 }
