@@ -21,10 +21,7 @@ import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -333,7 +330,7 @@ public class Assignment extends BaseExpression implements Expression {
                     && ive.variable().equals(newVariableTarget) && value.isDone()) {
                 return builder.assignmentToSelfIgnored(newVariableTarget).build();
             }
-            e2 = handleNormalAssignment(context, valueResult.value(), newVariableTarget, targetResult.value(), builder);
+            e2 = checkForAssignmentToSameValue(context, valueResult.value(), newVariableTarget, targetResult.value(), builder);
         }
         builder.composeIgnoreExpression(targetResult);
 
@@ -388,17 +385,20 @@ public class Assignment extends BaseExpression implements Expression {
         return variableTarget;
     }
 
-    private E2 handleNormalAssignment(EvaluationResult context,
-                                      Expression valueResultValue,
-                                      Variable newVariableTarget,
-                                      Expression currentValueOfTarget,
-                                      EvaluationResultImpl.Builder builder) {
+    private E2 checkForAssignmentToSameValue(EvaluationResult context,
+                                             Expression valueResultValue,
+                                             Variable newVariableTarget,
+                                             Expression currentValueOfTarget,
+                                             EvaluationResultImpl.Builder builder) {
         IsVariableExpression ive2;
         if (currentValueOfTarget != null && (currentValueOfTarget.equals(valueResultValue) ||
                 ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
-                        && newVariableTarget.equals(ive2.variable())) &&
-                !(newVariableTarget instanceof ReturnVariable) &&
-                !context.evaluationContext().firstAssignmentOfFieldInConstructor(newVariableTarget)) {
+                        && newVariableTarget.equals(ive2.variable()))
+                // no problem to return the same value in different conditions
+                && !(newVariableTarget instanceof ReturnVariable)
+                // scope variables are being re-assigned the same value all the time (External_8ABC)
+                && !(newVariableTarget instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.ScopeVariable)
+                && !context.evaluationContext().firstAssignmentOfFieldInConstructor(newVariableTarget)) {
             LOGGER.debug("Assigning identical value {} to {}", currentValueOfTarget, newVariableTarget);
             builder.assignmentToCurrentValue(newVariableTarget);
             // do continue! we do not want to ignore the assignment; however, due to warnings for self-assignment

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.external;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.VariableInfo;
@@ -22,9 +23,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.BreakDelayVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -261,9 +260,50 @@ public class TestExternal extends CommonTestRunner {
     // runs OK when 'else' keyword is removed on line 15
     @Test
     public void test_8A() throws IOException {
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("convertToLongArray".equals(d.methodInfo().name)) {
+                if ("0.1.0.0.1.0.1".equals(d.statementId())) {
+                    ChangeData cd = d.findValueChange("av-18:32");
+                    String expected = d.iteration() == 0 ? "<v:av-18:32[i]>" : "source/*(Object[])*/";
+                    assertEquals(expected, cd.value().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("convertToLongArray".equals(d.methodInfo().name)) {
+                if ("value".equals(d.variableName())) {
+                    if ("0.1.0.0.1.0.0".equals(d.statementId())) {
+                        assertEquals("Type Object", d.variable().parameterizedType().toString());
+                        String expected = d.iteration() == 0 ? "<v:av-18:32[i]>"
+                                : "source/*(Object[])*/[i$0.1.0.0.1]$0.1.0.0.1.0.0";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("av-18:32".equals(d.variableName())) {
+                    if ("0.1.0.0.1.0.1".equals(d.statementId())) {
+                        assertEquals("Type Object[]", d.variable().parameterizedType().toString());
+                        assertDv(d, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
+                    }
+                }
+            }
+        };
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("convertToLong".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:convertToLong>"
+                        : "/*inline convertToLong*/source instanceof Number?source/*(Number)*/.longValue():source instanceof String?Long.parseLong(source/*(String)*/):<return value>";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("Type long", d.methodAnalysis().getSingleReturnValue().returnType().toString());
+
+                assertEquals("source instanceof Number||source instanceof String",
+                        d.methodAnalysis().getPrecondition().expression().toString());
+            }
+        };
         testClass("External_8A", 0, 1, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
@@ -271,7 +311,7 @@ public class TestExternal extends CommonTestRunner {
     // variant: even with removed keyword, it fails; here, we have introduced a Pattern variable list
     @Test
     public void test_8B() throws IOException {
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-", d.delaySequence());
 
         testClass("External_8B", 0, 1, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)

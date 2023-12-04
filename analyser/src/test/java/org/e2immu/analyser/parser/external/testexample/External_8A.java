@@ -14,9 +14,9 @@ public class External_8A {
             return result;
         } else if (source instanceof Object[]) {
             Long[] result = new Long[((Object[]) source).length];
-            for (int i = 0; i < ((Object[]) source).length; i++) {
+            for (int i = 0; i < ((Object[]) source).length; i++) { // 0.1.0.0.1
                 Object value = ((Object[]) source)[i];
-                long valueLong = convertToLong(value);
+                long valueLong = convertToLong(value); // 0.1.0.0.1.0.1
                 result[i] = valueLong;
             }
             return result;
