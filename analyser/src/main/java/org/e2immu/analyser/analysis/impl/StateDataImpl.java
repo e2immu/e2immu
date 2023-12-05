@@ -60,9 +60,9 @@ public class StateDataImpl implements StateData {
 
     private final EventuallyFinal<Expression> staticSideEffect = new EventuallyFinal<>();
 
-    public StateDataImpl(Location location, boolean isLoop, Primitives primitives) {
-        statesOfInterrupts = isLoop ? new SetOnceMap<>() : null;
-        statesOfReturnInLoop = isLoop ? new SetOnceMap<>() : null;
+    public StateDataImpl(Location location, boolean isLoopOrSwitch, Primitives primitives) {
+        statesOfInterrupts = isLoopOrSwitch ? new SetOnceMap<>() : null;
+        statesOfReturnInLoop = isLoopOrSwitch ? new SetOnceMap<>() : null;
         conditionManagerForNextStatement.setVariable(ConditionManagerImpl.initialConditionManager(primitives));
         precondition.setVariable(Precondition.noInformationYet(location, primitives));
         postCondition.setVariable(PostCondition.NO_INFO_YET);

@@ -307,15 +307,15 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         }
         if (statementAnalysis.statement() instanceof BreakStatement breakStatement) {
             StatementAnalysisImpl.FindLoopResult loopOrSwitch = statementAnalysis.findLoopByLabel(breakStatement);
-            if(!loopOrSwitch.isLoop()) {
-                return ProgressWrapper.of(progress, causes); // FIXME this may have to change to fix SwitchStatement_8
-            }
+
             Expression state = sharedState.localConditionManager().stateUpTo(sharedState.context(), loopOrSwitch.steps());
             progress |= loopOrSwitch.statementAnalysis().stateData().addStateOfInterrupt(index(), state);
             if (state.isDelayed()) return ProgressWrapper.of(progress, state.causesOfDelay());
             Expression condition = sharedState.localConditionManager().condition();
-            if (loopOrSwitch.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
-                statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
+            if (loopOrSwitch.isLoop() &&
+                    loopOrSwitch.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+                statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION),
+                        Message.Label.INTERRUPT_IN_LOOP));
             }
         } else if (statement() instanceof LocalClassDeclaration) {
             EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(sharedState.context());

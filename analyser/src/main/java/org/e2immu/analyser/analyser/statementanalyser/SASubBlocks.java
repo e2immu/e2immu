@@ -352,7 +352,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                     } else {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
-                                null, null, CausesOfDelay.EMPTY,
+                                sharedState.forwardAnalysisInfo().switchIdToLabels(),
+                                sharedState.forwardAnalysisInfo().switchSelector(),
+                                sharedState.forwardAnalysisInfo().switchSelectorIsDelayed(),
                                 evaluationContext.breakDelayLevel());
                     }
                     AnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)

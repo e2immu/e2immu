@@ -132,11 +132,13 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         this.parent = parent;
         this.inSyncBlock = inSyncBlock;
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
-        localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
+        boolean isLoop = statement instanceof LoopStatement;
+        boolean isSwitch = statement instanceof SwitchStatementOldStyle || statement instanceof SwitchStatementNewStyle;
+        localVariablesAssignedInThisLoop = isLoop ? new AddOnceSet<>() : null;
         Location location = new LocationImpl(methodAnalysis.getMethodInfo(), index + INITIAL, statement.getIdentifier());
-        stateData = new StateDataImpl(location, statement instanceof LoopStatement, primitives);
+        stateData = new StateDataImpl(location, isLoop || isSwitch, primitives);
         flowData = new FlowDataImpl(location);
-        rangeData = statement instanceof LoopStatement ? new RangeDataImpl(location) : null;
+        rangeData = isLoop ? new RangeDataImpl(location) : null;
     }
 
     public static StatementAnalysis recursivelyCreateAnalysisObjects(

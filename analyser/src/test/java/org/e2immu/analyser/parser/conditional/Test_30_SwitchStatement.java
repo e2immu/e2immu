@@ -16,6 +16,7 @@ package org.e2immu.analyser.parser.conditional;
 
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.impl.FlowDataImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -185,6 +186,65 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
     @Test
     public void test_8() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("s".equals(d.variableName())) {
+                    if ("1.0.0.0.0".equals(d.statementId())) {
+                        assertEquals("\"x\"", d.currentValue().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertEquals("b?\"x\":<not yet assigned>", d.currentValue().toString());
+                    }
+                    if ("1.0.1.0.0".equals(d.statementId())) {
+                        assertEquals("\"z\"", d.currentValue().toString());
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        // FIXME
+                        assertEquals("\"x?\"", d.currentValue().toString());
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        assertEquals("\"y\"", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("\"x\"", d.currentValue().toString());
+                    }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.0.0.0".equals(d.statementId())) {
+                    assertEquals("3==i&&b", d.absoluteState().toString());
+                }
+                if ("1.0.1.0.0".equals(d.statementId())) {
+                    assertEquals("!b&&(3==i||4==i)", d.absoluteState().toString());
+                    assertEquals("CONDITIONALLY:1", d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*/instance 1 String";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--", d.delaySequence());
+
+        testClass("SwitchStatement_8", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_9() throws IOException {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
