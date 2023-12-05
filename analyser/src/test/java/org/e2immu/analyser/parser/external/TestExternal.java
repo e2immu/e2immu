@@ -22,6 +22,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
@@ -328,12 +329,57 @@ public class TestExternal extends CommonTestRunner {
                 .build());
     }
 
+    // starting problem:  Overwriting final value: old: false, new obj instanceof External_9&&Arrays.asList(excludeElements$0).equals(Arrays.asList(obj/*(Externa
     @Test
     public void test_9() throws IOException {
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-", d.delaySequence());
 
-   //     testClass("External_9", 0, 1, new DebugConfiguration.Builder()
-   //             .addBreakDelayVisitor(breakDelayVisitor)
-   //             .build());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("equals".equals(d.methodInfo().name) && "External_9".equals(d.methodInfo().typeInfo.simpleName)) {
+                if ("e1".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() < 3 ? "<m:equals>"
+                                : "Arrays.asList(s1$0).equals(Arrays.asList(obj/*(External_9)*/.s1$0))";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("e2".equals(d.variableName())) {
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() < 3 ? "<m:equals>"
+                                : "Arrays.asList(s2$0).equals(Arrays.asList(obj/*(External_9)*/.s2$0))";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("3".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1 ->
+                                    "obj instanceof External_9&&(<m:equals>||<return value>)&&(<m:equals>||<return value>)";
+                            case 2 -> "<wrapped:return equals>";
+                            default ->
+                                    "obj instanceof External_9&&(Arrays.asList(s1$0).equals(Arrays.asList(obj/*(External_9)*/.s1$0))||<return value>)&&(Arrays.asList(s2$0).equals(Arrays.asList(obj/*(External_9)*/.s2$0))||<return value>)";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals(d.iteration() >= 3, d.currentValue().isDone());
+                    }
+                    if ("4".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0, 1 -> "<instanceOf:External_9>&&<m:equals>&&<m:equals>";
+                            case 2 -> "<wrapped:return equals>";
+                            default ->
+                                    "obj instanceof External_9&&Arrays.asList(s1$0).equals(Arrays.asList(obj/*(External_9)*/.s1$0))&&Arrays.asList(s2$0).equals(Arrays.asList(obj/*(External_9)*/.s2$0))";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals(d.iteration() >= 3, d.currentValue().isDone());
+                    }
+                }
+            }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+
+        // public variable fields: 2 errors
+        testClass("External_9", 2, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
     }
 }

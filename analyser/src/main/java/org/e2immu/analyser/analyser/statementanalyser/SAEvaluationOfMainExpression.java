@@ -442,7 +442,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, expression).build();
             Expression translated = currentReturnValue.translate(context.evaluationContext().getAnalyserContext(), tm);
             // if translated == currentReturnValue, then there was no returnExpression, so we stick to expression
-            toEvaluate = translated == currentReturnValue ? expression : translated;
+            // see External_9 for an example why 'translated.isDone()' has been added as an extra condition.
+            toEvaluate = translated == currentReturnValue && translated.isDone() ? expression : translated;
             EvaluationContext newEc = context.evaluationContext().dropConditionManager();
             updatedContext = context.withNewEvaluationContext(newEc);
             forwardEvaluationInfo = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())

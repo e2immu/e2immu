@@ -821,7 +821,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull
         @Independent(hc = true)
-        <T> List<T> asList(T... ts);
+        <T> List<T> asList(@NotModified  T... ts);
 
         <T> void setAll(@NotNull T[] array, @NotNull @Independent(hcParameters = {0}) IntFunction<? extends T> generator);
     }
