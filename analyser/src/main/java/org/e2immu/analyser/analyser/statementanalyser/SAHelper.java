@@ -263,6 +263,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
     public void visitStatementVisitors(String statementId,
                                        AnalyserResult result,
                                        StatementAnalyserSharedState sharedState,
+                                       ForwardAnalysisInfo forwardAnalysisInfo,
                                        DebugConfiguration debugConfiguration,
                                        AnalyserComponents<String, StatementAnalyserSharedState> analyserComponents,
                                        VariableAccessReport variableAccessReport) {
@@ -298,6 +299,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                             cm == null ? "" : cm.conditionVariables().stream().map(Variable::simpleName).sorted().collect(Collectors.joining(", ")),
                             cm == null ? null : cm.state(),
                             cm == null ? null : cm.absoluteState(sharedState.context()),
+                            forwardAnalysisInfo,
                             cm,
                             sharedState.localConditionManager(),
                             analyserComponents.getStatusesAsMap(),

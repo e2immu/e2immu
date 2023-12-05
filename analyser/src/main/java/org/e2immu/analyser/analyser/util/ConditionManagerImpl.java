@@ -150,29 +150,52 @@ public record ConditionManagerImpl(Expression condition,
     we guarantee a parent so that the condition counts!
     Used in: StatementAnalyserImpl.analyseAllStatementsInBlock
      */
-    public ConditionManagerImpl withCondition(EvaluationResult context, Expression switchCondition,
-                                              Set<Variable> conditionVariables) {
+    public ConditionManagerImpl newCondition(EvaluationResult context, Expression switchCondition,
+                                             Set<Variable> conditionVariables) {
         return new ConditionManagerImpl(combine(context, condition, switchCondition),
                 combine(this.conditionVariables, conditionVariables), state, stateVariables, precondition, NO_VARS,
                 this);
     }
 
-    public ConditionManagerImpl withConditionCompute(EvaluationResult context, Expression switchCondition) {
+    public ConditionManagerImpl newConditionCompute(EvaluationResult context, Expression switchCondition) {
+        if (switchCondition.isBoolValueTrue()) {
+            // add a new layer
+            return new ConditionManagerImpl(condition, conditionVariables, state, stateVariables, precondition, NO_VARS, this);
+        }
+        Set<Variable> computedConditionVariables = switchCondition.variableStream().collect(Collectors.toUnmodifiableSet());
+        return new ConditionManagerImpl(switchCondition, computedConditionVariables, state, stateVariables,
+                precondition, NO_VARS, this);
+    }
+
+    @Override
+    public ConditionManager replaceConditionComputeEmptyState(EvaluationResult context, Expression newCondition) {
         Set<Variable> computedConditionVariables;
-        if (switchCondition.isBooleanConstant()) {
+        if (newCondition.isBooleanConstant()) {
             computedConditionVariables = Set.of();
         } else {
-            computedConditionVariables = switchCondition.variableStream().collect(Collectors.toUnmodifiableSet());
+            computedConditionVariables = newCondition.variableStream().collect(Collectors.toUnmodifiableSet());
         }
-        return new ConditionManagerImpl(combine(context, condition, switchCondition),
-                combine(this.conditionVariables, computedConditionVariables), state, stateVariables, precondition, NO_VARS,
-                this);
+        BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
+        return new ConditionManagerImpl(newCondition, computedConditionVariables, TRUE, Set.of(),
+                precondition, NO_VARS, parent);
+    }
+
+    @Override
+    public ConditionManager withStateCompute(EvaluationResult context, Expression newState) {
+        Set<Variable> computedStateVariables;
+        if (newState.isBooleanConstant()) {
+            computedStateVariables = Set.of();
+        } else {
+            computedStateVariables = newState.variableStream().collect(Collectors.toUnmodifiableSet());
+        }
+        return new ConditionManagerImpl(condition, conditionVariables, newState, computedStateVariables,
+                precondition, NO_VARS, parent);
     }
 
     /*
-    adds a new layer (parent this)
-    Widely used, mostly in SASubBlocks to create the CM of the ExecutionOfBlock objects
-    */
+        adds a new layer (parent this)
+        Widely used, mostly in SASubBlocks to create the CM of the ExecutionOfBlock objects
+        */
     public ConditionManagerImpl newAtStartOfNewBlockDoNotChangePrecondition(Primitives primitives,
                                                                             Expression condition,
                                                                             Set<Variable> conditionVariables) {
@@ -231,10 +254,16 @@ public record ConditionManagerImpl(Expression condition,
     }
 
     public Expression absoluteState(EvaluationResult evaluationContext) {
-        return absoluteState(evaluationContext, false, Set.of());
+        return absoluteState(evaluationContext, null, false, Set.of());
+    }
+
+    @Override
+    public Expression absoluteStateUpTo(ConditionManager base, EvaluationResult context) {
+        return absoluteState(context, base, false, Set.of());
     }
 
     private Expression absoluteState(EvaluationResult context,
+                                     ConditionManager base,
                                      boolean doingNullCheck,
                                      Set<Variable> ignoreFromChildren) {
         Set<Variable> cumulativeIgnore = SetUtil.immutableUnion(ignoreFromChildren, ignore);
@@ -243,8 +272,11 @@ public record ConditionManagerImpl(Expression condition,
         if (parent == null) {
             return state;
         }
+        if (base != null && base.equals(parent)) {
+            return And.and(Identifier.CONSTANT, context, condition, state);
+        }
         Expression parentAbsolute = ((ConditionManagerImpl) parent)
-                .absoluteState(context, doingNullCheck, cumulativeIgnore);
+                .absoluteState(context, base, doingNullCheck, cumulativeIgnore);
         Expression cleanCondition = expressionWithoutVariables(context, condition, cumulativeIgnore);
         expressions = new Expression[]{cleanCondition, state, parentAbsolute};
         complexity = cleanCondition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
@@ -328,7 +360,7 @@ public record ConditionManagerImpl(Expression condition,
         assert !value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
         Expression conditionalPart = value.extractConditions(context.getPrimitives());
         if (conditionalPart.isBoolValueTrue()) return value;
-        Expression absoluteState = absoluteState(context, false, Set.of());
+        Expression absoluteState = absoluteState(context, null, false, Set.of());
         if (absoluteState.isEmpty() || absoluteState.isBoolValueTrue()) return value;
         Expression newState = And.and(context, absoluteState, conditionalPart);
         if (newState.equals(conditionalPart) || newState.equals(absoluteState)) {
@@ -351,7 +383,7 @@ public record ConditionManagerImpl(Expression condition,
         assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
         if (value.isBoolValueFalse()) return value; // no matter what the conditions and state is
 
-        Expression absoluteState = absoluteState(context, doingNullCheck, Set.of());
+        Expression absoluteState = absoluteState(context, null, doingNullCheck, Set.of());
         if (absoluteState.isEmpty() || value.isEmpty()) throw new UnsupportedOperationException();
         /*
         check on true: no state, so don't do anything
@@ -413,7 +445,7 @@ public record ConditionManagerImpl(Expression condition,
         if (context.evaluationContext().preventAbsoluteStateComputation()) {
             state = this.state;
         } else {
-            state = absoluteState(context, false, Set.of());
+            state = absoluteState(context, null, false, Set.of());
         }
         return findIndividualNull(state, context, Filter.FilterMode.ACCEPT, requireEqualsNull);
 
@@ -448,7 +480,7 @@ public record ConditionManagerImpl(Expression condition,
      an AND of negations of the remainder after getting rid of != null, == null clauses.
      */
     public Expression precondition(EvaluationResult evaluationContext) {
-        Expression absoluteState = absoluteState(evaluationContext, false, Set.of());
+        Expression absoluteState = absoluteState(evaluationContext, null, false, Set.of());
         if (absoluteState.isEmpty()) throw new UnsupportedOperationException();
         Expression negated = Negation.negate(evaluationContext, absoluteState);
 
@@ -471,7 +503,7 @@ public record ConditionManagerImpl(Expression condition,
      */
     public Expression individualStateInfo(EvaluationResult evaluationContext, Variable variable) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-        Expression absoluteState = absoluteState(evaluationContext, false, Set.of());
+        Expression absoluteState = absoluteState(evaluationContext, null, false, Set.of());
         Expression combinedWithPrecondition;
         if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;

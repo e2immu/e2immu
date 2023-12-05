@@ -68,4 +68,8 @@ public record InterruptsFlow(String name, int level, String label) {
     public boolean isContinue() {
         return level == 2;
     }
+
+    public boolean isAtLeastBreak() {
+        return level >= 1;
+    }
 }

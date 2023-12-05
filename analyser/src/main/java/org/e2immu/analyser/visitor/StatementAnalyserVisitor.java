@@ -37,6 +37,7 @@ public interface StatementAnalyserVisitor {
                 String conditionVariablesSorted,
                 Expression state,
                 Expression absoluteState,
+                ForwardAnalysisInfo forwardAnalysisInfo,
                 ConditionManager conditionManagerForNextStatement,
                 ConditionManager localConditionManager, // as at the start of the statement
                 Map<String, AnalysisStatus> statusesAsMap,

@@ -78,8 +78,13 @@ public record ForwardAnalysisInfo(DV execution,
             if (previousSwitchCondition.isDelayed()) {
                 return previousSwitchCondition; // we'll have to wait
             }
-            Expression absoluteStateOfPrevious = previousStatement.getStatementAnalysis().stateData()
-                    .getConditionManagerForNextStatement().absoluteState(context);
+
+            ConditionManager cm = previousStatement.getStatementAnalysis().stateData()
+                    .getConditionManagerForNextStatement();
+            if (cm.state().isBoolValueTrue()) {
+                return label; // replace
+            }
+            Expression absoluteStateOfPrevious = cm.absoluteStateUpTo(initialConditionManager, context);
             boolean replace;
             if (label instanceof And andLabel) {
                 // default situation

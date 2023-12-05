@@ -19,9 +19,9 @@ public class TestConditionManager extends CommonAbstractValue {
     public void test1() {
         ConditionManager cm = ConditionManagerImpl.initialConditionManager(PRIMITIVES);
         Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
-        ConditionManager cm1 = cm.withCondition(context, sNotNull, Set.of(vs));
+        ConditionManager cm1 = cm.newCondition(context, sNotNull, Set.of(vs));
         assertEquals("CM{condition=null!=s;parent=CM{}}", cm1.toString());
-        ConditionManager cm2 = cm1.withCondition(context, a, Set.of(va));
+        ConditionManager cm2 = cm1.newCondition(context, a, Set.of(va));
         assertEquals("CM{condition=a&&null!=s;parent=CM{condition=null!=s;parent=CM{}}}", cm2.toString());
         assertEquals("a&&null!=s", cm2.absoluteState(context).toString());
 
@@ -41,9 +41,9 @@ public class TestConditionManager extends CommonAbstractValue {
         Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
         Expression de = DelayedExpression.forNullCheck(Identifier.CONSTANT, PRIMITIVES, sNotNull,
                 PostCondition.NO_INFO_YET.causesOfDelay());
-        ConditionManager cm1 = cm.withCondition(context, de, Set.of(vs));
+        ConditionManager cm1 = cm.newCondition(context, de, Set.of(vs));
         assertEquals("CM{condition=<null-check>;parent=CM{}}", cm1.toString());
-        ConditionManager cm2 = cm1.withCondition(context, a, Set.of(va));
+        ConditionManager cm2 = cm1.newCondition(context, a, Set.of(va));
         assertEquals("CM{condition=a&&<null-check>;parent=CM{condition=<null-check>;parent=CM{}}}", cm2.toString());
         assertEquals("a&&<null-check>", cm2.absoluteState(context).toString());
 

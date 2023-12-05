@@ -75,7 +75,15 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
         AnalysisStatus statusFromStatement;
         ConditionManager cmFromStatement;
-        if (statement() instanceof AssertStatement) {
+        if (sharedState.lastStatementBeforeCaseInOldStyleSwitch(statementAnalysis)) {
+            if (sharedState.previous().flowData().bestAlwaysInterrupt().isAtLeastBreak()) {
+                Expression newState = new BooleanConstant(sharedState.evaluationContext().getPrimitives(), true);
+                cmFromStatement = sharedState.localConditionManager().withStateCompute(sharedState.context(), newState);
+            } else {
+                cmFromStatement = cm;
+            }
+            statusFromStatement = statusFromLocalCm;
+        } else if (statement() instanceof AssertStatement) {
             ConditionManagerAndStatus conditionManagerAndStatus = doAssertStatement(sharedState, cm);
             cmFromStatement = conditionManagerAndStatus.conditionManager;
             statusFromStatement = statusFromLocalCm.combine(conditionManagerAndStatus.analysisStatus);
@@ -347,9 +355,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                         ForwardAnalysisInfo.SwitchData switchData = new ForwardAnalysisInfo.SwitchData(switchIdToLabels,
                                 statementAnalysis.stateData().valueOfExpressionGet(),
                                 statementAnalysis.stateData().valueOfExpressionGet().causesOfDelay(),
-                                sharedState.localConditionManager());
+                                executionOfBlock.conditionManager.parent());
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
-                                executionOfBlock.conditionManager, executionOfBlock.catchVariable,
+                                executionOfBlock.conditionManager.parent(), executionOfBlock.catchVariable,
                                 switchData, evaluationContext.breakDelayLevel());
                     } else {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
@@ -433,17 +441,35 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             analysisStatus = analysisStatus.combine(result.analysisStatus());
 
             // compute the escape situation of the sub-blocks
-
             Expression translatedAddToState = result.translatedAddToStateAfterMerge();
-            if (!translatedAddToState.isBoolValueTrue()) {
-                // check: is the following statement correct?
-                Set<Variable> stateVariables = translatedAddToState.variableStream().collect(Collectors.toUnmodifiableSet());
-                ConditionManager newLocalConditionManager = sharedState.localConditionManager()
-                        .newForNextStatementDoNotChangePrecondition(sharedState.context(), translatedAddToState,
-                                stateVariables);
+
+            if (sharedState.lastStatementBeforeCaseInOldStyleSwitch(statementAnalysis)) {
+                // if statement: we should exit in both conditions
+                // block: simply exit
+                ConditionManager newLocalConditionManager;
+                if (atLeastOneBlockExecuted &&
+                        executions.stream().allMatch(e -> e.startOfBlock.lastStatement().getStatementAnalysis()
+                                .flowData().bestAlwaysInterrupt().isAtLeastBreak())) {
+                    Expression newState = new BooleanConstant(sharedState.evaluationContext().getPrimitives(), true);
+                    newLocalConditionManager = sharedState.localConditionManager()
+                            .withStateCompute(sharedState.context(), newState);
+                } else {
+                    newLocalConditionManager = sharedState.localConditionManager()
+                            .withStateCompute(sharedState.context(), translatedAddToState);
+                }
                 statementAnalysis.stateData().setLocalConditionManagerForNextStatement(newLocalConditionManager);
                 keepCurrentLocalConditionManager = false;
-                LOGGER.debug("Continuing beyond default condition with conditional {}", translatedAddToState);
+            } else {
+                if (!translatedAddToState.isBoolValueTrue()) {
+                    // check: is the following statement correct?
+                    Set<Variable> stateVariables = translatedAddToState.variableStream().collect(Collectors.toUnmodifiableSet());
+                    ConditionManager newLocalConditionManager = sharedState.localConditionManager()
+                            .newForNextStatementDoNotChangePrecondition(sharedState.context(), translatedAddToState,
+                                    stateVariables);
+                    statementAnalysis.stateData().setLocalConditionManagerForNextStatement(newLocalConditionManager);
+                    keepCurrentLocalConditionManager = false;
+                    LOGGER.debug("Continuing beyond default condition with conditional {}", translatedAddToState);
+                }
             }
         } else {
             int maxTime = statementAnalysis.flowData().getTimeAfterEvaluation();
@@ -523,6 +549,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
 
     private boolean atLeastOneBlockExecuted(List<ExecutionOfBlock> list) {
         Statement statement = statement();
+        if (statement instanceof Block) {
+            assert list.size() == 1;
+            return true;
+        }
         if (statement instanceof SwitchStatementOldStyle switchStatementOldStyle) {
             return switchStatementOldStyle.atLeastOneBlockExecuted();
         }

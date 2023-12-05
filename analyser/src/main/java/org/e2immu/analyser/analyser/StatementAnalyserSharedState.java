@@ -23,4 +23,10 @@ public record StatementAnalyserSharedState(EvaluationContext evaluationContext,
                                            StatementAnalysis previous,
                                            ForwardAnalysisInfo forwardAnalysisInfo,
                                            ConditionManager localConditionManager) {
+    public boolean lastStatementBeforeCaseInOldStyleSwitch(StatementAnalysis statementAnalysis) {
+        return forwardAnalysisInfo().switchData() != null
+                && statementAnalysis.navigationData().next.get().isPresent()
+                && forwardAnalysisInfo().switchData().switchIdToLabels()
+                .containsKey(statementAnalysis.navigationData().next.get().get().index());
+    }
 }

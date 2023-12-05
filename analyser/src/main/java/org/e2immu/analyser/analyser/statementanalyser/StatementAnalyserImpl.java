@@ -246,7 +246,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                             switchCondition, statementAnalyser.statementAnalysis);
                 }
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
-                        .withConditionCompute(context, switchCondition));
+                        .newConditionCompute(context, switchCondition));
 
                 AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, currentStatementTime, closure,
                         previousStatementAnalysis, statementInfo, delaySubsequentStatementBecauseOfECI);
@@ -483,7 +483,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                     .setAnalysisStatus(overallStatus)
                     .build();
 
-            helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState,
+            helper.visitStatementVisitors(statementAnalysis.index(), result, sharedState, forwardAnalysisInfo,
                     analyserContext.getConfiguration().debugConfiguration(), analyserComponents,
                     analyserResultBuilder.getVariableAccessReport());
 

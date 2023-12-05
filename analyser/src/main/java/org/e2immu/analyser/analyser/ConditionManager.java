@@ -69,10 +69,14 @@ public interface ConditionManager {
     we guarantee a parent so that the condition counts!
     Used in: StatementAnalyserImpl.analyseAllStatementsInBlock
      */
-    ConditionManager withCondition(EvaluationResult context, Expression switchCondition,
-                                   Set<Variable> conditionVariables);
+    ConditionManager newCondition(EvaluationResult context, Expression switchCondition,
+                                  Set<Variable> conditionVariables);
 
-    ConditionManager withConditionCompute(EvaluationResult context, Expression switchCondition);
+    ConditionManager newConditionCompute(EvaluationResult context, Expression switchCondition);
+
+    ConditionManager replaceConditionComputeEmptyState(EvaluationResult context, Expression newCondition);
+
+    ConditionManager withStateCompute(EvaluationResult context, Expression translatedAddToState);
 
     /*
     adds a new layer (parent this)
@@ -179,4 +183,7 @@ public interface ConditionManager {
     List<Variable> variables();
 
     Expression multiExpression();
+
+    Expression absoluteStateUpTo(ConditionManager base, EvaluationResult context);
+
 }
