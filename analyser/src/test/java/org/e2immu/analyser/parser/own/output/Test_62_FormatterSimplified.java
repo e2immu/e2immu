@@ -484,7 +484,7 @@ public class Test_62_FormatterSimplified extends CommonTestRunner {
             if ("apply".equals(d.methodInfo().name)) {
                 assertEquals("$1", d.methodInfo().typeInfo.simpleName);
 
-                String expected = d.iteration() < 3 ? "<m:apply>" : "list.get(forwardInfo.pos) instanceof Guide";
+                String expected = d.iteration() < 3 ? "<m:apply>" : "/*inline apply*/list.get(forwardInfo.pos) instanceof Guide";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

@@ -86,7 +86,7 @@ public class Test_26_Enum extends CommonTestRunner {
             }
             if ("values".equals(d.methodInfo().name)) {
                 assertTrue(d.methodInfo().methodInspection.get().isSynthetic());
-                String expect = d.iteration() < 2 ? "<m:values>" : "{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
+                String expect = d.iteration() < 2 ? "<m:values>" : "/*inline values*/{Enum_0.ONE,Enum_0.TWO,Enum_0.THREE}";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
 
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
@@ -375,11 +375,11 @@ public class Test_26_Enum extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("highest".equals(d.methodInfo().name)) {
-                // since 20230912, disabled inlining
-                assertDv(d, 10, DV.FALSE_DV, Property.CONSTANT);
+                // since 20230912, disabled inlining of fields
+                assertDv(d, 15, DV.FALSE_DV, Property.CONSTANT);
             }
             if ("values".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 10 ? "<m:values>" : "{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
+                String expected = d.iteration() < 15 ? "<m:values>" : "/*inline values*/{Enum_3.ONE,Enum_3.TWO,Enum_3.THREE}";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -397,18 +397,22 @@ public class Test_26_Enum extends CommonTestRunner {
         };
 
 
-        TypeAnalyserVisitor typeAnalyserVisitor = d ->
-                assertDv(d, 8, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Enum_3".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 13, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
+            }
+        };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-SFMT---", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S-SFM-SFMT---", d.delaySequence());
 
-        testClass("Enum_3", 0, 0, new DebugConfiguration.Builder()
+        // warning: assertion is always true
+        testClass("Enum_3", 0, 1, new DebugConfiguration.Builder()
                 //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                //     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                //     .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                //   .addBreakDelayVisitor(breakDelayVisitor)
+                     .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

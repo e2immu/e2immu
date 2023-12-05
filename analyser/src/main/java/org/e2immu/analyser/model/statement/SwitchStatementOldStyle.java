@@ -129,18 +129,21 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
                                                          LimitedStatementAnalysis firstStatement) {
         Map<String, Expression> result = new HashMap<>();
         Map<String, List<SwitchLabel>> switchLabelMap = switchLabelMap(firstStatement);
+        String indexOfDefault = null;
         for (Map.Entry<String, List<SwitchLabel>> entry : switchLabelMap.entrySet()) {
             boolean containsDefault = entry.getValue().get(entry.getValue().size() - 1).expression.isEmpty();
-            Expression value;
             if (containsDefault) {
-                Expression[] expressions = result.values().stream()
-                        .map(v -> Negation.negate(context, v)).toArray(Expression[]::new);
-                value = And.and(context, expressions);
+                indexOfDefault = entry.getKey();
             } else {
-                value = Or.or(context, entry.getValue().stream()
+                Expression value = Or.or(context, entry.getValue().stream()
                         .map(switchLabel -> Equals.equals(context, expression, switchLabel.expression)).toList());
+                result.put(entry.getKey(), value);
             }
-            result.put(entry.getKey(), value);
+        }
+        if (indexOfDefault != null) {
+            Expression[] expressions = result.values().stream()
+                    .map(v -> Negation.negate(context, v)).toArray(Expression[]::new);
+            result.put(indexOfDefault, And.and(context, expressions));
         }
         return Map.copyOf(result);
     }

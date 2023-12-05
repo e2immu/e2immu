@@ -448,7 +448,7 @@ public class StatementAnalyserImpl implements StatementAnalyser {
 
             boolean startOfNewBlock = previous == null;
             ConditionManager localConditionManager;
-            if (startOfNewBlock) {
+            if (startOfNewBlock || forwardAnalysisInfo.switchData() != null && forwardAnalysisInfo.switchData().switchIdToLabels().containsKey(index())) {
                 localConditionManager = forwardAnalysisInfo.conditionManager();
             } else {
                 Expression condition;

@@ -83,7 +83,7 @@ public class Test_55_NewSwitchStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = "/*inline method*/s$1";
+                String expected = "s$1";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

@@ -140,17 +140,17 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
             if ("joining".equals(d.methodInfo().name)) {
                 int n = d.methodInfo().methodInspection.get().getParameters().size();
                 if (n == 1) {
-                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 7, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if (n == 2) {
-                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 7, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(1), 7, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 } else if (n == 4) {
                     // separator
-                    assertDv(d.p(0), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(1), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(2), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    assertDv(d.p(3), 5, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                    String value = d.iteration() < 5 ? "<m:joining>"
+                    assertDv(d.p(0), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(1), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(2), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(3), 6, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                    String value = d.iteration() < 6 ? "<m:joining>"
                             : "/*inline joining*/new Collector<>(){final AtomicInteger countMid=new AtomicInteger();public Supplier<OutputBuilder> supplier(){return OutputBuilder::new;}public BiConsumer<OutputBuilder,OutputBuilder> accumulator(){return (a,b)->{... debugging ...};}public BinaryOperator<OutputBuilder> combiner(){return (a,b)->{... debugging ...};}public Function<OutputBuilder,OutputBuilder> finisher(){return t->{... debugging ...};}public Set<Characteristics> characteristics(){return Set.of(Characteristics.CONCURRENT);}}";
                     assertEquals(value, d.methodAnalysis().getSingleReturnValue().toString());
                 }
@@ -162,7 +162,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("OutputBuilder".equals(d.typeInfo().simpleName)) {
-                assertDv(d, 6, MultiLevel.CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 7, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };
 
@@ -175,7 +175,7 @@ public class Test_Output_02_OutputBuilder extends CommonTestRunner {
                 case "Qualifier" -> "-";
                 case "Guide" -> "------";
                 case "TypeName" -> "-------";
-                case "OutputBuilder" -> "--------";
+                case "OutputBuilder" -> "---------";
                 default -> fail(d.typeInfo().simpleName + ": " + d.delaySequence());
             };
             assertEquals(s, d.delaySequence(), d.typeInfo().simpleName);

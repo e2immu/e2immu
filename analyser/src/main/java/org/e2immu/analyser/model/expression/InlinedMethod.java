@@ -26,9 +26,7 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.ExtractVariablesToBeTranslated;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
@@ -487,6 +485,28 @@ public class InlinedMethod extends BaseExpression implements Expression {
 
     public MethodInfo getMethodInfo() {
         return methodInfo;
+    }
+
+    public static boolean unacceptableVariable(Variable v) {
+        return unacceptableVariable(v, false);
+    }
+
+    private static boolean unacceptableVariable(Variable v, boolean thisUnacceptable) {
+        if (v instanceof LocalVariableReference) return true;
+        if (v instanceof FieldReference fr) {
+            return fr.scopeVariable() != null && unacceptableVariable(fr.scopeVariable(), true);
+        }
+        if (v instanceof DependentVariable dv) {
+            return dv.arrayBaseVariable() != null && unacceptableVariable(dv.arrayBaseVariable(), true) ||
+                    dv.indexVariable() != null && unacceptableVariable(dv.indexVariable(), true);
+        }
+        if (v instanceof ReturnVariable || v instanceof PreAspectVariable) {
+            throw new UnsupportedOperationException(); // impossible
+        }
+        if (v instanceof This) {
+            return thisUnacceptable;
+        }
+        return false;
     }
 
     private class EvaluationContextImpl extends CommonEvaluationContext {

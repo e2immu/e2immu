@@ -194,8 +194,8 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
             if ("EFFECTIVELY_E1IMMUTABLE_DV".equals(d.fieldInfo().name)) {
                 assertEquals(d.iteration() > 0, d.fieldAnalysis().getLinkedVariables().isDone());
-                assertDv(d, 19, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
-                assertDv(d, 19, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
+                assertDv(d, 20, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+                assertDv(d, 20, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER_RESTRICTION);
                 String expected = d.iteration() < 2 ? "<f:EFFECTIVELY_E1IMMUTABLE_DV>" : "new DV(5,List.of(new Cause(0)))";
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
 
@@ -207,7 +207,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--------S-S--SF-SF----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---------S-S--SF-SF----", d.delaySequence());
 
         testClass("AnalysisProvider_0", 0, 5,
                 new DebugConfiguration.Builder()
@@ -602,7 +602,7 @@ public class Test_AnalysisProvider extends CommonTestRunner {
                 assertEquals(callCycle, methodResolution
                         .methodsOfOwnClassReached().stream().map(MethodInfo::name).sorted().collect(Collectors.joining(",")));
 
-                String expected = d.iteration() < 3 ? "<m:b>"
+                String expected = d.iteration() < 4 ? "<m:b>"
                         : "this.sumImmutableLevels(n<10?this.a(b0):AnalysisProvider_4.EFFECTIVELY_RECURSIVELY_IMMUTABLE_DV)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }

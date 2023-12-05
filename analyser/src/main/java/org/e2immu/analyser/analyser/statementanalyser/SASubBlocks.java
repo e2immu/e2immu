@@ -76,7 +76,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         AnalysisStatus statusFromStatement;
         ConditionManager cmFromStatement;
         if (sharedState.lastStatementBeforeCaseInOldStyleSwitch(statementAnalysis)) {
-            if (sharedState.previous().flowData().bestAlwaysInterrupt().isAtLeastBreak()) {
+            if (sharedState.previous() == null || sharedState.previous().flowData().bestAlwaysInterrupt().isAtLeastBreak()) {
                 Expression newState = new BooleanConstant(sharedState.evaluationContext().getPrimitives(), true);
                 cmFromStatement = sharedState.localConditionManager().withStateCompute(sharedState.context(), newState);
             } else {

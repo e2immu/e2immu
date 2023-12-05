@@ -292,7 +292,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("getX".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 2 ? "<m:getX>" : "/*inline getX*/xs[index]$0";
+                String expected = d.iteration() < 2 ? "<m:getX>" : "xs[index]$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }

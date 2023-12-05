@@ -28,7 +28,7 @@ public class InlinedMethod_3_2 {
         return i + r;
     }
 
-    @ImmutableContainer("2")
+    @ImmutableContainer
     public static int difference31() {
         return plusRandom(3) - plusRandom(1);
     }

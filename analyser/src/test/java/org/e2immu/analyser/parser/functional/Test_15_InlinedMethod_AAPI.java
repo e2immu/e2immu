@@ -101,16 +101,13 @@ public class Test_15_InlinedMethod_AAPI extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("plusRandom".equals(d.methodInfo().name)) {
-
-                if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertEquals("/*inline plusRandom*/i+r$0", inlinedMethod.toString());
-                } else {
-                    fail("Have " + d.methodAnalysis().getSingleReturnValue().getClass());
-                }
+                // not an inline, because contains local variable
+                assertEquals("i+r$0", d.methodAnalysis().getSingleReturnValue().toString());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
             }
             if ("difference31".equals(d.methodInfo().name)) {
-                assertEquals("2", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline difference31*/-InlinedMethod_3_2.plusRandom(1)+InlinedMethod_3_2.plusRandom(3)",
+                        d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("difference11".equals(d.methodInfo().name)) {
                 assertEquals("0", d.methodAnalysis().getSingleReturnValue().toString());

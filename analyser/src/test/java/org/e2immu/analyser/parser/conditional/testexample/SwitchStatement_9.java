@@ -13,8 +13,8 @@ public class SwitchStatement_9 {
                         s = "x";
                         break;
                     }
-                case 4: {  // block 1.0.0.0.1, abs state 3==i&&b&&!c
-                    s = "z";
+                case 4: {  // block 1.0.0.0.1
+                    s = "z";  // statement 1.0.0.0.1.0.0
                     return s;
                 }
                 case 5, 6:

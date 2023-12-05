@@ -252,7 +252,7 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                         Forward.class, Lookahead.class, CurrentExceeds.class, ForwardInfo.class, GuideOnStack.class,
                         ElementarySpace.class, OutputElement.class, FormattingOptions.class,
                         TypeName.class, Qualifier.class, Guide.class, Symbol.class, Space.class, Split.class),
-                0, 28, new DebugConfiguration.Builder()
+                0, 29, new DebugConfiguration.Builder()
                         //     .addEvaluationResultVisitor(evaluationResultVisitor)
                         //    .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         //      .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

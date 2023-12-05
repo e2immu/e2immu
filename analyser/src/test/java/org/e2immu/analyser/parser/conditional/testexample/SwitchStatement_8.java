@@ -26,8 +26,8 @@ public class SwitchStatement_8 {
                 s = "w"; // statement 1.0.07  6==i
                 break; // statement 1.0.08    6!=i
             default:
-                s = "y"; // statement 1.0.09  3!=i && 4!=i && 5!=i && 6!=i
-                break; // statement 1.0.10    3==i || 4==i || 5==i || 6==i
+                s = "y"; // statement 1.0.09  2!=i && 3!=i && 4!=i && 5!=i && 6!=i
+                break; // statement 1.0.10    2==i || 3==i || 4==i || 5==i || 6==i
         }
         return s;
     }

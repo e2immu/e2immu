@@ -153,15 +153,7 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
             }
 
             if ("expand".equals(d.methodInfo().name)) {
-                if (d.iteration() <= 1) {
-                    String expected = "constructor-to-instance@Method_expand_1-E;srv@Method_expand";
-                    assertEquals(expected, d.methodAnalysis().getSingleReturnValue().causesOfDelay().toString());
-                } else if (d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod inlinedMethod) {
-                    assertFalse(inlinedMethod.containsVariableFields());
-                    assertEquals("variableField$1.getI()", inlinedMethod.expression().toString());
-                } else fail();
-
-                String expect = d.iteration() <= 1 ? "<m:expand>" : "/*inline expand*/variableField$1.getI()";
+                String expect = d.iteration() <= 1 ? "<m:expand>" : "variableField$1.getI()";
                 assertEquals(expect, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -175,14 +167,11 @@ public class Test_15_InlinedMethod extends CommonTestRunner {
     public void test_7() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("expand".equals(d.methodInfo().name) && d.iteration() >= 2) {
-                assertEquals("/*inline expand*/variableField$1.getI()",
-                        d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("variableField$1.getI()", d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("doNotExpand".equals(d.methodInfo().name) && d.iteration() > 0) {
-                assertEquals("/*inline doNotExpand*/variableField$1.getI()",
-                        d.methodAnalysis().getSingleReturnValue().toString());
-                // non-modifying, so inlined!
-                assertTrue(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+                assertEquals("variableField$1.getI()", d.methodAnalysis().getSingleReturnValue().toString());
+                assertFalse(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
             }
         };
         testClass(List.of("InlinedMethod_6", "InlinedMethod_7"), 0, 0, new DebugConfiguration.Builder()

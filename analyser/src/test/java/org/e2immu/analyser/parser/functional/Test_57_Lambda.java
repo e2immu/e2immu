@@ -168,7 +168,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<s:int>" : "f$1.get()";
+                        String expect = d.iteration() == 0 ? "<s:int>" : "`x.k`";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "f:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -176,7 +176,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("f".equals(d.variableName())) {
                     if ("1".equals(d.statementId())) {
-                        String expected = d.iteration() == 0 ? "<s:$1>" : "instance 1 type $1";
+                        String expected = d.iteration() == 0 ? "<s:$1>" : "/*inline get*/x.k";
                         assertEquals(expected, d.currentValue().toString());
                     }
                 }
@@ -208,7 +208,7 @@ public class Test_57_Lambda extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:f$1.get()*i$0";
+                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:i$0*`x.k`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("get".equals(d.methodInfo().name)) {
@@ -243,7 +243,7 @@ public class Test_57_Lambda extends CommonTestRunner {
                 }
                 if ("j".equals(d.variableName())) {
                     if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? "<s:int>" : "f$1.get()";
+                        String expect = d.iteration() == 0 ? "<s:int>" : "`x.k`";
                         assertEquals(expect, d.currentValue().toString());
                         String expectLv = d.iteration() == 0 ? "f:-1" : "";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
@@ -330,7 +330,7 @@ public class Test_57_Lambda extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:f$1.get()*i$0";
+                String expected = d.iteration() == 0 ? "<m:method>" : "x.k<3?3:i$0*`x.k`";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
@@ -440,7 +440,7 @@ public class Test_57_Lambda extends CommonTestRunner {
             }
             if ("method".equals(d.methodInfo().name)) {
                 // 202310 not inlined, contains fields
-                String expected = d.iteration() < 2 ? "<m:method>" : "inner.supplier().get()*inner.i$0";
+                String expected = d.iteration() < 3 ? "<m:method>" : "/*inline method*/inner.supplier().get()*inner.i$0";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

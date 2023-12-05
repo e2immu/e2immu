@@ -162,7 +162,7 @@ public class Test_FactoryMethod extends CommonTestRunner {
             }
 
             if ("of".equals(d.methodInfo().name)) {
-                String expected = d.iteration() < 3 ? "<m:of>" : "/*inline of*/f$1";
+                String expected = d.iteration() < 2 ? "<m:of>" : "f$1";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };

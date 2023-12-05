@@ -34,10 +34,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -681,6 +678,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     return delayedSrv(concreteReturnType, value, value.causesOfDelay(), true);
                 }
             } else {
+                // it really does not matter; as soon as it is not an inline, we'll not inject it
                 valueWithInline = value;
             }
         } else {
@@ -716,13 +714,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (e instanceof Instance || e instanceof MultiExpressions) notInteresting.set(true);
         });
         if (notInteresting.get()) return DV.FALSE_DV;
-        Set<Variable> variables = value.variableStream().collect(Collectors.toUnmodifiableSet());
-        VariableInfo field = methodAnalysis.getLastStatement().variableStream()
-                .filter(vi -> variables.contains(vi.variable()))
-                .filter(vi -> vi.variable() instanceof FieldReference)
-                .findFirst().orElse(null);
-        if (field != null) {
-            LOGGER.debug("Method {} is not suitable for inlining: field {} present", methodInfo, field.variable());
+        List<Variable> variables = value.variables(DescendMode.NO);
+        if (variables.stream().anyMatch(InlinedMethod::unacceptableVariable)) {
+            LOGGER.debug("Method {} is not suitable for inlining: variables {}", methodInfo, variables);
             return DV.FALSE_DV;
         }
 

@@ -706,7 +706,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
-                    if("0".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -728,7 +728,7 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
-                    if("4".equals(d.statementId())) {
+                    if ("4".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
@@ -750,9 +750,10 @@ public class Test_61_OutputBuilderSimplified extends CommonTestRunner {
                 String expected = switch (d.iteration()) {
                     case 0 ->
                             "context-modified=constructor-to-instance@Method_apply_2.0.0-E;initial:Space.NONE@Method_apply_1-C;initial:end@Method_apply_3-E;initial:t@Method_apply_2.0.0-E;link@NOT_YET_SET;srv@Method_apply, context-not-null=[22 delays], read=true:1";
-                    case 1 ->
-                            "context-modified=[12 delays], context-not-null=[13 delays], read=true:1";
-                    case 2  -> "context-modified=true:1, context-not-null=cnn@Parameter_aa, read=true:1";
+                    case 1 -> "context-modified=[12 delays], context-not-null=[13 delays], read=true:1";
+                    case 2 ->
+                            "context-modified=link:this.list@Method_add_3:M, context-not-null=link:this.list@Method_add_3:M, read=true:1";
+                    case 3 -> "context-modified=true:1, context-not-null=cnn@Parameter_aa, read=true:1";
                     default -> "context-modified=true:1, context-not-null=nullable:1, read=true:1";
                 };
                 assertEquals(expected, d.statementAnalysis()

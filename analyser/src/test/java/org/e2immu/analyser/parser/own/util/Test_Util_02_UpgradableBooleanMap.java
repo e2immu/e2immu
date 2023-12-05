@@ -215,7 +215,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
             if ("of".equals(d.methodInfo().name) && n == 2) {
                 assertTrue(d.methodInfo().methodInspection.get().isFactoryMethod());
                 // because only directional from parameter to result, not the other way around
-                assertDv(d, 22, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d, 21, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
 
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d.p(0), 22, DV.FALSE_DV, Property.CONTEXT_MODIFIED);

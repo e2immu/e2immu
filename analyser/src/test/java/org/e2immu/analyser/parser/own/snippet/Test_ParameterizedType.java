@@ -391,15 +391,13 @@ public class Test_ParameterizedType extends CommonTestRunner {
                 assertTrue(methodResolution.ignoreMeBecauseOfPartOfCallCycle());
                 assertDv(d, 13, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertDv(d, 13, DV.FALSE_DV, Property.TEMP_MODIFIED_METHOD);
-                assertDv(d, 15, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
+                assertDv(d, 13, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 assertDv(d.p(0), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(1), 15, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(2), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
                 assertDv(d.p(3), 14, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
 
-                String expected = d.iteration() < 15
-                        ? "<m:iterativelyParseTypes>"
-                        : "/*inline iterativelyParseTypes*/next$6";
+                String expected = d.iteration() < 13 ? "<m:iterativelyParseTypes>" : "next$6";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
             if ("normalType".equals(d.methodInfo().name)) {

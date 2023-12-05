@@ -67,8 +67,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                     assertEquals("'b'==c", d.condition().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
-                    // FIXME wrong
-                    //      assertEquals("true", d.condition().toString());
+                    assertEquals("'a'!=c&&'b'!=c", d.condition().toString());
                 }
             }
         };
@@ -228,14 +227,14 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("s".equals(d.variableName())) {
-                    if ("1.0.0.0.0".equals(d.statementId())) {
-                        assertEquals("\"x\"", d.currentValue().toString());
+                    if ("1.0.00".equals(d.statementId())) {
+                        assertEquals("\"u\"", d.currentValue().toString());
                     }
-                    if ("1.0.0".equals(d.statementId())) {
-                        assertEquals("b?\"x\":<not yet assigned>", d.currentValue().toString());
+                    if ("1.0.03".equals(d.statementId())) {
+                        assertEquals("b?\"x\":\"u\"", d.currentValue().toString());
                     }
-                    if ("1.0.1.0.0".equals(d.statementId())) {
-                        assertEquals("\"z\"", d.currentValue().toString());
+                    if ("1.0.04".equals(d.statementId())) {
+                        assertEquals("b?\"x\":\"u\"", d.currentValue().toString());
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         // FIXME
@@ -245,7 +244,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                         assertEquals("\"y\"", d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        assertEquals("\"x\"", d.currentValue().toString());
+                        assertEquals("instance 1 type String", d.currentValue().toString());
                     }
                 }
             }
@@ -253,20 +252,33 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                if ("1.0.0.0.0".equals(d.statementId())) {
+                if ("1.0.00".equals(d.statementId())) {
+                    assertEquals("2==i", d.absoluteState().toString());
+                }
+                if ("1.0.01".equals(d.statementId())) {
+                    assertEquals("2==i", d.absoluteState().toString());
+                }
+                if ("1.0.03.0.0".equals(d.statementId())) {
                     assertEquals("3==i&&b", d.absoluteState().toString());
                 }
-                if ("1.0.1.0.0".equals(d.statementId())) {
-                    assertEquals("!b&&(3==i||4==i)", d.absoluteState().toString());
-                    assertEquals("CONDITIONALLY:1", d.statementAnalysis().flowData().getGuaranteedToBeReachedInMethod().toString());
+                if ("1.0.04.0.0".equals(d.statementId())) {
+                    assertEquals("c&&(3==i||4==i)&&(4==i||!b)", d.absoluteState().toString());
+                }
+                if ("1.0.05".equals(d.statementId())) {
+                    assertEquals("(3==i||4==i||5==i)&&(4==i||5==i||!b)&&(5==i||!c)", d.absoluteState().toString());
+                }
+                if ("1.0.07".equals(d.statementId())) {
+                    assertEquals("6==i", d.absoluteState().toString());
+                }
+                if ("1.0.09".equals(d.statementId())) {
+                    assertEquals("2!=i&&3!=i&&4!=i&&5!=i&&6!=i", d.absoluteState().toString());
                 }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:method>" : "/*inline method*/instance 1 String";
-                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("s$1", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
@@ -299,7 +311,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                     assertEquals("3==i", cm.condition().toString());
                 }
                 if ("1.0.0.0.1.0.0".equals(d.statementId())) {
-                    assertEquals("xxx", d.absoluteState().toString());
+                    assertEquals("b&&(3==i||4==i)&&(4==i||!c)", d.absoluteState().toString());
                 }
                 if ("1.0.0.0.1".equals(d.statementId())) {
                     ForwardAnalysisInfo.SwitchData switchData = d.forwardAnalysisInfo().switchData();
@@ -334,10 +346,19 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                // FIXME nullable is wrong
+                String expected = "b?nullable instance 1.0.0 type String:\"s\"";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("--", d.delaySequence());
 
         testClass("SwitchStatement_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
