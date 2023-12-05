@@ -43,16 +43,17 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                 if (d.variable() instanceof ReturnVariable) {
                     String value = d.currentValue().toString();
                     if ("0.0.0".equals(d.statementId())) {
-                        //    assertEquals("'a'==c?\"a\":<default>", value);
+                        assertEquals("\"a\"", value);
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        //     assertEquals("\"a\"", value);
+                        assertEquals("\"b\"", value);
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        //     assertEquals("\"a\"", value);
+                        assertEquals("\"c\"", value);
                     }
+                    // this could be an inline conditional, but not yet implemented (see MergeValueOfSingleVariable)
                     if ("0".equals(d.statementId())) {
-                        //      assertEquals("", value);
+                        assertEquals("instance 0 type String", value);
                     }
                 }
             }
@@ -62,6 +63,8 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     assertEquals("'a'==c", d.condition().toString());
                     assertNotNull(d.forwardAnalysisInfo().switchData());
+                    assertEquals("Precondition[expression=true, causes=[]]",
+                            d.statementAnalysis().stateData().getPrecondition().toString());
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     assertEquals("'b'==c", d.condition().toString());

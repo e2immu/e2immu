@@ -82,7 +82,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             } else {
                 cmFromStatement = cm;
             }
-            statusFromStatement = statusFromLocalCm;
+            statusFromStatement = statusFromLocalCm.combine(AnalysisStatus.of(ensureEmptyPreAndPostCondition()));
         } else if (statement() instanceof AssertStatement) {
             ConditionManagerAndStatus conditionManagerAndStatus = doAssertStatement(sharedState, cm);
             cmFromStatement = conditionManagerAndStatus.conditionManager;
