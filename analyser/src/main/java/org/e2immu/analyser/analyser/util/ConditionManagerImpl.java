@@ -157,6 +157,18 @@ public record ConditionManagerImpl(Expression condition,
                 this);
     }
 
+    public ConditionManagerImpl withConditionCompute(EvaluationResult context, Expression switchCondition) {
+        Set<Variable> computedConditionVariables;
+        if (switchCondition.isBooleanConstant()) {
+            computedConditionVariables = Set.of();
+        } else {
+            computedConditionVariables = switchCondition.variableStream().collect(Collectors.toUnmodifiableSet());
+        }
+        return new ConditionManagerImpl(combine(context, condition, switchCondition),
+                combine(this.conditionVariables, computedConditionVariables), state, stateVariables, precondition, NO_VARS,
+                this);
+    }
+
     /*
     adds a new layer (parent this)
     Widely used, mostly in SASubBlocks to create the CM of the ExecutionOfBlock objects

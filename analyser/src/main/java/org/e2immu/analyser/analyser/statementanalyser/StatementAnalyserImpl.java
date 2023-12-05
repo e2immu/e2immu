@@ -239,12 +239,14 @@ public class StatementAnalyserImpl implements StatementAnalyser {
                         forwardAnalysisInfo.conditionManager(), closure,
                         delaySubsequentStatementBecauseOfECI, forwardAnalysisInfo.breakDelayLevel());
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.getStatementAnalysis();
+
                 EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
-                switchCondition = forwardAnalysisInfo.conditionInSwitchStatement(context, previousStatement, switchCondition,
-                        statementAnalyser.statementAnalysis);
-                Set<Variable> switchConditionVariables = switchCondition.variableStream().collect(Collectors.toUnmodifiableSet());
+                if (forwardAnalysisInfo.switchData() != null) {
+                    switchCondition = forwardAnalysisInfo.switchData().conditionInSwitchStatement(context, previousStatement,
+                            switchCondition, statementAnalyser.statementAnalysis);
+                }
                 ForwardAnalysisInfo statementInfo = forwardAnalysisInfo.otherConditionManager(forwardAnalysisInfo.conditionManager()
-                        .withCondition(context, switchCondition, switchConditionVariables));
+                        .withConditionCompute(context, switchCondition));
 
                 AnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, currentStatementTime, closure,
                         previousStatementAnalysis, statementInfo, delaySubsequentStatementBecauseOfECI);
@@ -451,17 +453,19 @@ public class StatementAnalyserImpl implements StatementAnalyser {
             } else {
                 Expression condition;
                 Set<Variable> conditionVariables;
-                if (forwardAnalysisInfo.switchSelectorIsDelayed().isDelayed()) {
+                ForwardAnalysisInfo.SwitchData switchData = forwardAnalysisInfo.switchData();
+                if (switchData != null && switchData.switchSelectorIsDelayed().isDelayed()) {
                     CausesOfDelay causes = forwardAnalysisInfo.conditionManager().condition().causesOfDelay()
-                            .merge(forwardAnalysisInfo.switchSelectorIsDelayed().causesOfDelay());
+                            .merge(switchData.switchSelectorIsDelayed().causesOfDelay());
                     condition = DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector2"),
-                            statementAnalysis.primitives(), forwardAnalysisInfo.switchSelector(), causes);
-                    conditionVariables = forwardAnalysisInfo.switchSelector().variableStream().collect(Collectors.toUnmodifiableSet());
+                            statementAnalysis.primitives(), switchData.switchSelector(), causes);
+                    conditionVariables = switchData.switchSelector().variableStream().collect(Collectors.toUnmodifiableSet());
                 } else {
                     condition = forwardAnalysisInfo.conditionManager().condition();
                     conditionVariables = forwardAnalysisInfo.conditionManager().conditionVariables();
                 }
-                localConditionManager = ConditionManagerHelper.makeLocalConditionManager(condition.getIdentifier(), previous, condition, conditionVariables);
+                localConditionManager = ConditionManagerHelper.makeLocalConditionManager(condition.getIdentifier(),
+                        previous, condition, conditionVariables);
             }
 
             EvaluationContext evaluationContext = new SAEvaluationContext(

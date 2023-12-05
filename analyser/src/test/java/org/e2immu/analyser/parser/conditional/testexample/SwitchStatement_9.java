@@ -2,20 +2,30 @@ package org.e2immu.analyser.parser.conditional.testexample;
 
 public class SwitchStatement_9 {
 
-    public static String method(int i) {
+    // test compensating for conditions earlier than switch
+
+    public static String method(int i, boolean b, boolean c) {
         String s;
-        switch (i) {
-            case 3: { // block 1.0.0
-                s = "x";
-                break;
+        if (b) {
+            switch (i) {
+                case 3:
+                    if (c) { // block 1.0.0
+                        s = "x";
+                        break;
+                    }
+                case 4: {  // block 1.0.1, abs state 3==i&&b&&!c
+                    s = "z";
+                    return s;
+                }
+                case 5, 6:
+                    s = "u";
+                    break;
+                default:
+                    s = "y"; // statement 1.0.2
+                    break; // statement 1.0.3
             }
-            case 4: {  // block 1.0.1
-                s = "z";
-                return s;
-            }
-            default:
-                s = "y"; // statement 1.0.2
-                break; // statement 1.0.3
+        } else {
+            s = "s";
         }
         return s;
     }

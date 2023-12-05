@@ -72,6 +72,8 @@ public interface ConditionManager {
     ConditionManager withCondition(EvaluationResult context, Expression switchCondition,
                                    Set<Variable> conditionVariables);
 
+    ConditionManager withConditionCompute(EvaluationResult context, Expression switchCondition);
+
     /*
     adds a new layer (parent this)
     Widely used, mostly in SASubBlocks to create the CM of the ExecutionOfBlock objects

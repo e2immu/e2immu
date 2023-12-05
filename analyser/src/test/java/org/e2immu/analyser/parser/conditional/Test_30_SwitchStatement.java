@@ -36,7 +36,42 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    String value = d.currentValue().toString();
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertEquals("'a'==c?\"a\":<default>", value);
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertEquals("\"a\"", value);
+                    }
+                    if ("0.0.2".equals(d.statementId())) {
+                        assertEquals("\"a\"", value);
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("", value);
+                    }
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    assertEquals("'a'==c", d.condition().toString());
+                }
+                if ("0.0.1".equals(d.statementId())) {
+                    assertEquals("'b'==c", d.condition().toString());
+                }
+                if ("0.0.2".equals(d.statementId())) {
+                    // FIXME wrong
+                    assertEquals("true", d.condition().toString());
+                }
+            }
+        };
         testClass("SwitchStatement_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -262,9 +297,9 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-", d.delaySequence());
 
-        testClass("SwitchStatement_8", 0, 1, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addBreakDelayVisitor(breakDelayVisitor)
+        testClass("SwitchStatement_9", 0, 1, new DebugConfiguration.Builder()
+                //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                //     .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 

@@ -342,19 +342,19 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 if (!executionOfBlock.execution.equals(FlowDataConstants.NEVER)) {
                     ForwardAnalysisInfo forward;
                     if (statement() instanceof SwitchStatementOldStyle switchStatement) {
-                        forward = new ForwardAnalysisInfo(executionOfBlock.execution,
-                                executionOfBlock.conditionManager, executionOfBlock.catchVariable,
-                                switchStatement.startingPointToLabels(sharedState.context(),
-                                        executionOfBlock.startOfBlock.getStatementAnalysis()),
+                        Map<String, Expression> switchIdToLabels = switchStatement.startingPointToLabels(sharedState.context(),
+                                executionOfBlock.startOfBlock.getStatementAnalysis());
+                        ForwardAnalysisInfo.SwitchData switchData = new ForwardAnalysisInfo.SwitchData(switchIdToLabels,
                                 statementAnalysis.stateData().valueOfExpressionGet(),
                                 statementAnalysis.stateData().valueOfExpressionGet().causesOfDelay(),
-                                evaluationContext.breakDelayLevel());
+                                sharedState.localConditionManager());
+                        forward = new ForwardAnalysisInfo(executionOfBlock.execution,
+                                executionOfBlock.conditionManager, executionOfBlock.catchVariable,
+                                switchData, evaluationContext.breakDelayLevel());
                     } else {
                         forward = new ForwardAnalysisInfo(executionOfBlock.execution,
                                 executionOfBlock.conditionManager, executionOfBlock.catchVariable,
-                                sharedState.forwardAnalysisInfo().switchIdToLabels(),
-                                sharedState.forwardAnalysisInfo().switchSelector(),
-                                sharedState.forwardAnalysisInfo().switchSelectorIsDelayed(),
+                                null,
                                 evaluationContext.breakDelayLevel());
                     }
                     AnalyserResult result = ((StatementAnalyserImpl) executionOfBlock.startOfBlock)

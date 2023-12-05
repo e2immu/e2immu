@@ -32,75 +32,90 @@ import java.util.Objects;
 public record ForwardAnalysisInfo(DV execution,
                                   ConditionManager conditionManager,
                                   LocalVariableCreation catchVariable,
-                                  Map<String, Expression> switchIdToLabels,
-                                  Expression switchSelector,
-                                  CausesOfDelay switchSelectorIsDelayed,
+                                  SwitchData switchData,
                                   BreakDelayLevel breakDelayLevel) {
 
-    public ForwardAnalysisInfo {
-        Objects.requireNonNull(switchSelectorIsDelayed);
+    public record SwitchData(Map<String, Expression> switchIdToLabels,
+                             Expression switchSelector,
+                             CausesOfDelay switchSelectorIsDelayed,
+                             ConditionManager initialConditionManager) {
+        public SwitchData {
+            Objects.requireNonNull(switchSelectorIsDelayed);
+        }
+
+        /*
+         this is the statement to be executed (with an ID that can match one of the elements in the map
+         */
+        public Expression conditionInSwitchStatement(EvaluationResult evaluationContext,
+                                                     StatementAnalyser previousStatement,
+                                                     Expression previous,
+                                                     StatementAnalysis statementAnalysis) {
+            Expression expression = computeSwitchCondition(evaluationContext, previousStatement, previous,
+                    statementAnalysis);
+            if (switchSelectorIsDelayed.isDelayed()) {
+                return DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector"),
+                        evaluationContext.getPrimitives(), switchSelector,
+                        switchSelector.causesOfDelay().merge(expression.causesOfDelay()));
+            }
+            return expression;
+        }
+
+        private Expression computeSwitchCondition(EvaluationResult context,
+                                                  StatementAnalyser previousStatement,
+                                                  Expression previousSwitchCondition,
+                                                  StatementAnalysis statementAnalysis) {
+            Map<String, Expression> stringExpressionMap = switchIdToLabels();
+            if (stringExpressionMap == null) {
+                return previousSwitchCondition;
+            }
+            Expression label = stringExpressionMap.get(statementAnalysis.index());
+            if (label == null) {
+                return previousSwitchCondition; // stays as is; SwitchStatement_8: 1.0.01, 2==i
+            }
+            if (previousStatement == null) {
+                return label; // first case; SwitchStatement_8: 2==i
+            }
+            if (previousSwitchCondition.isDelayed()) {
+                return previousSwitchCondition; // we'll have to wait
+            }
+            Expression absoluteStateOfPrevious = previousStatement.getStatementAnalysis().stateData()
+                    .getConditionManagerForNextStatement().absoluteState(context);
+            boolean replace;
+            if (label instanceof And andLabel) {
+                // default situation
+                replace = andLabel.getExpressions().stream().anyMatch(e -> equalOrIn(e, absoluteStateOfPrevious));
+            } else if (label instanceof Negation n) {
+                // default situation, only one 'case' with one condition
+                replace = equalOrIn(n.getExpression(), absoluteStateOfPrevious);
+            } else if (label instanceof Or or) {
+                // multiple labels
+                replace = or.expressions().stream().anyMatch(o ->
+                        equalOrIn(Negation.negate(context, o), absoluteStateOfPrevious));
+            } else {
+                // single label
+                replace = equalOrIn(Negation.negate(context, label), absoluteStateOfPrevious);
+            }
+            if (replace) {
+                // normal replace; SwitchStatement_8: 2->3, 5->6, 6-> default
+                return label;
+            }
+            // TODO: must compensate for initial state (parameterize absoluteState to limit recursion)
+            return Or.or(context, label, absoluteStateOfPrevious); // SwitchStatement_8: from 3->4,4->5
+        }
+
+        private boolean equalOrIn(Expression expression, Expression target) {
+            return target.equals(expression) ||
+                    target instanceof And and && and.getExpressions().stream().anyMatch(expression::equals);
+        }
     }
 
     public static ForwardAnalysisInfo startOfMethod(Primitives primitives, BreakDelayLevel breakDelayLevel) {
         return new ForwardAnalysisInfo(FlowDataConstants.ALWAYS, ConditionManagerImpl.initialConditionManager(primitives),
-                null, null, null, CausesOfDelay.EMPTY, breakDelayLevel);
+                null, null, breakDelayLevel);
     }
 
     public ForwardAnalysisInfo otherConditionManager(ConditionManager conditionManager) {
-        return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector,
-                switchSelectorIsDelayed, breakDelayLevel);
+        return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchData, breakDelayLevel);
     }
 
-    /*
-        this is the statement to be executed (with an ID that can match one of the elements in the map
-         */
-    public Expression conditionInSwitchStatement(EvaluationResult evaluationContext,
-                                                 StatementAnalyser previousStatement,
-                                                 Expression previous,
-                                                 StatementAnalysis statementAnalysis) {
-        Expression expression = computeConditionInSwitchStatement(evaluationContext, previousStatement, previous,
-                statementAnalysis);
-        if (switchSelectorIsDelayed.isDelayed()) {
-            return DelayedExpression.forSwitchSelector(Identifier.generate("switchSelector"),
-                    evaluationContext.getPrimitives(), switchSelector,
-                    switchSelector.causesOfDelay().merge(expression.causesOfDelay()));
-        }
-        return expression;
-    }
-
-    private Expression computeConditionInSwitchStatement(EvaluationResult context,
-                                                         StatementAnalyser previousStatement,
-                                                         Expression previous,
-                                                         StatementAnalysis statementAnalysis) {
-        if (switchIdToLabels() != null) {
-            Statement statement = previousStatement == null ? null : previousStatement.statement();
-            Expression startFrom;
-            if (statement instanceof BreakStatement || statement instanceof ReturnStatement) {
-                // clear all
-                startFrom = new BooleanConstant(statementAnalysis.primitives(), true);
-            } else {
-                startFrom = previous;
-            }
-            Expression label = switchIdToLabels().get(statementAnalysis.index());
-            if (label != null) {
-                Expression toAdd;
-                if (label == EmptyExpression.DEFAULT_EXPRESSION) {
-                    toAdd = Negation.negate(context,
-                            Or.or(context, switchIdToLabels().values().stream()
-                                    .filter(e -> e != EmptyExpression.DEFAULT_EXPRESSION).toList()));
-                } else {
-                    toAdd = label;
-                }
-                if (startFrom.isBoolValueTrue()) return toAdd;
-                return And.and(context, startFrom, toAdd);
-            }
-            return startFrom;
-        }
-        return previous;
-    }
-
-    public ForwardAnalysisInfo removeAllowBreakDelay() {
-        return new ForwardAnalysisInfo(execution, conditionManager, catchVariable, switchIdToLabels, switchSelector,
-                switchSelectorIsDelayed, BreakDelayLevel.NONE);
-    }
 }

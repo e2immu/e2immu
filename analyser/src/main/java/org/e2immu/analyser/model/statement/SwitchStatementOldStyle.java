@@ -17,9 +17,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.Equals;
-import org.e2immu.analyser.model.expression.Or;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
@@ -111,7 +109,6 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
         return outputBuilder.add(Symbol.RIGHT_BRACE);
     }
 
-    // IMPROVE doesn't take replacements into account
     private Map<String, List<SwitchLabel>> switchLabelMap(LimitedStatementAnalysis firstStatement) {
         Map<String, List<SwitchLabel>> res = new HashMap<>();
         LimitedStatementAnalysis sa = firstStatement;
@@ -130,12 +127,22 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
 
     public Map<String, Expression> startingPointToLabels(EvaluationResult context,
                                                          LimitedStatementAnalysis firstStatement) {
-        return switchLabelMap(firstStatement).entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                e -> Or.or(context, e.getValue().stream()
-                        .map(switchLabel ->
-                                switchLabel.expression == EmptyExpression.DEFAULT_EXPRESSION ? switchLabel.expression :
-                                        Equals.equals(context, expression, switchLabel.expression))
-                        .toList())));
+        Map<String, Expression> result = new HashMap<>();
+        Map<String, List<SwitchLabel>> switchLabelMap = switchLabelMap(firstStatement);
+        for (Map.Entry<String, List<SwitchLabel>> entry : switchLabelMap.entrySet()) {
+            boolean containsDefault = entry.getValue().get(entry.getValue().size() - 1).expression.isEmpty();
+            Expression value;
+            if (containsDefault) {
+                Expression[] expressions = result.values().stream()
+                        .map(v -> Negation.negate(context, v)).toArray(Expression[]::new);
+                value = And.and(context, expressions);
+            } else {
+                value = Or.or(context, entry.getValue().stream()
+                        .map(switchLabel -> Equals.equals(context, expression, switchLabel.expression)).toList());
+            }
+            result.put(entry.getKey(), value);
+        }
+        return Map.copyOf(result);
     }
 
     public boolean atLeastOneBlockExecuted() {
