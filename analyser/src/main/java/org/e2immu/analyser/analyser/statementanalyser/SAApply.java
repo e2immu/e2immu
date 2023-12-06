@@ -687,10 +687,15 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Expression e = DelayedWrappedExpression.moveDelayedWrappedExpressionToFront(context.getAnalyserContext(),
                 valueToWritePossiblyDelayed);
         if (e instanceof DelayedWrappedExpression) {
-            boolean isNotMyself = context.evaluationContext().isMyself(variable) == IsMyself.NO;
-            // Example isNotMyself: External_6; example isMyself: Container_10ABC
-            // the general situation is that there cannot be value properties when there is no value yet
-            Properties delayedValueProperties = isNotMyself ? combined.delayValueProperties(e.causesOfDelay()) : combined;
+            IsMyself myself = context.evaluationContext().isMyself(variable);
+            /*
+             Example isNotMyself: External_6; example isMyself: Container_10ABC
+             the general situation is that there cannot be value properties when there is no value yet
+             ConditionalInitialization_5 shows a situation where the problem is NNE, which is not governed by
+             the IsMyself issues (CONTAINER, IMMUTABLE, INDEPENDENT)
+            */
+            Properties delayedValueProperties = combined.delay(p -> p.propertyType == PropertyType.VALUE,
+                    myself::toFalse, e.causesOfDelay());
             vic.setValue(e, null, delayedValueProperties, EVALUATION);
             return true;
         }

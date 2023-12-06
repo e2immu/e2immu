@@ -243,14 +243,17 @@ public class Properties implements Comparable<Properties> {
     public String sortedToString() {
         return stream().map(Object::toString).sorted().collect(Collectors.joining(", "));
     }
-
-    public Properties delayValueProperties(CausesOfDelay causesOfDelay) {
+    
+    public Properties delay(Predicate<Property> toDelay, Predicate<Property> toFalse, CausesOfDelay causesOfDelay) {
         Map<Property, DV> newMap = new HashMap<>();
         for (Map.Entry<Property, DV> entry : map.entrySet()) {
-            if (entry.getKey().propertyType == Property.PropertyType.VALUE) {
-                newMap.put(entry.getKey(), causesOfDelay);
+            Property p = entry.getKey();
+            if (toFalse.test(p)) {
+                newMap.put(p, p.falseDv);
+            } else if (toDelay.test(p)) {
+                newMap.put(p, causesOfDelay);
             } else {
-                newMap.put(entry.getKey(), entry.getValue());
+                newMap.put(p, entry.getValue());
             }
         }
         return Properties.of(newMap);

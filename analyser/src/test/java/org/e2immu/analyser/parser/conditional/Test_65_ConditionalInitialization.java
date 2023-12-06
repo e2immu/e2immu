@@ -21,6 +21,7 @@ import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.visitor.*;
@@ -242,5 +243,45 @@ public class Test_65_ConditionalInitialization extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setForceExtraDelayForTesting(true).build());
+    }
+
+
+    // Changing value of @IgnoreModifications from not_ignore_mods:1 to cm@Parameter_name;mom@Parameter_name
+    @Test
+    public void test_5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("getInstance".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "s".equals(fr.fieldInfo().name)) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<null-check>?new ConditionalInitialization_5():<f:s>";
+                            case 1, 2 -> "<wrapped:s>";
+                            default -> "null==nullable instance type ConditionalInitialization_5?new ConditionalInitialization_5():nullable instance type ConditionalInitialization_5";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
+                if(d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        String expected = switch (d.iteration()) {
+                            case 0 -> "<f:s>";
+                            case 1 -> "<wrapped:s>";
+                            case 2 -> "<null-check>?new ConditionalInitialization_5():<vp:s:final@Field_s>";
+                            default -> "null==nullable instance type ConditionalInitialization_5?new ConditionalInitialization_5():nullable instance type ConditionalInitialization_5";
+                        };
+                        assertEquals(expected, d.currentValue().toString());
+                        assertDv(d, 3, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                    }
+                }
+            }
+
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        testClass("ConditionalInitialization_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
     }
 }
