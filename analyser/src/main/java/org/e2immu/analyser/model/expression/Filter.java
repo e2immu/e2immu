@@ -175,7 +175,9 @@ public class Filter {
     // exclusively used for Eventual
     public FilterMethod<FieldReference> individualFieldClause(AnalyserContext analyserContext, boolean acceptAndRemapLocalCopy) {
         return value -> {
-            if (value instanceof Equals equalsValue) {
+            Equals equalsValue;
+            GreaterThanZero gt0;
+            if ((equalsValue = value.asInstanceOf(Equals.class)) != null) {
                 FieldReferenceAndTranslationMap l = extractFieldReference(analyserContext,
                         equalsValue.lhs, acceptAndRemapLocalCopy);
                 FieldReferenceAndTranslationMap r = extractFieldReference(analyserContext,
@@ -199,7 +201,7 @@ public class Filter {
                     }
                     return new FilterResult<FieldReference>(Map.of(r.fieldReference, expr), defaultRest);
                 }
-            } else if (value instanceof GreaterThanZero gt0) {
+            } else if ((gt0 = value.asInstanceOf(GreaterThanZero.class)) != null) {
                 Expression expression = gt0.expression();
                 List<Variable> vars = expression.variables().stream().filter(v -> !(v instanceof This)).toList();
                 if (vars.size() == 1 && vars.get(0) instanceof FieldReference fr && acceptScope(fr.scope())) {

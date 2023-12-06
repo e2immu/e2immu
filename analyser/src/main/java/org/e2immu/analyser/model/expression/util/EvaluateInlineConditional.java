@@ -152,8 +152,11 @@ public class EvaluateInlineConditional {
         }
 
         // x&y ? (y&z ? a : b) : c --> x&y ? (z ? a : b) : c
-        if (ifTrue instanceof InlineConditional ifTrueInline && ifTrueInline.condition instanceof And and) {
-            Expression ifTrueCondition = removeCommonClauses(evaluationResult, condition, and);
+        InlineConditional ifTrueInline;
+        And and1;
+        if ((ifTrueInline = ifTrue.asInstanceOf(InlineConditional.class)) != null
+                && (and1 = ifTrueInline.condition.asInstanceOf(And.class)) != null) {
+            Expression ifTrueCondition = removeCommonClauses(evaluationResult, condition, and1);
             if (ifTrueCondition != ifTrueInline.condition) {
                 return compute(evaluationResult,
                         condition, new InlineConditional(evaluationResult.getAnalyserContext(), ifTrueCondition,
@@ -164,57 +167,61 @@ public class EvaluateInlineConditional {
 
         // x ? x||y : z   -->   x ? true : z   --> x||z
         // x ? !x||y : z  -->   x ? y : z
-        if (ifTrue instanceof Or or) {
-            if (or.expressions().contains(condition)) {
+        Or or1;
+        if ((or1 = ifTrue.asInstanceOf(Or.class)) != null) {
+            if (or1.expressions().contains(condition)) {
                 Expression res = Or.or(evaluationResult, condition, ifFalse);
                 return builder.setExpression(res).build();
             }
             Expression notCondition = Negation.negate(evaluationResult, condition);
-            if (or.expressions().contains(notCondition)) {
+            if (or1.expressions().contains(notCondition)) {
                 Expression newOr = Or.or(evaluationResult,
-                        or.expressions().stream().filter(e -> !e.equals(notCondition)).toList());
+                        or1.expressions().stream().filter(e -> !e.equals(notCondition)).toList());
                 return compute(evaluationResult, condition, newOr, ifFalse, complain, myself, modifying);
             }
         }
         // x ? y : x||z --> x ? y: z
         // x ? y : !x||z --> x ? y: true --> !x || y
-        if (ifFalse instanceof Or or) {
-            if (or.expressions().contains(condition)) {
+        Or or2;
+        if ((or2 = ifFalse.asInstanceOf(Or.class)) != null) {
+            if (or2.expressions().contains(condition)) {
                 Expression newOr = Or.or(evaluationResult,
-                        or.expressions().stream().filter(e -> !e.equals(condition)).toList());
+                        or2.expressions().stream().filter(e -> !e.equals(condition)).toList());
                 return compute(evaluationResult, condition, ifTrue, newOr, complain, myself, modifying);
             }
             Expression notCondition = Negation.negate(evaluationResult, condition);
-            if (or.expressions().contains(notCondition)) {
+            if (or2.expressions().contains(notCondition)) {
                 Expression res = Or.or(evaluationResult, notCondition, ifTrue);
                 return builder.setExpression(res).build();
             }
         }
         // x ? x&&y : z --> x ? y : z
         // x ? !x&&y : z --> x ? false : z --> !x && z
-        if (ifTrue instanceof And and) {
-            if (and.getExpressions().contains(condition)) {
+        And and2;
+        if ((and2 = ifTrue.asInstanceOf(And.class)) != null) {
+            if (and2.getExpressions().contains(condition)) {
                 Expression newAnd = And.and(evaluationResult,
-                        and.getExpressions().stream().filter(e -> !e.equals(condition)).toArray(Expression[]::new));
+                        and2.getExpressions().stream().filter(e -> !e.equals(condition)).toArray(Expression[]::new));
                 return compute(evaluationResult, condition, newAnd, ifFalse, complain, myself, modifying);
             }
             Expression notCondition = Negation.negate(evaluationResult, condition);
-            if (and.getExpressions().contains(notCondition)) {
+            if (and2.getExpressions().contains(notCondition)) {
                 Expression res = And.and(evaluationResult, notCondition, ifFalse);
                 return builder.setExpression(res).build();
             }
         }
         // x ? y : !x&&z => x ? y : z
         // x ? y : x&&z --> x ? y : false --> x && y
-        if (ifFalse instanceof And and) {
-            if (and.getExpressions().contains(condition)) {
+        And and3;
+        if ((and3 = ifFalse.asInstanceOf(And.class)) != null) {
+            if (and3.getExpressions().contains(condition)) {
                 Expression res = And.and(evaluationResult, condition, ifTrue);
                 return builder.setExpression(res).build();
             }
             Expression notCondition = Negation.negate(evaluationResult, condition);
-            if (and.getExpressions().contains(notCondition)) {
+            if (and3.getExpressions().contains(notCondition)) {
                 Expression newAnd = And.and(evaluationResult,
-                        and.getExpressions().stream().filter(e -> !e.equals(notCondition)).toArray(Expression[]::new));
+                        and3.getExpressions().stream().filter(e -> !e.equals(notCondition)).toArray(Expression[]::new));
                 return compute(evaluationResult, condition, ifTrue, newAnd, complain, myself, modifying);
             }
         }
@@ -227,9 +234,11 @@ public class EvaluateInlineConditional {
             }
         }
 
+        GreaterThanZero ge0;
+        Sum sum;
         if (evaluationResult.getAnalyserContext().getConfiguration().analyserConfiguration().normalizeMore()
-                && condition instanceof GreaterThanZero ge0
-                && ge0.expression() instanceof Sum sum) {
+                && (ge0 = condition.asInstanceOf(GreaterThanZero.class)) != null
+                && (sum = ge0.expression().asInstanceOf(Sum.class)) != null) {
             /*
             if lhs is negative, and rhs is positive, keep: a<=b?t:f === -a+b>0?t:f
             if lhs is positive, and rhs is negative, swap: b>a?t:f  === a-b>0?t:f  === a<=b?f:t

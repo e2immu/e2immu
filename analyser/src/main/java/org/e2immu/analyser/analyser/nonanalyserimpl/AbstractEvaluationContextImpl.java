@@ -190,7 +190,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     // causes findForReading to generate a new VariableInfoImpl, this loop will cause 5x the same logic to be applied.
     // should be able to do better/faster.
     public Properties getValueProperties(ParameterizedType formalType, Expression value, boolean ignoreConditionInConditionManager) {
-        if (value.isInstanceOf(NullConstant.class)) {
+        if (value.isNullConstant()) {
             assert formalType != null : "Use other call!";
             IsMyself isMyself = isMyself(formalType);
             return valuePropertiesOfNullConstant(isMyself, formalType);

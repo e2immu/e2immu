@@ -173,10 +173,10 @@ public class InlineConditional extends BaseExpression implements Expression {
             return new MultiExpression(ifTrue, ifFalse).getProperty(context, property, duringEvaluation);
         }
         if (property == IMMUTABLE || property == INDEPENDENT || property == CONTAINER) {
-            if (ifTrue.isInstanceOf(NullConstant.class)) {
+            if (ifTrue.isNullConstant()) {
                 return context.evaluationContext().getProperty(ifFalse, property, duringEvaluation, false);
             }
-            if (ifFalse.isInstanceOf(NullConstant.class)) {
+            if (ifFalse.isNullConstant()) {
                 return context.evaluationContext().getProperty(ifTrue, property, duringEvaluation, false);
             }
             return new MultiExpression(ifTrue, ifFalse).getProperty(context, property, duringEvaluation);
@@ -243,7 +243,7 @@ public class InlineConditional extends BaseExpression implements Expression {
         }
         Set<Variable> conditionVariables = Stream.concat(this.condition.variableStream(),
                 condition.variableStream()).collect(Collectors.toUnmodifiableSet());
-        if (condition.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
+        if (condition.isNullConstant() && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
             condition = Instance.forUnspecifiedCondition(getIdentifier(), context.evaluationContext().statementIndex(),
                     context.getPrimitives());
@@ -284,11 +284,15 @@ public class InlineConditional extends BaseExpression implements Expression {
         // with the boolean case.
         EvaluationResult copyForThen = resultIsBoolean ? evaluationContext
                 : evaluationContext.child(condition, condition.variableStream().collect(Collectors.toUnmodifiableSet()));
-        Expression t = ifTrue instanceof InlineConditional inlineTrue ? inlineTrue.optimise(copyForThen, true, myself) : ifTrue;
+        InlineConditional inlineTrue;
+        Expression t = (inlineTrue = ifTrue.asInstanceOf(InlineConditional.class)) != null
+                ? inlineTrue.optimise(copyForThen, true, myself) : ifTrue;
         EvaluationResult copyForElse = resultIsBoolean ? evaluationContext
                 : evaluationContext.child(Negation.negate(evaluationContext, condition),
                 condition.variableStream().collect(Collectors.toUnmodifiableSet()));
-        Expression f = ifFalse instanceof InlineConditional inlineFalse ? inlineFalse.optimise(copyForElse, true, myself) : ifFalse;
+        InlineConditional inlineFalse;
+        Expression f = (inlineFalse = ifFalse.asInstanceOf(InlineConditional.class)) != null
+                ? inlineFalse.optimise(copyForElse, true, myself) : ifFalse;
 
         if (useState) {
             return EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext, condition, t, f).getExpression();

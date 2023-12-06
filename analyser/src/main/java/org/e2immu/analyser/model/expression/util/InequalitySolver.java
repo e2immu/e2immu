@@ -87,7 +87,7 @@ public class InequalitySolver {
                 }
                 return false;
             }
-            if (element instanceof InlineConditional) {
+            if (element.isInstanceOf(InlineConditional.class)) {
                 invalid.set(true);
                 return false;
             }
@@ -113,13 +113,14 @@ public class InequalitySolver {
     public Boolean evaluate(Expression expression) {
         if (expression instanceof And and) {
             return and.getExpressions().stream().map(this::accept)
-                    .reduce(true, (v1, v2) -> v1 == null ? v2 : v2 == null ? v1 : v1 && v2);
+                    .reduce(true, (v1, v2) -> v2 == null ? v1 : v1 && v2);
         }
         return accept(expression);
     }
 
     private Boolean accept(Expression expression) {
-        if (expression instanceof GreaterThanZero gt0) {
+        GreaterThanZero gt0;
+        if ((gt0 = expression.asInstanceOf(GreaterThanZero.class)) != null) {
             Inequality inequality = InequalityHelper.extract(gt0);
 
             if (inequality instanceof LinearInequalityInOneVariable oneVar) {

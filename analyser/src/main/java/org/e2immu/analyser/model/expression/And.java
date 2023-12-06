@@ -199,20 +199,25 @@ public class And extends ExpressionCanBeTooComplex {
 
         // this works because of sorting
         // A && !A will always sit next to each other
-        if (value instanceof Negation negatedValue && negatedValue.expression.equals(prev)) {
+        Negation negatedValue;
+        if ((negatedValue = value.asInstanceOf(Negation.class)) != null && negatedValue.expression.equals(prev)) {
             LOGGER.debug("Return FALSE in And, found direct opposite for {}", value);
             return Action.FALSE;
         }
 
         // A && A ? B : C --> A && B
-        if (value instanceof InlineConditional conditionalValue && conditionalValue.condition.equals(prev)) {
+        InlineConditional conditionalValue;
+        if ((conditionalValue = value.asInstanceOf(InlineConditional.class)) != null
+                && conditionalValue.condition.equals(prev)) {
             newConcat.add(conditionalValue.ifTrue);
             return Action.SKIP;
         }
         // A ? B : C && !A --> !A && C
-        if (prev instanceof InlineConditional conditionalValue &&
-                conditionalValue.condition.equals(Negation.negate(evaluationContext, value))) {
-            newConcat.set(newConcat.size() - 1, conditionalValue.ifFalse);
+        InlineConditional conditionalValue2;
+        if (prev != null
+                && (conditionalValue2 = prev.asInstanceOf(InlineConditional.class)) != null
+                && conditionalValue2.condition.equals(Negation.negate(evaluationContext, value))) {
+            newConcat.set(newConcat.size() - 1, conditionalValue2.ifFalse);
             return Action.ADD;
         }
 
@@ -290,15 +295,18 @@ public class And extends ExpressionCanBeTooComplex {
 
         // combinations with equality and inequality (GE)
 
-        if (value instanceof GreaterThanZero gt0 && gt0.expression().variables().size() > 1) {
+        GreaterThanZero gt0;
+        if ((gt0 = value.asInstanceOf(GreaterThanZero.class)) != null && gt0.expression().variables().size() > 1) {
             // it may be interesting to run the inequality solver
             InequalitySolver inequalitySolver = new InequalitySolver(evaluationContext, newConcat);
             Boolean resolve = inequalitySolver.evaluate(value);
             if (resolve == Boolean.FALSE) return Action.FALSE;
         }
 
-        if (prev instanceof Negation negatedPrev && negatedPrev.expression instanceof Equals ev1) {
-            if (value instanceof Equals ev2) {
+        Equals ev1;
+        if (prev instanceof Negation negatedPrev && (ev1 = negatedPrev.expression.asInstanceOf(Equals.class)) != null) {
+            Equals ev2;
+            if ((ev2 = value.asInstanceOf(Equals.class)) != null) {
                 // not (3 == a) && (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     newConcat.remove(newConcat.size() - 1); // full replace
@@ -409,9 +417,11 @@ public class And extends ExpressionCanBeTooComplex {
             }
 
             // GE and EQ (note: GE always comes after EQ)
-            if (value instanceof GreaterThanZero ge) {
+            GreaterThanZero ge;
+            if ((ge = value.asInstanceOf(GreaterThanZero.class)) != null) {
                 GreaterThanZero.XB xb = ge.extract(evaluationContext);
-                if (ev1.lhs instanceof Numeric ev1ln && ev1.rhs.equals(xb.x())) {
+                Numeric ev1ln;
+                if ((ev1ln = ev1.lhs.asInstanceOf(Numeric.class)) != null && ev1.rhs.equals(xb.x())) {
                     double y = ev1ln.doubleValue();
                     if (xb.lessThan()) {
                         // y==x and x <= b
@@ -477,12 +487,16 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     public static Expression extract(Expression e) {
-        if (e instanceof Equals equals) return equals.rhs;
-        if (e instanceof GreaterThanZero gt0) {
+        Equals equals;
+        if ((equals = e.asInstanceOf(Equals.class)) != null) return equals.rhs;
+        GreaterThanZero gt0;
+        if ((gt0 = e.asInstanceOf(GreaterThanZero.class)) != null) {
             return extract(gt0.expression());
         }
-        if (e instanceof Negation negation) return extract(negation.expression);
-        if (e instanceof Sum sum && sum.lhs.isConstant()) return extract(sum.rhs);
+        Negation negation;
+        if ((negation = e.asInstanceOf(Negation.class)) != null) return extract(negation.expression);
+        Sum sum;
+        if ((sum = e.asInstanceOf(Sum.class)) != null && sum.lhs.isConstant()) return extract(sum.rhs);
         LhsRhs lhsRhs = LhsRhs.equalsMethodCall(e);
         if (lhsRhs != null) return lhsRhs.rhs();
         return e;
@@ -491,8 +505,13 @@ public class And extends ExpressionCanBeTooComplex {
 
     private Action analyseGeNotEq(EvaluationResult evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
         //  GE and NOT EQ
-        if (value instanceof GreaterThanZero ge && prev instanceof Negation prevNeg &&
-                prevNeg.expression instanceof Equals equalsValue) {
+        GreaterThanZero ge;
+        Negation prevNeg;
+        Equals equalsValue;
+        if ((ge = value.asInstanceOf(GreaterThanZero.class)) != null
+                && prev != null
+                && (prevNeg = prev.asInstanceOf(Negation.class)) != null
+                && (equalsValue = prevNeg.expression.asInstanceOf(Equals.class)) != null) {
             GreaterThanZero.XB xb = ge.extract(evaluationContext);
             if (equalsValue.lhs instanceof Numeric eqLn && equalsValue.rhs.equals(xb.x())) {
                 double y = eqLn.doubleValue();
@@ -522,7 +541,11 @@ public class And extends ExpressionCanBeTooComplex {
 
     private Action analyseGeGe(EvaluationResult evaluationContext, ArrayList<Expression> newConcat, Expression prev, Expression value) {
         // GE and GE
-        if (value instanceof GreaterThanZero ge2 && prev instanceof GreaterThanZero ge1) {
+        GreaterThanZero ge1;
+        GreaterThanZero ge2;
+        if ((ge2 = value.asInstanceOf(GreaterThanZero.class)) != null
+                && prev != null
+                && (ge1 = prev.asInstanceOf(GreaterThanZero.class)) != null) {
             GreaterThanZero.XB xb1 = ge1.extract(evaluationContext);
             GreaterThanZero.XB xb2 = ge2.extract(evaluationContext);
             Expression notXb2x = Negation.negate(evaluationContext, xb2.x());

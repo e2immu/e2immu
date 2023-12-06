@@ -141,7 +141,11 @@ public final class Or extends ExpressionCanBeTooComplex {
                     return new BooleanConstant(primitives, true);
                 }
 
-                if (value instanceof GreaterThanZero gt1 && prev instanceof GreaterThanZero gt0) {
+                GreaterThanZero gt0;
+                GreaterThanZero gt1;
+                if ((gt1 = value.asInstanceOf(GreaterThanZero.class)) != null
+                        && prev != null
+                        && (gt0 = prev.asInstanceOf(GreaterThanZero.class)) != null) {
                     GreaterThanZero.XB xb0 = gt0.extract(context);
                     GreaterThanZero.XB xb1 = gt1.extract(context);
                     if (xb0.x().equals(xb1.x())) {

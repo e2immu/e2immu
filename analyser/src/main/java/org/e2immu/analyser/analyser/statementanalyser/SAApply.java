@@ -611,7 +611,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                  EvaluationResult context) {
         if (variable instanceof FieldReference target) {
             if (valueToWritePossiblyDelayed.isDelayed()) {
-                if (valueToWrite.isInstanceOf(NullConstant.class)) {
+                if (valueToWrite.isNullConstant()) {
                     /*
                     The null constant may have delayed value properties, but it is not useful to delay the whole evaluation
                     for that reason. We cannot simply keep "null" and delayed properties at the same time, so we wrap.

@@ -344,7 +344,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // null scope
         Expression objectValue = objectResult.value();
-        if (objectValue.isInstanceOf(NullConstant.class) && forwardEvaluationInfo.isComplainInlineConditional()) {
+        if (objectValue.isNullConstant() && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(object.getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
 

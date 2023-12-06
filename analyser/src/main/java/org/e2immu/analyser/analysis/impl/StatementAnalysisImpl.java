@@ -1442,7 +1442,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                         && index().equals(vi.getAssignmentIds().getLatestAssignmentIndex()))
                 .map(vi -> {
                     if (vi.variable() instanceof FieldReference fieldReference) {
-                        if (vi.getValue().isInstanceOf(NullConstant.class)) {
+                        if (vi.getValue().isNullConstant()) {
                             return new Pair<>(vi, DelayFactory.initialDelay());
                         }
                         VariableExpression ve = new VariableExpression(vi.getIdentifier(), fieldReference);

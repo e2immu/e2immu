@@ -701,7 +701,7 @@ class SAEvaluationContext extends CommonEvaluationContext {
             translationMap.put(veSuffix, e);
         } else {
             Properties valueProperties;
-            if (bestValue.isInstanceOf(NullConstant.class) || bestValue.isInstanceOf(UnknownExpression.class)
+            if (bestValue.isNullConstant() || bestValue.isInstanceOf(UnknownExpression.class)
                     || bestValue.isDelayed()) {
                 valueProperties = defaultValueProperties(variable.parameterizedType());
             } else {
@@ -905,11 +905,17 @@ class SAEvaluationContext extends CommonEvaluationContext {
             FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo());
             DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
             if (finalDV.isDelayed()) {
-                return value;
+                return wrap(v, value);
             }
             return expression;
         }
+        return wrap(v, value);
+    }
+
+    private static Expression wrap(Variable variable, Expression value) {
         return value;
+        //if (value.isDelayed() || value.isInstanceOf(VariableExpression.class)) return value;
+       // return PropertyWrapper.propertyWrapper(value, LinkedVariables.of(Map.of(variable, LinkedVariables.LINK_STATICALLY_ASSIGNED)));
     }
 
     public Expression makeVariableExpression(VariableInfo variableInfo,

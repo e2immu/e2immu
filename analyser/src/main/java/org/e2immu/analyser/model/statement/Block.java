@@ -248,7 +248,7 @@ public class Block extends StatementWithStructure {
             if (statement instanceof ReturnStatement returnStatement) {
                 if (returnStatement.expression == EmptyExpression.EMPTY_EXPRESSION) {
                     mostSpecific.set(primitives.voidParameterizedType());
-                } else if (returnStatement.expression.isInstanceOf(NullConstant.class)) {
+                } else if (returnStatement.expression.isNullConstant()) {
                     if (mostSpecific.get() == null) {
                         mostSpecific.set(primitives.objectParameterizedType());
                     }

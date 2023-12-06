@@ -102,7 +102,7 @@ public class InequalityHelper {
     public static Double extractEquals(List<Expression> expressions) {
         return expressions.stream().filter(e -> e instanceof Equals eq
                         && eq.lhs.isConstant()
-                        && !(eq.lhs.isInstanceOf(NullConstant.class)))
+                        && !(eq.lhs.isNullConstant()))
                 .map(e -> extractDouble((Number) ((ConstantExpression<?>) ((Equals) e).lhs).getValue()))
                 .findFirst().orElse(null);
     }

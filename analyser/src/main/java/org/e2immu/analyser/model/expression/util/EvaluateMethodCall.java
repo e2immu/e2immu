@@ -437,7 +437,7 @@ public class EvaluateMethodCall {
                     // only truths have been added
                     return new BooleanConstant(primitives, true);
                 }
-            } else if (resultingValue instanceof InlineConditional || resultingValue instanceof And) {
+            } else if (resultingValue.isInstanceOf(InlineConditional.class) || resultingValue.isInstanceOf(And.class)) {
                 // resulting value is expected to be an inline operator, its condition to be combined with the instance state
                 return resultingValue;
 

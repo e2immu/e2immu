@@ -102,16 +102,18 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         }
 
         if (v instanceof Equals equals) {
-            if (equals.lhs instanceof InlineConditional inlineConditional) {
+            InlineConditional icl;
+            if ((icl = equals.lhs.asInstanceOf(InlineConditional.class)) != null) {
                 EvaluationResult safeEvaluationContext = context.copyToPreventAbsoluteStateComputation();
                 Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext,
-                        allowEqualsToCallContext, equals.rhs, inlineConditional);
+                        allowEqualsToCallContext, equals.rhs, icl);
                 if (result != null) return result;
             }
-            if (equals.rhs instanceof InlineConditional inlineConditional) {
+            InlineConditional icr;
+            if ((icr = equals.rhs.asInstanceOf(InlineConditional.class)) != null) {
                 EvaluationResult safeEvaluationContext = context.copyToPreventAbsoluteStateComputation();
                 Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext,
-                        allowEqualsToCallContext, equals.lhs, inlineConditional);
+                        allowEqualsToCallContext, equals.lhs, icr);
                 if (result != null) return result;
             }
         }

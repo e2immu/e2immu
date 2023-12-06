@@ -616,7 +616,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             // TODO in the same PrimaryType, switch to field. Outside, switch to getter
         }
 
-        ParameterizedType concreteReturnType = value.isInstanceOf(NullConstant.class) ? methodInfo.returnType() : value.returnType();
+        ParameterizedType concreteReturnType = value.isNullConstant() ? methodInfo.returnType() : value.returnType();
         DV notNullExpression = variableInfo.getProperty(NOT_NULL_EXPRESSION);
         if (value.isDelayed() || value.isInitialReturnExpression()) {
             return delayedOrUnreachableMethodResult(sharedState, variableInfo, value, concreteReturnType);

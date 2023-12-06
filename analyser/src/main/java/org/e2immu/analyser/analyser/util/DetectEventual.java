@@ -258,11 +258,13 @@ public record DetectEventual(MethodInfo methodInfo,
      * @return null when the expression does not represent a @TestMark; the mark value otherwise
      */
     private MethodAnalysis.Eventual detectTestMark(Expression expression) {
-        if (expression instanceof And || expression instanceof Negation neg && neg.expression instanceof And) {
+        Negation neg = null;
+        if (expression.isInstanceOf(And.class) || ((neg = expression.asInstanceOf(Negation.class)) != null)
+                && neg.expression.isInstanceOf(And.class)) {
             And and;
             boolean negated;
-            if (expression instanceof Negation negation) {
-                and = (And) negation.expression;
+            if (neg != null) {
+                and = (And) neg.expression;
                 negated = true;
             } else {
                 and = (And) expression;

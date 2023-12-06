@@ -500,13 +500,13 @@ public record MergeHelper(EvaluationContext evaluationContext,
         if (condition instanceof Equals equals && equals.lhs.isNullConstant()
                 && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
                 && ive.variable().equals(this.vi.variable())
-                && e1.getValue().isInstanceOf(NullConstant.class)) {
+                && e1.getValue().isNullConstant()) {
             return valueProperties(e2);
         }
         if (condition instanceof Negation negation && negation.expression instanceof Equals equals && equals.lhs.isNullConstant()
                 && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
                 && ive.variable().equals(this.vi.variable())
-                && e2.getValue().isInstanceOf(NullConstant.class)) {
+                && e2.getValue().isNullConstant()) {
             return valueProperties(e1);
         }
         return null;
@@ -612,11 +612,11 @@ public record MergeHelper(EvaluationContext evaluationContext,
         Expression conditionNoNegate = condition instanceof Negation neg ? neg.expression : condition;
         Properties properties = Properties.writable();
         if (conditionNoNegate instanceof Equals eq) {
-            if (eq.lhs.isInstanceOf(NullConstant.class) && !negate && eq.rhs.equals(ifFalse.getValue())) {
+            if (eq.lhs.isNullConstant() && !negate && eq.rhs.equals(ifFalse.getValue())) {
                 // null == x ? y : x
                 properties.overwrite(NOT_NULL_EXPRESSION, ifTrue.getProperty(NOT_NULL_EXPRESSION));
             }
-            if (eq.lhs.isInstanceOf(NullConstant.class) && negate && eq.rhs.equals(ifTrue.getValue())) {
+            if (eq.lhs.isNullConstant() && negate && eq.rhs.equals(ifTrue.getValue())) {
                 // null != x ? x : y
                 DV max = ifFalse.getProperty(NOT_NULL_EXPRESSION).max(ifTrue.getProperty(NOT_NULL_EXPRESSION));
                 properties.overwrite(NOT_NULL_EXPRESSION, max);

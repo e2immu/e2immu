@@ -69,8 +69,9 @@ public record Interval(double left, boolean leftIncluded, double right, boolean 
     }
 
     public static Interval extractInterval(Expression expression) {
-        if (expression instanceof GreaterThanZero ge) {
-            Inequality inequality = InequalityHelper.extract(ge);
+        GreaterThanZero gt0;
+        if ((gt0 = expression.asInstanceOf(GreaterThanZero.class)) != null) {
+            Inequality inequality = InequalityHelper.extract(gt0);
             if (inequality instanceof LinearInequalityInOneVariable one) return one.interval();
         }
         return null;
