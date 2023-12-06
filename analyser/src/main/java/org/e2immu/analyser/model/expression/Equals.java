@@ -53,9 +53,12 @@ public class Equals extends BinaryOperator {
                 l, r, true, ForwardEvaluationInfo.DEFAULT);
     }
 
-    public static Expression equals(EvaluationResult context, Expression l, Expression r, boolean checkForNull) {
+    public static Expression equals(EvaluationResult context,
+                                    Expression l,
+                                    Expression r,
+                                    boolean allowEqualsToCallContext) {
         return equals(Identifier.joined("equals", List.of(l.getIdentifier(), r.getIdentifier())), context,
-                l, r, checkForNull, ForwardEvaluationInfo.DEFAULT);
+                l, r, allowEqualsToCallContext, ForwardEvaluationInfo.DEFAULT);
     }
 
     public static Expression equals(Identifier identifier, EvaluationResult context, Expression l, Expression r,
@@ -64,10 +67,13 @@ public class Equals extends BinaryOperator {
     }
 
     public static Expression equals(Identifier identifier,
-                                    EvaluationResult context, Expression l, Expression r, boolean checkForNull,
+                                    EvaluationResult context,
+                                    Expression l,
+                                    Expression r,
+                                    boolean allowEqualsToCallContext,
                                     ForwardEvaluationInfo forwardEvaluationInfo) {
         CausesOfDelay causes = l.causesOfDelay().merge(r.causesOfDelay());
-        Expression expression = internalEquals(identifier, context, l, r, checkForNull, forwardEvaluationInfo);
+        Expression expression = internalEquals(identifier, context, l, r, allowEqualsToCallContext, forwardEvaluationInfo);
         return causes.isDelayed() && expression.isDone()
                 ? DelayedExpression.forSimplification(identifier, expression.returnType(), expression, causes)
                 : expression;
@@ -76,12 +82,12 @@ public class Equals extends BinaryOperator {
     private static Expression internalEquals(Identifier identifier,
                                              EvaluationResult context,
                                              Expression l, Expression r,
-                                             boolean checkForNull,
+                                             boolean allowEqualsToCallContext,
                                              ForwardEvaluationInfo forwardEvaluationInfo) {
         Primitives primitives = context.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true);
 
-        if (checkForNull) {
+        if (allowEqualsToCallContext) {
             if (l.isInstanceOf(NullConstant.class)) {
                 if (r.isInstanceOf(NullConstant.class)) {
                     // esp. meant for null == null/*some property wrapped...*/
@@ -296,7 +302,7 @@ public class Equals extends BinaryOperator {
 
     // see test ConditionalChecks_7; TestEqualsConstantInline
     public static Expression tryToRewriteConstantEqualsInlineNegative(EvaluationResult context,
-                                                                      boolean doingNullChecks,
+                                                                      boolean allowEqualsToCallContext,
                                                                       Expression c,
                                                                       InlineConditional inlineConditional) {
         if (c instanceof InlineConditional inline2) {
@@ -323,11 +329,11 @@ public class Equals extends BinaryOperator {
             Expression notCondition = Negation.negate(context, inlineConditional.condition);
             return And.and(context,
                     notCondition, Negation.negate(context, Equals.equals(context, inlineConditional.ifFalse, c,
-                            !doingNullChecks)));
+                            !allowEqualsToCallContext)));
         }
         if (ifFalseGuaranteedEqual) {
             return And.and(context, inlineConditional.condition,
-                    Negation.negate(context, Equals.equals(context, inlineConditional.ifTrue, c, !doingNullChecks)));
+                    Negation.negate(context, Equals.equals(context, inlineConditional.ifTrue, c, !allowEqualsToCallContext)));
         }
         return null;
     }

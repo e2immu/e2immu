@@ -135,11 +135,11 @@ public interface ConditionManager {
     /**
      * computes a value in the context of the current condition manager.
      *
-     * @param doingNullCheck a boolean to prevent a stack overflow, repeatedly trying to detect not-null situations
+     * @param allowEqualsToCallContext a boolean to prevent a stack overflow, repeatedly trying to detect not-null situations
      *                       (see e.g. Store_0)
      * @return a value without the precondition attached
      */
-    Expression evaluate(EvaluationResult context, Expression value, boolean doingNullCheck);
+    Expression evaluate(EvaluationResult context, Expression value, boolean allowEqualsToCallContext);
 
     /**
      * Extract NOT_NULL properties from the current condition in ACCEPT mode.

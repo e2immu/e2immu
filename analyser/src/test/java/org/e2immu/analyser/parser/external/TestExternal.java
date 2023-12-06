@@ -382,4 +382,14 @@ public class TestExternal extends CommonTestRunner {
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
+
+    // stack overflow in ConditionManagerImpl.absoluteState ~ isNotNull0
+    @Test
+    public void test_10() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
+        testClass("External_10", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
 }

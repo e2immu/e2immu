@@ -82,7 +82,7 @@ public abstract class CommonEvaluationContext extends AbstractEvaluationContextI
     public DV isNotNull0(Expression value, boolean useEnnInsteadOfCnn, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.isOnlySort()) return DV.FALSE_DV;
         Expression valueIsNull = new Equals(value.getIdentifier(), getPrimitives(), NullConstant.NULL_CONSTANT, value);
-        Expression inCm = conditionManager.evaluate(EvaluationResultImpl.from(this), valueIsNull, true);
+        Expression inCm = conditionManager.evaluate(EvaluationResultImpl.from(this), valueIsNull, false);
         DV negated = inCm.isDelayed() ? inCm.causesOfDelay() : inCm.isBoolValueFalse() ? DV.TRUE_DV : DV.FALSE_DV;
         DV nne = getProperty(value, Property.NOT_NULL_EXPRESSION, true, true);
         DV nneToTF;

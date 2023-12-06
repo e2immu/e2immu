@@ -264,7 +264,7 @@ public record ConditionManagerImpl(Expression condition,
 
     private Expression absoluteState(EvaluationResult context,
                                      ConditionManager base,
-                                     boolean doingNullCheck,
+                                     boolean allowEqualsToCallContext,
                                      Set<Variable> ignoreFromChildren) {
         Set<Variable> cumulativeIgnore = SetUtil.immutableUnion(ignoreFromChildren, ignore);
         Expression[] expressions;
@@ -276,7 +276,7 @@ public record ConditionManagerImpl(Expression condition,
             return And.and(Identifier.CONSTANT, context, condition, state);
         }
         Expression parentAbsolute = ((ConditionManagerImpl) parent)
-                .absoluteState(context, base, doingNullCheck, cumulativeIgnore);
+                .absoluteState(context, base, allowEqualsToCallContext, cumulativeIgnore);
         Expression cleanCondition = expressionWithoutVariables(context, condition, cumulativeIgnore);
         expressions = new Expression[]{cleanCondition, state, parentAbsolute};
         complexity = cleanCondition.getComplexity() + state.getComplexity() + parentAbsolute.getComplexity();
@@ -285,7 +285,7 @@ public record ConditionManagerImpl(Expression condition,
             Expression[] values = {cleanCondition, state, parentAbsolute};
             return ExpressionCanBeTooComplex.reducedComplexity(Identifier.CONSTANT, context, List.of(), values);
         }
-        return And.and(Identifier.CONSTANT, context, doingNullCheck, expressions);
+        return And.and(Identifier.CONSTANT, context, allowEqualsToCallContext, expressions);
     }
 
     public Expression expressionWithoutVariables(EvaluationResult context,
@@ -375,15 +375,15 @@ public record ConditionManagerImpl(Expression condition,
     /**
      * computes a value in the context of the current condition manager.
      *
-     * @param doingNullCheck a boolean to prevent a stack overflow, repeatedly trying to detect not-null situations
+     * @param allowEqualsToCallContext a boolean to prevent a stack overflow, repeatedly trying to detect not-null situations
      *                       (see e.g. Store_0)
      * @return a value without the precondition attached
      */
-    public Expression evaluate(EvaluationResult context, Expression value, boolean doingNullCheck) {
+    public Expression evaluate(EvaluationResult context, Expression value, boolean allowEqualsToCallContext) {
         assert value.returnType().isBooleanOrBoxedBoolean() : "Got " + value.getClass() + ", type " + value.returnType();
         if (value.isBoolValueFalse()) return value; // no matter what the conditions and state is
 
-        Expression absoluteState = absoluteState(context, null, doingNullCheck, Set.of());
+        Expression absoluteState = absoluteState(context, null, allowEqualsToCallContext, Set.of());
         if (absoluteState.isEmpty() || value.isEmpty()) throw new UnsupportedOperationException();
         /*
         check on true: no state, so don't do anything
@@ -392,18 +392,19 @@ public record ConditionManagerImpl(Expression condition,
         if (precondition.isEmpty()) {
             combinedWithPrecondition = absoluteState;
         } else {
-            combinedWithPrecondition = And.and(Identifier.CONSTANT, context, doingNullCheck, absoluteState,
+            combinedWithPrecondition = And.and(Identifier.CONSTANT, context, allowEqualsToCallContext, absoluteState,
                     precondition.expression());
         }
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Expression resultWithPrecondition = And.and(Identifier.CONSTANT, context, doingNullCheck, combinedWithPrecondition, value);
+        Expression resultWithPrecondition = And.and(Identifier.CONSTANT, context, allowEqualsToCallContext,
+                combinedWithPrecondition, value);
         if (resultWithPrecondition.equals(combinedWithPrecondition)) {
             // constant true: adding the value has no effect at all
             return new BooleanConstant(context.getPrimitives(), true);
         }
         // return the result without precondition
-        Expression result = And.and(Identifier.CONSTANT, context, doingNullCheck, absoluteState, value);
+        Expression result = And.and(Identifier.CONSTANT, context, allowEqualsToCallContext, absoluteState, value);
         if (result instanceof And and && and.getExpressions().stream().anyMatch(value::equals)) {
             return value;
         }

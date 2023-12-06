@@ -67,9 +67,9 @@ public final class Or extends ExpressionCanBeTooComplex {
         return or(context, false, values);
     }
 
-    public static Expression or(EvaluationResult context, boolean doingNullChecks, Expression... values) {
+    public static Expression or(EvaluationResult context, boolean allowEqualsToCallContext, Expression... values) {
         Identifier id = Identifier.joined("or", Arrays.stream(values).map(Expression::getIdentifier).toList());
-        return new Or(id, context.getPrimitives()).append(context, doingNullChecks, values);
+        return new Or(id, context.getPrimitives()).append(context, allowEqualsToCallContext, values);
     }
 
     public static Expression or(EvaluationResult context, List<Expression> values) {
@@ -77,12 +77,12 @@ public final class Or extends ExpressionCanBeTooComplex {
         return new Or(id, context.getPrimitives()).append(context, false, values);
     }
 
-    private Expression append(EvaluationResult context, boolean doingNullChecks, Expression... values) {
-        return append(context, doingNullChecks, Arrays.asList(values));
+    private Expression append(EvaluationResult context, boolean allowEqualsToCallContext, Expression... values) {
+        return append(context, allowEqualsToCallContext, Arrays.asList(values));
     }
 
     // we try to maintain a CNF
-    private Expression append(EvaluationResult context, boolean doingNullChecks, List<Expression> values) {
+    private Expression append(EvaluationResult context, boolean allowEqualsToCallContext, List<Expression> values) {
 
         // STEP 1: trivial reductions
 
@@ -195,14 +195,14 @@ public final class Or extends ExpressionCanBeTooComplex {
         ArrayList<Expression> finalValues = concat;
         if (firstAnd != null) {
             Expression[] components = firstAnd.getExpressions().stream()
-                    .map(v -> append(context, doingNullChecks, ListUtil.immutableConcat(finalValues, List.of(v))))
+                    .map(v -> append(context, allowEqualsToCallContext, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Found And-clause {}, components for new And are {}", firstAnd, Arrays.toString(components));
             }
             int complexityComponents = Arrays.stream(components).mapToInt(Expression::getComplexity).sum();
             if (complexityComponents < context.evaluationContext().limitOnComplexity()) {
-                return And.and(context, doingNullChecks, components);
+                return And.and(context, allowEqualsToCallContext, components);
             }
         }
         if (finalValues.size() == 1) return finalValues.get(0);

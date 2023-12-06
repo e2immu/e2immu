@@ -72,7 +72,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         return negate(context, false, v);
     }
 
-    public static Expression negate(EvaluationResult context, boolean doingNullChecks, @NotNull Expression v) {
+    public static Expression negate(EvaluationResult context, boolean allowEqualsToCallContext, @NotNull Expression v) {
         Objects.requireNonNull(v);
         if (v instanceof BooleanConstant boolValue) {
             return boolValue.negate();
@@ -105,13 +105,13 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
             if (equals.lhs instanceof InlineConditional inlineConditional) {
                 EvaluationResult safeEvaluationContext = context.copyToPreventAbsoluteStateComputation();
                 Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext,
-                        doingNullChecks, equals.rhs, inlineConditional);
+                        allowEqualsToCallContext, equals.rhs, inlineConditional);
                 if (result != null) return result;
             }
             if (equals.rhs instanceof InlineConditional inlineConditional) {
                 EvaluationResult safeEvaluationContext = context.copyToPreventAbsoluteStateComputation();
                 Expression result = Equals.tryToRewriteConstantEqualsInlineNegative(safeEvaluationContext,
-                        doingNullChecks, equals.lhs, inlineConditional);
+                        allowEqualsToCallContext, equals.lhs, inlineConditional);
                 if (result != null) return result;
             }
         }
@@ -124,8 +124,8 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
         if (v instanceof InstanceOf i) {
             Expression varIsNull = Equals.equals(i.identifier, context, new NullConstant(i.identifier), i.expression(),
-                    doingNullChecks, ForwardEvaluationInfo.DEFAULT);
-            return Or.or(context, doingNullChecks, negation, varIsNull);
+                    allowEqualsToCallContext, ForwardEvaluationInfo.DEFAULT);
+            return Or.or(context, allowEqualsToCallContext, negation, varIsNull);
         }
         return negation;
     }

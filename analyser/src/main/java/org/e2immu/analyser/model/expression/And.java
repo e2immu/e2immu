@@ -63,22 +63,22 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     /**
-     * @param context         the context to create new evaluated expression
-     * @param doingNullChecks a boolean to prevent a stackoverflow, repeatedly trying to determine whether something is not null or not. (See e.g. Store_0.)
-     * @param values          the clauses of the and
+     * @param context                  the context to create new evaluated expression
+     * @param allowEqualsToCallContext a boolean to prevent a stackoverflow, repeatedly trying to determine whether something is not null or not. (See e.g. Store_0.)
+     * @param values                   the clauses of the and
      * @return the result of the conjunction
      */
-    public static Expression and(EvaluationResult context, boolean doingNullChecks, Expression... values) {
+    public static Expression and(EvaluationResult context, boolean allowEqualsToCallContext, Expression... values) {
         Identifier id = Identifier.joined("and", Arrays.stream(values).map(Expression::getIdentifier).toList());
-        return and(id, context, doingNullChecks, values);
+        return and(id, context, allowEqualsToCallContext, values);
     }
 
     public static Expression and(Identifier identifier, EvaluationResult context, Expression... values) {
         return and(identifier, context, false, values);
     }
 
-    public static Expression and(Identifier identifier, EvaluationResult context, boolean doingNullChecks, Expression... values) {
-        Expression expression = new And(identifier, context.getPrimitives()).append(context, doingNullChecks, values);
+    public static Expression and(Identifier identifier, EvaluationResult context, boolean allowEqualsToCallContext, Expression... values) {
+        Expression expression = new And(identifier, context.getPrimitives()).append(context, allowEqualsToCallContext, values);
         if (expression.isDone()) {
             CausesOfDelay causes = Arrays.stream(values).map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
             if (causes.isDelayed()) {
@@ -90,8 +90,8 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     // we try to maintain a CNF
-    private Expression append(EvaluationResult context, boolean doingNullChecks, Expression... values) {
-        assert !doingNullChecks || identifier == Identifier.CONSTANT;
+    private Expression append(EvaluationResult context, boolean allowEqualsToCallContext, Expression... values) {
+        assert !allowEqualsToCallContext || identifier == Identifier.CONSTANT;
 
         // STEP 1: check that all values return boolean!
         int complexity = 0;
@@ -147,7 +147,7 @@ public class And extends ExpressionCanBeTooComplex {
             int pos = 0;
             for (Expression value : concat) {
 
-                Action action = analyse(context, doingNullChecks, pos, newConcat, prev, value);
+                Action action = analyse(context, allowEqualsToCallContext, pos, newConcat, prev, value);
                 switch (action) {
                     case FALSE:
                         return new BooleanConstant(primitives, false);
@@ -191,7 +191,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     private Action analyse(EvaluationResult evaluationContext,
-                           boolean doingNullChecks,
+                           boolean allowEqualsToCallContext,
                            int pos, ArrayList<Expression> newConcat,
                            Expression prev, Expression value) {
         // A && A
@@ -212,7 +212,7 @@ public class And extends ExpressionCanBeTooComplex {
         // A ? B : C && !A --> !A && C
         if (prev instanceof InlineConditional conditionalValue &&
                 conditionalValue.condition.equals(Negation.negate(evaluationContext, value))) {
-            newConcat.set(newConcat.size()-1, conditionalValue.ifFalse);
+            newConcat.set(newConcat.size() - 1, conditionalValue.ifFalse);
             return Action.ADD;
         }
 
@@ -226,7 +226,7 @@ public class And extends ExpressionCanBeTooComplex {
             boolean changed = false;
             while (iterator.hasNext()) {
                 Expression value1 = iterator.next();
-                Expression negated1 = Negation.negate(evaluationContext, doingNullChecks, value1);
+                Expression negated1 = Negation.negate(evaluationContext, allowEqualsToCallContext, value1);
                 boolean found = false;
                 for (int pos2 = 0; pos2 < newConcat.size(); pos2++) {
                     if (pos2 != pos && negated1.equals(newConcat.get(pos2))) {
@@ -308,11 +308,11 @@ public class And extends ExpressionCanBeTooComplex {
         }
 
         // x.equals(y)
-        Action actionEqualsEquals = analyseEqualsEquals(evaluationContext, doingNullChecks, prev, value, newConcat);
+        Action actionEqualsEquals = analyseEqualsEquals(evaluationContext, allowEqualsToCallContext, prev, value, newConcat);
         if (actionEqualsEquals != null) return actionEqualsEquals;
 
         // x == y
-        Action actionEqEq = analyseEqEq(evaluationContext, doingNullChecks, prev, value, newConcat);
+        Action actionEqEq = analyseEqEq(evaluationContext, allowEqualsToCallContext, prev, value, newConcat);
         if (actionEqEq != null) return actionEqEq;
 
         Action actionGeNotEqual = analyseGeNotEq(evaluationContext, newConcat, prev, value);
@@ -339,7 +339,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     private Action analyseEqualsEquals(EvaluationResult evaluationContext,
-                                       boolean doingNullChecks,
+                                       boolean allowEqualsToCallContext,
                                        Expression prev,
                                        Expression value,
                                        ArrayList<Expression> newConcat) {
@@ -348,7 +348,7 @@ public class And extends ExpressionCanBeTooComplex {
             Action a = equalsRhs(ev1, value);
             if (a != null) return a;
 
-            return equalsAndOr(evaluationContext, doingNullChecks, prev, value, newConcat, ev1.rhs());
+            return equalsAndOr(evaluationContext, allowEqualsToCallContext, prev, value, newConcat, ev1.rhs());
         }
         return null;
     }
@@ -373,10 +373,13 @@ public class And extends ExpressionCanBeTooComplex {
         return null;
     }
 
-    private Action analyseEqEq(EvaluationResult evaluationContext, boolean doingNullChecks,
-                               Expression prev, Expression value, ArrayList<Expression> newConcat) {
+    private Action analyseEqEq(EvaluationResult evaluationContext,
+                               boolean allowEqualsToCallContext,
+                               Expression prev,
+                               Expression value,
+                               ArrayList<Expression> newConcat) {
         if (prev instanceof Equals ev1) {
-            Action skip = equalsAndOr(evaluationContext, doingNullChecks, prev, value, newConcat, ev1.rhs);
+            Action skip = equalsAndOr(evaluationContext, allowEqualsToCallContext, prev, value, newConcat, ev1.rhs);
             if (skip != null) return skip;
             if (value instanceof Equals ev2) {
                 // 3 == a && 4 == a
@@ -429,7 +432,7 @@ public class And extends ExpressionCanBeTooComplex {
     }
 
     private Action equalsAndOr(EvaluationResult evaluationContext,
-                               boolean doingNullChecks,
+                               boolean allowEqualsToCallContext,
                                Expression prev,
                                Expression value,
                                ArrayList<Expression> newConcat,
@@ -440,10 +443,10 @@ public class And extends ExpressionCanBeTooComplex {
                 List<Expression> result = new ArrayList<>(or.expressions().size());
                 boolean foundTrue = false;
                 for (Expression clause : or.expressions()) {
-                    Identifier id = doingNullChecks ? Identifier.CONSTANT
+                    Identifier id = allowEqualsToCallContext ? Identifier.CONSTANT
                             : Identifier.joined("and", List.of(prev.getIdentifier(), clause.getIdentifier()));
-                    Expression and = new And(id,
-                            evaluationContext.getPrimitives()).append(evaluationContext, doingNullChecks, prev, clause);
+                    Expression and = new And(id, evaluationContext.getPrimitives())
+                            .append(evaluationContext, allowEqualsToCallContext, prev, clause);
                     if (and.isBoolValueTrue()) {
                         foundTrue = true;
                         break;
@@ -823,7 +826,7 @@ public class And extends ExpressionCanBeTooComplex {
                 .filter(Objects::nonNull)
                 .toList();
         if (filtered.size() == 1) return filtered.get(0);
-        if (filtered.size() == 0) return new BooleanConstant(primitives, true);
+        if (filtered.isEmpty()) return new BooleanConstant(primitives, true);
         return new And(primitives, filtered);
     }
 }
