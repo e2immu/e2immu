@@ -45,7 +45,8 @@ public class InequalitySolver {
     public InequalitySolver(EvaluationResult evaluationContext, Expression expression) {
         this.evaluationContext = evaluationContext;
         Map<OneVariable, List<Expression>> builder = new HashMap<>();
-        if (expression instanceof And and) {
+        And and;
+        if ((and = expression.asInstanceOf(And.class)) != null) {
             and.getExpressions().forEach(e -> tryToAddSingleNumericVariableComparison(builder, e));
         } else {
             tryToAddSingleNumericVariableComparison(builder, expression);
@@ -68,7 +69,8 @@ public class InequalitySolver {
         Set<OneVariable> oneVariables = new HashSet<>();
         AtomicBoolean invalid = new AtomicBoolean();
         e.visit(element -> {
-            if (element instanceof MethodCall methodCall) {
+            MethodCall methodCall;
+            if ((methodCall = element.asInstanceOf(MethodCall.class)) != null) {
                 if (methodCall.returnType().isNumeric() && evaluationContext.getAnalyserContext()
                         .getMethodAnalysis(methodCall.methodInfo)
                         .getProperty(Property.MODIFIED_METHOD).valueIsFalse()) {
@@ -111,7 +113,8 @@ public class InequalitySolver {
     */
 
     public Boolean evaluate(Expression expression) {
-        if (expression instanceof And and) {
+        And and;
+        if ((and = expression.asInstanceOf(And.class)) != null) {
             return and.getExpressions().stream().map(this::accept)
                     .reduce(true, (v1, v2) -> v2 == null ? v1 : v1 && v2);
         }

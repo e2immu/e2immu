@@ -227,9 +227,14 @@ public class EvaluateInlineConditional {
         }
 
         // myself == x ? x : y --> y
-        if (condition instanceof Equals equals && myself != null) {
-            if (equals.lhs instanceof VariableExpression vel && vel.variable().equals(myself) && ifTrue.equals(equals.rhs)
-                    || equals.rhs instanceof VariableExpression ver && ver.variable().equals(myself) && ifTrue.equals(equals.lhs)) {
+        Equals equals;
+        if ((equals = condition.asInstanceOf(Equals.class)) != null && myself != null) {
+            VariableExpression vel;
+            VariableExpression ver;
+            if ((vel = equals.lhs.asInstanceOf(VariableExpression.class)) != null
+                    && vel.variable().equals(myself) && ifTrue.equals(equals.rhs)
+                    || (ver = equals.rhs.asInstanceOf(VariableExpression.class)) != null
+                    && ver.variable().equals(myself) && ifTrue.equals(equals.lhs)) {
                 return builder.setExpression(ifFalse).build();
             }
         }
@@ -270,17 +275,24 @@ public class EvaluateInlineConditional {
     }
 
     private static boolean inExpression(Expression e, Expression container) {
-        if (container instanceof And and) {
+        And and;
+        if ((and = container.asInstanceOf(And.class)) != null) {
             return and.getExpressions().contains(e);
         }
         return container.equals(e);
     }
 
     private static boolean hiddenSwitch(InspectionProvider inspectionProvider, Expression c1, Expression c2) {
-        if (c1 instanceof Equals eq1 && c2 instanceof Equals eq2 && eq1.lhs.isConstant() && eq2.lhs.isConstant() && !eq1.lhs.equals(eq2.lhs)) {
+        Equals eq1;
+        Equals eq2;
+        if ((eq1 = c1.asInstanceOf(Equals.class)) != null
+                && (eq2 = c2.asInstanceOf(Equals.class)) != null
+                && eq1.lhs.isConstant() && eq2.lhs.isConstant() && !eq1.lhs.equals(eq2.lhs)) {
             return eq1.rhs.equals(eq2.rhs);
         }
-        if (c1 instanceof MethodCall mc1 && c2 instanceof MethodCall mc2) {
+        MethodCall mc1;
+        MethodCall mc2;
+        if ((mc1 = c1.asInstanceOf(MethodCall.class)) != null && (mc2 = c2.asInstanceOf(MethodCall.class)) != null) {
             MethodInspection mi1 = inspectionProvider.getMethodInspection(mc1.methodInfo);
             MethodInspection mi2 = inspectionProvider.getMethodInspection(mc2.methodInfo);
             if (mi1.isEquals() && mi2.isEquals()) {

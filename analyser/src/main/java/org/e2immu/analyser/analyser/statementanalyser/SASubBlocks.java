@@ -752,7 +752,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 } else if (statement() instanceof TryStatement) { // catch
                     // extract them from the condition of the main block; it's got to be the same Instance objects
                     Expression condition = executions.get(0).conditionManager.condition();
-                    Expression negated = condition instanceof And and ? and.getExpressions().get(count - 1) : condition;
+                    And and;
+                    Expression negated = (and = condition.asInstanceOf(And.class)) != null
+                            ? and.getExpressions().get(count - 1) : condition;
                     conditionForSubStatement = Negation.negate(sharedState.context(), negated);
                     assert conditionForSubStatement.isDone();
                     conditionVariables = executions.get(0).conditionManager.conditionVariables(); // maybe too many??

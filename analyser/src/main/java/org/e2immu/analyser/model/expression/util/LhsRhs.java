@@ -25,15 +25,18 @@ import java.util.List;
 public record LhsRhs(Expression lhs, Expression rhs) {
 
     public static List<LhsRhs> extractEqualities(Expression e) {
-        if (e instanceof DelayedExpression de) {
+        DelayedExpression de;
+        if ((de = e.asInstanceOf(DelayedExpression.class)) != null) {
             return extractEqualities(de.getOriginal());
         }
-        if (e instanceof Equals equals) {
+        Equals equals;
+        if ((equals = e.asInstanceOf(Equals.class)) != null) {
             return List.of(new LhsRhs(equals.lhs, equals.rhs));
         }
         LhsRhs equalsMethod = equalsMethodCall(e);
         if (equalsMethod != null) return List.of(equalsMethod);
-        if (e instanceof And and) {
+        And and;
+        if ((and = e.asInstanceOf(And.class)) != null) {
             return and.getExpressions().stream().flatMap(clause -> extractEqualities(clause).stream()).toList();
         }
         return List.of();

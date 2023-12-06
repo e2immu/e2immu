@@ -42,7 +42,8 @@ public class RewriteCondition {
                                                                          Expression absoluteState) {
         IsVariableExpression veLhs;
         IsVariableExpression veRhs;
-        if (condition instanceof Equals eq
+        Equals eq;
+        if ((eq = condition.asInstanceOf(Equals.class)) != null
                 && !absoluteState.equals(condition)
                 && (veLhs = eq.lhs.asInstanceOf(IsVariableExpression.class)) != null
                 && (veRhs = eq.rhs.asInstanceOf(IsVariableExpression.class)) != null) {
@@ -55,7 +56,8 @@ public class RewriteCondition {
                 loopVariable = veLhs;
                 parameter = veRhs;
             } else return condition;
-            if (absoluteState instanceof And and) {
+            And and;
+            if ((and = absoluteState.asInstanceOf(And.class)) != null) {
                 // remove from absolute state any component without "i" TODO
                 Expression componentsWithLvr = and.removePartsNotReferringTo(evaluationContext, loopVariable.variable());
                 // replace, in absolute state, the "i==p" with true and in the rest, "i" with "p"

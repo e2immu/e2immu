@@ -87,7 +87,7 @@ public final class Or extends ExpressionCanBeTooComplex {
         // STEP 1: trivial reductions
 
         if (this.expressions.isEmpty() && values.size() == 1) {
-            if (values.get(0) instanceof Or || values.get(0) instanceof And) {
+            if (values.get(0).isInstanceOf(Or.class) || values.get(0).isInstanceOf(And.class)) {
                 LOGGER.debug("Return immediately in Or: {}", values.get(0));
                 return values.get(0);
             }
@@ -177,9 +177,10 @@ public final class Or extends ExpressionCanBeTooComplex {
                 }
 
                 // A || A
+                And andValue;
                 if (value.equals(prev)) {
                     changes = true;
-                } else if (value instanceof And andValue) {
+                } else if ((andValue = value.asInstanceOf(And.class)) != null) {
                     if (andValue.getExpressions().size() == 1) {
                         newConcat.add(andValue.getExpressions().get(0));
                         changes = true;
@@ -242,7 +243,8 @@ public final class Or extends ExpressionCanBeTooComplex {
 
     private void recursivelyAdd(ArrayList<Expression> concat, List<Expression> collect) {
         for (Expression value : collect) {
-            if (value instanceof Or or) {
+            Or or;
+            if ((or = value.asInstanceOf(Or.class)) != null) {
                 concat.addAll(or.expressions);
             } else {
                 concat.add(value);

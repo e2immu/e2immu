@@ -497,14 +497,20 @@ public record MergeHelper(EvaluationContext evaluationContext,
     */
     private Merge.ExpressionAndProperties isNullCheckAndNull(Expression condition, VariableInfo e1, VariableInfo e2) {
         IsVariableExpression ive;
-        if (condition instanceof Equals equals && equals.lhs.isNullConstant()
+        Equals equals;
+        if ((equals = condition.asInstanceOf(Equals.class)) != null
+                && equals.lhs.isNullConstant()
                 && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
                 && ive.variable().equals(this.vi.variable())
                 && e1.getValue().isNullConstant()) {
             return valueProperties(e2);
         }
-        if (condition instanceof Negation negation && negation.expression instanceof Equals equals && equals.lhs.isNullConstant()
-                && (ive = equals.rhs.asInstanceOf(IsVariableExpression.class)) != null
+        Negation negation;
+        Equals eq2;
+        if ((negation = condition.asInstanceOf(Negation.class)) != null
+                && (eq2 = negation.expression.asInstanceOf(Equals.class)) != null
+                && eq2.lhs.isNullConstant()
+                && (ive = eq2.rhs.asInstanceOf(IsVariableExpression.class)) != null
                 && ive.variable().equals(this.vi.variable())
                 && e2.getValue().isNullConstant()) {
             return valueProperties(e1);
@@ -611,7 +617,8 @@ public record MergeHelper(EvaluationContext evaluationContext,
         boolean negate = condition instanceof Negation;
         Expression conditionNoNegate = condition instanceof Negation neg ? neg.expression : condition;
         Properties properties = Properties.writable();
-        if (conditionNoNegate instanceof Equals eq) {
+        Equals eq;
+        if ((eq = conditionNoNegate.asInstanceOf(Equals.class)) != null) {
             if (eq.lhs.isNullConstant() && !negate && eq.rhs.equals(ifFalse.getValue())) {
                 // null == x ? y : x
                 properties.overwrite(NOT_NULL_EXPRESSION, ifTrue.getProperty(NOT_NULL_EXPRESSION));

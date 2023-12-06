@@ -291,29 +291,35 @@ public record ConditionManagerImpl(Expression condition,
     public Expression expressionWithoutVariables(EvaluationResult context,
                                                  Expression expression,
                                                  Set<Variable> cumulativeIgnore) {
-        if (cumulativeIgnore.isEmpty()) return expression;
-        if (expression instanceof ConstantExpression<?>) return expression;
+        if (cumulativeIgnore.isEmpty()) {
+            return expression;
+        }
+        if (expression.isInstanceOf(ConstantExpression.class)) {
+            return expression;
+        }
         IsVariableExpression ive = expression.asInstanceOf(IsVariableExpression.class);
-
         if (ive != null) {
             if (expression.returnType().isBooleanOrBoxedBoolean() && cumulativeIgnore.contains(ive.variable())) {
                 return new BooleanConstant(context.getPrimitives(), true); // REMOVE!
             }
             return expression; // we'll catch this one later
         }
-        if (expression instanceof Negation negation) {
+        Negation negation;
+        if ((negation = expression.asInstanceOf(Negation.class)) != null) {
             Expression e = expressionWithoutVariables(context, negation.expression, cumulativeIgnore);
             if (e.isBoolValueTrue()) return e; // REMOVE!
             return expression;
         }
-        if (expression instanceof And and) {
+        And and;
+        if ((and = expression.asInstanceOf(And.class)) != null) {
             Expression[] filtered = and.getExpressions().stream()
                     .map(e -> expressionWithoutVariables(context, e, cumulativeIgnore))
                     .filter(e -> !e.isBoolValueTrue())
                     .toArray(Expression[]::new);
             return And.and(and.identifier, context, filtered);
         }
-        if (expression instanceof BinaryOperator operator) {
+        BinaryOperator operator;
+        if ((operator = expression.asInstanceOf(BinaryOperator.class)) != null) {
             Expression lhs = expressionWithoutVariables(context, operator.lhs, cumulativeIgnore);
             Expression rhs = expressionWithoutVariables(context, operator.rhs, cumulativeIgnore);
             IsVariableExpression lhsVar = lhs.asInstanceOf(IsVariableExpression.class);
@@ -323,7 +329,8 @@ public record ConditionManagerImpl(Expression condition,
                 return new BooleanConstant(context.getPrimitives(), true); // REMOVE!
             }
         }
-        if (expression instanceof DelayedExpression de) {
+        DelayedExpression de;
+        if ((de = expression.asInstanceOf(DelayedExpression.class)) != null) {
             Expression e = expressionWithoutVariables(context, de.getOriginal(), cumulativeIgnore);
             if (e.isBoolValueTrue()) return e; // REMOVE!
             return expression;
@@ -366,7 +373,9 @@ public record ConditionManagerImpl(Expression condition,
         if (newState.equals(conditionalPart) || newState.equals(absoluteState)) {
             return value.applyCondition(new BooleanConstant(context.getPrimitives(), true));
         }
-        if (newState instanceof And and && and.getExpressions().stream().anyMatch(conditionalPart::equals)) {
+        And and;
+        if ((and = newState.asInstanceOf(And.class)) != null
+                && and.getExpressions().stream().anyMatch(conditionalPart::equals)) {
             return value; // no improvement can be made
         }
         return value.applyCondition(newState);
@@ -376,7 +385,7 @@ public record ConditionManagerImpl(Expression condition,
      * computes a value in the context of the current condition manager.
      *
      * @param allowEqualsToCallContext a boolean to prevent a stack overflow, repeatedly trying to detect not-null situations
-     *                       (see e.g. Store_0)
+     *                                 (see e.g. Store_0)
      * @return a value without the precondition attached
      */
     public Expression evaluate(EvaluationResult context, Expression value, boolean allowEqualsToCallContext) {
@@ -405,7 +414,8 @@ public record ConditionManagerImpl(Expression condition,
         }
         // return the result without precondition
         Expression result = And.and(Identifier.CONSTANT, context, allowEqualsToCallContext, absoluteState, value);
-        if (result instanceof And and && and.getExpressions().stream().anyMatch(value::equals)) {
+        And and;
+        if ((and = result.asInstanceOf(And.class)) != null && and.getExpressions().stream().anyMatch(value::equals)) {
             return value;
         }
         return result;

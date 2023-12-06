@@ -145,13 +145,17 @@ public class EvaluateMethodCall {
         */
         if (modified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression() && methodInfo.returnType().isBoolean()) {
             Expression condition = context.evaluationContext().getConditionManager().condition();
-            if (methodCall.equals(condition) || condition instanceof And and
+            And and;
+            if (methodCall.equals(condition) || (and = condition.asInstanceOf(And.class)) != null
                     && and.getExpressions().stream().anyMatch(methodCall::equals)) {
                 BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
                 return builder.setExpression(TRUE).build();
             }
-            if (condition instanceof Negation n && methodCall.equals(n.expression) ||
-                    condition instanceof And and && and.getExpressions().stream().anyMatch(methodCall::equals)) {
+            Negation n;
+            And and2;
+            if ((n = condition.asInstanceOf(Negation.class)) != null && methodCall.equals(n.expression) ||
+                    (and2 = condition.asInstanceOf(And.class)) != null
+                            && and2.getExpressions().stream().anyMatch(methodCall::equals)) {
                 BooleanConstant FALSE = new BooleanConstant(context.getPrimitives(), false);
                 return builder.setExpression(FALSE).build();
             }

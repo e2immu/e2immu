@@ -106,7 +106,7 @@ public class And extends ExpressionCanBeTooComplex {
 
         // STEP 2: trivial reductions
 
-        if (this.expressions.isEmpty() && values.length == 1 && values[0] instanceof And) return values[0];
+        if (this.expressions.isEmpty() && values.length == 1 && values[0].isInstanceOf(And.class)) return values[0];
 
         // STEP 3: concat everything
 
@@ -225,7 +225,7 @@ public class And extends ExpressionCanBeTooComplex {
         // if we keep doing this, the OrValue empties out, and we are in the situation:
         // A && !B && (!A || B) ==> each of the components of an OR occur in negative form earlier on
         // this is the more complicated form of A && !A
-        if (value instanceof Or) {
+        if (value.isInstanceOf(Or.class)) {
             List<Expression> remaining = new ArrayList<>(components(value));
             Iterator<Expression> iterator = remaining.iterator();
             boolean changed = false;
@@ -259,7 +259,7 @@ public class And extends ExpressionCanBeTooComplex {
 
         // the more complicated variant of A && A => A
         // A && (A || xxx) ==> A
-        if (value instanceof Or) {
+        if (value.isInstanceOf(Or.class)) {
             List<Expression> components = components(value);
             for (Expression value1 : components) {
                 for (Expression value2 : newConcat) {
@@ -271,7 +271,7 @@ public class And extends ExpressionCanBeTooComplex {
             }
         }
         // A || B &&  A || !B ==> A
-        if (value instanceof Or && prev instanceof Or) {
+        if (value.isInstanceOf(Or.class) && prev != null && prev.isInstanceOf(Or.class)) {
             List<Expression> components = components(value);
             List<Expression> prevComponents = components(prev);
             List<Expression> equal = new ArrayList<>();
@@ -335,7 +335,8 @@ public class And extends ExpressionCanBeTooComplex {
 
         // simplification of the OrValue
 
-        if (value instanceof Or orValue) {
+        Or orValue;
+        if ((orValue = value.asInstanceOf(Or.class)) != null) {
             if (orValue.expressions().size() == 1) {
                 newConcat.add(orValue.expressions().get(0));
                 LOGGER.debug("Simplification of OR into single And clause: {}", value);
@@ -386,16 +387,20 @@ public class And extends ExpressionCanBeTooComplex {
                                Expression prev,
                                Expression value,
                                ArrayList<Expression> newConcat) {
-        if (prev instanceof Equals ev1) {
+        Equals ev1;
+        if (prev != null && (ev1 = prev.asInstanceOf(Equals.class)) != null) {
             Action skip = equalsAndOr(evaluationContext, allowEqualsToCallContext, prev, value, newConcat, ev1.rhs);
             if (skip != null) return skip;
-            if (value instanceof Equals ev2) {
+            Equals ev2;
+            if ((ev2 = value.asInstanceOf(Equals.class)) != null) {
                 // 3 == a && 4 == a
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     return Action.FALSE;
                 }
                 // x == a%r && y == a
-                if (ev1.rhs instanceof Remainder remainder && ev2.rhs.equals(remainder.lhs)) {
+                Remainder remainder;
+                if ((remainder = ev1.rhs.asInstanceOf(Remainder.class)) != null
+                        && ev2.rhs.equals(remainder.lhs)) {
                     // let's evaluate x == y%r; if true, we can skip; if false, we can bail out
                     Expression yModR = Remainder.remainder(evaluationContext, ev2.lhs, remainder.rhs);
                     if (yModR.isNumeric() && ev1.lhs.isNumeric()) {
@@ -409,9 +414,12 @@ public class And extends ExpressionCanBeTooComplex {
             }
 
             // EQ and NOT EQ
-            if (value instanceof Negation ne && ne.expression instanceof Equals ev2) {
+            Negation ne;
+            Equals ev3;
+            if ((ne = value.asInstanceOf(Negation.class)) != null
+                    && (ev3 = ne.expression.asInstanceOf(Equals.class)) != null) {
                 // 3 == a && not (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
-                if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
+                if (ev1.rhs.equals(ev3.rhs) && !ev1.lhs.equals(ev3.lhs)) {
                     return Action.SKIP;
                 }
             }
@@ -447,7 +455,8 @@ public class And extends ExpressionCanBeTooComplex {
                                Expression value,
                                ArrayList<Expression> newConcat,
                                Expression equalityRhs) {
-        if (value instanceof Or or) {
+        Or or;
+        if ((or = value.asInstanceOf(Or.class)) != null) {
             // do a check first -- should we expand?
             if (safeToExpandOr(equalityRhs, or)) {
                 List<Expression> result = new ArrayList<>(or.expressions().size());
@@ -654,6 +663,9 @@ public class And extends ExpressionCanBeTooComplex {
             return Action.REPLACE;
         }
 
+        // IMPORTANT, see InstanceOf_3: the last 2 clauses in the conjunction should not use
+        // .asInstanceOf(IsVariableExpression), because that one includes a negation, resulting in wrong values
+        
         // null != a && a instanceof B
         if (value instanceof InstanceOf i
                 && i.expression() instanceof VariableExpression iv
@@ -679,17 +691,23 @@ public class And extends ExpressionCanBeTooComplex {
     // a instanceof A && !(a instanceof B)
     // is written as: a instanceof A && (null==a||!(a instanceof B))
     private InstanceOf isNegationOfInstanceOf(Expression expression) {
-        return expression instanceof Or or
+        Or or;
+        Equals equals;
+        Negation negation;
+        InstanceOf instance;
+        return expression != null
+                && (or = expression.asInstanceOf(Or.class)) != null
                 && or.expressions().size() == 2
-                && or.expressions().get(0) instanceof Equals equals
+                && (equals = or.expressions().get(0).asInstanceOf(Equals.class)) != null
                 && equals.lhs.isNullConstant()
-                && or.expressions().get(1) instanceof Negation negation
-                && negation.expression instanceof InstanceOf instance
+                && (negation = or.expressions().get(1).asInstanceOf(Negation.class)) != null
+                && (instance = negation.expression.asInstanceOf(InstanceOf.class)) != null
                 && instance.expression().equals(equals.rhs) ? instance : null;
     }
 
     private List<Expression> components(Expression value) {
-        if (value instanceof Or or) {
+        Or or;
+        if ((or = value.asInstanceOf(Or.class)) != null) {
             return or.expressions();
         }
         return List.of(value);
@@ -697,7 +715,8 @@ public class And extends ExpressionCanBeTooComplex {
 
     private static void recursivelyAdd(ArrayList<Expression> concat, List<Expression> values) {
         for (Expression value : values) {
-            if (value instanceof And and) {
+            And and;
+            if ((and = value.asInstanceOf(And.class)) != null) {
                 recursivelyAdd(concat, and.expressions);
             } else {
                 concat.add(value);

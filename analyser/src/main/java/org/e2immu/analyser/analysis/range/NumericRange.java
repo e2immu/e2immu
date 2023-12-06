@@ -46,7 +46,10 @@ public record NumericRange(int startIncl,
      * @return true when this exit breaks the expected range, e.g. if the range is 0...20, then true for i==3 but false for i+unknown==3
      */
     public boolean generateErrorOnInterrupt(Expression expression) {
-        return expression instanceof Equals equals && variableExpression.equals(equals.rhs) && equals.lhs instanceof IntConstant;
+        Equals equals;
+        return (equals = expression.asInstanceOf(Equals.class)) != null
+                && variableExpression.equals(equals.rhs)
+                && equals.lhs.isInstanceOf(IntConstant.class);
         // if the variable is not within the conditions, we'll get a different sort of error
         // TODO can be more complex, but is this useful?
     }

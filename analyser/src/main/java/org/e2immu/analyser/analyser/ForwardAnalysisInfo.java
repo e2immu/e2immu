@@ -86,13 +86,16 @@ public record ForwardAnalysisInfo(DV execution,
             }
             Expression absoluteStateOfPrevious = cm.absoluteStateUpTo(initialConditionManager, context);
             boolean replace;
-            if (label instanceof And andLabel) {
+            And andLabel;
+            Negation n;
+            Or or;
+            if ((andLabel = label.asInstanceOf(And.class)) != null) {
                 // default situation
                 replace = andLabel.getExpressions().stream().anyMatch(e -> equalOrIn(e, absoluteStateOfPrevious));
-            } else if (label instanceof Negation n) {
+            } else if ((n = label.asInstanceOf(Negation.class)) != null) {
                 // default situation, only one 'case' with one condition
                 replace = equalOrIn(n.getExpression(), absoluteStateOfPrevious);
-            } else if (label instanceof Or or) {
+            } else if ((or = label.asInstanceOf(Or.class)) != null) {
                 // multiple labels
                 replace = or.expressions().stream().anyMatch(o ->
                         equalOrIn(Negation.negate(context, o), absoluteStateOfPrevious));
@@ -109,8 +112,10 @@ public record ForwardAnalysisInfo(DV execution,
         }
 
         private boolean equalOrIn(Expression expression, Expression target) {
+            And and;
             return target.equals(expression) ||
-                    target instanceof And and && and.getExpressions().stream().anyMatch(expression::equals);
+                    ((and = target.asInstanceOf(And.class)) != null
+                            && and.getExpressions().stream().anyMatch(expression::equals));
         }
     }
 

@@ -97,8 +97,12 @@ public class Filter {
     private <X> FilterResult<X> internalFilter(Expression value, List<FilterMethod<X>> filterMethods) {
         AtomicReference<FilterResult<X>> filterResult = new AtomicReference<>();
         value.visit(element -> {
-            if (element instanceof Expression expression && !expression.isEmpty()) {
-                if (expression instanceof Negation negatedValue) {
+            Expression expression;
+            if ((expression = element.asInstanceOf(Expression.class)) != null && !expression.isEmpty()) {
+                Negation negatedValue;
+                And andValue;
+                Or orValue;
+                if ((negatedValue = expression.asInstanceOf(Negation.class)) != null) {
                     FilterResult<X> resultOfNegated = internalFilter(negatedValue.expression, filterMethods);
                     if (resultOfNegated != null) {
                         FilterResult<X> negatedResult = new FilterResult<>(resultOfNegated.accepted.entrySet().stream()
@@ -107,11 +111,11 @@ public class Filter {
                                 negateRest(resultOfNegated.rest));
                         filterResult.set(negatedResult);
                     }
-                } else if (expression instanceof And andValue) {
+                } else if ((andValue = expression.asInstanceOf(And.class)) != null) {
                     if (filterMode == FilterMode.ACCEPT || filterMode == FilterMode.ALL) {
                         filterResult.set(processAndOr(false, andValue.getExpressions(), filterMethods));
                     }
-                } else if (expression instanceof Or orValue) {
+                } else if ((orValue = expression.asInstanceOf(Or.class)) != null) {
                     if (filterMode == FilterMode.REJECT || filterMode == FilterMode.ALL) {
                         filterResult.set(processAndOr(true, orValue.expressions(), filterMethods));
                     }
@@ -299,10 +303,11 @@ public class Filter {
 
     public FilterMethod<Variable> individualNullOrNotNullClause() {
         return value -> {
-            if (value instanceof Equals equalsValue) {
-                boolean lhsIsNull = equalsValue.lhs.isNullConstant();
-                boolean lhsIsNotNull = isNotNull(equalsValue.lhs);
-                if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof IsVariableExpression v) {
+            Equals equals;
+            if ((equals = value.asInstanceOf(Equals.class)) != null) {
+                boolean lhsIsNull = equals.lhs.isNullConstant();
+                boolean lhsIsNotNull = isNotNull(equals.lhs);
+                if ((lhsIsNull || lhsIsNotNull) && equals.rhs instanceof IsVariableExpression v) {
                     return new FilterResult<Variable>(Map.of(v.variable(), value), defaultRest);
                 }
             }
@@ -314,10 +319,11 @@ public class Filter {
 
     public FilterMethod<ParameterInfo> individualNullOrNotNullClauseOnParameter() {
         return value -> {
-            if (value instanceof Equals equalsValue) {
-                boolean lhsIsNull = equalsValue.lhs.isNullConstant();
-                boolean lhsIsNotNull = isNotNull(equalsValue.lhs);
-                if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof IsVariableExpression v && v.variable() instanceof ParameterInfo p) {
+            Equals equals;
+            if ((equals = value.asInstanceOf(Equals.class)) != null) {
+                boolean lhsIsNull = equals.lhs.isNullConstant();
+                boolean lhsIsNotNull = isNotNull(equals.lhs);
+                if ((lhsIsNull || lhsIsNotNull) && equals.rhs instanceof IsVariableExpression v && v.variable() instanceof ParameterInfo p) {
                     return new FilterResult<ParameterInfo>(Map.of(p, value), defaultRest);
                 }
             }
@@ -332,24 +338,27 @@ public class Filter {
 
         @Override
         public FilterResult<MethodCall> apply(Expression value) {
-            if (value instanceof Equals equalsValue) {
-                MethodCall r = compatibleMethodValue(equalsValue.rhs);
+            Equals equals;
+            if ((equals = value.asInstanceOf(Equals.class)) != null) {
+                MethodCall r = compatibleMethodValue(equals.rhs);
                 if (r != null) {
-                    return new FilterResult<>(Map.of(r, equalsValue.lhs), defaultRest);
+                    return new FilterResult<>(Map.of(r, equals.lhs), defaultRest);
                 }
-                MethodCall l = compatibleMethodValue(equalsValue.lhs);
+                MethodCall l = compatibleMethodValue(equals.lhs);
                 if (l != null) {
-                    return new FilterResult<>(Map.of(l, equalsValue.rhs), defaultRest);
+                    return new FilterResult<>(Map.of(l, equals.rhs), defaultRest);
                 }
             }
             return null;
         }
 
         private MethodCall compatibleMethodValue(Expression value) {
-            if (value instanceof MethodCall methodValue &&
-                    methodValue.object instanceof IsVariableExpression vv &&
-                    vv.variable() instanceof This &&
-                    compatibleMethod(methodInfo, methodValue.methodInfo)) {
+            MethodCall methodValue;
+            IsVariableExpression vv;
+            if ((methodValue = value.asInstanceOf(MethodCall.class)) != null
+                    && (vv = methodValue.object.asInstanceOf(IsVariableExpression.class)) != null
+                    && vv.variable() instanceof This
+                    && compatibleMethod(methodInfo, methodValue.methodInfo)) {
                 return methodValue;
             }
             return null;
@@ -374,7 +383,8 @@ public class Filter {
 
         @Override
         public FilterResult<MethodCall> apply(Expression value) {
-            if (value instanceof MethodCall methodValue && compatible(methodValue)) {
+            MethodCall methodValue;
+            if ((methodValue = value.asInstanceOf(MethodCall.class)) != null && compatible(methodValue)) {
                 return new FilterResult<>(Map.of(methodValue, boolValueTrue), defaultRest);
             }
             return null;
