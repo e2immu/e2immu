@@ -18,9 +18,9 @@ import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.ForwardAnalysisInfo;
 import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analysis.impl.FlowDataImpl;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_30_SwitchStatement extends CommonTestRunner {
@@ -147,6 +148,20 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("res".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("instance 1 type String", d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("<return value>", d.currentValue().toString());
+                    }
+                }
+            }
+        };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if (d.statementId().startsWith("1.")) {
@@ -155,7 +170,14 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
             }
         };
         testClass("SwitchStatement_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_4B() throws IOException {
+        testClass("SwitchStatement_4B", 0, 1, new DebugConfiguration.Builder()
                 .build());
     }
 
@@ -282,6 +304,7 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 assertEquals("s$1", d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
@@ -351,9 +374,9 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                // FIXME nullable is wrong
-                String expected = "b?nullable instance 1.0.0 type String:\"s\"";
+                String expected = "b?instance 1.0.0 type String:\"s\"";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
             }
         };
 
@@ -362,6 +385,65 @@ public class Test_30_SwitchStatement extends CommonTestRunner {
         testClass("SwitchStatement_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_10() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:Z>" : "1";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertLinked(d, it(0, "SwitchStatement_10.Z:0"));
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertEquals("<return value>", d.currentValue().toString());
+                        assertLinked(d, it(0, ""));
+                    }
+                    if ("0.0.2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:X>" : "2";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertLinked(d, it(0, "SwitchStatement_10.X:0"));
+                    }
+                }
+            }
+
+        };
+        // System.out null pointer warning (no AAPI)
+        testClass("SwitchStatement_10", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // variant with a field rather than the return value: gets overwritten without problem
+    @Test
+    public void test_10B() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "v".equals(fr.fieldInfo().name())) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:Z>" : "1";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertLinked(d, it(0, "SwitchStatement_10B.Z:0"));
+                    }
+                    if ("0.0.2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<f:X>" : "2";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertLinked(d, it(0, "SwitchStatement_10B.X:0"));
+                    }
+                }
+            }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        testClass("SwitchStatement_10B", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

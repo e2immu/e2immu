@@ -165,7 +165,20 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                                                         Expression toEvaluate,
                                                         EvaluationResult result) {
         if (statement instanceof ReturnStatement) {
-            return createAndEvaluateReturnStatement(sharedState.evaluationContext(), toEvaluate, result);
+            return createAndEvaluateReturnStatement(sharedState.evaluationContext(), sharedState.forwardAnalysisInfo(),
+                    toEvaluate, result);
+        }
+        // NOT a return statement...
+        ForwardAnalysisInfo.SwitchData sd = sharedState.forwardAnalysisInfo().switchData();
+        if (sd != null && sd.switchIdToLabels().containsKey(index()) && methodInfo().hasReturnValue()) {
+            // we're at the start of a new block, and the first statement is NOT a return statement
+            ReturnVariable returnVariable = new ReturnVariable(methodInfo());
+            assert !result.changeData().containsKey(returnVariable);
+            // we'll add one!
+            UnknownExpression value = UnknownExpression.forReturnVariable(statement.getIdentifier(), methodInfo().returnType());
+            ChangeData cd = new ChangeData(value, CausesOfDelay.EMPTY, CausesOfDelay.EMPTY, true, Set.of(),
+                    LinkedVariables.EMPTY, LinkedVariables.EMPTY, Map.of(), 0);
+            return result.withExtraChangeData(returnVariable, cd);
         }
 
         if (statement instanceof LoopStatement) {
@@ -416,6 +429,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
    */
 
     private EvaluationResult createAndEvaluateReturnStatement(EvaluationContext evaluationContext,
+                                                              ForwardAnalysisInfo forwardAnalysisInfo,
                                                               Expression expression,
                                                               EvaluationResult result) {
         assert methodInfo().hasReturnValue();
@@ -429,7 +443,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         Expression toEvaluate;
         ForwardEvaluationInfo forwardEvaluationInfo;
         EvaluationResult hasAlreadyBeenEvaluated;
-        if (currentReturnValue instanceof UnknownExpression) {
+        if (currentReturnValue instanceof UnknownExpression ||
+                // we're at the start of a new case: group in an old-style switch statement
+                forwardAnalysisInfo.switchData() != null && forwardAnalysisInfo.switchData().switchIdToLabels().containsKey(index())) {
             // simplest situation
             toEvaluate = expression;
             updatedContext = context;
@@ -440,10 +456,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression returnExpression = UnknownExpression.forReturnVariable(methodInfo().identifier,
                     returnVariable.returnType);
             TranslationMap tm = new TranslationMapImpl.Builder().put(returnExpression, expression).build();
-            Expression translated = currentReturnValue.translate(context.evaluationContext().getAnalyserContext(), tm);
-            // if translated == currentReturnValue, then there was no returnExpression, so we stick to expression
-            // see External_9 for an example why 'translated.isDone()' has been added as an extra condition.
-            toEvaluate = translated == currentReturnValue && translated.isDone() ? expression : translated;
+            toEvaluate = currentReturnValue.translate(context.evaluationContext().getAnalyserContext(), tm);
             EvaluationContext newEc = context.evaluationContext().dropConditionManager();
             updatedContext = context.withNewEvaluationContext(newEc);
             forwardEvaluationInfo = new ForwardEvaluationInfo.Builder(structure.forwardEvaluationInfo())

@@ -12,10 +12,8 @@ import org.e2immu.analyser.model.expression.Instance;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.VariableNature;
+import org.e2immu.analyser.model.statement.SwitchStatementOldStyle;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 
 import java.util.*;
@@ -67,8 +65,42 @@ class PrepareMergeVariables {
             Set<Variable> mergeEvenIfNotInSubBlock) {
         part1ComputeToMergeToIgnoreToRemove(lastStatements, mergeEvenIfNotInSubBlock);
         part2ComputeTranslationsForToRemove(filterSub);
+        if (statementAnalysis.statement() instanceof SwitchStatementOldStyle) {
+            part3SwitchOldStyle(lastStatements);
+        }
         return new Data(List.copyOf(toMerge), List.copyOf(toIgnore), Set.copyOf(toRemove), Map.copyOf(renames),
                 Set.copyOf(newScopeVariables), translationMapBuilder.build());
+    }
+
+    /*
+    In SAEvaluationOfMainExpression.updateResultInCertainCases, we add unknown return values each time a new
+    case: group starts. Here, we ignore them if they are not used at all, so that no unnecessary (and wrong!)
+    NNE computation is done at the end of MergeHelper.mergeValue.
+     */
+    private void part3SwitchOldStyle(List<MergeVariables.ConditionAndLastStatement> lastStatements) {
+        Variable returnVariable = new ReturnVariable(evaluationContext.getCurrentMethod().getMethodInfo());
+        boolean allUnknown = true;
+        String rvFqn = returnVariable.fullyQualifiedName();
+        for (MergeVariables.ConditionAndLastStatement s : lastStatements) {
+            VariableInfoContainer vic = s.lastStatement().getStatementAnalysis().getVariableOrDefaultNull(rvFqn);
+            if (vic != null) {
+                VariableInfo vi = vic.current();
+                if (!vi.getValue().isUnknown()) {
+                    allUnknown = false;
+                }
+            }
+        }
+        if (allUnknown) {
+            Iterator<VariableInfoContainer> it = toMerge.iterator();
+            while (it.hasNext()) {
+                VariableInfoContainer vic = it.next();
+                if (vic != null && vic.current().variable().equals(returnVariable)) {
+                    it.remove();
+                    toIgnore.add(vic);
+                    break;
+                }
+            }
+        }
     }
 
     // ******************************************

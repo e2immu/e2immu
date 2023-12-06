@@ -108,10 +108,10 @@ class MergeValueOfSingleVariable {
             localAtLeastOneBlock = atLeastOneBlockExecuted && (statement instanceof TryStatement ||
                     lastStatements.size() == toMerge.size() + sum);
         }
-        boolean progress = false;
+        boolean progress;
         CausesOfDelay delay = CausesOfDelay.EMPTY;
 
-        if (toMerge.size() > 0) {
+        if (!toMerge.isEmpty()) {
             try {
                 CausesOfDelay executionDelay = toMerge.stream().map(cavi -> cavi.executionOfLastStatement().causesOfDelay())
                         .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
@@ -121,7 +121,7 @@ class MergeValueOfSingleVariable {
                 ProgressAndDelay pad = merge.merge(stateOfConditionManagerBeforeExecution, overwriteValue,
                         localAtLeastOneBlock, toMerge, groupPropertyValues, translationMap);
                 delay = delay.merge(pad.causes());
-                progress |= pad.progress();
+                progress = pad.progress();
 
                 Stream<LinkedVariables> toMergeLvStream = toMerge.stream().map(cav -> cav.variableInfo().getLinkedVariables());
                 Stream<LinkedVariables> lvStream;
@@ -155,13 +155,9 @@ class MergeValueOfSingleVariable {
                         statementAnalysis.methodAnalysis().getMethodInfo().fullyQualifiedName, index);
                 throw throwable;
             }
-        } //else if (destination.hasMerge()) {
-        //    assert evaluationContext.getIteration() > 0; // or it wouldn't have had a merge
-            // in previous iterations there was data for us, but now there isn't; copy from I/E into M
-        //    progress |= destination.copyFromEvalIntoMerge(groupPropertyValues);
-        //    linkedVariablesMap.put(renamed, destination.best(MERGE).getLinkedVariables());
-        //} // else: see e.g. Lambda_19Merge; for now no reason to do anything more
-        // removed because of Link_0
+        } else {
+            progress = false;
+        }
         return new ProgressAndDelay(progress, delay);
     }
 

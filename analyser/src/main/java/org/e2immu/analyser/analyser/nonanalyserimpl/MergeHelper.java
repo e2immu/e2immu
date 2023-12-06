@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.statement.LoopStatement;
+import org.e2immu.analyser.model.statement.SwitchStatementOldStyle;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -74,13 +75,13 @@ public record MergeHelper(EvaluationContext evaluationContext,
     /*
     Merge this object and merge sources into a newly created VariableInfo object.
      */
-    public MergeHelperResult mergeIntoNewObject(Expression stateOfDestination,
-                                                Merge.ExpressionAndProperties overwriteValue,
-                                                boolean atLeastOneBlockExecuted,
-                                                List<ConditionAndVariableInfo> mergeSources,
-                                                GroupPropertyValues groupPropertyValues,
-                                                TranslationMap translationMap,
-                                                VariableInfoImpl previousForValue) {
+    MergeHelperResult mergeIntoNewObject(Expression stateOfDestination,
+                                         Merge.ExpressionAndProperties overwriteValue,
+                                         boolean atLeastOneBlockExecuted,
+                                         List<ConditionAndVariableInfo> mergeSources,
+                                         GroupPropertyValues groupPropertyValues,
+                                         TranslationMap translationMap,
+                                         VariableInfoImpl previousForValue) {
         AssignmentIds mergedAssignmentIds = mergedAssignmentIds(atLeastOneBlockExecuted,
                 vi.getAssignmentIds(), mergeSources);
         boolean mergeIsLoop = evaluationContext.getCurrentStatement().statement() instanceof LoopStatement;
@@ -333,9 +334,20 @@ public record MergeHelper(EvaluationContext evaluationContext,
             // all are delayed, they're not all identical delayed field references.
             return addValueProperties(delayedConclusion(valuesDelayed));
         }
+        Stream<ConditionAndVariableInfo> reduced2;
+        if (variable instanceof ReturnVariable &&
+                context.evaluationContext().getCurrentStatement().statement() instanceof SwitchStatementOldStyle) {
+            // in SAEvaluationOfMainExpression.updateResultInCertainCases, we have added Unknown values at the beginning
+            // of each case: block. In PrepareMergeVariables.part3SwitchOldStyle, we have filtered situations where
+            // no Unknown values occur. Here, we deal with "some" Unknown values by removing them.
+            // See e.g. SwitchStatement_4B.
+            reduced2 = reduced.stream().filter(cav -> !cav.variableInfo().getValue().isUnknown());
+        } else {
+            reduced2 = reduced.stream();
+        }
 
         // no clue, but try to do something with @NotNull
-        DV worstNotNull = reduced.stream().map(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
+        DV worstNotNull = reduced2.map(cav -> cav.variableInfo().getProperty(NOT_NULL_EXPRESSION))
                 .reduce(DelayFactory.initialDelay(), DV::min);
         DV worstNotNullIncludingCurrent = atLeastOneBlockExecuted ? worstNotNull :
                 worstNotNull.min(evaluationContext.getProperty(currentValue, NOT_NULL_EXPRESSION, false, true));

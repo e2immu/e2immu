@@ -223,6 +223,14 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         return new EvaluationResultImpl(newEc, value, storedValues, causesOfDelay, messages, changeData, precondition);
     }
 
+    @Override
+    public EvaluationResult withExtraChangeData(Variable variable, ChangeData cd) {
+        Map<Variable, ChangeData> newChangeData = new HashMap<>(changeData);
+        newChangeData.put(variable, cd);
+        return new EvaluationResultImpl(evaluationContext, value, storedValues, causesOfDelay, messages,
+                Map.copyOf(newChangeData), precondition);
+    }
+
     public LinkedVariables linkedVariables(Variable variable) {
         ChangeData cd = changeData.get(variable);
         if (cd != null) return cd.linkedVariables();
@@ -233,7 +241,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         Map<Variable, ChangeData> newChangeData = changeData.entrySet().stream().filter(e -> predicate.test(e.getKey()))
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
         CausesOfDelay newChangeDataDelays = newChangeData.values()
-                .stream().map(e -> e.delays()).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+                .stream().map(ChangeData::delays).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         CausesOfDelay newCauses = value.causesOfDelay().merge(newChangeDataDelays);
         return new EvaluationResultImpl(evaluationContext, value, storedValues, newCauses, messages, newChangeData,
                 precondition);

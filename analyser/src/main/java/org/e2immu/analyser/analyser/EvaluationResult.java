@@ -132,4 +132,6 @@ public interface EvaluationResult {
     Map<Variable, Integer> modificationTimeIncrements();
 
     DV getProperty(Expression expression, Property property);
+
+    EvaluationResult withExtraChangeData(Variable variable, ChangeData cd);
 }
