@@ -158,6 +158,7 @@ public class ArrayInitializer extends BaseExpression implements Expression {
                 case CONTAINER_RESTRICTION, CONTAINER -> MultiLevel.CONTAINER_DV;
                 case EXTERNAL_IGNORE_MODIFICATIONS, IGNORE_MODIFICATIONS -> MultiLevel.NOT_IGNORE_MODS_DV;
                 case NOT_NULL_EXPRESSION -> MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV;
+                case IDENTITY -> DV.FALSE_DV;
                 default -> throw new UnsupportedOperationException("Property " + property);
             };
         }

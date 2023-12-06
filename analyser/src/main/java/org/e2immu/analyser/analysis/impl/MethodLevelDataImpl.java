@@ -275,15 +275,9 @@ public class MethodLevelDataImpl implements MethodLevelData {
                 .flatMap(sa -> sa.methodLevelData().staticSideEffects().expressions().stream());
 
         List<Expression> newExpressions = Stream.concat(Stream.concat(currentStream, subStream), previouStream).toList();
-        List<Expression> newExpressionsWithoutDelays = newExpressions.stream().filter(Expression::isDone).toList();
-
-        if (!newExpressionsWithoutDelays.isEmpty()) {
-            // shortcut: as soon as we have one, we don't need more
-            staticSideEffects.setFinal(new StaticSideEffects(newExpressionsWithoutDelays));
-            return DONE;
-        }
-        StaticSideEffects newSSE = new StaticSideEffects(newExpressions);
-        CausesOfDelay causesOfDelay = newSSE.causesOfDelay();
+        CausesOfDelay causesOfDelay = newExpressions.stream().map(Expression::causesOfDelay)
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        StaticSideEffects newSSE = new StaticSideEffects(newExpressions, causesOfDelay);
         if (causesOfDelay.isDone()) {
             staticSideEffects.setFinal(newSSE);
             return DONE;
