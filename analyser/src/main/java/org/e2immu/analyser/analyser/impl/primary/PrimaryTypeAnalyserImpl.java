@@ -330,15 +330,6 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     }
 
     @Override
-    public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
-        FieldAnalyser fieldAnalyser = fieldAnalysers.get(fieldInfo);
-        if (fieldAnalyser == null && parent != null) {
-            return parent.getFieldAnalyser(fieldInfo);
-        }
-        return fieldAnalyser;
-    }
-
-    @Override
     public Stream<FieldAnalyser> fieldAnalyserStream(TypeInfo typeInfo) {
         return fieldAnalysersPerType.getOrDefault(typeInfo, List.of()).stream();
     }

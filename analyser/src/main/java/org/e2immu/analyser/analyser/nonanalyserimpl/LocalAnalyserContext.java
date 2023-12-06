@@ -115,15 +115,6 @@ public class LocalAnalyserContext implements AnalyserContext {
     }
 
     @Override
-    public FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
-        FieldAnalyser fa = this.fieldAnalysers.getOrDefaultNull(fieldInfo);
-        if (fa == null) {
-            return parent.getFieldAnalyser(fieldInfo);
-        }
-        return fa;
-    }
-
-    @Override
     public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = this.typeAnalysers.getOrDefaultNull(typeInfo);
         if (typeAnalyser != null) return typeAnalyser.getTypeAnalysis();

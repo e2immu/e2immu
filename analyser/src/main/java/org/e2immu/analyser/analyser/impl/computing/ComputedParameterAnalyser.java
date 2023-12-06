@@ -462,40 +462,37 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             FieldInfo fieldInfo = e.getKey();
             DV assignedOrLinked = e.getValue();
             List<Property> propertiesToCopy = propertiesToCopy(assignedOrLinked);
-            FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalyser(fieldInfo);
-            if (fieldAnalyser != null) {
-                FieldAnalysis fieldAnalysis = fieldAnalyser.getFieldAnalysis();
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
 
-                for (Property property : propertiesToCopy) {
-                    if (!parameterAnalysis.properties.isDone(property)) {
-                        DV inField = fieldAnalysis.getProperty(property);
-                        if (inField.isDone()) {
+            for (Property property : propertiesToCopy) {
+                if (!parameterAnalysis.properties.isDone(property)) {
+                    DV inField = fieldAnalysis.getProperty(property);
+                    if (inField.isDone()) {
 
-                            LOGGER.debug("Copying value {} from field {} to parameter {} for property {}", inField,
-                                    fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), property);
-                            parameterAnalysis.setProperty(property, inField);
-                            changed = true;
+                        LOGGER.debug("Copying value {} from field {} to parameter {} for property {}", inField,
+                                fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), property);
+                        parameterAnalysis.setProperty(property, inField);
+                        changed = true;
 
-                        } else {
-                            propertiesDelayed.add(property);
-                            LOGGER.debug("Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
-                                    property, fieldInfo.name, parameterInfo.name);
-                            delays = delays.merge(inField.causesOfDelay());
-                            if (property == MODIFIED_OUTSIDE_METHOD) {
-                                // what if I'm the cause of the MOM delay? I need that data to progress!
-                                // tell whoever generates a CM delay based on me that they can skip. See ComputeLinkedVariables
-                                boolean modifiedOutsideMethod = findModifiedOutsideMethod(inField.causesOfDelay());
-                                if (modifiedOutsideMethod) {
-                                    CausesOfDelay breakDelay = parameterInfo.delay(CauseOfDelay.Cause.BREAK_MOM_DELAY);
-                                    delays = delays.merge(breakDelay);
-                                    // let's not forget to set the delay, so that the statement analyser picks it up
-                                    parameterAnalysis.setProperty(property, inField.causesOfDelay().merge(breakDelay));
-                                } else {
-                                    parameterAnalysis.setProperty(property, inField.causesOfDelay());
-                                }
+                    } else {
+                        propertiesDelayed.add(property);
+                        LOGGER.debug("Still delaying copiedFromFieldToParameters because of {}, field {} ~ param {}",
+                                property, fieldInfo.name, parameterInfo.name);
+                        delays = delays.merge(inField.causesOfDelay());
+                        if (property == MODIFIED_OUTSIDE_METHOD) {
+                            // what if I'm the cause of the MOM delay? I need that data to progress!
+                            // tell whoever generates a CM delay based on me that they can skip. See ComputeLinkedVariables
+                            boolean modifiedOutsideMethod = findModifiedOutsideMethod(inField.causesOfDelay());
+                            if (modifiedOutsideMethod) {
+                                CausesOfDelay breakDelay = parameterInfo.delay(CauseOfDelay.Cause.BREAK_MOM_DELAY);
+                                delays = delays.merge(breakDelay);
+                                // let's not forget to set the delay, so that the statement analyser picks it up
+                                parameterAnalysis.setProperty(property, inField.causesOfDelay().merge(breakDelay));
                             } else {
                                 parameterAnalysis.setProperty(property, inField.causesOfDelay());
                             }
+                        } else {
+                            parameterAnalysis.setProperty(property, inField.causesOfDelay());
                         }
                     }
                 }

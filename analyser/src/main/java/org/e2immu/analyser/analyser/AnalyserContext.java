@@ -61,10 +61,6 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         throw new UnsupportedOperationException();
     }
 
-    default FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
-        throw new UnsupportedOperationException();
-    }
-
     default Stream<FieldAnalyser> fieldAnalyserStream(TypeInfo typeInfo) {
         throw new UnsupportedOperationException();
     }
