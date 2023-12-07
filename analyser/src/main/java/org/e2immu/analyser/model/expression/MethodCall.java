@@ -211,7 +211,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             outputBuilder.add(new Text(methodInfo.name));
         } else {
             VariableExpression ve;
-            if (object instanceof MethodCall methodCall) {
+            MethodCall methodCall;
+            TypeExpression typeExpression;
+            if ((methodCall = object.asInstanceOf(MethodCall.class)) != null) {
                 // chaining!
                 if (guideGenerator == null) {
                     gg = Guide.defaultGuideGenerator();
@@ -223,7 +225,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 outputBuilder.add(gg.mid());
                 outputBuilder.add(Symbol.DOT);
                 outputBuilder.add(new Text(methodInfo.name));
-            } else if (object instanceof TypeExpression typeExpression) {
+            } else if ((typeExpression = object.asInstanceOf(TypeExpression.class)) != null) {
                 /*
                 we may or may not need to write the type here.
                 (we check methodInspection is set, because of debugOutput)

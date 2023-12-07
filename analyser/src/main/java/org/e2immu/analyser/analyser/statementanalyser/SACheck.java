@@ -167,8 +167,9 @@ public record SACheck(StatementAnalysis statementAnalysis) {
      * Can be delayed
      */
     AnalysisStatus checkUnusedReturnValueOfMethodCall(AnalyserContext analyserContext) {
+        MethodCall methodCall;
         if (statementAnalysis.statement() instanceof ExpressionAsStatement eas
-                && eas.expression instanceof MethodCall methodCall
+                && (methodCall = eas.expression.asInstanceOf(MethodCall.class)) != null
                 && methodInfo().isNotATestMethod()) {
             if (methodCall.methodInfo.returnType().isVoidOrJavaLangVoid()) return DONE;
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);

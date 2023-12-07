@@ -100,24 +100,24 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertNotEquals("1", d.statementId());
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "integer".equals(lvr.simpleName())) {
-                    assertEquals("in/*(Number)*//*(Integer)*/", d.currentValue().toString());
+                    assertEquals("number/*(Integer)*/", d.currentValue().toString());
                     assertNotEquals("0.1.1", d.statementId());
                     assertNotEquals("1", d.statementId());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0.0.0".equals(d.statementId())) {
-                        assertEquals("\"Integer: \"+in/*(Number)*//*(Integer)*/", d.currentValue().toString());
+                        assertEquals("\"Integer: \"+number/*(Integer)*/", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Number)*//*(Integer)*/:<return value>",
+                        assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+number/*(Integer)*/:<return value>",
                                 d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/",
+                        assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+number/*(Integer)*/:\"Number: \"+in/*(Number)*/",
                                 d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        assertEquals("in instanceof Number?in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Number)*//*(Integer)*/:\"Number: \"+in/*(Number)*/:<return value>",
+                        assertEquals("in instanceof Number?in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Integer)*/:\"Number: \"+in/*(Number)*/:<return value>",
                                 d.currentValue().toString());
                     }
                 }
@@ -151,7 +151,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                         String expectLv = d.iteration() == 0 ? "collection:-1" : "collection:1";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+                        assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.CONTEXT_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0

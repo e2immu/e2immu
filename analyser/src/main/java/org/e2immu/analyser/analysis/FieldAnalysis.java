@@ -124,7 +124,7 @@ public interface FieldAnalysis extends Analysis {
                     primaryType, value.returnType());
         }
         Instance instance = Instance.forField(getFieldInfo(), mostSpecific, properties);
-        if (value instanceof ConstructorCall) {
+        if (value.isInstanceOf(ConstructorCall.class)) {
             return PropertyWrapper.addState(instance, value);
         }
         return instance;

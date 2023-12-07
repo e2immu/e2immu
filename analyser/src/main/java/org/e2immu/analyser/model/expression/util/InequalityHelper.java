@@ -82,7 +82,9 @@ public class InequalityHelper {
     private static OneVariable extractOneVariable(Expression expression) {
         VariableExpression ve;
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) return ve.variable();
-        if (expression instanceof MethodCall mc && mc.object.isInstanceOf(VariableExpression.class)) {
+        MethodCall mc;
+        if ((mc = expression.asInstanceOf(MethodCall.class)) != null
+                && mc.object.isInstanceOf(VariableExpression.class)) {
             return mc;
         }
         return null;
@@ -92,18 +94,25 @@ public class InequalityHelper {
         return number.doubleValue();
     }
 
-
     public static boolean onlyNotEquals(List<Expression> expressions) {
-        return expressions.stream().allMatch(e -> e instanceof Negation n
-                && n.expression instanceof Equals eq
-                && eq.lhs.isConstant() && eq.rhs.isInstanceOf(VariableExpression.class));
+        return expressions.stream().allMatch(e -> {
+            Equals eq;
+            Negation n;
+            return (n = e.asInstanceOf(Negation.class)) != null
+                    && (eq = n.expression.asInstanceOf(Equals.class)) != null
+                    && eq.lhs.isConstant() && eq.rhs.isInstanceOf(VariableExpression.class);
+        });
     }
 
     public static Double extractEquals(List<Expression> expressions) {
-        return expressions.stream().filter(e -> e instanceof Equals eq
-                        && eq.lhs.isConstant()
-                        && !(eq.lhs.isNullConstant()))
-                .map(e -> extractDouble((Number) ((ConstantExpression<?>) ((Equals) e).lhs).getValue()))
+        return expressions.stream().filter(e -> {
+                    Equals eq;
+                    return (eq = e.asInstanceOf(Equals.class)) != null
+                            && eq.lhs.isConstant()
+                            && !(eq.lhs.isNullConstant());
+                })
+                .map(e -> extractDouble((Number) ((e.asInstanceOf(Equals.class))
+                        .lhs.asInstanceOf(ConstantExpression.class).getValue())))
                 .findFirst().orElse(null);
     }
 

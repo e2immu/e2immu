@@ -1248,8 +1248,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         for (FieldAnalyser fieldAnalyser : myFieldAnalysers) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldAnalyser.getFieldInfo().fieldInspection.get()
                     .getFieldInitialiser();
-            if (fieldInitialiser != null &&
-                    fieldInitialiser.initialiser() instanceof ConstructorCall cc && cc.constructor().typeInfo == this.typeInfo) {
+            ConstructorCall cc;
+            if (fieldInitialiser != null
+                    && (cc = fieldInitialiser.initialiser().asInstanceOf(ConstructorCall.class)) != null
+                    && cc.constructor().typeInfo == this.typeInfo) {
                 LOGGER.debug("Type {} looks like a @UtilityClass, but an object of the class is created in field {}",
                         typeInfo, fieldAnalyser);
                 typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);

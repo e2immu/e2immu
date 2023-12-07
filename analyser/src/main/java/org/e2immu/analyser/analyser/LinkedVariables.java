@@ -124,7 +124,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
 
         HashMap<Variable, DV> map = new HashMap<>(variables);
         other.variables.forEach((v, i) -> {
-            DV newValue = minimum .isInitialDelay() ? i : i.max(minimum);
+            DV newValue = minimum.isInitialDelay() ? i : i.max(minimum);
             DV inMap = map.get(v);
             if (inMap == null) {
                 map.put(v, newValue);
@@ -330,5 +330,9 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
                 .map(e -> ((FieldReference) e.getKey()).scopeVariable())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public boolean notOnlyDirectAssignment() {
+        return variables.values().stream().anyMatch(v -> !LINK_STATICALLY_ASSIGNED.equals(v));
     }
 }

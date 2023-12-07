@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
 import java.util.Objects;
@@ -155,5 +156,15 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     @Override
     public Double numericValue() {
         return inner.numericValue();
+    }
+
+    @Override
+    public Expression extractConditions(Primitives primitives) {
+        return inner.extractConditions(primitives);
+    }
+
+    @Override
+    public Expression applyCondition(Expression newState) {
+        return inner.applyCondition(newState);
     }
 }

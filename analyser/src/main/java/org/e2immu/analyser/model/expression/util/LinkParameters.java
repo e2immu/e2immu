@@ -85,16 +85,20 @@ public class LinkParameters {
                                                                                Expression parameterValue) {
         MethodInfo methodInfo;
         TypeInfo nestedType;
+        ConstructorCall cc;
+        MethodReference methodReference;
         if (parameterExpression instanceof Lambda lambda) {
             methodInfo = lambda.methodInfo;
             nestedType = lambda.methodInfo.typeInfo;
-        } else if (parameterExpression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+        } else if ((cc = parameterExpression.asInstanceOf(ConstructorCall.class)) != null
+                && cc.anonymousClass() != null) {
             TypeInspection anonymousClassInspection = context.getAnalyserContext().getTypeInspection(cc.anonymousClass());
             assert parameterExpression.returnType().isFunctionalInterface();
             methodInfo = anonymousClassInspection.findMethodOverridingSAMOf(parameterExpression.returnType().typeInfo);
             nestedType = cc.anonymousClass();
-        } else if (parameterExpression instanceof MethodReference methodReference) {
-            if (parameterValue instanceof MethodReference mr) {
+        } else if ((methodReference = parameterExpression.asInstanceOf(MethodReference.class)) != null) {
+            MethodReference mr;
+            if ((mr = parameterValue.asInstanceOf(MethodReference.class)) != null) {
                 // do we have access to the code?
                 if (methodReference.methodInfo.typeInfo.primaryType().equals(context.getCurrentType().primaryType())) {
                     methodInfo = methodReference.methodInfo;
@@ -108,10 +112,10 @@ public class LinkParameters {
                          */
                         return List.of();
                     }
-                    if (!(mr.scope instanceof VariableExpression ve && ve.variable() instanceof This thisVar
+                    IsVariableExpression ive = mr.scope.asInstanceOf(IsVariableExpression.class);
+                    if (!(ive != null && ive.variable() instanceof This thisVar
                             && thisVar.typeInfo == context.getCurrentType())) {
                         This innerThis = new This(context.getAnalyserContext(), methodInfo.typeInfo);
-                        IsVariableExpression ive = mr.scope.asInstanceOf(IsVariableExpression.class);
                         if (ive != null) {
                             TranslationMap tm = new TranslationMapImpl.Builder().put(innerThis, ive.variable()).build();
                             return res.stream()

@@ -34,6 +34,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     public final ParameterizedType returnType;
 
+    // only used for the all-important expression sorting
     @Override
     public int wrapperOrder() {
         return WRAPPER_ORDER_NEGATED;
@@ -214,9 +215,4 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     public boolean isNegatedOrNumericNegative() {
         return true;
     }
-
-    // @Override
-    // public <T extends Element> T asInstanceOf(Class<T> clazz) {
-    //     return expression.asInstanceOf(clazz);
-    // }
 }

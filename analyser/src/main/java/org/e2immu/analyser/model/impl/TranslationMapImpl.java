@@ -230,7 +230,8 @@ public class TranslationMapImpl implements TranslationMap {
                                     Expression translatedObject, List<Expression> translatedParameters) {
         if (modificationTimesHandler == null) return null;
         // type cast: see interface spec: methodCallBeforeTranslation is of type Expression to avoid cyclic type dependencies
-        if (methodCallBeforeTranslation instanceof MethodCall beforeTranslation) {
+        MethodCall beforeTranslation;
+        if ((beforeTranslation = methodCallBeforeTranslation.asInstanceOf(MethodCall.class)) != null) {
             return modificationTimesHandler.modificationTimes(beforeTranslation, translatedObject, translatedParameters);
         }
         throw new UnsupportedOperationException();

@@ -116,7 +116,7 @@ public final class Or extends ExpressionCanBeTooComplex {
 
             // STEP 4a: sort
 
-            concat = AndOrSorter.sort(context, concat);
+            concat = AndOrSorter.sort(concat);
 
             // STEP 4b: observations
 

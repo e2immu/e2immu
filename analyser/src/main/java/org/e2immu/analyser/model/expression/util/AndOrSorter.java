@@ -22,7 +22,7 @@ public class AndOrSorter {
     private AndOrSorter() {
     }
 
-    public static ArrayList<Expression> sort(EvaluationResult context, List<Expression> expressions) {
+    public static ArrayList<Expression> sort(List<Expression> expressions) {
         TreeMap<Expression, List<Expression>> expressionsByObject = new TreeMap<>();
         for (Expression expression : expressions) {
             Expression object = objectOfExpression(expression);
@@ -63,16 +63,16 @@ public class AndOrSorter {
     }
 
     private static boolean isMethodCall(Expression e) {
-        if (e instanceof Negation n) return isMethodCall(n.expression);
-        if (e instanceof EnclosedExpression ee) return isMethodCall(ee.inner());
-        if (e instanceof PropertyWrapper pw) return isMethodCall(pw.expression());
-        return e instanceof MethodCall;
+        Negation n;
+        if ((n = e.asInstanceOf(Negation.class)) != null) return isMethodCall(n.expression);
+        return e.isInstanceOf(MethodCall.class);
     }
 
     public static Expression objectOfExpression(Expression expression) {
         Expression base;
-        if (expression instanceof MethodCall methodCall) {
-            if (methodCall.object instanceof TypeExpression && !methodCall.parameterExpressions.isEmpty()) {
+        MethodCall methodCall;
+        if ((methodCall = expression.asInstanceOf(MethodCall.class)) != null) {
+            if (methodCall.object.isInstanceOf(TypeExpression.class) && !methodCall.parameterExpressions.isEmpty()) {
                 // e.g. Character.toUppercase(a) --> a
                 base = methodCall.parameterExpressions.get(0);
             } else {
@@ -91,12 +91,15 @@ public class AndOrSorter {
 
     public static boolean isNullCheck(Expression e) {
         Expression ee;
-        if (e instanceof Negation n) {
+        Negation n;
+        if ((n = e.asInstanceOf(Negation.class)) != null) {
             ee = n.expression;
         } else {
             ee = e;
         }
-        return ee instanceof BinaryOperator eq && (eq.lhs.isNullConstant() != eq.rhs.isNullConstant());
+        BinaryOperator eq;
+        return (eq = ee.asInstanceOf(BinaryOperator.class)) != null
+                && (eq.lhs.isNullConstant() != eq.rhs.isNullConstant());
     }
 
 }

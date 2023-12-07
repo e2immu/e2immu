@@ -391,8 +391,9 @@ public class EvaluateMethodCall {
     }
 
     private DV modifying(Expression expression) {
-        if (expression instanceof MethodCall) {
-            return context.evaluationContext().getProperty(expression, Property.MODIFIED_METHOD, false, false);
+        if (expression.isInstanceOf(MethodCall.class)) {
+            return context.evaluationContext().getProperty(expression, Property.MODIFIED_METHOD, false,
+                    false);
         }
         return DV.FALSE_DV;
     }

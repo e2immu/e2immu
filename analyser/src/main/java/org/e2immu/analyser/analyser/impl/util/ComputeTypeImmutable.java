@@ -831,10 +831,12 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         if (expression == null || expression == EmptyExpression.EMPTY_EXPRESSION) return null;
         ParameterizedType type = expression.returnType();
         if (type.isFunctionalInterface()) {
-            if (expression instanceof ConstructorCall cc && cc.anonymousClass() != null) {
+            ConstructorCall cc;
+            if ((cc = expression.asInstanceOf(ConstructorCall.class)) != null && cc.anonymousClass() != null) {
                 return cc.anonymousClass();
             }
-            if (expression instanceof Lambda lambda) {
+            Lambda lambda;
+            if ((lambda = expression.asInstanceOf(Lambda.class)) != null) {
                 return lambda.definesType();
             }
         }

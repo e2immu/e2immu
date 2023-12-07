@@ -259,15 +259,14 @@ public record DetectEventual(MethodInfo methodInfo,
      */
     private MethodAnalysis.Eventual detectTestMark(Expression expression) {
         Negation neg = null;
-        if (expression.isInstanceOf(And.class) || ((neg = expression.asInstanceOf(Negation.class)) != null)
+        And and;
+        if ((and = expression.asInstanceOf(And.class)) != null || ((neg = expression.asInstanceOf(Negation.class)) != null)
                 && neg.expression.isInstanceOf(And.class)) {
-            And and;
             boolean negated;
             if (neg != null) {
-                and = (And) neg.expression;
+                and = neg.expression.asInstanceOf(And.class);
                 negated = true;
             } else {
-                and = (And) expression;
                 negated = false;
             }
             Set<FieldInfo> fields = new HashSet<>();
@@ -298,7 +297,8 @@ public record DetectEventual(MethodInfo methodInfo,
         }
         // @TestMark method on This, FieldReference
         VariableExpression ve;
-        if (expressionAfterNegation instanceof MethodCall methodCall
+        MethodCall methodCall;
+        if ((methodCall = expressionAfterNegation.asInstanceOf(MethodCall.class)) != null
                 && !methodInfo.equals(methodCall.methodInfo) // block recursive results (Basics_30)
                 && ((ve = methodCall.object.asInstanceOf(VariableExpression.class)) != null)) {
             MethodAnalysis methodCallAnalysis = analyserContext.getMethodAnalysis(methodCall.methodInfo);

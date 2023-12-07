@@ -905,17 +905,11 @@ class SAEvaluationContext extends CommonEvaluationContext {
             FieldAnalysis fieldAnalysis = getAnalyserContext().getFieldAnalysis(fieldReference.fieldInfo());
             DV finalDV = fieldAnalysis.getProperty(Property.FINAL);
             if (finalDV.isDelayed()) {
-                return wrap(v, value);
+                return value;
             }
             return expression;
         }
-        return wrap(v, value);
-    }
-
-    private static Expression wrap(Variable variable, Expression value) {
         return value;
-        //if (value.isDelayed() || value.isInstanceOf(VariableExpression.class)) return value;
-       // return PropertyWrapper.propertyWrapper(value, LinkedVariables.of(Map.of(variable, LinkedVariables.LINK_STATICALLY_ASSIGNED)));
     }
 
     public Expression makeVariableExpression(VariableInfo variableInfo,

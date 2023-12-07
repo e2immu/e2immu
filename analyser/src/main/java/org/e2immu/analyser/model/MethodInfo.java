@@ -528,7 +528,7 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
         assert block != null;
         return block.structure.statements().size() == 1
                 && block.structure.statements().get(0) instanceof ReturnStatement rs
-                && rs.expression instanceof ConstantExpression<?>;
+                && rs.expression.isInstanceOf(ConstantExpression.class);
     }
 
     public Set<MethodInfo> topOfOverloadingHierarchy() {

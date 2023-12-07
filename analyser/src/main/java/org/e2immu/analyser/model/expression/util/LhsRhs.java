@@ -43,9 +43,15 @@ public record LhsRhs(Expression lhs, Expression rhs) {
     }
 
     public static LhsRhs equalsMethodCall(Expression e) {
-        if (e instanceof MethodCall mc && mc.methodInfo.name.equals("equals") && mc.parameterExpressions.size() == 1) {
+        MethodCall mc;
+        if (e != null
+                && (mc = e.asInstanceOf(MethodCall.class)) != null
+                && mc.methodInfo.name.equals("equals")
+                && mc.parameterExpressions.size() == 1) {
             Expression rhs = mc.parameterExpressions.get(0);
-            if (rhs.isConstant()) return new LhsRhs(rhs, mc.object);
+            if (rhs.isConstant()) {
+                return new LhsRhs(rhs, mc.object);
+            }
             return new LhsRhs(mc.object, rhs);
         }
         return null;

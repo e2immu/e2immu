@@ -93,17 +93,20 @@ public record Precondition(Expression expression, List<PreconditionCause> causes
     public MethodCallAndNegation expressionIsPossiblyNegatedMethodCall() {
         Expression e;
         boolean negated;
-        if (expression instanceof UnaryOperator ua && ua.isNegation()) {
+        Negation n;
+        UnaryOperator ua;
+        if ((ua = expression.asInstanceOf(UnaryOperator.class)) != null && ua.isNegation()) {
             e = ua.expression;
             negated = true;
-        } else if (expression instanceof Negation negation) {
-            e = negation.expression;
+        } else if ((n = expression.asInstanceOf(Negation.class)) != null) {
+            e = n.expression;
             negated = true;
         } else {
             e = expression;
             negated = false;
         }
-        if (e instanceof MethodCall methodCall) {
+        MethodCall methodCall;
+        if ((methodCall = e.asInstanceOf(MethodCall.class)) != null) {
             return new MethodCallAndNegation(methodCall, negated);
         }
         return null;

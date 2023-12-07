@@ -561,7 +561,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
                             case 0 -> "<vp:TypeInfo:container@Record_TypeInfo>";
                             case 1 -> "<vp:TypeInfo:cm@Parameter_fqn;mom@Parameter_fqn>";
                             default ->
-                                    "findType.find(path.toString()/*@NotNull 0==this.length()*/.replaceAll(\"[/$]\",\".\"),path.toString()/*@NotNull 0==this.length()*/)";
+                                    "findType.find(path.toString().replaceAll(\"[/$]\",\".\"),path.toString()/*@NotNull 0==this.length()*/)";
                         };
                         assertEquals(expected, d.currentValue().toString());
                     }

@@ -38,7 +38,10 @@ public class StatementSimplifier {
     }
 
     private Expression simplify(Expression expression, List<Statement> statements) {
-        if (expression instanceof MethodCall methodCall && methodCall.object instanceof MethodCall mcObject) {
+        MethodCall methodCall;
+        MethodCall mcObject;
+        if ((methodCall = expression.asInstanceOf(MethodCall.class)) != null
+                && (mcObject = methodCall.object.asInstanceOf(MethodCall.class)) != null) {
             Expression recursiveObject = simplify(mcObject, statements);
             return replaceMethodCallObject(methodCall, recursiveObject, statements);
         }

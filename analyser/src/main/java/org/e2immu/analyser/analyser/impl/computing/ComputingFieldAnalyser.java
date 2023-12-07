@@ -479,7 +479,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         if (safe != null) return safe;
         // but if value is a normal constructor call or an instance with a constructor state
         // we can trust that its value is safe
-        if (value instanceof ConstructorCall cc && cc.anonymousClass() == null
+        ConstructorCall cc;
+        if ((cc = value.asInstanceOf(ConstructorCall.class)) != null
+                && cc.anonymousClass() == null
                 && cc.returnType().typeInfo.typeInspection.get().typeNature() == TypeNature.CLASS) {
             // we're creating an object, so we don't need the
             return analyserContext.typeContainer(cc.returnType());
@@ -1211,9 +1213,10 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
     }
 
     private boolean properlyDefinedAnonymousType(Expression expression) {
-        return expression instanceof InlinedMethod || expression instanceof Lambda
-                || expression instanceof ConstructorCall cc && cc.anonymousClass() != null
-                || expression instanceof MethodReference;
+        ConstructorCall cc;
+        return expression.isInstanceOf(InlinedMethod.class) || expression.isInstanceOf(Lambda.class)
+                || (cc = expression.asInstanceOf(ConstructorCall.class)) != null && cc.anonymousClass() != null
+                || expression.isInstanceOf(MethodReference.class);
     }
 
     private AnalysisStatus analyseIgnoreModifications(SharedState sharedState) {

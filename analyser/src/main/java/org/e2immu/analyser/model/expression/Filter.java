@@ -232,10 +232,15 @@ public class Filter {
                                                                                 Expression value,
                                                                                 boolean acceptAndRemapLocalCopy) {
         Expression v;
-        if (value instanceof Negation negation) v = negation.expression;
-        else v = value;
+        Negation negation;
+        if ((negation = value.asInstanceOf(Negation.class)) != null) {
+            v = negation.expression;
+        } else {
+            v = value;
+        }
         // @NotModified method returning a boolean
-        if (value instanceof MethodCall mc) {
+        MethodCall mc;
+        if ((mc = value.asInstanceOf(MethodCall.class)) != null) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
             if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsFalse()) return null;
             // none of the arguments to the call can be a parameter
@@ -274,7 +279,8 @@ public class Filter {
                                                                          Expression value,
                                                                          boolean acceptAndRemapLocalCopy) {
         Expression v;
-        if (value instanceof MethodCall mc) {
+        MethodCall mc;
+        if ((mc = value.asInstanceOf(MethodCall.class)) != null) {
             MethodAnalysis methodAnalysis = analyserContext.getMethodAnalysis(mc.methodInfo);
             if (!methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsFalse()) return null;
             v = mc.object;

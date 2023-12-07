@@ -128,7 +128,7 @@ public class And extends ExpressionCanBeTooComplex {
 
             // STEP 4a: sort
 
-            concat = AndOrSorter.sort(context, concat);
+            concat = AndOrSorter.sort(concat);
 
             // STEP 4b: observations
 
@@ -663,25 +663,35 @@ public class And extends ExpressionCanBeTooComplex {
             return Action.REPLACE;
         }
 
-        // IMPORTANT, see InstanceOf_3: the last 2 clauses in the conjunction should not use
-        // .asInstanceOf(IsVariableExpression), because that one includes a negation, resulting in wrong values
-        
         // null != a && a instanceof B
-        if (value instanceof InstanceOf i
-                && i.expression() instanceof VariableExpression iv
-                && prev instanceof Negation neg
-                && neg.expression instanceof Equals eq
+        InstanceOf i;
+        IsVariableExpression iv;
+        Negation neg;
+        Equals eq;
+        IsVariableExpression ive;
+        if ((i = value.asInstanceOf(InstanceOf.class)) != null
+                && (iv = i.expression().asInstanceOf(IsVariableExpression.class)) != null
+                && prev != null
+                && (neg = prev.asInstanceOf(Negation.class)) != null
+                && (eq = neg.expression.asInstanceOf(Equals.class)) != null
                 && eq.lhs.isNullConstant()
-                && eq.rhs instanceof VariableExpression ve && ve.variable().equals(iv.variable())) {
+                && (ive = eq.rhs.asInstanceOf(IsVariableExpression.class)) != null
+                && ive.variable().equals(iv.variable())) {
             // remove previous
             return Action.REPLACE;
         }
         // null == a && a instanceof B
-        if (value instanceof InstanceOf i
-                && i.expression() instanceof VariableExpression iv
-                && prev instanceof Equals eq
-                && eq.lhs.isNullConstant()
-                && eq.rhs instanceof VariableExpression ve && ve.variable().equals(iv.variable())) {
+        InstanceOf i2;
+        IsVariableExpression iv2;
+        Equals eq2;
+        IsVariableExpression ive2;
+        if ((i2 = value.asInstanceOf(InstanceOf.class)) != null
+                && (iv2 = i2.expression().asInstanceOf(IsVariableExpression.class)) != null
+                && prev != null
+                && (eq2 = prev.asInstanceOf(Equals.class)) != null
+                && eq2.lhs.isNullConstant()
+                && (ive2 = eq2.rhs.asInstanceOf(IsVariableExpression.class)) != null
+                && ive2.variable().equals(iv2.variable())) {
             // remove previous
             return Action.FALSE;
         }
@@ -772,7 +782,7 @@ public class And extends ExpressionCanBeTooComplex {
             forwardEvaluationInfo) {
         List<EvaluationResult> clauseResults = new ArrayList<>(expressions.size());
         EvaluationResult context = evaluationResult;
-        List<Expression> sortedExpressions = AndOrSorter.sort(evaluationResult, expressions);
+        List<Expression> sortedExpressions = AndOrSorter.sort(expressions);
         Set<Variable> conditionVariables = new HashSet<>();
         for (Expression expression : sortedExpressions) {
             EvaluationResult result = expression.evaluate(context, forwardEvaluationInfo);
