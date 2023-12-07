@@ -132,7 +132,10 @@ public class Assignment extends BaseExpression implements Expression {
         VariableExpression ve;
         if ((ve = target.asInstanceOf(VariableExpression.class)) != null) {
             variableTarget = ve.variable();
+        } else if (target.isDelayed()) {
+            variableTarget = null;
         } else {
+            // anything that is assignable must be a variable
             throw new UnsupportedOperationException();
         }
         hackForUpdatersInForLoop = false;

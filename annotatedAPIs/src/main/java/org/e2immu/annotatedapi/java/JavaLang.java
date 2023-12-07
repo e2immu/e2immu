@@ -483,6 +483,9 @@ class JavaLang {
         }
 
         @Fluent
+        StringBuilder delete(int i, int j) { return null; }
+
+        @Fluent
         StringBuilder reverse() { return null; }
 
         int toString$Transfer$Len(int len) {

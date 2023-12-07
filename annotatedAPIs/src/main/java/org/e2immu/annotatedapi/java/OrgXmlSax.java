@@ -1,6 +1,7 @@
 package org.e2immu.annotatedapi.java;
 
 import org.e2immu.annotation.Modified;
+import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
 public class OrgXmlSax {
@@ -16,5 +17,8 @@ public class OrgXmlSax {
     interface ContentHandler$ {
         @Modified
         void startDocument();
+
+        @Modified
+        void endElement (String uri, String localName, String qName);
     }
 }

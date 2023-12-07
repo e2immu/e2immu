@@ -393,11 +393,22 @@ public class TestExternal extends CommonTestRunner {
                 .build());
     }
 
+    // problem in InequalityHelper
     @Test
     public void test_11() throws IOException {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-", d.delaySequence());
 
         testClass("External_11", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // unsupported operation exception in Assignment
+    @Test
+    public void test_12() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
+        testClass("External_12", 0, 0, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
