@@ -50,13 +50,15 @@ public class InequalityHelper {
                                                    List<Term> terms) {
         OneVariable oneVariableRhs;
         ConstantExpression<?> ce;
-        if (expression instanceof Product product
+        Product product;
+        if ((product = expression.asInstanceOf(Product.class)) != null
                 && (ce = product.lhs.asInstanceOf(ConstantExpression.class)) != null
                 && ((oneVariableRhs = extractOneVariable(product.rhs)) != null)) {
             terms.add(new Term(extractDouble((Number) ce.getValue()), oneVariableRhs));
             return true;
         }
-        if (expression instanceof Sum sum) {
+        Sum sum;
+        if ((sum = expression.asInstanceOf(Sum.class)) != null) {
             if (!recursivelyCollectTerms(sum.lhs, terms)) return false;
             return recursivelyCollectTerms(sum.rhs, terms);
         }
@@ -65,12 +67,17 @@ public class InequalityHelper {
             terms.add(new Term(1.0, oneVariable));
             return true;
         }
-        ConstantExpression<?> ce2;
-        if ((ce2 = expression.asInstanceOf(ConstantExpression.class)) != null) {
-            terms.add(new Term(extractDouble((Number) ce2.getValue()), null));
+        Numeric numeric;
+        if ((numeric = expression.asInstanceOf(Numeric.class)) != null) {
+            terms.add(new Term(numeric.doubleValue(), null));
             return true;
         }
-        if (expression instanceof Negation negation) {
+        CharConstant cc;
+        if ((cc = expression.asInstanceOf(CharConstant.class)) != null) {
+            terms.add(new Term(cc.getValue(), null));
+        }
+        Negation negation;
+        if ((negation = expression.asInstanceOf(Negation.class)) != null) {
             List<Term> sub = new ArrayList<>();
             if (!recursivelyCollectTerms(negation.expression, sub)) return false;
             sub.forEach(term -> terms.add(new Term(-term.a, term.v)));

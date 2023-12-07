@@ -45,7 +45,7 @@ public class LinkParameters {
         for (Expression expression : parameterExpressions) {
             Expression value = parameterValues.get(i);
             LinkedVariables lv;
-            if (expression instanceof VariableExpression || value instanceof ExpandedVariable) {
+            if (expression.isInstanceOf(VariableExpression.class) || value.isInstanceOf(ExpandedVariable.class)) {
                 lv = expression.linkedVariables(context);
             } else if (expression.returnType().isFunctionalInterface()) {
                 lv = additionalLinkingFunctionalInterface(context, expression, parameterValues.get(i));
@@ -87,7 +87,8 @@ public class LinkParameters {
         TypeInfo nestedType;
         ConstructorCall cc;
         MethodReference methodReference;
-        if (parameterExpression instanceof Lambda lambda) {
+        Lambda lambda;
+        if ((lambda = parameterExpression.asInstanceOf(Lambda.class)) != null) {
             methodInfo = lambda.methodInfo;
             nestedType = lambda.methodInfo.typeInfo;
         } else if ((cc = parameterExpression.asInstanceOf(ConstructorCall.class)) != null
@@ -105,7 +106,7 @@ public class LinkParameters {
                     // yes, access to the code!!
                     List<LinkedVariables> res = additionalLinkingConsumer(context.evaluationContext(),
                             methodReference.methodInfo, null);
-                    if (mr.scope instanceof TypeExpression) {
+                    if (mr.scope.isInstanceOf(TypeExpression.class)) {
                         /*
                          methods which only have a scope, no argument... could be static suppliers, but more likely
                          non-modifying getters. Ignoring for now.

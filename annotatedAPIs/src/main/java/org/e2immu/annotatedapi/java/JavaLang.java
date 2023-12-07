@@ -403,6 +403,9 @@ class JavaLang {
         String strip() {
             return null;
         }
+
+        @NotNull
+        char[] toCharArray(){ return null; }
     }
 
     /*

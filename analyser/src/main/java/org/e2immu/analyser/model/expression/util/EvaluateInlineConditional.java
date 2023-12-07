@@ -68,8 +68,8 @@ public class EvaluateInlineConditional {
                                            Variable myself,
                                            DV modifying) {
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationResult);
-        if (condition instanceof BooleanConstant bc) {
-            boolean first = bc.constant();
+        if (condition.isBooleanConstant()) {
+            boolean first = condition.isBoolValueTrue();
             if (complain) {
                 builder.raiseError(condition.getIdentifier(), Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT);
             }
@@ -341,14 +341,14 @@ public class EvaluateInlineConditional {
         // a ? b : true --> !a || b
         // a ? b : false --> a && b
         // a ? false: b --> !a && b
-        if (ifTrue instanceof BooleanConstant ifTrueBool) {
-            if (ifTrueBool.constant()) {
+        if (ifTrue.isBooleanConstant()) {
+            if (ifTrue.isBoolValueTrue()) {
                 return Or.or(evaluationContext, condition, ifFalse);
             }
             return And.and(evaluationContext, Negation.negate(evaluationContext, condition), ifFalse);
         }
-        if (ifFalse instanceof BooleanConstant ifFalseBool) {
-            if (ifFalseBool.constant()) {
+        if (ifFalse.isBooleanConstant()) {
+            if (ifFalse.isBoolValueTrue()) {
                 return Or.or(evaluationContext, Negation.negate(evaluationContext, condition), ifTrue);
             }
             return And.and(evaluationContext, condition, ifTrue);
@@ -366,11 +366,15 @@ public class EvaluateInlineConditional {
         }
 
         // a == b ? a : b ---> b
-        if (condition instanceof Equals equals && ifTrue.equals(equals.lhs) && ifFalse.equals(equals.rhs)) {
+        Equals equals;
+        if ((equals = condition.asInstanceOf(Equals.class)) != null
+                && ifTrue.equals(equals.lhs) && ifFalse.equals(equals.rhs)) {
             return ifFalse;
         }
         // a == b ? b : a --> a
-        if (condition instanceof Equals equals && ifTrue.equals(equals.rhs) && ifFalse.equals(equals.lhs)) {
+        Equals equals2;
+        if ((equals2 = condition.asInstanceOf(Equals.class)) != null
+                && ifTrue.equals(equals2.rhs) && ifFalse.equals(equals2.lhs)) {
             return ifFalse;
         }
         return null;

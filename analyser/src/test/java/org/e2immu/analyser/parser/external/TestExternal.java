@@ -392,4 +392,13 @@ public class TestExternal extends CommonTestRunner {
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
+
+    @Test
+    public void test_11() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---S-", d.delaySequence());
+
+        testClass("External_11", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
 }
