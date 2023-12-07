@@ -412,4 +412,106 @@ public class TestExternal extends CommonTestRunner {
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
+
+    // Changing value of external-not-null from not_involved:0 to nullable:1, variable t, line 8
+    @Test
+    public void test_14() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
+                    if ("0.0.0.0.0.0.0".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    // as soon as there is an assignment, not-involved is correct!
+                    if ("0.0.0.0.0.0.1".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    // compared to 14B, there is no earlier presence of 't' at the moment
+                    if ("0.0.0.0.0".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    if ("0".equals(d.statementId())) {
+                        VariableInfo init = d.variableInfoContainer().getPreviousOrInitial();
+                        assertTrue(d.variableInfoContainer().isInitial());
+                        String enn = switch (d.iteration()) {
+                            case 0 -> "ext_not_null@Field_t";
+                            case 1 ->
+                                    "initial:a[0]@Method_method_0.0.0.0.0-C;initial:a[1]@Method_method_0.0.0.0.0-C;initial:s@Method_method_0.0.0.0.0-E;initial:s[0]@Method_method_0.0.0.0.0-C;initial:s[1]@Method_method_0.0.0.0.0-C;initial@Field_t;values:this.t@Field_t";
+                            default -> "nullable:1";
+                        };
+                        assertEquals(enn, init.getProperty(Property.EXTERNAL_NOT_NULL).toString());
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("t".equals(d.fieldInfo().name)) {
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+            }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        testClass("External_14", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    @Test
+    public void test_14B() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
+                    if ("0.0.0.0.0".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    if ("0.0.0.0.1.0.0".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    // as soon as there is an assignment, not-involved is correct!
+                    if ("0.0.0.0.1.0.1".equals(d.statementId())) {
+                        assertDv(d, 1, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    // however, the assignment is conditional, so we must compromise between the two
+                    if ("0.0.0.0.1".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                    if ("0".equals(d.statementId())) {
+                        VariableInfo init = d.variableInfoContainer().getPreviousOrInitial();
+                        assertTrue(d.variableInfoContainer().isInitial());
+                        String enn = switch (d.iteration()) {
+                            case 0 -> "ext_not_null@Field_t";
+                            case 1 ->
+                                    "initial:a@Method_method_0.0.0.0.0-E;initial:s@Method_method_0.0.0.0.0-E;initial@Field_t;values:this.t@Field_t";
+                            default -> "nullable:1";
+                        };
+                        assertEquals(enn, init.getProperty(Property.EXTERNAL_NOT_NULL).toString());
+                        assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, Property.EXTERNAL_NOT_NULL);
+                    }
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("t".equals(d.fieldInfo().name)) {
+                assertEquals("<variable value>", d.fieldAnalysis().getValue().toString());
+                assertDv(d, 1, MultiLevel.NULLABLE_DV, Property.EXTERNAL_NOT_NULL);
+            }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        testClass("External_14B", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
 }

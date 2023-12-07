@@ -183,6 +183,7 @@ class PrepareMergeVariables {
                         /*
                         See Loops_21: if the vic was copied from lastStatements, and it did not exist before, we must
                         ensure that a delayed initial gets updated when the initial of the lastStatements is done.
+                        See External_14: this holds for non-external properties; external properties are fed in later
                          */
                     if (vic != vicToAdd
                             && vicToAdd != null

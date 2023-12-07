@@ -555,8 +555,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         assert dest != null;
         dest.setValue(vi1.getValue());
         vi1.getProperties().forEach((k, v) -> {
-            DV dv = dest.getProperty(k, null);
-            if (dv == null || dv.isDelayed()) dest.setProperty(k, v);
+            // See External_14 (exclude EXTERNAL), Loops_21
+            if (k.propertyType != PropertyType.EXTERNAL) {
+                DV dv = dest.getProperty(k, null);
+                if (dv == null || dv.isDelayed()) dest.setProperty(k, v);
+            }
         });
     }
 

@@ -192,7 +192,7 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                 if (statementAnalysis.methodAnalysis().getMethodInfo().equals(methodCall.methodInfo)) {
                     return;
                 }
-                if(methodCall.methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
+                if (methodCall.methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
                     return;
                 }
 
@@ -216,8 +216,9 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                  and it does not modify its parameters
                  */
                 CausesOfDelay delay2;
-                if (methodCall.object instanceof VariableExpression ve
-                        && ve.variable() instanceof FieldReference fr
+                IsVariableExpression ive;
+                if ((ive = methodCall.object.asInstanceOf(IsVariableExpression.class)) != null
+                        && ive.variable() instanceof FieldReference fr
                         && fr.isStatic()) {
                     DV modifying = methodAnalysis.getProperty(MODIFIED_METHOD);
                     if (modifying.valueIsFalse()) {
@@ -240,9 +241,10 @@ record SAHelper(StatementAnalysis statementAnalysis) {
                 }
                 causesOfDelay.set(causesOfDelay.get().merge(delay1).merge(delay2));
             }
+            IsVariableExpression ive;
             if (e instanceof Assignment assignment
-                    && assignment.target instanceof VariableExpression ve
-                    && ve.variable() instanceof FieldReference fr && fr.isStatic()) {
+                    && (ive = assignment.target.asInstanceOf(IsVariableExpression.class)) != null
+                    && ive.variable() instanceof FieldReference fr && fr.isStatic()) {
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fr.fieldInfo());
                 DV ignoreMods = fieldAnalysis.getProperty(EXTERNAL_IGNORE_MODIFICATIONS);
                 if (ignoreMods.isDelayed()) {

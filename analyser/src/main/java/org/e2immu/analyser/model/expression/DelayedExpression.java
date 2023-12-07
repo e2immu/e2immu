@@ -191,7 +191,7 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                                                   Primitives primitives,
                                                   Expression original,
                                                   CausesOfDelay causes) {
-        return new DelayedExpression(identifier, "sse", primitives.voidParameterizedType(), original, causes);
+        return new DelayedExpression(identifier, "sse:" + causes, primitives.voidParameterizedType(), original, causes);
     }
 
     public static Expression forUnspecifiedLoopCondition(Identifier identifier,
