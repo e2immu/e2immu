@@ -179,6 +179,12 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
     public static Expression computeStaticSideEffect(AnalyserContext analyserContext,
                                                      StatementAnalysis statementAnalysis) {
+        MethodInfo currentMethod = statementAnalysis.methodAnalysis().getMethodInfo();
+        Set<MethodInfo> callCycle = currentMethod.methodResolution.get().callCycle();
+        if (!callCycle.isEmpty()) {
+            // if the method is part of a call-cycle, it is not a static side effect, because it refers back to us
+            return EmptyExpression.EMPTY_EXPRESSION;
+        }
         Expression expression = statementAnalysis.statement().getStructure().expression();
         if (expression.isEmpty()) {
             return EmptyExpression.EMPTY_EXPRESSION;
@@ -189,10 +195,8 @@ record SAHelper(StatementAnalysis statementAnalysis) {
 
         expression.visit(e -> {
             if (e instanceof MethodCall methodCall) {
-                if (statementAnalysis.methodAnalysis().getMethodInfo().equals(methodCall.methodInfo)) {
-                    return;
-                }
-                if (methodCall.methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle()) {
+                if (currentMethod.equals(methodCall.methodInfo)) {
+                    // direct recursive call -- ignore!
                     return;
                 }
 
@@ -256,9 +260,12 @@ record SAHelper(StatementAnalysis statementAnalysis) {
             }
         });
         if (!expressions.isEmpty()) return expressions.get(0);
-        if (causesOfDelay.get().isDelayed())
+        if (causesOfDelay.get().isDelayed()) {
+            LOGGER.error("SSE delay, caused by {}", causesOfDelay);
+
             return DelayedExpression.forStaticSideEffects(statementAnalysis.statement().getIdentifier(),
                     statementAnalysis.primitives(), expression, causesOfDelay.get());
+        }
         return EmptyExpression.EMPTY_EXPRESSION;
     }
 

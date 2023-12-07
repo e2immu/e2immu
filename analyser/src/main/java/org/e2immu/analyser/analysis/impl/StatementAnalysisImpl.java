@@ -803,8 +803,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     && fieldReference.scopeIsThis(evaluationContext.getCurrentType())) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
-                initialValue = fieldAnalysis.getValueForStatementAnalyser(getCurrentType().primaryType(),
-                        fieldReference, flowData().getInitialTime());
+                initialValue = fieldAnalysis.getValueForStatementAnalyser(evaluationContext.getAnalyserContext(),
+                        getCurrentType().primaryType(), fieldReference, flowData().getInitialTime());
             }
         } else {
             // only set properties copied from the field
@@ -1130,8 +1130,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
         // start with context properties
         Properties properties = sharedContext(AnalysisProvider.defaultNotNull(fieldReference.fieldInfo().type));
-        Expression value = fieldAnalysis.getValueForStatementAnalyser(getCurrentType().primaryType(),
-                fieldReference, flowData.getInitialTime());
+        Expression value = fieldAnalysis.getValueForStatementAnalyser(evaluationContext.getAnalyserContext(),
+                getCurrentType().primaryType(), fieldReference, flowData.getInitialTime());
 
         Properties combined;
         boolean myself = evaluationContext.isMyself(fieldReference).toFalse(IMMUTABLE);

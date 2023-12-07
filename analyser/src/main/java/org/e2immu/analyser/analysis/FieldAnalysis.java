@@ -98,7 +98,10 @@ public interface FieldAnalysis extends Analysis {
 
     Expression getInitializerValue();
 
-    default Expression getValueForStatementAnalyser(TypeInfo primaryType, FieldReference fieldReference, int statementTime) {
+    default Expression getValueForStatementAnalyser(InspectionProvider inspectionProvider,
+                                                    TypeInfo primaryType,
+                                                    FieldReference fieldReference,
+                                                    int statementTime) {
         Expression value = getValue();
         // IMPORTANT: do not return Instance object here (i.e. do not add "|| value.isInstanceOf(Instance.class)")
         // because the instance does not have the eventual information that the field analyser holds.
@@ -120,8 +123,8 @@ public interface FieldAnalysis extends Analysis {
             mostSpecific = fieldReference.parameterizedType();
         } else {
             // instance type List<...> in fieldReference vs instance type ArrayList<...> in value; see e.g. Basics_20
-            mostSpecific = fieldReference.parameterizedType().mostSpecific(InspectionProvider.DEFAULT,
-                    primaryType, value.returnType());
+            mostSpecific = fieldReference.parameterizedType().mostSpecific(inspectionProvider, primaryType,
+                    value.returnType());
         }
         Instance instance = Instance.forField(getFieldInfo(), mostSpecific, properties);
         if (value.isInstanceOf(ConstructorCall.class)) {

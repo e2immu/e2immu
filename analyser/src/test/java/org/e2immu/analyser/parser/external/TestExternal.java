@@ -413,6 +413,17 @@ public class TestExternal extends CommonTestRunner {
                 .build());
     }
 
+    // change of LVs
+    @Test
+    public void test_13() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        // ERROR: parameter should not be assigned to
+        testClass("External_13", 1, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
     // Changing value of external-not-null from not_involved:0 to nullable:1, variable t, line 8
     @Test
     public void test_14() throws IOException {
@@ -511,6 +522,27 @@ public class TestExternal extends CommonTestRunner {
         testClass("External_14B", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // No progress after 15 iterations...
+    @Test
+    public void test_15() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----SFMTO-SFMTO", d.delaySequence());
+
+        testClass("External_15", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build());
+    }
+
+    // no primitives in inspection provider
+    @Test
+    public void test_16() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        // ERROR: parameter should not be assigned to
+        testClass("External_16", 1, 0, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

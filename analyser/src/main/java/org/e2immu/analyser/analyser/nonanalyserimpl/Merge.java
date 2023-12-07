@@ -99,8 +99,9 @@ public record Merge(EvaluationContext evaluationContext,
                 Expression instance;
                 Expression fromAnalysis = evaluationContext.getAnalyserContext()
                         .getFieldAnalysis(fieldReference.fieldInfo())
-                        .getValueForStatementAnalyser(evaluationContext.getCurrentType().primaryType(),
-                                fieldReference, evaluationContext.getFinalStatementTime());
+                        .getValueForStatementAnalyser(evaluationContext.getAnalyserContext(),
+                                evaluationContext.getCurrentType().primaryType(), fieldReference,
+                                evaluationContext.getFinalStatementTime());
                 Properties properties;
                 if (fromAnalysis.isDelayed()) {
                     instance = ConstantExpression.nullValue(evaluationContext.getAnalyserContext().getPrimitives(),
