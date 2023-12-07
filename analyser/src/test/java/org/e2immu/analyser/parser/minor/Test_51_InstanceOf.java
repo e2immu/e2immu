@@ -100,20 +100,20 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     assertNotEquals("1", d.statementId());
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && "integer".equals(lvr.simpleName())) {
-                    assertEquals("number/*(Integer)*/", d.currentValue().toString());
+                    assertEquals("in/*(Integer)*/", d.currentValue().toString());
                     assertNotEquals("0.1.1", d.statementId());
                     assertNotEquals("1", d.statementId());
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     if ("0.0.0.0.0".equals(d.statementId())) {
-                        assertEquals("\"Integer: \"+number/*(Integer)*/", d.currentValue().toString());
+                        assertEquals("\"Integer: \"+in/*(Integer)*/", d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+number/*(Integer)*/:<return value>",
+                        assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Integer)*/:<return value>",
                                 d.currentValue().toString());
                     }
                     if ("0.0.1".equals(d.statementId())) {
-                        assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+number/*(Integer)*/:\"Number: \"+in/*(Number)*/",
+                        assertEquals("in/*(Number)*/ instanceof Integer?\"Integer: \"+in/*(Integer)*/:\"Number: \"+in/*(Number)*/",
                                 d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {

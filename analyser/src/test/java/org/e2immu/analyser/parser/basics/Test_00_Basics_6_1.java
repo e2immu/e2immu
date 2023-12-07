@@ -71,12 +71,12 @@ public class Test_00_Basics_6_1 extends CommonTestRunner {
                     assertEquals(expect, d.currentValue().toString());
                 }
                 if ("n".equals(d.variableName()) && "1".equals(d.statementId())) {
-                    assertEquals("/*inline someMinorMethod*/Math.pow(i,3)/*(int)*/", d.currentValue().toString());
+                    assertEquals("Math.pow(3,3)/*(int)*/", d.currentValue().toString());
                 }
                 if ("r".equals(d.variableName()) && "1".equals(d.statementId())) {
                     String expected = d.iteration() == 0
-                            ? "2*<f:field>+(/*inline someMinorMethod*/Math.pow(i,3)/*(int)*/)"
-                            : "2*field$0+(/*inline someMinorMethod*/Math.pow(i,3)/*(int)*/)";
+                            ? "2*<f:field>+Math.pow(3,3)/*(int)*/"
+                            : "2*field$0+Math.pow(3,3)/*(int)*/";
                     assertEquals(expected, d.currentValue().toString());
                 }
             }

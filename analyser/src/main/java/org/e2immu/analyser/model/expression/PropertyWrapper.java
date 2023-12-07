@@ -26,6 +26,7 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -46,6 +47,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
                            ParameterizedType castType) {
         super(expression.getIdentifier(), expression.getComplexity());
         assert !(expression instanceof Negation) : "we always want the negation to be on the outside";
+        assert !(expression instanceof PropertyWrapper) : "no cascade of property wrappers allowed";
         this.expression = expression;
         this.state = state != null && state.isBoolValueTrue() ? null : state;
         this.properties = properties != null && properties.isEmpty() ? null : properties;
@@ -58,7 +60,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     }
 
     public static Expression wrapPreventIncrementalEvaluation(Expression expression) {
-        return new PropertyWrapper(expression, null, Map.of(Property.MARK_CLEAR_INCREMENTAL, DV.TRUE_DV), null, null);
+        return new PropertyWrapper(expression, null, Map.of(Property.MARK_CLEAR_INCREMENTAL, DV.TRUE_DV),
+                null, null);
     }
 
     public Expression copy(Expression other) {
@@ -82,7 +85,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         if (transState == state && tex == expression && transLv == linkedVariables && transType == castType) {
             return this;
         }
-        return new PropertyWrapper(tex, transState, properties, transLv, transType);
+        return conditionallyCreate(inspectionProvider, tex, transType, transState, properties, transLv);
     }
 
     @Override
@@ -98,22 +101,18 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult reValue = expression.evaluate(context, forwardEvaluationInfo);
-        return reEvaluated(context, reValue);
-    }
-
-    private EvaluationResult reEvaluated(EvaluationResult evaluationContext, EvaluationResult reValue) {
         Expression newValue = reValue.value();
-        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationContext).compose(reValue);
+
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(reValue);
 
         // most importantly: we don't want any double wrappers with exactly the same info!
-        if (newValue instanceof PropertyWrapper pw && Objects.equals(pw.castType, castType) &&
-                Objects.equals(pw.state, state) && Objects.equals(pw.properties, properties) &&
-                Objects.equals(pw.linkedVariables, linkedVariables)) {
-            return builder.setExpression(pw).build();
+        if (newValue instanceof PropertyWrapper pw) {
+            Expression e = conditionallyCreate(context.getAnalyserContext(), pw.getExpression(),
+                    pw.castType, pw.state, pw.properties, pw.linkedVariables);
+            return builder.setExpression(e).build();
         }
-        // IMPROVE it would really be good if we never had two PropertyWrappers in a row
 
-        Map<Property, DV> reduced = properties == null ? null : reduce(evaluationContext, newValue, properties);
+        Map<Property, DV> reduced = properties == null ? null : reduce(context, newValue, properties);
         boolean dropWrapper = (reduced == null || reduced.isEmpty())
                 && state == null && linkedVariables == null && castType == null;
         Expression result = dropWrapper ? newValue
@@ -122,9 +121,44 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         return builder.setExpression(result).build();
     }
 
-    private static Map<Property, DV> reduce(EvaluationResult context,
-                                            Expression expression,
-                                            Map<Property, DV> map) {
+    private Expression conditionallyCreate(InspectionProvider inspectionProvider,
+                                           Expression pwExpression,
+                                           ParameterizedType pwCastType,
+                                           Expression pwState,
+                                           Map<Property, DV> pwProperties,
+                                           LinkedVariables pwLinkedVariables) {
+        boolean sameCast = Objects.equals(pwCastType, castType);
+        boolean sameState = Objects.equals(pwState, state);
+        boolean sameProperties = Objects.equals(pwProperties, properties);
+        boolean sameLv = Objects.equals(pwLinkedVariables, linkedVariables);
+        int sumDiff = (sameCast ? 0 : 1) + (sameState ? 0 : 1) + (sameProperties ? 0 : 1) + (sameLv ? 0 : 1);
+        Expression e = pwExpression instanceof PropertyWrapper w ? w.expression : pwExpression;
+        if (sumDiff == 0) {
+            // all the same
+            return new PropertyWrapper(e, pwState, pwProperties, pwLinkedVariables, pwCastType);
+        }
+        if (!sameCast && sumDiff == 1) {
+            // only cast type different
+            ParameterizedType newCastType;
+            if (castType != null && pwCastType == null) {
+                newCastType = castType;
+            } else if (castType == null) {
+                newCastType = pwCastType;
+            } else {
+                // return the one with the narrowest cast
+                boolean isAssignable = castType.isAssignableFrom(inspectionProvider, pwCastType);
+                newCastType = isAssignable ? pwCastType : castType;
+            }
+            return new PropertyWrapper(e, pwState, pwProperties, pwLinkedVariables, newCastType);
+        }
+        if (!sameState && sumDiff == 1) {
+            // explicitly take the latest state
+            return new PropertyWrapper(e, pwState, pwProperties, pwLinkedVariables, pwCastType);
+        }
+        throw new UnsupportedOperationException("NYI");
+    }
+
+    private static Map<Property, DV> reduce(EvaluationResult context, Expression expression, Map<Property, DV> map) {
         return map.entrySet().stream()
                 .filter(e -> {
                     DV v = context.evaluationContext().getProperty(expression, e.getKey(),
@@ -436,5 +470,15 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     @Override
     public boolean isNullConstant() {
         return expression.isNullConstant();
+    }
+
+    @Override
+    public Expression extractConditions(Primitives primitives) {
+        return expression.extractConditions(primitives);
+    }
+
+    @Override
+    public Expression applyCondition(Expression newState) {
+        return expression.applyCondition(newState);
     }
 }
