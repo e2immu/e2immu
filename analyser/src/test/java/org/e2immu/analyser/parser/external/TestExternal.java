@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.external;
 
-import org.e2immu.analyser.analyser.ChangeData;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -413,13 +410,126 @@ public class TestExternal extends CommonTestRunner {
                 .build());
     }
 
-    // change of LVs
+    // Problem 1: change of LVs ~ LV comes before value
+    // Problem 2: incorrect modification ~ https://github.com/e2immu/e2immu/issues/61
+    //   delay breaking of modification in loops
     @Test
     public void test_13() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("m2".equals(d.methodInfo().name)) {
+                if ("0.0.1.0.0".equals(d.statementId())) {
+                    // nowhere do we encounter a CM
+                    assertTrue(d.evaluationResult().changeData().values().stream()
+                            .noneMatch(cd -> cd.properties().getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV)
+                                    .valueIsTrue()));
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("m1".equals(d.methodInfo().name)) {
+                if ("e".equals(d.variableName())) {
+                    if ("1.0.2".equals(d.statementId())) {
+                        assertCurrentValue(d, 5, "");
+                        assertLinked(d, it0("l:-1,la:-1,map:-1,result:-1,value:-1"),
+                                it(1, 3, "la:-1,map:-1,value:-1"),
+                                it(4, "map:4"));
+                    }
+                }
+            }
+            if ("m2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "o".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // consequence of delay breaking
+                    }
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // consequence of delay breaking
+                    }
+                    if ("0.0.1.0.0".equals(d.statementId())) {
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                    if ("0.0.1.0.1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 3, "i:-1,l:-1,la:-1,la[i]:-1,list:-1"),
+                                it(4, "list:1"));
+                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED); // consequence of delay breaking
+                    }
+                }
+                if ("list".equals(d.variableName())) {
+                    if ("0.0.1.0.0".equals(d.statementId())) {
+                        VariableInfo prev = d.variableInfoContainer().getPreviousOrInitial();
+                        assertFalse(d.variableInfoContainer().isInitial());
+                        assertEquals(DV.FALSE_DV, prev.getProperty(Property.CONTEXT_MODIFIED));
+
+                        // BREAK DELAY IN LOOP (SAApply.modifiedInLoop)
+                        // assertEquals(d.iteration()>=4, d.variableInfoContainer()
+                        //          .propertyOverrides().getOrDefault(Property.CONTEXT_MODIFIED, DV.FALSE_DV).valueIsTrue());
+                        assertLinked(d, it0("i:-1,l:-1,la:-1,o:-1"),
+                                it(1, 3, "i:-1,l:-1,o:-1"),
+                                it(4, "o:1"));
+                        assertDv(d, 4, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        // IMPROVE, see https://github.com/e2immu/e2immu/issues/61
+                    }
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertCurrentValue(d, 0, "o/*(List<?>)*/");
+                    }
+                    if ("0.0.1".equals(d.statementId())) {
+                        VariableInfo eval = d.variableInfoContainer().best(Stage.EVALUATION);
+                        if (d.iteration() >= 4) {
+                            // consequence of delay breaking
+                            assertEquals("instance 0.0.1 type List<?>/*@Identity*/", eval.getValue().toString());
+                        }
+                        assertCurrentValue(d, 4, "-1+list$0.0.1.size()>=instance 0.0.1 type int?instance 0.0.1 type List<?>/*@Identity*/:o/*(List<?>)*/");
+                    }
+                }
+
+                if ("la".equals(d.variableName())) {
+                    if ("0.0.1.0.1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 3, "i:-1,l:-1,la[i]:-1,list:-1,o:-1"),
+                                it(4, "")); // independent of list, o!
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("la[i]".equals(d.variableName())) {
+                    if ("0.0.1.0.1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 3, "i:-1,l:0,la:-1,list:-1,o:-1"),
+                                it(4, "l:0,la:3")); // independent of list, o!
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if ("l".equals(d.variableName())) {
+                    if ("0.0.1.0.1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 3, "i:-1,la:-1,la[i]:0,list:-1,o:-1"),
+                                it(4, "la:3,la[i]:0")); // independent of list, o!
+                        assertDv(d, 4, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("m2".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 5, DV.TRUE_DV, Property.MODIFIED_VARIABLE); // consequence of delay breaking
+            }
+
+            if ("m3".equals(d.methodInfo().name)) {
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+                String expected = d.iteration() == 0 ? "<m:m3>"
+                        : "/*inline m3*/o instanceof Number?o/*(Number)*/.longValue():<return value>";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        };
+
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
-        // ERROR: parameter should not be assigned to
+        // ERROR: change of LV in 1.0.2 in m1
         testClass("External_13", 1, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

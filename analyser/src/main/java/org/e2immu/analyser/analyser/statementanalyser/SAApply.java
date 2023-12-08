@@ -466,6 +466,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         return new LoopResult(false, CausesOfDelay.EMPTY, false);
     }
 
+    // see https://github.com/e2immu/e2immu/issues/61
     private LoopResult modifiedInLoop(StatementAnalyserSharedState sharedState,
                                       Variable variable,
                                       VariableInfoContainer vic,

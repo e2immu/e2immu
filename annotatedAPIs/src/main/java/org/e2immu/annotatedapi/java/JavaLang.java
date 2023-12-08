@@ -518,6 +518,16 @@ class JavaLang {
         String toString(int i);
     }
 
+    /*
+    no hidden content, deeply immutable.
+     */
+    @ImmutableContainer
+    interface Long$ {
+
+        @NotNull
+        String toString(long l);
+    }
+
     @ImmutableContainer
     @Independent
     interface Number$ {
