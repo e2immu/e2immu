@@ -158,7 +158,7 @@ public class ComputeLinkedVariables {
     See e.g. ListUtil for a nice example, which is pretty common.
      */
     private static void augmentGraph(WeightedGraph weightedGraph) {
-        Map<Variable, Set<Variable>> toAdd3 = new HashMap<>();
+        Map<Variable, Map<Variable, DV>> toAdd3 = new HashMap<>();
         AtomicReference<CausesOfDelay> delays = new AtomicReference<>(CausesOfDelay.EMPTY);
         weightedGraph.visit((v, map) -> {
             if (map != null) {
@@ -171,8 +171,13 @@ public class ComputeLinkedVariables {
                     LOGGER.trace("Augmenting links: found {}", mapped3);
                     Variable v1 = mapped3.get(0);
                     for (Variable v2 : mapped3.subList(1, mapped3.size())) {
-                        Set<Variable> to = toAdd3.computeIfAbsent(v1, k -> new HashSet<>());
-                        to.add(v2);
+                        Map<Variable, DV> to = toAdd3.computeIfAbsent(v1, k -> new HashMap<>());
+                        // dv should be either LINK_COMMON_HC, or, if there already is a reverse LINK_DEPENDENT, also LINK_DEPENDENT
+                        // see e.g. External_13
+                        Map<Variable, DV> reverse = weightedGraph.links(v2, LINK_COMMON_HC, false);
+                        DV inReverse = reverse.get(v1);
+                        DV dv = LINK_DEPENDENT.equals(inReverse) ? LINK_DEPENDENT : LINK_COMMON_HC;
+                        to.merge(v2, dv, DV::min);
                     }
                     CausesOfDelay allDelays = map.values().stream()
                             .map(DV::causesOfDelay)
@@ -181,9 +186,9 @@ public class ComputeLinkedVariables {
                 }
             }
         });
-        for (Map.Entry<Variable, Set<Variable>> entry : toAdd3.entrySet()) {
-            Map<Variable, DV> map = entry.getValue().stream()
-                    .collect(Collectors.toUnmodifiableMap(e -> e, e -> LinkedVariables.LINK_COMMON_HC.max(delays.get())));
+        for (Map.Entry<Variable, Map<Variable, DV>> entry : toAdd3.entrySet()) {
+            Map<Variable, DV> map = entry.getValue().entrySet().stream()
+                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().max(delays.get())));
             LOGGER.trace("Augmenting links: from {} to {}", entry.getKey().simpleName(), map);
             weightedGraph.addNode(entry.getKey(), map, true, (v1, v2) -> {
                 if (v1.le(LINK_DEPENDENT) || v2.le(LINK_DEPENDENT)) {

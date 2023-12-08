@@ -53,14 +53,14 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String linked = d.iteration() == 0
                                 ? "System.out:-1,data:-1,node.map:-1,strings:-1,this.root:0,this:-1"
-                                : "node.map:3,this.root:0,this:3";
+                                : "node.map:2,this.root:0,this:3";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                     if ("3".equals(d.statementId())) {
                         String linked = switch (d.iteration()) {
                             case 0 -> "System.out:-1,data:-1,node.data:-1,node.map:-1,strings:-1,this.root:0,this:-1";
                             case 1, 2, 3 -> "data:-1,node.data:-1,node.map:-1,this.root:0,this:-1";
-                            default -> "node.data:4,node.map:3,this.root:0,this:3";
+                            default -> "node.data:2,node.map:2,this.root:0,this:3";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
@@ -78,7 +78,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                             String linked = switch (d.iteration()) {
                                 case 0 -> "System.out:-1,data:-1,node.data:-1,node:-1,strings:-1,this.root:-1,this:-1";
                                 case 1, 2, 3 -> "data:-1,node.data:-1,node:-1,this.root:-1,this:-1";
-                                default -> "node.data:4,node:2,this.root:2,this:3";
+                                default -> "node.data:2,node:2,this.root:2,this:3";
                             };
                             assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         }
@@ -224,7 +224,7 @@ public class Test_04_NotNull_AAPI extends CommonTestRunner {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                         assertLinked(d,
                                 it0("System.out:-1,data:-1,newTrieNode:-1,node.map:-1,s:-1,strings:-1,this.root:0,this:-1"),
-                                it(1, "node.map:4,this.root:0,this:3"));
+                                it(1, "node.map:2,this.root:0,this:3"));
                     }
                     if ("1.0.2".equals(d.statementId())) {
                         assertLinked(d,

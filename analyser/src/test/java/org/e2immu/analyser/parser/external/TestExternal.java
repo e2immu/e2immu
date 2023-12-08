@@ -428,11 +428,37 @@ public class TestExternal extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("m1".equals(d.methodInfo().name)) {
                 if ("e".equals(d.variableName())) {
-                    if ("1.0.2".equals(d.statementId())) {
-                        assertCurrentValue(d, 5, "");
+                    if ("1.0.1".equals(d.statementId())) { // Long l = m3(e.getKey());
+                        assertCurrentValue(d, 1, "instance 1 type Entry<Object,Object>");
+                        assertLinked(d, it0("l:-1,map:-1,result:-1,value:-1"), it(1, "map:2"));
+                    }
+                    if ("1.0.2".equals(d.statementId())) { // Long[] la = m2(value);
+                        assertCurrentValue(d, 5, "instance 1 type Entry<Object,Object>");
                         assertLinked(d, it0("l:-1,la:-1,map:-1,result:-1,value:-1"),
                                 it(1, 3, "la:-1,map:-1,value:-1"),
-                                it(4, "map:4"));
+                                it(4, "map:2"));
+                    }
+                }
+                if ("value".equals(d.variableName())) {
+                    if ("1.0.0".equals(d.statementId())) {
+                        assertCurrentValue(d, 0, "e$1.getValue()");
+                        assertLinked(d, it(0, "e:3,map:3"));
+                    }
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertCurrentValue(d, 1, "e$1.getValue()");
+                        assertLinked(d, it0("e:-1,l:-1,map:-1,result:-1"), it(1, "e:3,map:3"));
+                    }
+                    if ("1.0.2".equals(d.statementId())) {
+                        assertCurrentValue(d, 5, "e$1.getValue()");
+                        assertLinked(d, it0("e:-1,l:-1,la:-1,map:-1,result:-1"),
+                                it(1, 3, "e:-1,la:-1,map:-1"),
+                                it(4, "e:3,map:3"));
+                    }
+                }
+                if ("l".equals(d.variableName())) {
+                    if ("1.0.1".equals(d.statementId())) {
+                        assertCurrentValue(d, 1, "e$1.getKey().longValue()");
+                        assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
                     }
                 }
             }
@@ -506,6 +532,16 @@ public class TestExternal extends CommonTestRunner {
                     }
                 }
             }
+            if ("m3".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("o instanceof Number?o/*(Number)*/.longValue():<return value>", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("o/*(Number)*/.longValue()", d.currentValue().toString());
+                    }
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -517,16 +553,17 @@ public class TestExternal extends CommonTestRunner {
             if ("m3".equals(d.methodInfo().name)) {
                 assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-                String expected = d.iteration() == 0 ? "<m:m3>"
-                        : "/*inline m3*/o instanceof Number?o/*(Number)*/.longValue():<return value>";
+                assertDv(d, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.NOT_NULL_EXPRESSION);
+                String expected = d.iteration() == 0 ? "<m:m3>" : "/*inline m3*/o/*(Number)*/.longValue()";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+        // S: modification delay breaking
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--", d.delaySequence());
 
         // ERROR: change of LV in 1.0.2 in m1
-        testClass("External_13", 1, 0, new DebugConfiguration.Builder()
+        testClass("External_13", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
