@@ -248,8 +248,8 @@ public class InlineConditional extends BaseExpression implements Expression {
             condition = Instance.forUnspecifiedCondition(getIdentifier(), context.evaluationContext().statementIndex(),
                     context.getPrimitives());
         }
-        Expression conditionAfterState = context.evaluationContext().getConditionManager()
-                .evaluate(context, condition, false);
+        Expression conditionAfterState = forwardEvaluationInfo.isIgnoreValueFromState() ? condition :
+                context.evaluationContext().getConditionManager().evaluate(context, condition, false);
 
         EvaluationResult copyForThen = resultIsBoolean ? context : context.child(condition, conditionVariables);
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);

@@ -1027,14 +1027,14 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     String expected = switch (d.iteration()) {
-                        case 0 -> "<instanceOf:Negation>?<m:toList>:<simplification>?<m:toList>:<m:toList>";
+                        case 0 ->
+                                "<instanceOf:Negation>?<m:toList>:<instanceOf:UnaryOperator>&&<m:isUnaryNot>?<m:toList>:<instanceOf:InstanceOf>?<m:of>:<m:toList>";
                         case 1 ->
-                                "expression instanceof Negation?<m:toList>:expression instanceof UnaryOperator&&<m:isUnaryNot>&&(null==expression||!(expression instanceof Negation))?<m:toList>:expression instanceof InstanceOf?<m:of>:(nullable instance 3 type List<Expression>).stream().flatMap(instance 3 type $3).toList()";
+                                "expression instanceof Negation?<m:toList>:expression instanceof UnaryOperator&&<m:isUnaryNot>?<m:toList>:expression instanceof InstanceOf?<m:of>:(nullable instance 3 type List<Expression>).stream().flatMap(instance 3 type $3).toList()";
                         case 2, 3 ->
-                                "expression instanceof Negation?<m:toList>:expression instanceof UnaryOperator&&<m:isUnaryNot>&&(null==expression||!(expression instanceof Negation))?<m:toList>:expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance 3 type List<Expression>).stream().flatMap(instance 3 type $3).toList()";
+                                "expression instanceof Negation?<m:toList>:expression instanceof UnaryOperator&&<m:isUnaryNot>?<m:toList>:expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance 3 type List<Expression>).stream().flatMap(instance 3 type $3).toList()";
                         default ->
-                                "expression instanceof Negation?FindInstanceOfPatterns.find(scope-negation:0$0.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof UnaryOperator&&scope-unaryOperator:1$1.operator.isUnaryNot()&&(null==expression||!(expression instanceof Negation))?FindInstanceOfPatterns.find(scope-unaryOperator:1$1.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance 3 type List<Expression>).stream().flatMap(instance 3 type $3).toList()";
-                    };
+                                "expression instanceof Negation?FindInstanceOfPatterns.find(scope-negation:0$0.en).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof UnaryOperator&&scope-unaryOperator:1$1.operator.isUnaryNot()?FindInstanceOfPatterns.find(scope-unaryOperator:1$1.eu).stream().map(/*inline apply*/new InstanceOfPositive(iop.instanceOf,!iop.positive)).toList():expression instanceof InstanceOf?List.of(new InstanceOfPositive(expression/*(InstanceOf)*/,true)):(nullable instance 3 type List<Expression>).stream().flatMap(instance 3 type $3).toList()";                    };
                     assertEquals(expected, d.evaluationResult().value().toString());
                 }
             }

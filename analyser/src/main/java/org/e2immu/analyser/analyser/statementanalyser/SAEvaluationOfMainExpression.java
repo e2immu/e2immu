@@ -369,10 +369,6 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         return CausesOfDelay.EMPTY;
     }
 
-
-    /*
-    NOTE: this works in simpler situations, but does not when (much) more complex.
-     */
     private EvaluationResult modifyReturnValueRemoveConditionBasedOnState(StatementAnalyserSharedState sharedState,
                                                                           EvaluationResult result) {
         if (sharedState.previous() == null) return result; // first statement of block, no need to change
@@ -384,8 +380,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(sharedState.context()).compose(result);
             Assignment assignment = new Assignment(statementAnalysis.primitives(),
                     new VariableExpression(methodInfo().identifier, returnVariable), newValue);
-            EvaluationResult assRes = assignment.evaluate(EvaluationResultImpl.from(sharedState.evaluationContext()),
-                    ForwardEvaluationInfo.DEFAULT);
+            ForwardEvaluationInfo fwd = new ForwardEvaluationInfo.Builder().setIgnoreValueFromState().build();
+            EvaluationResult assRes = assignment.evaluate(sharedState.context(), fwd);
             builder.compose(assRes);
             return builder.build();
         }

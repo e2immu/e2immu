@@ -291,7 +291,7 @@ public class Test_12_IfStatement extends CommonTestRunner {
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("pad".equals(d.methodInfo().name)) {
-                assertEquals("/*inline pad*/i<10?\"\"+i:<return value>", d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals("/*inline pad*/\"\"+i", d.methodAnalysis().getSingleReturnValue().toString());
             }
         };
         testClass("IfStatement_7", 0, 0, new DebugConfiguration.Builder()

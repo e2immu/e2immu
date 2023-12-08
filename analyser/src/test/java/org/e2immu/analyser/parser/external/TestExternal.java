@@ -290,7 +290,7 @@ public class TestExternal extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("convertToLong".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:convertToLong>"
-                        : "/*inline convertToLong*/source instanceof Number?source/*(Number)*/.longValue():source instanceof String?Long.parseLong(source/*(String)*/):<return value>";
+                        : "/*inline convertToLong*/source instanceof Number?source/*(Number)*/.longValue():Long.parseLong(source/*(String)*/)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertEquals("Type long", d.methodAnalysis().getSingleReturnValue().returnType().toString());
 

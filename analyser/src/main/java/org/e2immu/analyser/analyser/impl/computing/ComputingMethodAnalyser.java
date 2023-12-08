@@ -1316,7 +1316,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     }
 
     public VariableInfo getReturnAsVariable() {
-        StatementAnalysis lastStatement = methodAnalysis.getLastStatement(true);
+        // see code in SAEvaluationOfMainExpression.modifyReturnValueRemoveConditionBasedOnState()
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement(false);
         assert lastStatement != null; // either a constructor, and then we shouldn't ask; or compilation error
         return lastStatement.getLatestVariableInfo(methodInfo.fullyQualifiedName());
     }
