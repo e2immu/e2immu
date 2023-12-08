@@ -296,6 +296,20 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test_8() throws IOException {
+        testClass("SubTypes_8", 3, 0, new DebugConfiguration.Builder()
+                .build());
+    }
+
+    @Test
+    public void test_9() throws IOException {
+        testClass("SubTypes_9", 0, 0, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder()
+                .setComputeFieldAnalyserAcrossAllMethods(true)
+                .setComputeContextPropertiesOverAllMethods(true).build());
+    }
+
     // delay cycle to be broken:
     // 1- anonymous type is partially immutable, but needs primary type to finalize the value
     // 2- because the anonymous type's IMMUTABLE is not known, the field "external" gets no value
