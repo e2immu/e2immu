@@ -982,7 +982,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             if (finalizer.valueIsFalse() && (!methodAnalyser.getMethodInspection().isPrivate() ||
                     methodInfo.isConstructor() && !ignorePrivateConstructors)) {
                 boolean added = false;
-                for (VariableInfo vii : methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo)) {
+                List<VariableInfo> assigned = methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo);
+                for (VariableInfo vii : assigned) {
                     Properties properties;
                     LinkedVariables linkedVariables;
                     Expression expression;

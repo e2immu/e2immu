@@ -673,12 +673,13 @@ public class TestExternal extends CommonTestRunner {
                 .build());
     }
 
-    // No progress after 15 iterations...
+    // No progress after 15 iterations... copy.s = this.s is the most sensitive statement
     @Test
     public void test_15() throws IOException {
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----SFMTO-SFMTO", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
 
-        testClass("External_15", 0, 0, new DebugConfiguration.Builder()
+        // bad practice: copy.s = this.s
+        testClass("External_15", 1, 0, new DebugConfiguration.Builder()
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

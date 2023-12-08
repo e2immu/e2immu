@@ -16,6 +16,9 @@ package org.e2immu.analyser.analysis;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.IsVariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.analyser.util.StringUtil;
@@ -245,7 +248,17 @@ public interface MethodAnalysis extends Analysis {
                 } else {
                     accept = vi;
                 }
-                result.add(accept);
+                // see External_15: we ignore self-assignments (copy.s = this.s) because (a) they do not contribute
+                // and (b) they cause delay loops. IMPROVE: more complicated, silly constructs like
+                // copy.t = this.s; copy.s = this.t;  will not be caught by this.
+                IsVariableExpression ive;
+                if ((ive = accept.getValue().asInstanceOf(IsVariableExpression.class)) == null
+                        || !(ive.variable() instanceof FieldReference fr)
+                        || !fieldInfo.equals(fr.fieldInfo())
+                        // accept this.f = <f:f>, as <f:f> is the initial value
+                        || fr.scope().equals(((FieldReference) accept.variable()).scope())) {
+                    result.add(accept);
+                }
             }
         }
         return result;
