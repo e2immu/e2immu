@@ -66,7 +66,7 @@ public class TestWeightedGraph_3 {
 
     @Test
     public void test1() {
-        Map<Variable, DV> thisLinks = wg.links(thisVar, v2, true);
+        Map<Variable, DV> thisLinks = wg.shortestPath().links(thisVar, v2, true);
         assertEquals(3, thisLinks.size());
     }
 

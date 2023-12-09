@@ -83,32 +83,32 @@ public class TestWeightedGraph_4 {
     @Test
     public void test1() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtToDo = wg.links(x, LINK_STATICALLY_ASSIGNED, false);
-            assertEquals(1, startAtToDo.size());
-            assertEquals(v0, startAtToDo.get(x));
-            assertNull(startAtToDo.get(a));
-            assertNull(startAtToDo.get(i));
+            Map<Variable, DV> startAtX = wg.shortestPath().links(x, LINK_STATICALLY_ASSIGNED, false);
+            assertEquals(1, startAtX.size());
+            assertEquals(v0, startAtX.get(x));
+            assertNull(startAtX.get(a));
+            assertNull(startAtX.get(i));
         }
     }
 
     @Test
     public void test2() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtToDo = wg.links(x, LINK_IS_HC_OF, false);
-            assertEquals(5, startAtToDo.size());
-            assertEquals(v0, startAtToDo.get(x));
-            assertNull(startAtToDo.get(y));
-            assertEquals(v3, startAtToDo.get(a));
-            assertEquals(v3, startAtToDo.get(b));
-            assertEquals(v3, startAtToDo.get(i));
-            assertEquals(v4, startAtToDo.get(j));
+            Map<Variable, DV> startAtX = wg.shortestPath().links(x, LINK_IS_HC_OF, false);
+            assertEquals(5, startAtX.size());
+            assertEquals(v0, startAtX.get(x));
+            assertNull(startAtX.get(y));
+            assertEquals(v3, startAtX.get(a));
+            assertEquals(v3, startAtX.get(b));
+            assertEquals(v3, startAtX.get(i));
+            assertEquals(v4, startAtX.get(j));
         }
     }
 
     @Test
     public void test3() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtToDo = wg.links(a, LINK_IS_HC_OF, false);
+            Map<Variable, DV> startAtToDo = wg.shortestPath().links(a, LINK_IS_HC_OF, false);
             assertEquals(4, startAtToDo.size());
             assertNull(startAtToDo.get(x));
             assertNull(startAtToDo.get(y));

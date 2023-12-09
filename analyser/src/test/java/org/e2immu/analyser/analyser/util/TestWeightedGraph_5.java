@@ -39,9 +39,6 @@ import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-/*
-testing the increase in maxIncl
- */
 public class TestWeightedGraph_5 {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestWeightedGraph_5.class);
 
@@ -85,7 +82,7 @@ public class TestWeightedGraph_5 {
         int cnt = 0;
         for (WeightedGraph wg : wgs) {
             LOGGER.info("WeightedGraph {}", cnt);
-            Map<Variable, DV> startAtX1 = wg.links(x1, null, true);
+            Map<Variable, DV> startAtX1 = wg.shortestPath().links(x1, null, true);
             assertEquals(5, startAtX1.size());
             assertEquals(v0, startAtX1.get(f));
             assertEquals(v0, startAtX1.get(x1));

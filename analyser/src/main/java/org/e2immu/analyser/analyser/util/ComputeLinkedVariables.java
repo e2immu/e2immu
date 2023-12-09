@@ -67,7 +67,7 @@ public class ComputeLinkedVariables {
     private final Set<Variable> variablesInClusters;
     private final Cluster returnValueCluster;
     private final Variable returnVariable;
-    private final WeightedGraph weightedGraph;
+    private final ShortestPath shortestPath;
     private final BreakDelayLevel breakDelayLevel;
     private final Set<Variable> linkingNotYetSet;
     private final boolean oneBranchHasBecomeUnreachable;
@@ -82,7 +82,7 @@ public class ComputeLinkedVariables {
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    Stage stage,
                                    BiPredicate<VariableInfoContainer, Variable> ignore,
-                                   WeightedGraph weightedGraph,
+                                   ShortestPath shortestPath,
                                    Set<Variable> variablesInClusters,
                                    List<Cluster> clusters,
                                    Cluster returnValueCluster,
@@ -95,7 +95,7 @@ public class ComputeLinkedVariables {
         this.returnVariable = returnVariable;
         this.stage = stage;
         this.statementAnalysis = statementAnalysis;
-        this.weightedGraph = weightedGraph;
+        this.shortestPath = shortestPath;
         this.breakDelayLevel = breakDelayLevel;
         this.linkingNotYetSet = linkingNotYetSet;
         this.oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable;
@@ -146,9 +146,10 @@ public class ComputeLinkedVariables {
             iteration1Plus = true;
         }
         augmentGraph(weightedGraph);
-        ClusterResult cr = computeClusters(weightedGraph, done);
+        ShortestPath shortestPath = weightedGraph.shortestPath();
+        ClusterResult cr = computeClusters(shortestPath, done);
 
-        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, cr.variablesInClusters(), cr.clusters,
+        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, shortestPath, cr.variablesInClusters(), cr.clusters,
                 cr.returnValueCluster, cr.rv, evaluationContext.breakDelayLevel(), oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
     }
@@ -160,6 +161,7 @@ public class ComputeLinkedVariables {
     private static void augmentGraph(WeightedGraph weightedGraph) {
         Map<Variable, Map<Variable, DV>> toAdd3 = new HashMap<>();
         AtomicReference<CausesOfDelay> delays = new AtomicReference<>(CausesOfDelay.EMPTY);
+        ShortestPath shortestPath = weightedGraph.shortestPath();
         weightedGraph.visit((v, map) -> {
             if (map != null) {
                 List<Variable> mapped3 = map.entrySet().stream()
@@ -174,7 +176,7 @@ public class ComputeLinkedVariables {
                         Map<Variable, DV> to = toAdd3.computeIfAbsent(v1, k -> new HashMap<>());
                         // dv should be either LINK_COMMON_HC, or, if there already is a reverse LINK_DEPENDENT, also LINK_DEPENDENT
                         // see e.g. External_13
-                        Map<Variable, DV> reverse = weightedGraph.links(v2, LINK_COMMON_HC, false);
+                        Map<Variable, DV> reverse = shortestPath.links(v2, LINK_COMMON_HC, false);
                         DV inReverse = reverse.get(v1);
                         DV dv = LINK_DEPENDENT.equals(inReverse) ? LINK_DEPENDENT : LINK_COMMON_HC;
                         to.merge(v2, dv, DV::min);
@@ -248,7 +250,7 @@ public class ComputeLinkedVariables {
         }
     }
 
-    private static ClusterResult computeClusters(WeightedGraph weightedGraph, Set<Variable> variables) {
+    private static ClusterResult computeClusters(ShortestPath shortestPath, Set<Variable> variables) {
         Set<Variable> done = new HashSet<>();
         List<Cluster> result = new ArrayList<>(variables.size());
         Cluster rvCluster = null;
@@ -268,7 +270,7 @@ public class ComputeLinkedVariables {
 
         for (Variable variable : sorted) {
             if (!done.contains(variable)) {
-                Map<Variable, DV> map = weightedGraph.links(variable, LINK_STATICALLY_ASSIGNED, false);
+                Map<Variable, DV> map = shortestPath.links(variable, LINK_STATICALLY_ASSIGNED, false);
                 assert map.values().stream().allMatch(LINK_STATICALLY_ASSIGNED::equals);
 
                 Cluster cluster = new Cluster(map.keySet());
@@ -521,7 +523,7 @@ public class ComputeLinkedVariables {
         for (Variable variable : variablesInClusters) {
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
-            Map<Variable, DV> map = weightedGraph.links(variable, null, true);
+            Map<Variable, DV> map = shortestPath.links(variable, null, true);
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
                     variable, map);
 
@@ -533,7 +535,7 @@ public class ComputeLinkedVariables {
 
         if (returnVariable != null) {
             VariableInfoContainer vicRv = statementAnalysis.getVariable(returnVariable.fullyQualifiedName());
-            Map<Variable, DV> map = weightedGraph.links(returnVariable, null, true);
+            Map<Variable, DV> map = shortestPath.links(returnVariable, null, true);
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
                     returnVariable, map);
 
@@ -610,7 +612,7 @@ public class ComputeLinkedVariables {
                     if (touched.contains(variable)) {
                         LinkedVariables linkedVariables;
                         if (haveLinkedVariables.contains(variable)) {
-                            Map<Variable, DV> map = weightedGraph.links(variable, null, true);
+                            Map<Variable, DV> map = shortestPath.links(variable, null, true);
                             map.keySet().removeIf(toRemove::contains);
                             linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
                                     variable, map);
@@ -636,6 +638,7 @@ public class ComputeLinkedVariables {
      */
     public boolean writeCnnTravelsToFields(AnalyserContext analyserContext, boolean cnnTravelsToFields) {
         boolean change = true;
+        boolean seenChange = false;
         while (change) {
             change = false;
             for (Cluster cluster : clusters) {
@@ -653,13 +656,14 @@ public class ComputeLinkedVariables {
                             vic.setProperty(Property.CNN_TRAVELS_TO_PRECONDITION, DV.fromBoolDv(activate),
                                     Stage.EVALUATION);
                             change = true;
+                            seenChange = true;
                         }
                     } // else: set in StatementAnalysisImpl.initIteration1Plus
                 }
             }
             // note: ignores the returnValueCluster
         }
-        return change;
+        return seenChange;
     }
 
 
@@ -758,7 +762,7 @@ public class ComputeLinkedVariables {
             finalModified = new HashMap<>();
             for (Variable variable : variablesInClusters) {
                 DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
-                Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_IS_HC_OF, true);
+                Map<Variable, DV> map = shortestPath.links(variable, LinkedVariables.LINK_IS_HC_OF, true);
 
                 DV max = map.values().stream().reduce(DelayFactory.initialDelay(), DV::max);
                 CausesOfDelay clusterDelay = max.isInitialDelay() ? CausesOfDelay.EMPTY : max.causesOfDelay();
@@ -810,7 +814,7 @@ public class ComputeLinkedVariables {
                     VariableInfo vi = vic.best(stage);
                     DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
                     int finalValue;
-                    Map<Variable, DV> map = weightedGraph.links(variable, LinkedVariables.LINK_DEPENDENT, true);
+                    Map<Variable, DV> map = shortestPath.links(variable, LinkedVariables.LINK_DEPENDENT, true);
                     if (modified.isDelayed() || modificationDelayIn(map.keySet())) {
                         finalValue = -1;
                     } else {

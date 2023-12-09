@@ -59,7 +59,7 @@ public class TestWeightedGraph_2 {
 
     @Test
     public void test1() {
-        Map<Variable, DV> startAtFirst = wg.links(first, LINK_DEPENDENT, true);
+        Map<Variable, DV> startAtFirst = wg.shortestPath().links(first, LINK_DEPENDENT, true);
         assertEquals(4, startAtFirst.size());
         assertEquals(v0, startAtFirst.get(first));
         assertEquals(v0, startAtFirst.get(sa));

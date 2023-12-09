@@ -34,7 +34,7 @@ public interface WeightedGraph {
 
     @Independent(hc = true)
     @NotModified
-    Map<Variable, DV> links(@NotNull Variable v, DV maxWeight, boolean followDelayed);
+    ShortestPath shortestPath();
 
     @NotModified
     void visit(@NotNull @Independent(hc = true) BiConsumer<Variable, Map<Variable, DV>> consumer);
@@ -42,6 +42,11 @@ public interface WeightedGraph {
     @Modified
     void addNode(@NotNull @Independent(hc = true) Variable v,
                  @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn);
+
+    // for testing, controlled order
+    @Modified
+    void addNode(@NotNull @Independent(hc = true) Variable v,
+                 @NotNull @Independent(hc = true) Object... variableDvPairs);
 
     @Modified
     void addNode(@NotNull @Independent(hc = true) Variable v,

@@ -48,10 +48,7 @@ public class TestWeightedGraph_6 {
     Variable x, e, se, s, lt;
     final DV v0 = LINK_STATICALLY_ASSIGNED;
     final DV v2 = LINK_DEPENDENT;
-    final DV v3 = LINK_IS_HC_OF;
-    final DV v4 = LINK_COMMON_HC;
-    WeightedGraph wg1, wg2;
-    List<WeightedGraph> wgs;
+    List<ShortestPath> sps;
     CausesOfDelay delay;
 
     @BeforeEach
@@ -63,29 +60,59 @@ public class TestWeightedGraph_6 {
         lt = makeVariable("lt");
         delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
-        wg1 = new WeightedGraphImpl(TreeMap::new);
+        WeightedGraph wg1 = new WeightedGraphImpl(TreeMap::new);
         wg1.addNode(x, Map.of(e, v0, se, v0));
         wg1.addNode(se, Map.of(x, v0, e, v2, s, v2));
         wg1.addNode(e, Map.of(x, v0, se, delay));
         wg1.addNode(s, Map.of());
         wg1.addNode(lt, Map.of());
 
-        wg2 = new WeightedGraphImpl(LinkedHashMap::new);
-        wg2.addNode(x, Map.of(e, v0, se, v0));
-        wg2.addNode(se, Map.of(x, v0, e, v2, s, v2));
-        wg2.addNode(e, Map.of(x, v0, se, delay));
-        wg2.addNode(s, Map.of());
-        wg2.addNode(lt, Map.of());
+        ShortestPathImpl sp1 = (ShortestPathImpl) wg1.shortestPath();
+        assertEquals(e, sp1.variablesGet(0));
+        assertEquals(lt, sp1.variablesGet(1));
+        assertEquals(s, sp1.variablesGet(2));
+        assertEquals(se, sp1.variablesGet(3));
+        assertEquals(x, sp1.variablesGet(4));
 
-        wgs = List.of(wg1, wg2);
+        // produces a different sorting, different order
+        WeightedGraph wg2 = new WeightedGraphImpl(LinkedHashMap::new);
+        wg2.addNode(x, e, v0, se, v0);
+        wg2.addNode(se, x, v0, e, v2, s, v2);
+        wg2.addNode(e, x, v0, se, delay);
+        wg2.addNode(s);
+        wg2.addNode(lt);
+
+        ShortestPathImpl sp2 = (ShortestPathImpl) wg2.shortestPath();
+        assertEquals(x, sp2.variablesGet(0));
+        assertEquals(e, sp2.variablesGet(1));
+        assertEquals(se, sp2.variablesGet(2));
+        assertEquals(s, sp2.variablesGet(3));
+        assertEquals(lt, sp2.variablesGet(4));
+
+        // produces a different sorting, different order
+        WeightedGraph wg3 = new WeightedGraphImpl(LinkedHashMap::new);
+        wg3.addNode(x, se, v0, e, v0);
+        wg3.addNode(se, x, v0, e, v2, s, v2);
+        wg3.addNode(e, x, v0, se, delay);
+        wg3.addNode(s);
+        wg3.addNode(lt);
+
+        ShortestPathImpl sp3 = (ShortestPathImpl) wg3.shortestPath();
+        assertEquals(x, sp3.variablesGet(0));
+        assertEquals(se, sp3.variablesGet(1));
+        assertEquals(e, sp3.variablesGet(2));
+        assertEquals(s, sp3.variablesGet(3));
+        assertEquals(lt, sp3.variablesGet(4));
+
+        sps = List.of(sp1, sp2, sp3);
     }
 
     @Test
     public void test1() {
         int cnt = 0;
-        for (WeightedGraph wg : wgs) {
+        for (ShortestPath shortestPath : sps) {
             LOGGER.info("WeightedGraph {}", cnt);
-            Map<Variable, DV> startAtX1 = wg.links(x, null, true);
+            Map<Variable, DV> startAtX1 = shortestPath.links(x, null, true);
             assertEquals(4, startAtX1.size());
             assertEquals(v2, startAtX1.get(s));
             assertEquals(v0, startAtX1.get(x));

@@ -22,6 +22,7 @@ import org.e2immu.annotation.*;
 import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -69,85 +70,6 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         return nodeMap.isEmpty();
     }
 
-    /**
-     * Compute the minimal distance of a variable to all variables reached in the weighted graph, with directional and
-     * bidirectional edges.
-     * <p>
-     * When computing for modifications, we follow LINK_STATICALLY_ASSIGNED, LINK_ASSIGNED, LINK_DEPENDENT,
-     * and LINK_IN_HC_OF. There is important other rule: if we encounter a LINK_IN_HC_OF, then recursively,
-     * we start accepting LINK_COMMON_HC as well. Concretely, maxWeight becomes LINK_COMMON_HC instead of LINK_IN_HC_OF.
-     * <p>
-     * See {@link ComputeLinkedVariables}, create()
-     * <p>
-     * Whatever happens, we should never follow LINK_INDEPENDENT; in fact, it should never even be present.
-     *
-     * @param v             starting point
-     * @param maxWeight     in practice, either LINK_STATICALLY_ASSIGNED (for most property computations), or
-     *                      LINK_DEPENDENT (for modification); see explanation for exception.
-     * @param followDelayed do we follow links that are delayed?
-     * @return a map with all variables reachable, and the minimum distance
-     */
-    @Independent(hc = true)
-    @NotModified
-    @SuppressWarnings("unchecked")
-    public Map<Variable, DV> links(@NotNull Variable v, DV maxWeight, boolean followDelayed) {
-        Map<Variable, DV> result = (Map<Variable, DV>) mapSupplier.get();
-        result.put(v, LINK_STATICALLY_ASSIGNED);
-        recursivelyComputeLinks(v, result, maxWeight, followDelayed);
-        return result;
-    }
-
-    @NotModified
-    private void recursivelyComputeLinks(@NotNull Variable v,
-                                         @NotNull Map<Variable, DV> distanceToStartingPoint,
-                                         DV maxValueIncl,
-                                         boolean followDelayed) {
-        Objects.requireNonNull(v);
-        Node node = nodeMap.get(v);
-
-        // must be already present!
-        DV currentDistanceToV = distanceToStartingPoint.get(v);
-
-        // do I have outgoing arrows?
-        if (node != null && node.dependsOn != null) {
-
-            // yes, opportunity (1) to improve distance computations, (2) to visit them
-            node.dependsOn.forEach((n, d) -> {
-                if (d.isDelayed() && followDelayed || d.isDone() && (maxValueIncl == null || d.le(maxValueIncl))) {
-                    DV distanceToN = max(currentDistanceToV, d);
-                    DV currentDistanceToN = distanceToStartingPoint.get(n);
-                    if (currentDistanceToN == null) {
-                        // we've not been at N before
-                        distanceToStartingPoint.put(n, distanceToN);
-                        DV newMax = LINK_IS_HC_OF.equals(d) ? LINK_COMMON_HC : maxValueIncl;
-                        recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
-                    } else {
-                        DV newDistanceToN = min(distanceToN, currentDistanceToN);
-                        distanceToStartingPoint.put(n, newDistanceToN);
-                        if (newDistanceToN.lt(currentDistanceToN)) {
-                            DV newMax = LINK_IS_HC_OF.equals(d) ? LINK_COMMON_HC : maxValueIncl;
-                            recursivelyComputeLinks(n, distanceToStartingPoint, newMax, followDelayed);
-                        }
-                    }
-                } // else: ignore delayed links!
-            });
-        }
-    }
-
-    // different from min: delayed does NOT have priority, and we don't compute the combination
-    private static DV min(DV d1, DV d2) {
-        if (d1.isDelayed()) return d2;
-        if (d2.isDelayed()) return d1;
-        return d1.min(d2);
-    }
-
-    // like max, except that we won't compute the combination, which can be very slow
-    private static DV max(DV d1, DV d2) {
-        if (d1.isDelayed()) return d1;
-        if (d2.isDelayed()) return d2;
-        return d1.max(d2);
-    }
-
     @NotModified(contract = true)
     public void visit(@NotNull @Independent(hc = true) BiConsumer<Variable, Map<Variable, DV>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.variable, n.dependsOn));
@@ -171,6 +93,16 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
     @Modified
     public void addNode(@NotNull @Independent(hc = true) Variable v,
                         @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn) {
+        addNode(v, dependsOn, false, (o, n) -> o);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void addNode(Variable v, Object... variableDvPairs) {
+        Map<Variable, DV> dependsOn = (Map<Variable, DV>) mapSupplier.get();
+        for (int i = 0; i < variableDvPairs.length; i += 2) {
+            dependsOn.put((Variable) variableDvPairs[i], (DV) variableDvPairs[i + 1]);
+        }
         addNode(v, dependsOn, false, (o, n) -> o);
     }
 
@@ -203,5 +135,31 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                 n.dependsOn.merge(v, linkLevel, merger);
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public ShortestPath shortestPath() {
+        int n = nodeMap.size();
+        Variable[] variables = new Variable[n];
+        Map<Variable, Integer> variableIndex = (Map<Variable, Integer>) mapSupplier.get();
+        int i = 0;
+        for (Variable v : nodeMap.keySet()) {
+            variableIndex.put(v, i);
+            variables[i] = v;
+            ++i;
+        }
+        DV[][] distances = new DV[n][n];
+        for (Map.Entry<Variable, Node> entry : nodeMap.entrySet()) {
+            Map<Variable, DV> dependsOn = entry.getValue().dependsOn;
+            if (dependsOn != null) {
+                int d1 = variableIndex.get(entry.getKey());
+                for (Map.Entry<Variable, DV> e2 : dependsOn.entrySet()) {
+                    int d2 = variableIndex.get(e2.getKey());
+                    distances[d1][d2] = e2.getValue();
+                }
+            }
+        }
+        return new ShortestPathImpl(variableIndex, variables, distances);
     }
 }
