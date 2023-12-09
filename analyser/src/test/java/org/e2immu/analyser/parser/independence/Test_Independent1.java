@@ -58,15 +58,13 @@ public class Test_Independent1 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "t".equals(fr.fieldInfo().name)) {
                     assertTrue(fr.scopeIsThis());
                     assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                    assertLinked(d,
-                            it0("consumer:-1,this:-1"),
-                            it(1, "consumer:3,this:4"));
+                    assertLinked(d, it(0, "consumer:3,this:4"));
                 }
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("visit".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 // implicitly present:
                 assertDv(d.p(0), MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
                 assertDv(d.p(0), DV.FALSE_DV, Property.MODIFIED_VARIABLE); // because of @IgnoreModifications

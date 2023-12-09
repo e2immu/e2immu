@@ -62,7 +62,7 @@ public class Test_52_Var extends CommonTestRunner {
             }
         };
         // xes potential null pointer warning, x potential null pointer warning
-        testClass("Var_2", 0, 3, new DebugConfiguration.Builder()
+        testClass("Var_2", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

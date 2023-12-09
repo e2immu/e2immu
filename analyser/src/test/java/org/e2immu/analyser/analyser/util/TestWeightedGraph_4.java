@@ -23,7 +23,10 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,7 +42,8 @@ public class TestWeightedGraph_4 {
     final DV v2 = LINK_DEPENDENT;
     final DV v3 = LINK_IS_HC_OF;
     final DV v4 = LINK_COMMON_HC;
-    WeightedGraph wg;
+    WeightedGraph wg1, wg2;
+    List<WeightedGraph> wgs;
 
     /*
      x ---3---> a ---3---> i
@@ -57,46 +61,62 @@ public class TestWeightedGraph_4 {
         i = makeVariable("i"); // type List<List<X>>
         j = makeVariable("j"); // type List<List<X>>
 
-        wg = new WeightedGraph();
-        wg.addNode(x, Map.of(x, v0, a, v3));
-        wg.addNode(y, Map.of(y, v0, b, v3));
-        wg.addNode(a, Map.of(a, v0, b, v2, i, v3));
-        wg.addNode(b, Map.of(b, v0, a, v2));
-        wg.addNode(i, Map.of(i, v0, j, v4));
-        wg.addNode(j, Map.of(j, v0));
+        wg1 = new WeightedGraphImpl(TreeMap::new);
+        wg1.addNode(x, Map.of(x, v0, a, v3));
+        wg1.addNode(y, Map.of(y, v0, b, v3));
+        wg1.addNode(a, Map.of(a, v0, b, v2, i, v3));
+        wg1.addNode(b, Map.of(b, v0, a, v2));
+        wg1.addNode(i, Map.of(i, v0, j, v4));
+        wg1.addNode(j, Map.of(j, v0));
+
+        wg2 = new WeightedGraphImpl(LinkedHashMap::new);
+        wg2.addNode(x, Map.of(x, v0, a, v3));
+        wg2.addNode(y, Map.of(y, v0, b, v3));
+        wg2.addNode(a, Map.of(a, v0, b, v2, i, v3));
+        wg2.addNode(b, Map.of(b, v0, a, v2));
+        wg2.addNode(i, Map.of(i, v0, j, v4));
+        wg2.addNode(j, Map.of(j, v0));
+
+        wgs = List.of(wg1, wg2);
     }
 
     @Test
     public void test1() {
-        Map<Variable, DV> startAtToDo = wg.links(x, LINK_STATICALLY_ASSIGNED, false);
-        assertEquals(1, startAtToDo.size());
-        assertEquals(v0, startAtToDo.get(x));
-        assertNull(startAtToDo.get(a));
-        assertNull(startAtToDo.get(i));
+        for (WeightedGraph wg : wgs) {
+            Map<Variable, DV> startAtToDo = wg.links(x, LINK_STATICALLY_ASSIGNED, false);
+            assertEquals(1, startAtToDo.size());
+            assertEquals(v0, startAtToDo.get(x));
+            assertNull(startAtToDo.get(a));
+            assertNull(startAtToDo.get(i));
+        }
     }
 
     @Test
     public void test2() {
-        Map<Variable, DV> startAtToDo = wg.links(x, LINK_IS_HC_OF, false);
-        assertEquals(5, startAtToDo.size());
-        assertEquals(v0, startAtToDo.get(x));
-        assertNull(startAtToDo.get(y));
-        assertEquals(v3, startAtToDo.get(a));
-        assertEquals(v3, startAtToDo.get(b));
-        assertEquals(v3, startAtToDo.get(i));
-        assertEquals(v4, startAtToDo.get(j));
+        for (WeightedGraph wg : wgs) {
+            Map<Variable, DV> startAtToDo = wg.links(x, LINK_IS_HC_OF, false);
+            assertEquals(5, startAtToDo.size());
+            assertEquals(v0, startAtToDo.get(x));
+            assertNull(startAtToDo.get(y));
+            assertEquals(v3, startAtToDo.get(a));
+            assertEquals(v3, startAtToDo.get(b));
+            assertEquals(v3, startAtToDo.get(i));
+            assertEquals(v4, startAtToDo.get(j));
+        }
     }
 
     @Test
     public void test3() {
-        Map<Variable, DV> startAtToDo = wg.links(a, LINK_IS_HC_OF, false);
-        assertEquals(4, startAtToDo.size());
-        assertNull(startAtToDo.get(x));
-        assertNull(startAtToDo.get(y));
-        assertEquals(v0, startAtToDo.get(a));
-        assertEquals(v2, startAtToDo.get(b));
-        assertEquals(v3, startAtToDo.get(i));
-        assertEquals(v4, startAtToDo.get(j));
+        for (WeightedGraph wg : wgs) {
+            Map<Variable, DV> startAtToDo = wg.links(a, LINK_IS_HC_OF, false);
+            assertEquals(4, startAtToDo.size());
+            assertNull(startAtToDo.get(x));
+            assertNull(startAtToDo.get(y));
+            assertEquals(v0, startAtToDo.get(a));
+            assertEquals(v2, startAtToDo.get(b));
+            assertEquals(v3, startAtToDo.get(i));
+            assertEquals(v4, startAtToDo.get(j));
+        }
     }
 
     private Variable makeVariable(String name) {

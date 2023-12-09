@@ -587,7 +587,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // IMPORTANT: the variable is not read in the loop, but we cannot know that in iteration 0
                         // it therefore must participate in the delay scheme, SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
-                        assertLinked(d, it0("this.root:0,this:-1"), it(1, "this.root:0,this:3"));
+                        assertLinked(d, it(0, "this.root:0,this:3"));
                         String expect = switch (d.iteration()) {
                             case 0 -> "<vl:node>";
                             case 1, 2 -> "<f:root>";
@@ -596,8 +596,8 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertLinked(d, it(0, 2, "this.root:0,this:-1"), it(3, "this.root:0,this:3"));
-                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it(0, "this.root:0,this:3"));
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {

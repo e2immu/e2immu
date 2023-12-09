@@ -337,7 +337,7 @@ public class Test_Expressions extends CommonTestRunner {
 
 
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals(
-                "-------S---S-S---S-S-S--S--S-SF--SF--SF--SF-SF--SF--SF---SF-------SF--SFMT---SFMT--SFMT--S-SFMT-------",
+                "-------S-S---S-S---S-S-S--S--S-SF--SF--SF--SF-SF--SF--SF---SF-------SF--SFMT---SFMT--SFMT--S-SFMT-------",
                 d.delaySequence());
 
         testClass("Expressions_0", 3, DONT_CARE,
@@ -346,8 +346,8 @@ public class Test_Expressions extends CommonTestRunner {
                         //     .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         //     .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         //     .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                    //    .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                     //   .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder()

@@ -83,7 +83,7 @@ public class Test_Util_05_ListUtil extends CommonTestRunner {
                     if ("1.0.0.0.0".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
                         assertLinked(d, it(0, 1, "builder:-1,lists:-1,t:-1"),
-                                it(2, "builder:4,lists:3"));
+                                it(2, "builder:4,lists:4"));
                     }
                 }
                 if ("t".equals(d.variableName())) {

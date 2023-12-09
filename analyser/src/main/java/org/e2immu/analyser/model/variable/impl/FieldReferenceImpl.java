@@ -54,7 +54,6 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
     private final boolean isDefaultScope;
     @NotNull
     private final String fullyQualifiedName;
-    private final int hashCode;
 
     public FieldReferenceImpl(InspectionProvider inspectionProvider, FieldInfo fieldInfo) {
         this(inspectionProvider, fieldInfo, null, null, null);
@@ -82,11 +81,11 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
     }
 
     public FieldReferenceImpl(InspectionProvider inspectionProvider,
-                               FieldInfo fieldInfo,
-                               Expression scope,
-                               Variable overrideScopeVariable,
-                               ParameterizedType concreteType,
-                               TypeInfo owningType) {
+                              FieldInfo fieldInfo,
+                              Expression scope,
+                              Variable overrideScopeVariable,
+                              ParameterizedType concreteType,
+                              TypeInfo owningType) {
         super(concreteType);
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.isStatic = inspectionProvider.getFieldInspection(fieldInfo).isStatic();
@@ -126,7 +125,6 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
             }
         }
         this.fullyQualifiedName = computeFqn();
-        this.hashCode = hash(this.fieldInfo, this.scopeVariable);
         assert (scopeVariable == null) == isStatic;
     }
 
@@ -139,11 +137,6 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
         String name = "scope-" + identifier.compact();
         VariableNature vn = new VariableNature.ScopeVariable();
         return new LocalVariable(Set.of(LocalVariableModifier.FINAL), name, scope.returnType(), List.of(), owningType, vn);
-    }
-
-    private static int hash(FieldInfo fieldInfo, Variable scopeVariable) {
-        return fieldInfo.hashCode() + (scopeVariable != null ? 37 * scopeVariable.hashCode() : 0);
-
     }
 
     private String computeFqn() {
@@ -188,18 +181,12 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FieldReferenceImpl that = (FieldReferenceImpl) o;
-        // we do not use FQN for equality, because then we should also use fully qualified names
-        // in the #part, which makes them even more unreadable. There are potential clashes when translating
-        // see e.g. ExplicitConstructorInvocation_6.
-        return fieldInfo.equals(that.fieldInfo) && (scopeVariable == null && that.scopeVariable == null ||
-                scopeVariable != null && scopeVariable.equals(that.scopeVariable));
+        return o instanceof FieldReferenceImpl that && that.fullyQualifiedName.equals(fullyQualifiedName);
     }
 
     @Override
     public int hashCode() {
-        return hashCode;
+        return fullyQualifiedName.hashCode();
     }
 
     @Override

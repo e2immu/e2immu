@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,7 +66,7 @@ public class TestWeightedGraph_1 {
         removed = makeVariable("removed");
         delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
-        wg = new WeightedGraph();
+        wg = new WeightedGraphImpl(TreeMap::new);
         wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, v4, smallerCycle, v4));
         wg.addNode(removed, Map.of(removed, v0, thisVar, delay));
         wg.addNode(smallerCycle, Map.of(smallerCycle, v0, thisVar, v4));
@@ -108,10 +109,10 @@ public class TestWeightedGraph_1 {
         Map<Variable, DV> startAtToDo = wg.links(toDo, LINK_COMMON_HC, true);
         assertEquals(6, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
-        assertEquals(delay, startAtToDo.get(cycle));
-        assertEquals(delay, startAtToDo.get(nodeMap));
-        assertEquals(delay, startAtToDo.get(smallerCycle));
-        assertEquals(delay, startAtToDo.get(thisVar));
+        assertEquals(LINK_COMMON_HC, startAtToDo.get(cycle));
+        assertEquals(LINK_COMMON_HC, startAtToDo.get(nodeMap));
+        assertEquals(LINK_COMMON_HC, startAtToDo.get(smallerCycle));
+        assertEquals(LINK_COMMON_HC, startAtToDo.get(thisVar));
         assertEquals(delay, startAtToDo.get(removed));
     }
 

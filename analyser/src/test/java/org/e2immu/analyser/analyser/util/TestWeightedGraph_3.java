@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +54,7 @@ public class TestWeightedGraph_3 {
         thisVar = makeVariable("thisVar");
         delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
-        wg = new WeightedGraph();
+        wg = new WeightedGraphImpl(TreeMap::new);
         wg.addNode(d, Map.of(node, v3, nodeDependsOn, v3, dependsOn, v3, thisVar, delay));
         wg.addNode(n, Map.of());
         wg.addNode(node, Map.of(d, v3, nodeDependsOn, v2, dependsOn, v3));

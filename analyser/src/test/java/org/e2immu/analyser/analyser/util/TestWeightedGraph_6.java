@@ -27,44 +27,73 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class TestWeightedGraph_2 {
+/*
+testing the increase in maxIncl
+ */
+public class TestWeightedGraph_6 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestWeightedGraph_6.class);
 
-    Variable first, next, sa, rv;
-    CausesOfDelay delay;
+    Variable x, e, se, s, lt;
     final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v3 = LINK_COMMON_HC;
-    WeightedGraph wg;
+    final DV v2 = LINK_DEPENDENT;
+    final DV v3 = LINK_IS_HC_OF;
+    final DV v4 = LINK_COMMON_HC;
+    WeightedGraph wg1, wg2;
+    List<WeightedGraph> wgs;
+    CausesOfDelay delay;
 
     @BeforeEach
     public void beforeEach() {
-        first = makeVariable("first");
-        next = makeVariable("next");
-        sa = makeVariable("sa");
-        rv = makeVariable("rv");
+        x = makeVariable("x");
+        e = makeVariable("e");
+        se = makeVariable("s.e");
+        s = makeVariable("s");
+        lt = makeVariable("lt");
         delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
-        wg = new WeightedGraphImpl(TreeMap::new);
-        wg.addNode(first, Map.of(sa, v0, next, delay));
-        wg.addNode(next, Map.of(sa, v3, first, delay, rv, v3));
-        wg.addNode(sa, Map.of(next, v3, first, v0, rv, v0));
-        wg.addNode(rv, Map.of(sa, v0, next, v3));
+        wg1 = new WeightedGraphImpl(TreeMap::new);
+        wg1.addNode(x, Map.of(e, v0, se, v0));
+        wg1.addNode(se, Map.of(x, v0, e, v2, s, v2));
+        wg1.addNode(e, Map.of(x, v0, se, delay));
+        wg1.addNode(s, Map.of());
+        wg1.addNode(lt, Map.of());
+
+        wg2 = new WeightedGraphImpl(LinkedHashMap::new);
+        wg2.addNode(x, Map.of(e, v0, se, v0));
+        wg2.addNode(se, Map.of(x, v0, e, v2, s, v2));
+        wg2.addNode(e, Map.of(x, v0, se, delay));
+        wg2.addNode(s, Map.of());
+        wg2.addNode(lt, Map.of());
+
+        wgs = List.of(wg1, wg2);
     }
 
     @Test
     public void test1() {
-        Map<Variable, DV> startAtFirst = wg.links(first, LINK_DEPENDENT, true);
-        assertEquals(4, startAtFirst.size());
-        assertEquals(v0, startAtFirst.get(first));
-        assertEquals(v0, startAtFirst.get(sa));
-        assertEquals(delay, startAtFirst.get(next));
-        assertEquals(v0, startAtFirst.get(rv));
+        int cnt = 0;
+        for (WeightedGraph wg : wgs) {
+            LOGGER.info("WeightedGraph {}", cnt);
+            Map<Variable, DV> startAtX1 = wg.links(x, null, true);
+            assertEquals(4, startAtX1.size());
+            assertEquals(v2, startAtX1.get(s));
+            assertEquals(v0, startAtX1.get(x));
+            assertEquals(v0, startAtX1.get(e));
+            assertEquals(v0, startAtX1.get(se));
+            assertNull(startAtX1.get(lt));
+            cnt++;
+        }
     }
 
     private Variable makeVariable(String name) {

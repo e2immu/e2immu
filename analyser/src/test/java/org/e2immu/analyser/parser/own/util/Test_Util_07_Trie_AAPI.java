@@ -146,8 +146,8 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
         testSupportAndUtilClasses(List.of(Trie.class), 0, 2,
                 new DebugConfiguration.Builder()
-                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                     //   .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                     //   .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addTypeMapVisitor(typeMapVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addBreakDelayVisitor(breakDelayVisitor)

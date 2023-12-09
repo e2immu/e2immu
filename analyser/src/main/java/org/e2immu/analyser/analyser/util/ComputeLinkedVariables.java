@@ -109,7 +109,7 @@ public class ComputeLinkedVariables {
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 EvaluationContext evaluationContext) {
-        WeightedGraph weightedGraph = new WeightedGraph();
+        WeightedGraph weightedGraph = new WeightedGraphImpl(HashMap::new);
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> done = new HashSet<>();
         Set<Variable> linkingNotYetSet = new HashSet<>();
