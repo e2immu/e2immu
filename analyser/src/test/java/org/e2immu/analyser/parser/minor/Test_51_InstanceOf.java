@@ -609,8 +609,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         assertCurrentValue(d, 2,
                                 "expression instanceof Negation?scope-ne:2.expression:expression");
-                        String expectLv = d.iteration() < 2 ? "expression:0,scope-ne:2.expression:0,scope-ne:2:-1"
-                                : "expression:0,scope-ne:2.expression:0,scope-ne:2:2";
+                        String expectLv = "expression:0,scope-ne:2.expression:0,scope-ne:2:2";
                         assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
 
                         assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);

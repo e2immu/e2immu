@@ -762,7 +762,7 @@ public class ComputeLinkedVariables {
             finalModified = new HashMap<>();
             for (Variable variable : variablesInClusters) {
                 DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
-                Map<Variable, DV> map = shortestPath.links(variable, LinkedVariables.LINK_IS_HC_OF, true);
+                Map<Variable, DV> map = shortestPath.linksFollowIsHCOf(variable, true);
 
                 DV max = map.values().stream().reduce(DelayFactory.initialDelay(), DV::max);
                 CausesOfDelay clusterDelay = max.isInitialDelay() ? CausesOfDelay.EMPTY : max.causesOfDelay();
