@@ -436,7 +436,8 @@ public class TestExternal extends CommonTestRunner {
                         assertCurrentValue(d, 5, "instance 1 type Entry<Object,Object>");
                         assertLinked(d, it0("l:-1,la:-1,map:-1,result:-1,value:-1"),
                                 it(1, 3, "la:-1,map:-1,value:-1"),
-                                it(4, "map:4"));
+                                it(4, 4, "map:-1"),
+                                it(5, "map:2"));
                     }
                 }
                 if ("value".equals(d.variableName())) {

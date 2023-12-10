@@ -53,6 +53,7 @@ ListOf 3
 LoopCondition 4
 State 5
 Constant 6
+Variable 7
 StatementTime 8
 
  */
@@ -339,7 +340,7 @@ public interface Identifier extends Comparable<Identifier> {
 
         @Override
         public int identifierOrder() {
-            return 0;
+            return 1;
         }
 
         @Override

@@ -39,7 +39,7 @@ public record VariableIdentifier(Variable variable, String index) implements Ide
 
     @Override
     public int identifierOrder() {
-        return 5;
+        return 7;
     }
 
     @Override

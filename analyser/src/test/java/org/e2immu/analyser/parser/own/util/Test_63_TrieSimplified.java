@@ -448,14 +448,16 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                             case 0 -> "<loopIsNotEmptyCondition>?<m:get>:<f:root>";
                             case 1 ->
                                     "-1-(instance 1 type int)+upToPosition>=0?nullable instance 1 type TrieNode<T>:<f:root>";
-                            default -> "-1-(instance 1 type int)+upToPosition>=0?nullable instance 1 type TrieNode<T>:root";
+                            default ->
+                                    "-1-(instance 1 type int)+upToPosition>=0?nullable instance 1 type TrieNode<T>:root";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = switch (d.iteration()) {
                             case 0, 1 -> "<loopIsNotEmptyCondition>?<m:get>:<f:root>";
-                            default -> "-1-(instance 1 type int)+upToPosition>=0?nullable instance 1 type TrieNode<T>:root";
+                            default ->
+                                    "-1-(instance 1 type int)+upToPosition>=0?nullable instance 1 type TrieNode<T>:root";
                         };
                         assertEquals(expectValue, d.currentValue().toString());
                         // FIXME this is wrong, can we live with it?
@@ -635,7 +637,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
 
         testClass("TrieSimplified_4", 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -1115,5 +1117,14 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         .build(),
                 // IMPORTANT: assignment outside of type, so to placate the analyser...
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
+
+        testClass("TrieSimplified_6", 0, 0, new DebugConfiguration.Builder()
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build(), new AnalyserConfiguration.Builder().build());
     }
 }

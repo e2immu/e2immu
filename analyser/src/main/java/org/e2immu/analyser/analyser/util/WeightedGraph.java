@@ -53,4 +53,6 @@ public interface WeightedGraph {
                  @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn,
                  boolean bidirectional,
                  BinaryOperator<DV> merger);
+
+    DV edgeValueOrNull(Variable v1, Variable v2);
 }

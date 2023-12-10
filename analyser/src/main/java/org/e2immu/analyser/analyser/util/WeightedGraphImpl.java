@@ -162,4 +162,13 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         }
         return new ShortestPathImpl(variableIndex, variables, distances);
     }
+
+    @Override
+    public DV edgeValueOrNull(Variable v1, Variable v2) {
+        Node n = nodeMap.get(v1);
+        if (n != null && n.dependsOn != null) {
+            return n.dependsOn.get(v2);
+        }
+        return null;
+    }
 }

@@ -17,6 +17,10 @@ public class ShortestPathImpl implements ShortestPath {
         this.variableIndex = variableIndex;
     }
 
+    /*
+    Basic Dijkstra algorithm.
+    The maxValue is taken independently of the delay.
+     */
     private DV[] compute(int start, DV maxValue, boolean followDelayed) {
         int V = variables.length;
         DV[] dist = new DV[V];
@@ -87,10 +91,13 @@ public class ShortestPathImpl implements ShortestPath {
         return result;
     }
 
+    /*
+    Once we have followed a -3-> edge, we can follow <-4-> edges too.
+     */
 
     @Override
-    public Map<Variable, DV> linksFollowIsHCOf(Variable v, boolean followDelayed) {
-        Map<Variable, DV> map = links(v, LinkedVariables.LINK_IS_HC_OF, followDelayed);
+    public Map<Variable, DV> linksFollowIsHCOf(Variable startingPoint, boolean followDelayed) {
+        Map<Variable, DV> map = links(startingPoint, LinkedVariables.LINK_IS_HC_OF, followDelayed);
         List<Variable> toDo = new ArrayList<>();
         for (Map.Entry<Variable, DV> entry : map.entrySet()) {
             if (entry.getValue().equals(LinkedVariables.LINK_IS_HC_OF)) {
@@ -101,11 +108,13 @@ public class ShortestPathImpl implements ShortestPath {
             Variable next = toDo.remove(0);
             Map<Variable, DV> mapNext = links(next, null, followDelayed);
             for (Map.Entry<Variable, DV> entry : mapNext.entrySet()) {
-                if (!map.containsKey(entry.getKey())) {
-                    if (entry.getValue().isDelayed() || entry.getValue().equals(LinkedVariables.LINK_COMMON_HC)) {
-                        map.put(entry.getKey(), entry.getValue());
-                    } else if (LinkedVariables.LINK_IS_HC_OF.equals(entry.getValue())) {
-                        toDo.add(entry.getKey());
+                Variable v = entry.getKey();
+                if (!map.containsKey(v)) {
+                    DV dv = entry.getValue();
+                    if (dv.isDelayed() || dv.equals(LinkedVariables.LINK_COMMON_HC)) {
+                        map.put(v, dv);
+                    } else if (LinkedVariables.LINK_IS_HC_OF.equals(dv)) {
+                        toDo.add(v);
                     }
                 }
             }
