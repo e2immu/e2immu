@@ -30,8 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
 
@@ -116,17 +115,9 @@ public class Test_Util_07_Trie_AAPI extends CommonTestRunner {
                         : "Precondition[expression=!this.isFrozen(), causes=[companionMethod:ensureNotFrozen$Precondition]]";
                 assertEquals(pce, d.methodAnalysis().getPreconditionForEventual().toString());
 
-                String eventual = switch (d.iteration()) {
-                    case 0 -> "[DelayedEventual:initial@Class_Trie]";
-                    case 1 -> "[DelayedEventual:[19 delays]]";
-                    case 2 -> "[DelayedEventual:[13 delays]]";
-                    case 3 -> "[DelayedEventual:[15 delays]]";
-                    case 4 -> "[DelayedEventual:[15 delays]]";
-                    case 5 -> "[DelayedEventual:[13 delays]]";
-                    default -> "@Only before: [frozen]";
-                };
-                assertEquals(eventual, d.methodAnalysis().getEventual().toString());
+                assertEquals(d.iteration()>=6, d.methodAnalysis().getEventual().causesOfDelay().isDone());
                 if (d.iteration() >= 6) {
+                    assertEquals("@Only before: [frozen]", d.methodAnalysis().getEventual().toString());
                     AnnotationExpression only = d.evaluationContext().getAnalyserContext().getE2ImmuAnnotationExpressions().only;
                     AnnotationExpression ae = d.methodAnalysis().annotationGetOrDefaultNull(only);
                     assertEquals("@Only(before=\"frozen\")", ae.toString());

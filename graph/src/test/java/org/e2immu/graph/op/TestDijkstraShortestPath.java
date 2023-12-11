@@ -10,7 +10,7 @@ public class TestDijkstraShortestPath {
 
     @Test
     public void test() {
-        DijkstraShortestPath d = new DijkstraShortestPath(DijkstraShortestPath.JavaPriorityQueue::new);
+        DijkstraShortestPath d = new DijkstraShortestPath();
         Map<Integer, Map<Integer, Long>> edges = Map.of(
                 0, Map.of(1, 1L, 2, 4L, 3, 5L),
                 1, Map.of(2, 2L),

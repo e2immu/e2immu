@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.graph.op.DijkstraShortestPath;
+import org.jheaps.AddressableHeap;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -30,7 +31,7 @@ public class ShortestPathImpl implements ShortestPath {
         this.edges = edges;
         this.variableIndex = variableIndex;
         this.someDelay = someDelay;
-        dijkstraShortestPath = new DijkstraShortestPath(DijkstraShortestPath.JavaPriorityQueue::new);
+        dijkstraShortestPath = new DijkstraShortestPath();
     }
 
 
@@ -51,7 +52,7 @@ public class ShortestPathImpl implements ShortestPath {
 
     public static DV fromDistanceSum(long l, CausesOfDelay someDelay) {
         if (l < DELAYED) return LinkedVariables.LINK_STATICALLY_ASSIGNED;
-        if (l < ASSIGNED) {
+        if (((l >> 10) & 1023) > 0) {
             assert someDelay != null && someDelay.isDelayed();
             return someDelay;
         }
@@ -63,15 +64,14 @@ public class ShortestPathImpl implements ShortestPath {
 
 
     @Override
-    public Map<Variable, DV> links(Variable v, DV maxWeight, boolean followDelayed) {
+    public Map<Variable, DV> links(Variable v, DV maxWeight) {
         int startVertex = variableIndex.get(v);
         long maxWeightLong = maxWeight == null ? 0L : toDistanceComponent(maxWeight);
         DijkstraShortestPath.EdgeProvider edgeProvider = i -> {
             Map<Integer, Long> edgeMap = edges.get(i);
             if (edgeMap == null) return Stream.of();
             return edgeMap.entrySet().stream()
-                    .filter(e -> (followDelayed || e.getValue() != DELAYED)
-                            && (maxWeight == null || e.getValue() <= maxWeightLong));
+                    .filter(e -> maxWeight == null || e.getValue() <= maxWeightLong);
         };
         long[] shortest = dijkstraShortestPath.shortestPath(variables.length, edgeProvider, startVertex);
         Map<Variable, DV> result = new HashMap<>();
@@ -90,8 +90,8 @@ public class ShortestPathImpl implements ShortestPath {
      */
 
     @Override
-    public Map<Variable, DV> linksFollowIsHCOf(Variable startingPoint, boolean followDelayed) {
-        Map<Variable, DV> map = links(startingPoint, LinkedVariables.LINK_IS_HC_OF, followDelayed);
+    public Map<Variable, DV> linksFollowIsHCOf(Variable startingPoint) {
+        Map<Variable, DV> map = links(startingPoint, LinkedVariables.LINK_IS_HC_OF);
         List<Variable> toDo = new ArrayList<>();
         for (Map.Entry<Variable, DV> entry : map.entrySet()) {
             if (entry.getValue().equals(LinkedVariables.LINK_IS_HC_OF)) {
@@ -100,7 +100,7 @@ public class ShortestPathImpl implements ShortestPath {
         }
         while (!toDo.isEmpty()) {
             Variable next = toDo.remove(0);
-            Map<Variable, DV> mapNext = links(next, null, followDelayed);
+            Map<Variable, DV> mapNext = links(next, null);
             for (Map.Entry<Variable, DV> entry : mapNext.entrySet()) {
                 Variable v = entry.getKey();
                 if (!map.containsKey(v)) {

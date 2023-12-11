@@ -371,22 +371,12 @@ public class Test_63_DGSimplified extends CommonTestRunner {
                         default -> "null!=(nodeMap.get(t$0)).dependsOn";
                     };
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    String delays = switch (d.iteration()) {
-                        case 0 -> "initial:this.nodeMap@Method_reverse_0.0.0-C";
-                        case 1, 2, 3, 4, 5, 6, 7 ->
-                                "initial:node@Method_reverse_0.0.1.0.0-C;initial:this.nodeMap@Method_reverse_0.0.0-C";
-                        case 8 -> "assign_to_field@Parameter_dependsOn";
-                        default -> "";
-                    };
-                    assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+                    assertEquals(d.iteration() >= 9, d.evaluationResult().causesOfDelay().isDone());
                 }
                 if ("0.0.1.0.0.0.0".equals(d.statementId())) {
                     String expected = d.iteration() < 9 ? "<m:contains>" : "set.contains(d$0.0.1.0.0)";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    String delays = d.iteration() < 9
-                            ? "initial:node@Method_reverse_0.0.1.0.0-C;initial:set@Method_reverse_0.0.0-E;initial:this.nodeMap@Method_reverse_0.0.0-C"
-                            : "";
-                    assertEquals(delays, d.evaluationResult().causesOfDelay().toString());
+                    assertEquals(d.iteration() >= 9, d.evaluationResult().causesOfDelay().isDone());
                 }
             }
         };

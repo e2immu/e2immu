@@ -112,7 +112,7 @@ public class TestWeightedGraph_6 {
         int cnt = 0;
         for (ShortestPath shortestPath : sps) {
             LOGGER.info("WeightedGraph {}", cnt);
-            Map<Variable, DV> startAtX1 = shortestPath.links(x, null, true);
+            Map<Variable, DV> startAtX1 = shortestPath.links(x, null);
             assertEquals(4, startAtX1.size());
             assertEquals(v2, startAtX1.get(s));
             assertEquals(v0, startAtX1.get(x));

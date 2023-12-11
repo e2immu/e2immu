@@ -421,7 +421,7 @@ public class Test_Util_06_DependencyGraph extends CommonTestRunner {
             }
         };
 
-        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 30, DONT_CARE,
+        testSupportAndUtilClasses(List.of(DependencyGraph.class, Freezable.class), 32, DONT_CARE,
                 new DebugConfiguration.Builder()
                         //  .addAfterMethodAnalyserVisitor(mavForFreezable)
                         //  .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

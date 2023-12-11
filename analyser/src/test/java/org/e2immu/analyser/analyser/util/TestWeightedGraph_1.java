@@ -77,37 +77,18 @@ public class TestWeightedGraph_1 {
     }
 
     @Test
-    public void test1() {
-        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, LINK_STATICALLY_ASSIGNED, false);
-        assertEquals(1, startAtToDo.size());
-        assertEquals(v0, startAtToDo.get(toDo));
-        assertNull(startAtToDo.get(cycle));
-        assertNull(startAtToDo.get(nodeMap));
-    }
-
-    @Test
     public void test1b() {
-        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, LINK_DEPENDENT, true);
+        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, LINK_DEPENDENT);
         assertEquals(1, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
         assertNull(startAtToDo.get(cycle));
         assertNull(startAtToDo.get(nodeMap));
     }
 
-    @Test
-    public void test2() {
-        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, LINK_COMMON_HC, false);
-        assertEquals(5, startAtToDo.size());
-        assertEquals(v0, startAtToDo.get(toDo));
-        assertEquals(v4, startAtToDo.get(cycle));
-        assertEquals(v4, startAtToDo.get(nodeMap));
-        assertEquals(v4, startAtToDo.get(thisVar));
-        assertEquals(v4, startAtToDo.get(smallerCycle));
-    }
 
     @Test
     public void test3() {
-        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, LINK_COMMON_HC, true);
+        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, LINK_COMMON_HC);
         assertEquals(6, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
         assertEquals(LINK_COMMON_HC, startAtToDo.get(cycle));
@@ -120,7 +101,7 @@ public class TestWeightedGraph_1 {
 
     @Test
     public void test4() {
-        Map<Variable, DV> startAtRemoved = shortestPath.links(removed, LINK_COMMON_HC, true);
+        Map<Variable, DV> startAtRemoved = shortestPath.links(removed, LINK_COMMON_HC);
         assertEquals(6, startAtRemoved.size());
         assertEquals(delay, startAtRemoved.get(thisVar));
         assertEquals(LINK_STATICALLY_ASSIGNED, startAtRemoved.get(removed));
@@ -132,7 +113,7 @@ public class TestWeightedGraph_1 {
 
     @Test
     public void test4b() {
-        Map<Variable, DV> startAtRemoved = shortestPath.links(removed, LINK_DEPENDENT, true);
+        Map<Variable, DV> startAtRemoved = shortestPath.links(removed, LINK_DEPENDENT);
         assertEquals(2, startAtRemoved.size());
         assertNull(startAtRemoved.get(cycle));
         assertNull(startAtRemoved.get(smallerCycle));

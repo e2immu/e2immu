@@ -188,7 +188,7 @@ public class ComputeLinkedVariables {
                             if (v1ToV2 == null) {
                                 Map<Variable, DV> to = toAdd3.computeIfAbsent(v1, k -> new HashMap<>());
                                 if (!to.containsKey(v2)) {
-                                    DV shortest = shortestPath.links(v1, null, true).get(v2);
+                                    DV shortest = shortestPath.links(v1, null).get(v2);
                                     DV min = shortest == null ? minValuePresent : minValuePresent.min(shortest);
                                     to.put(v2, min);
                                 }
@@ -196,7 +196,7 @@ public class ComputeLinkedVariables {
                             if (v2ToV1 == null) {
                                 Map<Variable, DV> to = toAdd3.computeIfAbsent(v2, k -> new HashMap<>());
                                 if (!to.containsKey(v1)) {
-                                    DV shortest = shortestPath.links(v2, null, true).get(v1);
+                                    DV shortest = shortestPath.links(v2, null).get(v1);
                                     DV min = shortest == null ? minValuePresent : minValuePresent.min(shortest);
                                     to.put(v1, min);
                                 }
@@ -486,7 +486,7 @@ public class ComputeLinkedVariables {
         for (Variable variable : variablesInClusters) {
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
-            Map<Variable, DV> map = shortestPath.links(variable, null, true);
+            Map<Variable, DV> map = shortestPath.links(variable, null);
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
                     variable, map);
 
@@ -498,7 +498,7 @@ public class ComputeLinkedVariables {
 
         if (returnVariable != null) {
             VariableInfoContainer vicRv = statementAnalysis.getVariable(returnVariable.fullyQualifiedName());
-            Map<Variable, DV> map = shortestPath.links(returnVariable, null, true);
+            Map<Variable, DV> map = shortestPath.links(returnVariable, null);
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
                     returnVariable, map);
 
@@ -575,7 +575,7 @@ public class ComputeLinkedVariables {
                     if (touched.contains(variable)) {
                         LinkedVariables linkedVariables;
                         if (haveLinkedVariables.contains(variable)) {
-                            Map<Variable, DV> map = shortestPath.links(variable, null, true);
+                            Map<Variable, DV> map = shortestPath.links(variable, null);
                             map.keySet().removeIf(toRemove::contains);
                             linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
                                     variable, map);
@@ -725,7 +725,7 @@ public class ComputeLinkedVariables {
             finalModified = new HashMap<>();
             for (Variable variable : variablesInClusters) {
                 DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
-                Map<Variable, DV> map = shortestPath.linksFollowIsHCOf(variable, true);
+                Map<Variable, DV> map = shortestPath.linksFollowIsHCOf(variable);
 
                 DV max = map.values().stream().reduce(DelayFactory.initialDelay(), DV::max);
                 CausesOfDelay clusterDelay = max.isInitialDelay() ? CausesOfDelay.EMPTY : max.causesOfDelay();
@@ -777,7 +777,7 @@ public class ComputeLinkedVariables {
                     VariableInfo vi = vic.best(stage);
                     DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
                     int finalValue;
-                    Map<Variable, DV> map = shortestPath.links(variable, LinkedVariables.LINK_DEPENDENT, true);
+                    Map<Variable, DV> map = shortestPath.links(variable, LinkedVariables.LINK_DEPENDENT);
                     if (modified.isDelayed() || modificationDelayIn(map.keySet())) {
                         finalValue = -1;
                     } else {

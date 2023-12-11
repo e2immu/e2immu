@@ -1,53 +1,15 @@
 package org.e2immu.graph.op;
 
+import org.jheaps.AddressableHeap;
+import org.jheaps.tree.PairingHeap;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class DijkstraShortestPath {
-    public interface PriorityQueue {
-        void add(int i, long priority);
-
-        boolean isEmpty();
-
-        int removeMin();
-
-        void decreasePriority(int i, long priority);
-    }
-
-    private record QueueElement(int i, long priority) implements Comparable<QueueElement> {
-        @Override
-        public int compareTo(QueueElement o) {
-            return Long.compare(priority, o.priority);
-        }
-    }
-
-    public static class JavaPriorityQueue implements PriorityQueue {
-        private final java.util.PriorityQueue<QueueElement> queue = new java.util.PriorityQueue<>();
-
-        @Override
-        public void add(int i, long priority) {
-            queue.add(new QueueElement(i, priority));
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return queue.isEmpty();
-        }
-
-        @Override
-        public int removeMin() {
-            QueueElement poll = queue.poll();
-            assert poll != null;
-            return poll.i;
-        }
-
-        @Override
-        public void decreasePriority(int i, long priority) {
-            queue.removeIf(qe -> i == qe.i); // linear time!
-            queue.add(new QueueElement(i, priority)); // re-queue
-        }
-    }
 
     /*
     the vertices are numbered 0...n-1
@@ -82,31 +44,28 @@ public class DijkstraShortestPath {
 23     return dist, prev
      */
 
-    private final Supplier<PriorityQueue> priorityQueueSupplier;
-
-    public DijkstraShortestPath(Supplier<PriorityQueue> priorityQueueSupplier) {
-        this.priorityQueueSupplier = priorityQueueSupplier;
-    }
-
     public long[] shortestPath(int numVertices, EdgeProvider edgeProvider, int sourceVertex) {
         long[] dist = new long[numVertices]; // dist[source]<-0 implicit
 
-        PriorityQueue priorityQueue = priorityQueueSupplier.get();
+        PairingHeap<Long, Integer> priorityQueue = new PairingHeap<>(); // default comparator
+        List<AddressableHeap.Handle<Long, Integer>> handles = new ArrayList<>(numVertices);
+
         for (int i = 0; i < numVertices; i++) {
             if (i != sourceVertex) {
                 dist[i] = Long.MAX_VALUE;
             }
-            priorityQueue.add(i, dist[i]);
+            handles.add(priorityQueue.insert(dist[i], i));
         }
         while (!priorityQueue.isEmpty()) {
-            int u = priorityQueue.removeMin();
+            int u = priorityQueue.deleteMin().getValue();
             edgeProvider.edges(u).forEach(edge -> {
                 long d = dist[u];
                 long alt = d == Long.MAX_VALUE ? Long.MAX_VALUE : d + edge.getValue();
                 int v = edge.getKey();
                 if (alt < dist[v]) {
                     dist[v] = alt;
-                    priorityQueue.decreasePriority(v, alt);
+                    AddressableHeap.Handle<Long, Integer> handle = handles.get(v);
+                    handle.decreaseKey(alt);
                 }
             });
         }

@@ -83,7 +83,7 @@ public class TestWeightedGraph_4 {
     @Test
     public void test1() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtX = wg.shortestPath().links(x, LINK_STATICALLY_ASSIGNED, false);
+            Map<Variable, DV> startAtX = wg.shortestPath().links(x, LINK_STATICALLY_ASSIGNED);
             assertEquals(1, startAtX.size());
             assertEquals(v0, startAtX.get(x));
             assertNull(startAtX.get(a));
@@ -94,7 +94,7 @@ public class TestWeightedGraph_4 {
     @Test
     public void test2() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtX = wg.shortestPath().linksFollowIsHCOf(x, false);
+            Map<Variable, DV> startAtX = wg.shortestPath().linksFollowIsHCOf(x);
             assertEquals(5, startAtX.size());
             assertEquals(v0, startAtX.get(x));
             assertNull(startAtX.get(y));
@@ -108,7 +108,7 @@ public class TestWeightedGraph_4 {
     @Test
     public void test3() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtToDo = wg.shortestPath().linksFollowIsHCOf(a, false);
+            Map<Variable, DV> startAtToDo = wg.shortestPath().linksFollowIsHCOf(a);
             assertEquals(4, startAtToDo.size());
             assertNull(startAtToDo.get(x));
             assertNull(startAtToDo.get(y));

@@ -119,9 +119,9 @@ public class Test_04_Assert extends CommonTestRunner {
                         // however, the previous linking is taken into account, and only the linking to "other"
                         // remains to be solved.
                         String linked = switch (d.iteration()) {
-                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,merge:-1,other:-1,this:0";
-                            case 1 -> "merge:-1,other:-1,this:0";
-                            default -> "merge:4,this:0";
+                            case 0 -> "CausesOfDelay.LIMIT:-1,limit:-1,merge:0,other:-1,this:0";
+                            case 1 -> "merge:0,other:-1,this:0";
+                            default -> "merge:0,this:0";
                         };
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }

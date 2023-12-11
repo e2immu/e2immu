@@ -7,7 +7,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.Map;
 
 public interface ShortestPath {
-    Map<Variable, DV> links(@NotNull Variable v, DV maxWeight, boolean followDelayed);
+    Map<Variable, DV> links(@NotNull Variable v, DV maxWeight);
 
-    Map<Variable, DV> linksFollowIsHCOf(Variable v, boolean followDelayed);
+    Map<Variable, DV> linksFollowIsHCOf(Variable v);
 }
