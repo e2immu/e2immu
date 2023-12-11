@@ -589,7 +589,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         // IMPORTANT: the variable is not read in the loop, but we cannot know that in iteration 0
                         // it therefore must participate in the delay scheme, SAApply.setValueForVariablesInLoopDefinedOutsideAssignedInside
-                        assertLinked(d, it(0, "this.root:0,this:3"));
+                        assertLinked(d, it0("this.root:0,this:-1"), it(1, "this.root:0,this:3"));
                         String expect = switch (d.iteration()) {
                             case 0 -> "<vl:node>";
                             case 1, 2 -> "<f:root>";
@@ -598,8 +598,9 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
                         assertEquals(expect, d.currentValue().toString(), "statement " + d.statementId());
                     }
                     if ("2".equals(d.statementId())) {
-                        assertLinked(d, it(0, "this.root:0,this:3"));
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it(0, 2, "this.root:0,this:-1"),
+                                it(3, "this.root:0,this:3"));
+                        assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof ReturnVariable) {
@@ -637,7 +638,7 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
             }
         };
 
-        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         testClass("TrieSimplified_4", 0, 2, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -1121,9 +1122,101 @@ public class Test_63_TrieSimplified extends CommonTestRunner {
 
     @Test
     public void test_6() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "!<null-check>" : "null!=node.data$0";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "node".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "visitor:4"));
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "visitor:4"));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "visitor".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "node:4"));
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "node:4"));
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo().name)) {
+                    assertEquals("node", fr.scopeVariable().simpleName());
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertLinked(d, it0("node:-1,visitor:-1"), it(1, "node:2,visitor:3"));
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it0("node:-1,visitor:-1"), it(1, "node:2,visitor:3"));
+                    }
+                }
+            }
+        };
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("---", d.delaySequence());
+
+        // error: non-private field is not effectively final
+        testClass("TrieSimplified_6", 1, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build(), new AnalyserConfiguration.Builder().build());
+    }
+
+    // node.data is always null; so there won't be any statements in block 0 starting from iteration 0
+    @Test
+    public void test_7() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    // in iteration 1, the code in block 0 is unreachable
+                    String expected = d.iteration() == 0 ? "!<null-check>" : "false";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                }
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "node".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "visitor:4"));
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "visitor:4"));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "visitor".equals(pi.name)) {
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "node:4"));
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, "node:4"));
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "data".equals(fr.fieldInfo().name)) {
+                    assertEquals("node", fr.scopeVariable().simpleName());
+                    if ("0.0.0".equals(d.statementId())) {
+                        assertLinked(d, it0("node:-1,visitor:-1"), it(1, "node:2,visitor:3"));
+                    }
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it0("node:-1,visitor:-1"), it(1, "node:2,visitor:3"));
+                    }
+                }
+            }
+        };
+
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("------", d.delaySequence());
 
-        testClass("TrieSimplified_6", 0, 0, new DebugConfiguration.Builder()
+        testClass("TrieSimplified_7", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build(), new AnalyserConfiguration.Builder().build());
     }

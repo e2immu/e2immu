@@ -2,16 +2,18 @@ package org.e2immu.analyser.parser.own.util.testexample;
 
 import org.e2immu.annotation.Modified;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 import java.util.function.BiConsumer;
 
-public class TrieSimplified_6<T> {
+public class TrieSimplified_7<T> {
 
-    static class TrieNode<T> {
-        List<T> data = new ArrayList<>();
+    private static class TrieNode<T> {
+        List<T> data; // always null
     }
 
-    static <T> void method(@Modified TrieNode<T> node,
+    private static <T> void method(@Modified TrieNode<T> node,
                                    Stack<String> strings,
                                    BiConsumer<String[], List<T>> visitor) {
         if (node.data != null) {

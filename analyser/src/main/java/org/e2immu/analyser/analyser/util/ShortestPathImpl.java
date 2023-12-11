@@ -6,6 +6,13 @@ import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
 
+import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
+
+/*
+Note: the comparator and the sum work according to different order of the values.
+I have no idea if Dijkstra's algorithm is compatible with this.
+Tests look OK for now.
+ */
 public class ShortestPathImpl implements ShortestPath {
     private final Map<Variable, Integer> variableIndex;
     private final Variable[] variables;
@@ -25,7 +32,7 @@ public class ShortestPathImpl implements ShortestPath {
         int V = variables.length;
         DV[] dist = new DV[V];
         boolean[] done = new boolean[V];
-        dist[start] = LinkedVariables.LINK_STATICALLY_ASSIGNED;
+        dist[start] = LINK_STATICALLY_ASSIGNED;
 
         for (int count = 0; count < V - 1; count++) {
             int u = minDistance(dist, done);
@@ -44,20 +51,26 @@ public class ShortestPathImpl implements ShortestPath {
         return dist;
     }
 
+    // ranking: 0-delayed-1-2-3-4
     private boolean lt(DV d1, DV d2) {
         if (d1.equals(d2)) return false;
-        if (d1.isDelayed()) return false;
-        if (d2.isDelayed()) return true;
+        if (LINK_STATICALLY_ASSIGNED.equals(d1)) return true;
+        if (LINK_STATICALLY_ASSIGNED.equals(d2)) return false;
+        if (d1.isDelayed()) return true;
+        if (d2.isDelayed()) return false;
         return d1.lt(d2);
     }
 
     private boolean le(DV d1, DV d2) {
         if (d1.equals(d2)) return true;
-        if (d1.isDelayed()) return false;
-        if (d2.isDelayed()) return true;
+        if (LINK_STATICALLY_ASSIGNED.equals(d1)) return true;
+        if (LINK_STATICALLY_ASSIGNED.equals(d2)) return false;
+        if (d1.isDelayed()) return true;
+        if (d2.isDelayed()) return false;
         return d1.le(d2);
     }
 
+    // max  according to 0-1-2-3-4-delayed
     private DV sum(DV d1, DV d2) {
         if (d1.isDelayed()) return d1;
         if (d2.isDelayed()) return d2;

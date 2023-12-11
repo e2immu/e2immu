@@ -56,7 +56,7 @@ public class Test_16_Modification_23 extends CommonTestRunner {
                     if ("2".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<mod:Set<String>>" : "middle.keySet()/*@NotNull*/";
                         assertEquals(expected, d.currentValue().toString());
-                        String linked = "in:4,middle:2";
+                        String linked = d.iteration() == 0 ? "in:-1,middle:-1" : "in:4,middle:2";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }

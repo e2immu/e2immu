@@ -44,9 +44,7 @@ public class TestWeightedGraph_5 {
 
     Variable x1, x2, x3, f, thisVar;
     final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v2 = LINK_DEPENDENT;
     final DV v3 = LINK_IS_HC_OF;
-    final DV v4 = LINK_COMMON_HC;
     WeightedGraph wg1, wg2;
     List<WeightedGraph> wgs;
     CausesOfDelay delay;
@@ -88,7 +86,7 @@ public class TestWeightedGraph_5 {
             assertEquals(v0, startAtX1.get(x1));
             assertEquals(v0, startAtX1.get(x2));
             assertEquals(delay, startAtX1.get(x3));
-            assertEquals(v3, startAtX1.get(thisVar));
+            assertEquals(delay, startAtX1.get(thisVar));
             cnt++;
         }
     }

@@ -47,7 +47,7 @@ public class Test_23_ExternalContainer extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "iField".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         // link in_hc_of instead of dependent, even if iField is formally mutable, locally not modified
-                        String linked = d.iteration() < 2 ? "in:-1,this:-1" : "in:3,this:4";
+                        String linked = d.iteration() < 3 ? "in:-1,this:-1" : "in:3,this:4";
                         assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
                         assertDv(d, 3, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                         assertDv(d, MultiLevel.NOT_CONTAINER_DV, Property.CONTEXT_CONTAINER);
