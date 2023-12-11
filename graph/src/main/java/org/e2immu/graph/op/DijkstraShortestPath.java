@@ -48,6 +48,9 @@ public class DijkstraShortestPath {
         }
     }
 
+    /*
+    the vertices are numbered 0...n-1
+     */
     public interface EdgeProvider {
         Iterable<Map.Entry<Integer, Long>> edges(int i);
     }

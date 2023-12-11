@@ -63,29 +63,22 @@ public class ComputeLinkedVariables {
 
     private final Stage stage;
     private final StatementAnalysis statementAnalysis;
-    private final List<Cluster> clusters;
+    private final List<WeightedGraph.Cluster> clusters;
     private final Set<Variable> variablesInClusters;
-    private final Cluster returnValueCluster;
+    private final WeightedGraph.Cluster returnValueCluster;
     private final Variable returnVariable;
     private final ShortestPath shortestPath;
     private final BreakDelayLevel breakDelayLevel;
     private final Set<Variable> linkingNotYetSet;
     private final boolean oneBranchHasBecomeUnreachable;
 
-    private record Cluster(Set<Variable> variables) {
-        @Override
-        public String toString() {
-            return "[" + variables.stream().map(Variable::simpleName).sorted().collect(Collectors.joining(", ")) + ']';
-        }
-    }
-
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    Stage stage,
                                    BiPredicate<VariableInfoContainer, Variable> ignore,
                                    ShortestPath shortestPath,
                                    Set<Variable> variablesInClusters,
-                                   List<Cluster> clusters,
-                                   Cluster returnValueCluster,
+                                   List<WeightedGraph.Cluster> clusters,
+                                   WeightedGraph.Cluster returnValueCluster,
                                    Variable returnVariable,
                                    BreakDelayLevel breakDelayLevel,
                                    boolean oneBranchHasBecomeUnreachable,
@@ -146,11 +139,12 @@ public class ComputeLinkedVariables {
             iteration1Plus = true;
         }
         augmentGraph(weightedGraph);
+        WeightedGraph.ClusterResult cr = weightedGraph.staticClusters();
         ShortestPath shortestPath = weightedGraph.shortestPath();
-        ClusterResult cr = computeClusters(shortestPath, done);
 
-        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, shortestPath, cr.variablesInClusters(), cr.clusters,
-                cr.returnValueCluster, cr.rv, evaluationContext.breakDelayLevel(), oneBranchHasBecomeUnreachable,
+        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, shortestPath,
+                cr.variablesInClusters(), cr.clusters(), cr.returnValueCluster(),
+                cr.rv(), evaluationContext.breakDelayLevel(), oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
     }
 
@@ -259,52 +253,6 @@ public class ComputeLinkedVariables {
         return LinkedVariables.of(map);
     }
 
-    private record ClusterResult(Cluster returnValueCluster, Variable rv, List<Cluster> clusters) {
-        public Set<Variable> variablesInClusters() {
-            return clusters.stream().flatMap(c -> c.variables.stream()).collect(Collectors.toUnmodifiableSet());
-        }
-    }
-
-    private static ClusterResult computeClusters(ShortestPath shortestPath, Set<Variable> variables) {
-        Set<Variable> done = new HashSet<>();
-        List<Cluster> result = new ArrayList<>(variables.size());
-        Cluster rvCluster = null;
-        Variable rv = null;
-
-        /*
-        Because 'This' variables do not link to others, but others my link to 'This', we must handle them last
-        in this variant of the algorithm. If not, we end up with "Cluster overlap" errors. See Container_10A,B,C
-         */
-        List<Variable> sorted = variables.stream().sorted((v1, v2) -> {
-            boolean v1This = v1 instanceof This;
-            boolean v2This = v2 instanceof This;
-            if (v1This && !v2This) return 1;
-            if (!v1This && v2This) return -1;
-            return v1.compareTo(v2);
-        }).toList();
-
-        for (Variable variable : sorted) {
-            if (!done.contains(variable)) {
-                Map<Variable, DV> map = shortestPath.links(variable, LINK_STATICALLY_ASSIGNED, false);
-                assert map.values().stream().allMatch(LINK_STATICALLY_ASSIGNED::equals);
-
-                Cluster cluster = new Cluster(map.keySet());
-                if (variable instanceof ReturnVariable) {
-                    rvCluster = cluster;
-                    assert rv == null;
-                    rv = variable;
-                    done.add(rv);
-                } else {
-                    result.add(cluster);
-                    assert Collections.disjoint(map.keySet(), done) : "Cluster overlap";
-                    done.addAll(map.keySet());
-                }
-            }
-        }
-        return new ClusterResult(rvCluster, rv, result);
-    }
-
-
     public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues) {
         return write(property, propertyValues, CausesOfDelay.EMPTY);
     }
@@ -324,10 +272,10 @@ public class ComputeLinkedVariables {
 
         // IMPORTANT: reduced code for the return variable, still a lot has been copied from the code further in this method
         if (returnVariable != null) {
-            assert returnValueCluster.variables.stream().allMatch(propertyValues::containsKey);
+            assert returnValueCluster.variables().stream().allMatch(propertyValues::containsKey);
             DV rvSummary = property.propertyType == Property.PropertyType.CONTEXT
                     ? property.falseDv
-                    : returnValueCluster.variables.stream().map(propertyValues::get)
+                    : returnValueCluster.variables().stream().map(propertyValues::get)
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(property.valueWhenAbsent(), DV::max);
             if (rvSummary.isDelayed()) {
@@ -339,9 +287,9 @@ public class ComputeLinkedVariables {
         }
 
         boolean broken = false;
-        for (Cluster cluster : clusters) {
-            assert cluster.variables.stream().allMatch(propertyValues::containsKey);
-            DV summary = cluster.variables.stream()
+        for (WeightedGraph.Cluster cluster : clusters) {
+            assert cluster.variables().stream().allMatch(propertyValues::containsKey);
+            DV summary = cluster.variables().stream()
                     .map(propertyValues::get)
                     // IMPORTANT NOTE: falseValue gives 1 for IMMUTABLE and others, and sometimes we want the basis to be NOT_INVOLVED (0)
                     .reduce(property.valueWhenAbsent(), DV::max);
@@ -352,7 +300,7 @@ public class ComputeLinkedVariables {
                 CausesOfDelay conditionDelayMarker = DelayFactory.createDelay(new SimpleCause(statementAnalysis.location(stage), CauseOfDelay.Cause.CONDITION));
                 summary = extraDelay.merge(conditionDelayMarker);
             }
-            if (!Collections.disjoint(linkingNotYetSet, cluster.variables) && summary.isDone()) {
+            if (!Collections.disjoint(linkingNotYetSet, cluster.variables()) && summary.isDone()) {
                 summary = LinkedVariables.NOT_YET_SET_DELAY;
             }
             /*
@@ -363,9 +311,9 @@ public class ComputeLinkedVariables {
             boolean clusterComplain;
             if (property.propertyType == Property.PropertyType.CONTEXT
                     && !summary.equals(property.bestDv)
-                    && cluster.variables.size() > 1) {
+                    && cluster.variables().size() > 1) {
                 // if any of the previous values has a max value, we'll need to have it, too
-                DV best = cluster.variables.stream().map(v -> {
+                DV best = cluster.variables().stream().map(v -> {
                     VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
                     if (vic != null) {
                         VariableInfo vi1 = vic.getPreviousOrInitial();
@@ -387,7 +335,7 @@ public class ComputeLinkedVariables {
                 causes = causes.merge(summary.causesOfDelay());
             }
             DV newValue1 = summary;
-            for (Variable variable : cluster.variables) {
+            for (Variable variable : cluster.variables()) {
                 progress |= setPropertyOneVariable(variable, property, newValue1, propertyValues, extraDelay.isDone(),
                         clusterComplain, broken, cluster);
             }
@@ -419,7 +367,7 @@ public class ComputeLinkedVariables {
                     throw ise;
                 }
             } else if (rvSummary.isDone() && !rvSummary.equals(current)) {
-                LOGGER.error("Variable {} in cluster {}", returnVariable, returnValueCluster.variables);
+                LOGGER.error("Variable {} in cluster {}", returnVariable, returnValueCluster.variables());
                 LOGGER.error("Property {}, current {}, new {}", property, current, rvSummary);
                 throw new UnsupportedOperationException("Overwriting value");
             } else progress = false;
@@ -434,7 +382,7 @@ public class ComputeLinkedVariables {
                                            boolean extraDelayIsDone,
                                            boolean clusterComplain,
                                            boolean brokenForDebugging,
-                                           Cluster clusterForDebugging) {
+                                           WeightedGraph.Cluster clusterForDebugging) {
         VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
         boolean progress = false;
         if (vic != null) {
@@ -508,15 +456,15 @@ public class ComputeLinkedVariables {
     private Map<Variable, Set<Variable>> staticallyAssignedVariables() {
         // computed on the 0 values
         Map<Variable, Set<Variable>> staticallyAssigned = new HashMap<>();
-        for (Cluster cluster : clusters) {
-            for (Variable variable : cluster.variables) {
-                Set<Variable> set = new HashSet<>(cluster.variables);
+        for (WeightedGraph.Cluster cluster : clusters) {
+            for (Variable variable : cluster.variables()) {
+                Set<Variable> set = new HashSet<>(cluster.variables());
                 set.remove(variable); // remove self-reference
                 staticallyAssigned.put(variable, set);
             }
         }
         if (returnVariable != null) {
-            Set<Variable> set = new HashSet<>(returnValueCluster.variables);
+            Set<Variable> set = new HashSet<>(returnValueCluster.variables());
             set.remove(returnVariable); // remove self-reference
             staticallyAssigned.put(returnVariable, set);
         }
@@ -656,13 +604,13 @@ public class ComputeLinkedVariables {
         boolean seenChange = false;
         while (change) {
             change = false;
-            for (Cluster cluster : clusters) {
-                boolean activate = cluster.variables.stream().anyMatch(v -> {
+            for (WeightedGraph.Cluster cluster : clusters) {
+                boolean activate = cluster.variables().stream().anyMatch(v -> {
                     Either<CausesOfDelay, Set<Variable>> either = statementAnalysis.recursivelyLinkedToParameterOrField(
                             analyserContext, v, cnnTravelsToFields);
                     return either.isRight() && !either.getRight().isEmpty();
                 });
-                for (Variable variable : cluster.variables) {
+                for (Variable variable : cluster.variables()) {
                     VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
                     if (vic.variableNature() != VariableNature.FROM_ENCLOSING_METHOD) {
                         DV current = vic.best(Stage.EVALUATION).getProperty(Property.CNN_TRAVELS_TO_PRECONDITION,

@@ -18,13 +18,34 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 
 
 public interface WeightedGraph {
+
+    @NotNull
+    ClusterResult staticClusters();
+
+    record Cluster(Set<Variable> variables) {
+        @Override
+        public String toString() {
+            return "[" + variables.stream().map(Variable::simpleName).sorted()
+                    .collect(Collectors.joining(", ")) + ']';
+        }
+    }
+
+    record ClusterResult(Cluster returnValueCluster, Variable rv, List<Cluster> clusters) {
+        public Set<Variable> variablesInClusters() {
+            return clusters.stream().flatMap(c -> c.variables.stream())
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+    }
 
     @NotModified
     int size();

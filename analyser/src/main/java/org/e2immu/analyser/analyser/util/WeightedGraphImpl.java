@@ -18,21 +18,15 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.annotation.*;
-import org.e2immu.annotation.eventual.Only;
 import org.e2immu.support.Freezable;
+import org.jgrapht.alg.util.UnionFind;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 
-import static org.e2immu.analyser.analyser.LinkedVariables.*;
-import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
 
-@ImmutableContainer(after = "frozen", hc = true)
 public class WeightedGraphImpl extends Freezable implements WeightedGraph {
 
     @SuppressWarnings("unchecked")
@@ -57,28 +51,72 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
     }
 
     private final Supplier<Map<?, ?>> mapSupplier;
-    @Modified
     private final Map<Variable, Node> nodeMap;
 
-    @NotModified
+    @SuppressWarnings("unchecked")
+    @Override
+    public ClusterResult staticClusters() {
+        super.freeze();
+        UnionFind<Variable> unionFind = new UnionFind<>(nodeMap.keySet());
+        Variable rv = null;
+        Set<Variable> dependsOnRv = null;
+        for (Map.Entry<Variable, Node> entry : nodeMap.entrySet()) {
+            Variable variable = entry.getKey();
+            boolean isRv = variable instanceof ReturnVariable;
+            if (isRv) {
+                rv = variable;
+                dependsOnRv = new HashSet<>();
+            }
+            Map<Variable, DV> dependsOn = entry.getValue().dependsOn;
+            if (dependsOn != null) {
+                for (Map.Entry<Variable, DV> e2 : dependsOn.entrySet()) {
+                    if (LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(e2.getValue())) {
+                        if (isRv) {
+                            dependsOnRv.add(e2.getKey());
+                        } else {
+                            unionFind.union(variable, e2.getKey());
+                        }
+                    }
+                }
+            }
+        }
+        Map<Variable, Cluster> representativeToCluster = (Map<Variable, Cluster>) mapSupplier.get();
+        for (Variable variable : nodeMap.keySet()) {
+            if (!(variable instanceof ReturnVariable)) {
+                Variable representative = unionFind.find(variable);
+                Cluster cluster = representativeToCluster.computeIfAbsent(representative, v -> new Cluster(new HashSet<>()));
+                cluster.variables().add(variable);
+            }
+        }
+        List<Cluster> clusters = representativeToCluster.values().stream().toList();
+        Cluster rvCluster;
+        if (rv != null) {
+            rvCluster = new Cluster(new HashSet<>());
+            rvCluster.variables().add(rv);
+            for (Variable v : dependsOnRv) {
+                Variable r = unionFind.find(v);
+                Cluster c = representativeToCluster.get(r);
+                rvCluster.variables().addAll(c.variables());
+            }
+        } else {
+            rvCluster = null;
+        }
+        return new ClusterResult(rvCluster, rv, clusters);
+    }
+
     public int size() {
         return nodeMap.size();
     }
 
-    @NotModified
     public boolean isEmpty() {
         return nodeMap.isEmpty();
     }
 
-    @NotModified(contract = true)
-    public void visit(@NotNull @Independent(hc = true) BiConsumer<Variable, Map<Variable, DV>> consumer) {
+    public void visit(BiConsumer<Variable, Map<Variable, DV>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.variable, n.dependsOn));
     }
 
-    @NotNull
-    @Modified
-    @Only(before = "frozen")
-    private Node getOrCreate(@NotNull Variable v) {
+    private Node getOrCreate(Variable v) {
         ensureNotFrozen();
         Objects.requireNonNull(v);
         Node node = nodeMap.get(v);
@@ -89,10 +127,8 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         return node;
     }
 
-    @Only(before = "frozen")
-    @Modified
-    public void addNode(@NotNull @Independent(hc = true) Variable v,
-                        @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn) {
+
+    public void addNode(Variable v, Map<Variable, DV> dependsOn) {
         addNode(v, dependsOn, false, (o, n) -> o);
     }
 
@@ -107,10 +143,8 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
     }
 
     @SuppressWarnings("unchecked")
-    @Only(before = "frozen")
-    @Modified
-    public void addNode(@NotNull @Independent(hc = true) Variable v,
-                        @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn,
+    public void addNode(Variable v,
+                        Map<Variable, DV> dependsOn,
                         boolean bidirectional,
                         BinaryOperator<DV> merger) {
         ensureNotFrozen();
