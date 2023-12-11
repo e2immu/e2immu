@@ -1,10 +1,13 @@
 package org.e2immu.analyser.analyser.util;
 
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.graph.op.DijkstraShortestPath;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
 
@@ -16,89 +19,67 @@ Tests look OK for now.
 public class ShortestPathImpl implements ShortestPath {
     private final Map<Variable, Integer> variableIndex;
     private final Variable[] variables;
-    private final DV[][] distances;
+    private final Map<Integer, Map<Integer, Long>> edges;
+    private final CausesOfDelay someDelay;
+    private final DijkstraShortestPath dijkstraShortestPath;
 
-    ShortestPathImpl(Map<Variable, Integer> variableIndex, Variable[] variables, DV[][] distances) {
+    ShortestPathImpl(Map<Variable, Integer> variableIndex,
+                     Variable[] variables,
+                     Map<Integer, Map<Integer, Long>> edges, CausesOfDelay someDelay) {
         this.variables = variables;
-        this.distances = distances;
+        this.edges = edges;
         this.variableIndex = variableIndex;
+        this.someDelay = someDelay;
+        dijkstraShortestPath = new DijkstraShortestPath(DijkstraShortestPath.JavaPriorityQueue::new);
     }
 
-    /*
-    Basic Dijkstra algorithm.
-    The maxValue is taken independently of the delay.
-     */
-    private DV[] compute(int start, DV maxValue, boolean followDelayed) {
-        int V = variables.length;
-        DV[] dist = new DV[V];
-        boolean[] done = new boolean[V];
-        dist[start] = LINK_STATICALLY_ASSIGNED;
 
-        for (int count = 0; count < V - 1; count++) {
-            int u = minDistance(dist, done);
-            done[u] = true;
-            for (int v = 0; v < V; v++) {
-                DV d = distances[u][v];
-                if (!done[v] && d != null && (maxValue == null
-                        || followDelayed && d.isDelayed() || le(d, maxValue)) && dist[u] != null) {
-                    DV sum = sum(dist[u], d);
-                    if (dist[v] == null || lt(sum, dist[v])) {
-                        dist[v] = sum;
-                    }
-                }
-            }
+    private static final long DELAYED = 1L << 10;
+    private static final long ASSIGNED = 1L << 20;
+    private static final long DEPENDENT = 1L << 30;
+    private static final long IS_HC_OF = 1L << 40;
+    private static final long COMMON_HC = 1L << 50;
+
+    public static long toDistanceComponent(DV dv) {
+        if (LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(dv)) return 1;
+        if (dv.isDelayed()) return DELAYED;
+        if (LinkedVariables.LINK_ASSIGNED.equals(dv)) return ASSIGNED;
+        if (LinkedVariables.LINK_DEPENDENT.equals(dv)) return DEPENDENT;
+        if (LinkedVariables.LINK_IS_HC_OF.equals(dv)) return IS_HC_OF;
+        return COMMON_HC;
+    }
+
+    public static DV fromDistanceSum(long l, CausesOfDelay someDelay) {
+        if (l < DELAYED) return LinkedVariables.LINK_STATICALLY_ASSIGNED;
+        if (l < ASSIGNED) {
+            assert someDelay != null && someDelay.isDelayed();
+            return someDelay;
         }
-        return dist;
-    }
-
-    // ranking: 0-delayed-1-2-3-4
-    private boolean lt(DV d1, DV d2) {
-        if (d1.equals(d2)) return false;
-        if (LINK_STATICALLY_ASSIGNED.equals(d1)) return true;
-        if (LINK_STATICALLY_ASSIGNED.equals(d2)) return false;
-        if (d1.isDelayed()) return true;
-        if (d2.isDelayed()) return false;
-        return d1.lt(d2);
-    }
-
-    private boolean le(DV d1, DV d2) {
-        if (d1.equals(d2)) return true;
-        if (LINK_STATICALLY_ASSIGNED.equals(d1)) return true;
-        if (LINK_STATICALLY_ASSIGNED.equals(d2)) return false;
-        if (d1.isDelayed()) return true;
-        if (d2.isDelayed()) return false;
-        return d1.le(d2);
-    }
-
-    // max  according to 0-1-2-3-4-delayed
-    private DV sum(DV d1, DV d2) {
-        if (d1.isDelayed()) return d1;
-        if (d2.isDelayed()) return d2;
-        return d1.max(d2);
-    }
-
-    private int minDistance(DV[] distance, boolean[] done) {
-        DV min = null;
-        int minIndex = -1;
-        for (int v = 0; v < done.length; v++) {
-            if (!done[v] && (min == null || distance[v] != null && le(distance[v], min))) {
-                min = distance[v];
-                minIndex = v;
-            }
-        }
-        return minIndex;
+        if (l < DEPENDENT) return LinkedVariables.LINK_ASSIGNED;
+        if (l < IS_HC_OF) return LinkedVariables.LINK_DEPENDENT;
+        if (l < COMMON_HC) return LinkedVariables.LINK_IS_HC_OF;
+        return LinkedVariables.LINK_COMMON_HC;
     }
 
 
     @Override
     public Map<Variable, DV> links(Variable v, DV maxWeight, boolean followDelayed) {
-        int i = variableIndex.get(v);
-        DV[] shortest = compute(i, maxWeight, followDelayed);
+        int startVertex = variableIndex.get(v);
+        long maxWeightLong = maxWeight == null ? 0L : toDistanceComponent(maxWeight);
+        DijkstraShortestPath.EdgeProvider edgeProvider = i -> {
+            Map<Integer, Long> edgeMap = edges.get(i);
+            if (edgeMap == null) return Stream.of();
+            return edgeMap.entrySet().stream()
+                    .filter(e -> (followDelayed || e.getValue() != DELAYED)
+                            && (maxWeight == null || e.getValue() <= maxWeightLong));
+        };
+        long[] shortest = dijkstraShortestPath.shortestPath(variables.length, edgeProvider, startVertex);
         Map<Variable, DV> result = new HashMap<>();
         for (int j = 0; j < shortest.length; j++) {
-            DV d = shortest[j];
-            if (d != null && (followDelayed || !d.isDelayed())) {
-                result.put(variables[j], d);
+            long d = shortest[j];
+            if (d != Long.MAX_VALUE) {
+                DV dv = fromDistanceSum(d, someDelay);
+                result.put(variables[j], dv);
             }
         }
         return result;

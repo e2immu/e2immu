@@ -2,6 +2,7 @@ package org.e2immu.graph.op;
 
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public class DijkstraShortestPath {
     public interface PriorityQueue {
@@ -52,7 +53,7 @@ public class DijkstraShortestPath {
     the vertices are numbered 0...n-1
      */
     public interface EdgeProvider {
-        Iterable<Map.Entry<Integer, Long>> edges(int i);
+        Stream<Map.Entry<Integer, Long>> edges(int i);
     }
 
     /*
@@ -88,7 +89,7 @@ public class DijkstraShortestPath {
     }
 
     public long[] shortestPath(int numVertices, EdgeProvider edgeProvider, int sourceVertex) {
-        long[] dist = new long[numVertices]; // dist[source]<-0
+        long[] dist = new long[numVertices]; // dist[source]<-0 implicit
 
         PriorityQueue priorityQueue = priorityQueueSupplier.get();
         for (int i = 0; i < numVertices; i++) {
@@ -99,7 +100,7 @@ public class DijkstraShortestPath {
         }
         while (!priorityQueue.isEmpty()) {
             int u = priorityQueue.removeMin();
-            for (Map.Entry<Integer, Long> edge : edgeProvider.edges(u)) {
+            edgeProvider.edges(u).forEach(edge -> {
                 long d = dist[u];
                 long alt = d == Long.MAX_VALUE ? Long.MAX_VALUE : d + edge.getValue();
                 int v = edge.getKey();
@@ -107,7 +108,7 @@ public class DijkstraShortestPath {
                     dist[v] = alt;
                     priorityQueue.decreasePriority(v, alt);
                 }
-            }
+            });
         }
         return dist;
     }

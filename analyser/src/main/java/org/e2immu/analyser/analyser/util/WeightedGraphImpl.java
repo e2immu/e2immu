@@ -13,11 +13,15 @@
  */
 package org.e2immu.analyser.analyser.util;
 
+import org.e2immu.analyser.analyser.CauseOfDelay;
+import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.graph.op.DijkstraShortestPath;
 import org.e2immu.support.Freezable;
 import org.jgrapht.alg.util.UnionFind;
 
@@ -183,18 +187,26 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             variables[i] = v;
             ++i;
         }
-        DV[][] distances = new DV[n][n];
+        Map<Integer, Map<Integer, Long>> edges = new HashMap<>();
+        CausesOfDelay delay = null;
         for (Map.Entry<Variable, Node> entry : nodeMap.entrySet()) {
             Map<Variable, DV> dependsOn = entry.getValue().dependsOn;
             if (dependsOn != null) {
                 int d1 = variableIndex.get(entry.getKey());
+                Map<Integer, Long> edgesOfD1 = new HashMap<>();
+                edges.put(d1, edgesOfD1);
                 for (Map.Entry<Variable, DV> e2 : dependsOn.entrySet()) {
                     int d2 = variableIndex.get(e2.getKey());
-                    distances[d1][d2] = e2.getValue();
+                    DV dv = e2.getValue();
+                    if (delay == null && dv.isDelayed()) {
+                        delay = dv.causesOfDelay();
+                    }
+                    long d = ShortestPathImpl.toDistanceComponent(dv);
+                    edgesOfD1.put(d2, d);
                 }
             }
         }
-        return new ShortestPathImpl(variableIndex, variables, distances);
+        return new ShortestPathImpl(variableIndex, variables, edges, delay);
     }
 
     @Override
