@@ -47,6 +47,7 @@ public class TestInspectAndResolveAnalyserCode {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/jgrapht")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/apache/commons/pool")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/jheaps")
                 .build();
 
         // we'll encounter some tests with dollar types. For our current purpose, they're simply Java POJOs, we don't
