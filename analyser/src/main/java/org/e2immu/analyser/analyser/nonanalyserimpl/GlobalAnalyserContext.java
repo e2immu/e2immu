@@ -63,7 +63,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private final List<String> onDemandHistory = new ArrayList<>();
     private final TimedLogger onDemandLogger = new TimedLogger(LOGGER, 1000L);
 
-    private final Cache cache = new GraphCacheImpl(200);
+    private final Cache cache;
 
     public GlobalAnalyserContext(TypeContext typeContext,
                                  Configuration configuration,
@@ -93,6 +93,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
         // note! first parameters, then methods, because the methods use the parameter map
         hardCodedParameters = createHardCodedParameterAnalysis();
         hardCodedMethods = createHardCodedMethodAnalysis();
+
+        cache = new GraphCacheImpl(configuration.analyserConfiguration().graphCacheSize());
     }
 
     public void startOnDemandMode() {

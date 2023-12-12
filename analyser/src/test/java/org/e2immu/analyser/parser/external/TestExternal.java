@@ -15,6 +15,9 @@
 package org.e2immu.analyser.parser.external;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.Cache;
+import org.e2immu.analyser.analyser.util.GraphCacheImpl;
+import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
@@ -560,16 +563,55 @@ public class TestExternal extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            AnalyserContext analyserContext = d.context().getAnalyserContext();
+            Cache cache = analyserContext.getCache();
+            if (cache instanceof GraphCacheImpl graphCache) {
+                assertEquals(AnalyserConfiguration.DEFAULT_GRAPH_CACHE_SIZE, graphCache.getMaxSize());
+                if (d.iteration() > 2) {
+                    assertTrue(graphCache.getHits() > 0);
+                    assertTrue(graphCache.getMisses() > 0);
+                    assertEquals(0, graphCache.getRemovals());
+                }
+            } else fail();
+        };
+
         // S: modification delay breaking
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--", d.delaySequence());
 
         // ERROR: change of LV in 1.0.2 in m1
         testClass("External_13", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
+    }
+
+
+    // no graph cache
+    @Test
+    public void test_13B() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            AnalyserContext analyserContext = d.context().getAnalyserContext();
+            Cache cache = analyserContext.getCache();
+            if (cache instanceof GraphCacheImpl graphCache) {
+                assertEquals(0, graphCache.getMaxSize());
+                assertEquals(0, graphCache.getHits());
+                assertEquals(graphCache.getMisses(), graphCache.getRemovals());
+                if (d.iteration() > 2) {
+                    assertTrue(graphCache.getMisses() > 0);
+                }
+            } else fail();
+        };
+        // must be identical to 13B
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----S--", d.delaySequence());
+
+        testClass("External_13", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
+                .build(), new AnalyserConfiguration.Builder().setGraphCacheSize(0).build());
     }
 
     // Changing value of external-not-null from not_involved:0 to nullable:1, variable t, line 8

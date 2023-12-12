@@ -15,6 +15,7 @@ public class GraphCacheImpl implements Cache {
 
     private final LinkedHashMap<Hash, CacheElement> cache;
     private final MessageDigest md;
+    private final int maxSize;
     private int hits;
     private int misses;
     private int removals;
@@ -28,8 +29,9 @@ public class GraphCacheImpl implements Cache {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+        this.maxSize = maxSize;
         // LRU-cache
-        cache = new LinkedHashMap<>(1000, 0.8f, true) {
+        cache = new LinkedHashMap<>(maxSize / 2, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<Hash, CacheElement> eldest) {
                 boolean remove = size() > maxSize;
@@ -54,8 +56,8 @@ public class GraphCacheImpl implements Cache {
     @Override
     public CacheElement computeIfAbsent(Hash hash, Function<Hash, CacheElement> elementSupplier) {
         synchronized (cache) {
-            timedLogger.info("Graph cache {} hits, {} misses, {} removals, {} average savings", hits, misses,
-                    removals, removals == 0 ? 0 : (double) sumSavings / removals);
+            timedLogger.info("Graph cache {} hits, {} misses, {} removals, {} savings from removed",
+                    hits, misses, removals, sumSavings);
             CacheElement inCache = cache.get(hash);
             if (inCache != null) {
                 hits++;
@@ -66,5 +68,21 @@ public class GraphCacheImpl implements Cache {
             cache.put(hash, newElement);
             return newElement;
         }
+    }
+
+    public int getHits() {
+        return hits;
+    }
+
+    public int getMisses() {
+        return misses;
+    }
+
+    public int getRemovals() {
+        return removals;
+    }
+
+    public int getMaxSize() {
+        return maxSize;
     }
 }

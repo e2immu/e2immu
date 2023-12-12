@@ -22,7 +22,10 @@ public record AnalyserConfiguration(boolean computeContextPropertiesOverAllMetho
                                     boolean computeFieldAnalyserAcrossAllMethods,
                                     boolean forceExtraDelayForTesting,
                                     boolean forceAlphabeticAnalysisInPrimaryType,
-                                    boolean normalizeMore) {
+                                    boolean normalizeMore,
+                                    int graphCacheSize) {
+
+    public static final int DEFAULT_GRAPH_CACHE_SIZE = 1000;
 
     @Container(builds = AnalyserConfiguration.class)
     public static class Builder {
@@ -33,6 +36,7 @@ public record AnalyserConfiguration(boolean computeContextPropertiesOverAllMetho
         private boolean forceExtraDelayForTesting;
         private boolean forceAlphabeticAnalysisInPrimaryType;
         private boolean normalizeMore;
+        private int graphCacheSize = DEFAULT_GRAPH_CACHE_SIZE;
 
         public Builder setNormalizeMore(boolean normalizeMore) {
             this.normalizeMore = normalizeMore;
@@ -59,13 +63,19 @@ public record AnalyserConfiguration(boolean computeContextPropertiesOverAllMetho
             return this;
         }
 
+        public Builder setGraphCacheSize(int graphCacheSize) {
+            this.graphCacheSize = graphCacheSize;
+            return this;
+        }
+
         public AnalyserConfiguration build() {
             return new AnalyserConfiguration(
                     computeContextPropertiesOverAllMethods,
                     computeFieldAnalyserAcrossAllMethods,
                     forceExtraDelayForTesting,
                     forceAlphabeticAnalysisInPrimaryType,
-                    normalizeMore);
+                    normalizeMore,
+                    graphCacheSize);
         }
     }
 
@@ -76,6 +86,7 @@ public record AnalyserConfiguration(boolean computeContextPropertiesOverAllMetho
                 NL_TAB + "computeFieldAnalyserAcrossAllMethods=" + computeFieldAnalyserAcrossAllMethods +
                 NL_TAB + "forceAlphabeticAnalysisInPrimaryType=" + forceAlphabeticAnalysisInPrimaryType +
                 NL_TAB + "forceExtraDelayForTesting=" + forceExtraDelayForTesting +
-                NL_TAB + "normalizeMore=" + normalizeMore;
+                NL_TAB + "normalizeMore=" + normalizeMore +
+                NL_TAB + "graphCacheSize=" + graphCacheSize;
     }
 }
