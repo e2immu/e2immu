@@ -61,7 +61,7 @@ public class TestWeightedGraph_4 {
         i = makeVariable("i"); // type List<List<X>>
         j = makeVariable("j"); // type List<List<X>>
 
-        wg1 = new WeightedGraphImpl(TreeMap::new);
+        wg1 = new WeightedGraphImpl();
         wg1.addNode(x, Map.of(x, v0, a, v3));
         wg1.addNode(y, Map.of(y, v0, b, v3));
         wg1.addNode(a, Map.of(a, v0, b, v2, i, v3));
@@ -69,12 +69,12 @@ public class TestWeightedGraph_4 {
         wg1.addNode(i, Map.of(i, v0, j, v4));
         wg1.addNode(j, Map.of(j, v0));
 
-        wg2 = new WeightedGraphImpl(LinkedHashMap::new);
+        wg2 = new WeightedGraphImpl();
         wg2.addNode(x, Map.of(x, v0, a, v3));
-        wg2.addNode(y, Map.of(y, v0, b, v3));
         wg2.addNode(a, Map.of(a, v0, b, v2, i, v3));
-        wg2.addNode(b, Map.of(b, v0, a, v2));
         wg2.addNode(i, Map.of(i, v0, j, v4));
+        wg2.addNode(y, Map.of(y, v0, b, v3));
+        wg2.addNode(b, Map.of(b, v0, a, v2));
         wg2.addNode(j, Map.of(j, v0));
 
         wgs = List.of(wg1, wg2);

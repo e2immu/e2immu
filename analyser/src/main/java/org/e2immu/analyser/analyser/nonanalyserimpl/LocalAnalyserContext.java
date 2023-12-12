@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.nonanalyserimpl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.util.Cache;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -168,5 +169,10 @@ public class LocalAnalyserContext implements AnalyserContext {
     public TypeInspection getTypeInspection(TypeInfo typeInfo) {
         if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get();
         return parent.getTypeInspection(typeInfo);
+    }
+
+    @Override
+    public Cache getCache() {
+        return parent.getCache();
     }
 }

@@ -58,18 +58,18 @@ public class TestWeightedGraph_5 {
         thisVar = makeVariable("this");
         delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
-        wg1 = new WeightedGraphImpl(TreeMap::new);
+        wg1 = new WeightedGraphImpl();
         wg1.addNode(x1, Map.of(f, v0, thisVar, v3, x3, delay));
         wg1.addNode(x2, Map.of(f, v0));
         wg1.addNode(x3, Map.of(x1, delay, f, delay, thisVar, delay));
         wg1.addNode(f, Map.of(x1, v0, x2, v0, x3, delay, thisVar, delay));
         wg1.addNode(thisVar, Map.of());
 
-        wg2 = new WeightedGraphImpl(LinkedHashMap::new);
+        wg2 = new WeightedGraphImpl();
+        wg2.addNode(f, Map.of(x1, v0, x2, v0, x3, delay, thisVar, delay));
         wg2.addNode(x1, Map.of(f, v0, thisVar, v3, x3, delay));
         wg2.addNode(x2, Map.of(f, v0));
         wg2.addNode(x3, Map.of(x1, delay, f, delay, thisVar, delay));
-        wg2.addNode(f, Map.of(x1, v0, x2, v0, x3, delay, thisVar, delay));
         wg2.addNode(thisVar, Map.of());
 
         wgs = List.of(wg1, wg2);

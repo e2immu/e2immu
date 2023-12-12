@@ -18,7 +18,8 @@ public class DijkstraShortestPath {
         Stream<Map.Entry<Integer, Long>> edges(int i);
     }
 
-    /*
+    /* from wikipedia:
+
 1  function Dijkstra(Graph, source):
 2      dist[source] ← 0                           // Initialization
 3
@@ -47,6 +48,9 @@ public class DijkstraShortestPath {
     public long[] shortestPath(int numVertices, EdgeProvider edgeProvider, int sourceVertex) {
         long[] dist = new long[numVertices]; // dist[source]<-0 implicit
 
+        // https://en.wikipedia.org/wiki/Priority_queue
+        // current implementation from org.jheaps library, recursively included in JGraphT
+        // https://en.wikipedia.org/wiki/Pairing_heap,
         PairingHeap<Long, Integer> priorityQueue = new PairingHeap<>(); // default comparator
         List<AddressableHeap.Handle<Long, Integer>> handles = new ArrayList<>(numVertices);
 

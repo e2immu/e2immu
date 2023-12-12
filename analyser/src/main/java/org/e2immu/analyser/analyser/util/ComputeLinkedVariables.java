@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -102,7 +101,7 @@ public class ComputeLinkedVariables {
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 EvaluationContext evaluationContext) {
-        WeightedGraph weightedGraph = new WeightedGraphImpl(HashMap::new);
+        WeightedGraph weightedGraph = new WeightedGraphImpl(evaluationContext.getAnalyserContext().getCache());
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> done = new HashSet<>();
         Set<Variable> linkingNotYetSet = new HashSet<>();

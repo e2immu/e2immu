@@ -60,7 +60,7 @@ public class TestWeightedGraph_6 {
         lt = makeVariable("lt");
         delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
-        WeightedGraph wg1 = new WeightedGraphImpl(TreeMap::new);
+        WeightedGraph wg1 = new WeightedGraphImpl();
         wg1.addNode(x, Map.of(e, v0, se, v0));
         wg1.addNode(se, Map.of(x, v0, e, v2, s, v2));
         wg1.addNode(e, Map.of(x, v0, se, delay));
@@ -68,14 +68,10 @@ public class TestWeightedGraph_6 {
         wg1.addNode(lt, Map.of());
 
         ShortestPathImpl sp1 = (ShortestPathImpl) wg1.shortestPath();
-        assertEquals(e, sp1.variablesGet(0));
-        assertEquals(lt, sp1.variablesGet(1));
-        assertEquals(s, sp1.variablesGet(2));
-        assertEquals(se, sp1.variablesGet(3));
-        assertEquals(x, sp1.variablesGet(4));
+        testSorted(sp1);
 
         // produces a different sorting, different order
-        WeightedGraph wg2 = new WeightedGraphImpl(LinkedHashMap::new);
+        WeightedGraph wg2 = new WeightedGraphImpl();
         wg2.addNode(x, e, v0, se, v0);
         wg2.addNode(se, x, v0, e, v2, s, v2);
         wg2.addNode(e, x, v0, se, delay);
@@ -83,14 +79,10 @@ public class TestWeightedGraph_6 {
         wg2.addNode(lt);
 
         ShortestPathImpl sp2 = (ShortestPathImpl) wg2.shortestPath();
-        assertEquals(x, sp2.variablesGet(0));
-        assertEquals(e, sp2.variablesGet(1));
-        assertEquals(se, sp2.variablesGet(2));
-        assertEquals(s, sp2.variablesGet(3));
-        assertEquals(lt, sp2.variablesGet(4));
+        testSorted(sp2);
 
         // produces a different sorting, different order
-        WeightedGraph wg3 = new WeightedGraphImpl(LinkedHashMap::new);
+        WeightedGraph wg3 = new WeightedGraphImpl();
         wg3.addNode(x, se, v0, e, v0);
         wg3.addNode(se, x, v0, e, v2, s, v2);
         wg3.addNode(e, x, v0, se, delay);
@@ -98,13 +90,18 @@ public class TestWeightedGraph_6 {
         wg3.addNode(lt);
 
         ShortestPathImpl sp3 = (ShortestPathImpl) wg3.shortestPath();
-        assertEquals(x, sp3.variablesGet(0));
-        assertEquals(se, sp3.variablesGet(1));
-        assertEquals(e, sp3.variablesGet(2));
-        assertEquals(s, sp3.variablesGet(3));
-        assertEquals(lt, sp3.variablesGet(4));
+        testSorted(sp3);
 
         sps = List.of(sp1, sp2, sp3);
+    }
+
+    // NOTE: reverse string sort (last letter first)
+    private void testSorted(ShortestPathImpl sp1) {
+        assertEquals(e, sp1.variablesGet(0));
+        assertEquals(se, sp1.variablesGet(1));
+        assertEquals(s, sp1.variablesGet(2));
+        assertEquals(lt, sp1.variablesGet(3));
+        assertEquals(x, sp1.variablesGet(4));
     }
 
     @Test

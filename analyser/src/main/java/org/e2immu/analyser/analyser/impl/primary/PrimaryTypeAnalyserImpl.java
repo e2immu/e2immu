@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
+import org.e2immu.analyser.analyser.util.Cache;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
@@ -441,5 +442,11 @@ public class PrimaryTypeAnalyserImpl implements PrimaryTypeAnalyser {
     public TypeInspection getTypeInspection(TypeInfo typeInfo) {
         if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get();
         return parent.getTypeInspection(typeInfo);
+    }
+
+    @Override
+    public Cache getCache() {
+        // is in GlobalTypeContext
+        return parent.getCache();
     }
 }

@@ -13,7 +13,6 @@
  */
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
@@ -21,30 +20,31 @@ import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.graph.op.DijkstraShortestPath;
 import org.e2immu.support.Freezable;
 import org.jgrapht.alg.util.UnionFind;
 
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 public class WeightedGraphImpl extends Freezable implements WeightedGraph {
 
-    @SuppressWarnings("unchecked")
-    public WeightedGraphImpl(Supplier<Map<?, ?>> mapSupplier) {
-        this.mapSupplier = mapSupplier;
-        nodeMap = (Map<Variable, Node>) mapSupplier.get();
+    private final Map<Variable, Node> nodeMap;
+    private final Cache cache;
+
+    // for testing
+    public WeightedGraphImpl() {
+        this(new GraphCacheImpl(10));
     }
 
-    /**
-     * In-house implementation of a directed graph that is used to model the links between objects.
-     * A distance of 0 (STATICALLY_ASSIGNED) is always kept, even across delays.
-     * <p>
-     * Hidden content: Variable, DV are interfaces with different implementations.
-     */
+    @SuppressWarnings("unchecked")
+    public WeightedGraphImpl(Cache cache) {
+        nodeMap = new LinkedHashMap<>();
+        this.cache = cache;
+    }
+
     private static class Node {
         Map<Variable, DV> dependsOn;
         final Variable variable;
@@ -54,9 +54,13 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         }
     }
 
-    private final Supplier<Map<?, ?>> mapSupplier;
-    private final Map<Variable, Node> nodeMap;
+    /*
+    https://en.wikipedia.org/wiki/Disjoint-set_data_structure
+    loop over all vertices and edges, and use a disjoint-set data structure to efficiently group or cluster all
+    nodes linked by STATICALLY_ASSIGNED edges.
 
+    The return-value cluster is a special case, it overlaps with the other ones.
+     */
     @SuppressWarnings("unchecked")
     @Override
     public ClusterResult staticClusters() {
@@ -84,18 +88,19 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                 }
             }
         }
-        Map<Variable, Cluster> representativeToCluster = (Map<Variable, Cluster>) mapSupplier.get();
+        Map<Variable, Cluster> representativeToCluster = new LinkedHashMap<>();
         for (Variable variable : nodeMap.keySet()) {
             if (!(variable instanceof ReturnVariable)) {
                 Variable representative = unionFind.find(variable);
-                Cluster cluster = representativeToCluster.computeIfAbsent(representative, v -> new Cluster(new HashSet<>()));
+                Cluster cluster = representativeToCluster.computeIfAbsent(representative,
+                        v -> new Cluster(new LinkedHashSet<>()));
                 cluster.variables().add(variable);
             }
         }
         List<Cluster> clusters = representativeToCluster.values().stream().toList();
         Cluster rvCluster;
         if (rv != null) {
-            rvCluster = new Cluster(new HashSet<>());
+            rvCluster = new Cluster(new LinkedHashSet<>());
             rvCluster.variables().add(rv);
             for (Variable v : dependsOnRv) {
                 Variable r = unionFind.find(v);
@@ -139,7 +144,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
     @SuppressWarnings("unchecked")
     @Override
     public void addNode(Variable v, Object... variableDvPairs) {
-        Map<Variable, DV> dependsOn = (Map<Variable, DV>) mapSupplier.get();
+        Map<Variable, DV> dependsOn = new LinkedHashMap<>();
         for (int i = 0; i < variableDvPairs.length; i += 2) {
             dependsOn.put((Variable) variableDvPairs[i], (DV) variableDvPairs[i + 1]);
         }
@@ -155,7 +160,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         Node node = getOrCreate(v);
         for (Map.Entry<Variable, DV> e : dependsOn.entrySet()) {
             if (node.dependsOn == null) {
-                node.dependsOn = (Map<Variable, DV>) mapSupplier.get();
+                node.dependsOn = new LinkedHashMap<>();
             }
             DV linkLevel = e.getValue();
             assert !LinkedVariables.LINK_INDEPENDENT.equals(linkLevel);
@@ -168,44 +173,88 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                     && !(v instanceof ReturnVariable)) {
                 Node n = getOrCreate(e.getKey());
                 if (n.dependsOn == null) {
-                    n.dependsOn = (Map<Variable, DV>) mapSupplier.get();
+                    n.dependsOn = new LinkedHashMap<>();
                 }
                 n.dependsOn.merge(v, linkLevel, merger);
             }
         }
     }
 
+    static Comparator<String> REVERSE_STRING_COMPARATOR = (s1, s2) -> {
+        int i1 = s1.length() - 1;
+        int i2 = s2.length() - 1;
+        while (i1 >= 0 && i2 >= 0) {
+            int c = Character.compare(s1.charAt(i1), s2.charAt(i2));
+            if (c != 0) return c;
+            --i1;
+            --i2;
+        }
+        if (i1 >= 0) return 1;
+        if (i2 >= 0) return -1;
+        return 0;
+    };
+
+    static Comparator<Variable> REVERSE_FQN_COMPARATOR = (v1, v2) ->
+            REVERSE_STRING_COMPARATOR.compare(v1.fullyQualifiedName(), v2.fullyQualifiedName());
+
     @SuppressWarnings("unchecked")
     @Override
     public ShortestPath shortestPath() {
         int n = nodeMap.size();
         Variable[] variables = new Variable[n];
-        Map<Variable, Integer> variableIndex = (Map<Variable, Integer>) mapSupplier.get();
-        int i = 0;
+        // -- CACHE --
+        int j = 0;
         for (Variable v : nodeMap.keySet()) {
+            variables[j++] = v;
+        }
+        // we need a stable order across the variables; given the huge prefixes of parameters and fields,
+        // it seems a lot faster to sort starting from the back.
+        Arrays.sort(variables, REVERSE_FQN_COMPARATOR); // default: by name
+        // -- CACHE --
+        Map<Variable, Integer> variableIndex = new LinkedHashMap<>();
+        int i = 0;
+        for (Variable v : variables) {
             variableIndex.put(v, i);
             variables[i] = v;
             ++i;
         }
-        Map<Integer, Map<Integer, Long>> edges = new HashMap<>();
+        StringBuilder sb = new StringBuilder(n * n * 5);
+        Map<Integer, Map<Integer, Long>> edges = new LinkedHashMap<>();
         CausesOfDelay delay = null;
-        for (Map.Entry<Variable, Node> entry : nodeMap.entrySet()) {
-            Map<Variable, DV> dependsOn = entry.getValue().dependsOn;
-            if (dependsOn != null) {
-                int d1 = variableIndex.get(entry.getKey());
-                Map<Integer, Long> edgesOfD1 = new HashMap<>();
+        for (int d1 = 0; d1 < n; d1++) {
+            Node node = nodeMap.get(variables[d1]);
+            Map<Variable, DV> dependsOn = node.dependsOn;
+            sb.append(d1);
+            if (dependsOn != null && !dependsOn.isEmpty()) {
+
+                Map<Integer, Long> edgesOfD1 = new LinkedHashMap<>();
                 edges.put(d1, edgesOfD1);
+                List<String> unsorted = new ArrayList<>(dependsOn.size());
                 for (Map.Entry<Variable, DV> e2 : dependsOn.entrySet()) {
                     int d2 = variableIndex.get(e2.getKey());
+
+                    String code;
                     DV dv = e2.getValue();
-                    if (delay == null && dv.isDelayed()) {
-                        delay = dv.causesOfDelay();
-                    }
+                    if (dv.isDelayed()) {
+                        if (delay == null) {
+                            delay = dv.causesOfDelay();
+                        }
+                        code = "D";
+                    } else if (dv instanceof NoDelay noDelay) {
+                        code = Character.toString('0' + noDelay.value());
+                    } else throw new UnsupportedOperationException();
                     long d = ShortestPathImpl.toDistanceComponent(dv);
                     edgesOfD1.put(d2, d);
+                    unsorted.add(d2 + ":" + code);
                 }
+                sb.append("(");
+                sb.append(unsorted.stream().sorted().collect(Collectors.joining(";")));
+                sb.append(")");
+            } else {
+                sb.append("*");
             }
         }
+        Cache.Hash hash = cache.createHash(sb.toString());
         return new ShortestPathImpl(variableIndex, variables, edges, delay);
     }
 

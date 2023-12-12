@@ -66,7 +66,7 @@ public class TestWeightedGraph_1 {
         removed = makeVariable("removed");
         delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
-        wg = new WeightedGraphImpl(TreeMap::new);
+        wg = new WeightedGraphImpl();
         wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, v4, smallerCycle, v4));
         wg.addNode(removed, Map.of(removed, v0, thisVar, delay));
         wg.addNode(smallerCycle, Map.of(smallerCycle, v0, thisVar, v4));

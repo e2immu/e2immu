@@ -19,6 +19,8 @@ import org.e2immu.analyser.analyser.impl.shallow.ShallowFieldAnalyser;
 import org.e2immu.analyser.analyser.impl.shallow.ShallowMethodAnalyser;
 import org.e2immu.analyser.analyser.impl.shallow.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
+import org.e2immu.analyser.analyser.util.Cache;
+import org.e2immu.analyser.analyser.util.GraphCacheImpl;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
@@ -60,6 +62,8 @@ public class GlobalAnalyserContext implements AnalyserContext {
 
     private final List<String> onDemandHistory = new ArrayList<>();
     private final TimedLogger onDemandLogger = new TimedLogger(LOGGER, 1000L);
+
+    private final Cache cache = new GraphCacheImpl(1000);
 
     public GlobalAnalyserContext(TypeContext typeContext,
                                  Configuration configuration,
@@ -320,5 +324,10 @@ public class GlobalAnalyserContext implements AnalyserContext {
     public TypeInspection getTypeInspection(TypeInfo typeInfo) {
         if (typeInfo.typeInspection.isSet()) return typeInfo.typeInspection.get();
         return typeContext.getTypeInspection(typeInfo);
+    }
+
+    @Override
+    public Cache getCache() {
+        return cache;
     }
 }
