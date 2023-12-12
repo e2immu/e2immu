@@ -63,7 +63,7 @@ public class GlobalAnalyserContext implements AnalyserContext {
     private final List<String> onDemandHistory = new ArrayList<>();
     private final TimedLogger onDemandLogger = new TimedLogger(LOGGER, 1000L);
 
-    private final Cache cache = new GraphCacheImpl(1000);
+    private final Cache cache = new GraphCacheImpl(200);
 
     public GlobalAnalyserContext(TypeContext typeContext,
                                  Configuration configuration,

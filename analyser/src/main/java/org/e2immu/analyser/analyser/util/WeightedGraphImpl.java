@@ -24,6 +24,7 @@ import org.e2immu.support.Freezable;
 import org.jgrapht.alg.util.UnionFind;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
@@ -215,7 +216,6 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         int i = 0;
         for (Variable v : variables) {
             variableIndex.put(v, i);
-            variables[i] = v;
             ++i;
         }
         StringBuilder sb = new StringBuilder(n * n * 5);
@@ -233,19 +233,13 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                 for (Map.Entry<Variable, DV> e2 : dependsOn.entrySet()) {
                     int d2 = variableIndex.get(e2.getKey());
 
-                    String code;
                     DV dv = e2.getValue();
-                    if (dv.isDelayed()) {
-                        if (delay == null) {
-                            delay = dv.causesOfDelay();
-                        }
-                        code = "D";
-                    } else if (dv instanceof NoDelay noDelay) {
-                        code = Character.toString('0' + noDelay.value());
-                    } else throw new UnsupportedOperationException();
+                    if (dv.isDelayed() && delay == null) {
+                        delay = dv.causesOfDelay();
+                    }
                     long d = ShortestPathImpl.toDistanceComponent(dv);
                     edgesOfD1.put(d2, d);
-                    unsorted.add(d2 + ":" + code);
+                    unsorted.add(d2 + ":" + ShortestPathImpl.code(dv));
                 }
                 sb.append("(");
                 sb.append(unsorted.stream().sorted().collect(Collectors.joining(";")));
@@ -255,7 +249,9 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             }
         }
         Cache.Hash hash = cache.createHash(sb.toString());
-        return new ShortestPathImpl(variableIndex, variables, edges, delay);
+        ShortestPathImpl.LinkMap linkMap = (ShortestPathImpl.LinkMap)
+                cache.computeIfAbsent(hash, h -> new ShortestPathImpl.LinkMap(new LinkedHashMap<>(), new AtomicInteger()));
+        return new ShortestPathImpl(variableIndex, variables, edges, delay, linkMap);
     }
 
     @Override

@@ -6,6 +6,7 @@ import java.util.function.Function;
 public interface Cache {
 
     interface CacheElement {
+        int savings();
     }
 
     record Hash(byte[] bytes) {

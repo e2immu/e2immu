@@ -3,11 +3,13 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.graph.op.DijkstraShortestPath;
 import org.jheaps.AddressableHeap;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
@@ -23,15 +25,19 @@ public class ShortestPathImpl implements ShortestPath {
     private final Map<Integer, Map<Integer, Long>> edges;
     private final CausesOfDelay someDelay;
     private final DijkstraShortestPath dijkstraShortestPath;
+    private final LinkMap linkMap;
 
     ShortestPathImpl(Map<Variable, Integer> variableIndex,
                      Variable[] variables,
-                     Map<Integer, Map<Integer, Long>> edges, CausesOfDelay someDelay) {
+                     Map<Integer, Map<Integer, Long>> edges,
+                     CausesOfDelay someDelay,
+                     LinkMap linkMap) {
         this.variables = variables;
         this.edges = edges;
         this.variableIndex = variableIndex;
         this.someDelay = someDelay;
         dijkstraShortestPath = new DijkstraShortestPath();
+        this.linkMap = linkMap;
     }
 
 
@@ -62,18 +68,46 @@ public class ShortestPathImpl implements ShortestPath {
         return LinkedVariables.LINK_COMMON_HC;
     }
 
+    public static char code(DV dv) {
+        if (dv.isDelayed()) return 'D';
+        if (dv instanceof NoDelay noDelay) {
+            return (char) ((int) '0' + noDelay.value());
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    record Key(int start, long maxWeight) {
+    }
+
+    record LinkMap(Map<Key, long[]> map, AtomicInteger savingsCount) implements Cache.CacheElement {
+        @Override
+        public int savings() {
+            return savingsCount.get();
+        }
+    }
+
 
     @Override
     public Map<Variable, DV> links(Variable v, DV maxWeight) {
         int startVertex = variableIndex.get(v);
         long maxWeightLong = maxWeight == null ? 0L : toDistanceComponent(maxWeight);
-        DijkstraShortestPath.EdgeProvider edgeProvider = i -> {
-            Map<Integer, Long> edgeMap = edges.get(i);
-            if (edgeMap == null) return Stream.of();
-            return edgeMap.entrySet().stream()
-                    .filter(e -> maxWeight == null || e.getValue() <= maxWeightLong);
-        };
-        long[] shortest = dijkstraShortestPath.shortestPath(variables.length, edgeProvider, startVertex);
+        Key key = new Key(startVertex, maxWeightLong);
+        long[] inMap = linkMap.map.get(key);
+        long[] shortest;
+        if (inMap != null) {
+            shortest = inMap;
+            linkMap.savingsCount.incrementAndGet();
+        } else {
+            DijkstraShortestPath.EdgeProvider edgeProvider = i -> {
+                Map<Integer, Long> edgeMap = edges.get(i);
+                if (edgeMap == null) return Stream.of();
+                return edgeMap.entrySet().stream()
+                        .filter(e -> maxWeight == null || e.getValue() <= maxWeightLong);
+            };
+            shortest = dijkstraShortestPath.shortestPath(variables.length, edgeProvider, startVertex);
+            linkMap.map.put(key, shortest);
+            linkMap.savingsCount.decrementAndGet();
+        }
         Map<Variable, DV> result = new HashMap<>();
         for (int j = 0; j < shortest.length; j++) {
             long d = shortest[j];
