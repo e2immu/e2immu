@@ -137,7 +137,6 @@ public class ComputeLinkedVariables {
             start = new HashSet<>(linked);
             iteration1Plus = true;
         }
-        augmentGraph(weightedGraph);
         WeightedGraph.ClusterResult cr = weightedGraph.staticClusters();
         ShortestPath shortestPath = weightedGraph.shortestPath();
 
@@ -145,72 +144,6 @@ public class ComputeLinkedVariables {
                 cr.variablesInClusters(), cr.clusters(), cr.returnValueCluster(),
                 cr.rv(), evaluationContext.breakDelayLevel(), oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
-    }
-
-    /*
-    when a variable points LINK_IS_HC_OF to 2 other variables, these two variables must be linked with COMMON_HC,
-    unless there's already a lower link between them, en which case, we take the lower one.
-
-    See e.g. ListUtil for a nice example, which is pretty common.
-     */
-    private static void augmentGraph(WeightedGraph weightedGraph) {
-        Map<Variable, Map<Variable, DV>> toAdd3 = new HashMap<>();
-        ShortestPath shortestPath = weightedGraph.shortestPath();
-        weightedGraph.visit((v, map) -> {
-            if (map != null) {
-                CausesOfDelay mapped3Delays = CausesOfDelay.EMPTY;
-                List<Variable> mapped3 = new ArrayList<>();
-                for (Map.Entry<Variable, DV> entry : map.entrySet()) {
-                    Variable vv = entry.getKey();
-                    if (!(vv instanceof This)
-                            && !vv.parameterizedType().isPrimitiveExcludingVoid()
-                            && (entry.getValue().equals(LinkedVariables.LINK_IS_HC_OF) || entry.getValue().isDelayed())) {
-                        mapped3.add(vv);
-                        mapped3Delays = mapped3Delays.merge(entry.getValue().causesOfDelay());
-                    }
-                }
-                if (mapped3.size() > 1) {
-                    LOGGER.trace("Augmenting links: found {}", mapped3);
-                    for (int i = 0; i < mapped3.size(); i++) {
-                        Variable v1 = mapped3.get(i);
-                        for (Variable v2 : mapped3.subList(i + 1, mapped3.size())) {
-                            DV minValuePresent;
-                            DV v1ToV2 = weightedGraph.edgeValueOrNull(v1, v2);
-                            DV v2ToV1 = weightedGraph.edgeValueOrNull(v2, v1);
-                            if (mapped3Delays.isDelayed()) {
-                                minValuePresent = mapped3Delays;
-                            } else {
-                                DV v1ToV2Value = Objects.requireNonNullElse(v1ToV2, LINK_COMMON_HC);
-                                DV v2ToV1Value = Objects.requireNonNullElse(v2ToV1, LINK_COMMON_HC);
-                                minValuePresent = v1ToV2Value.min(v2ToV1Value); // could still be a delay!!!
-                            }
-                            if (v1ToV2 == null) {
-                                Map<Variable, DV> to = toAdd3.computeIfAbsent(v1, k -> new HashMap<>());
-                                if (!to.containsKey(v2)) {
-                                    DV shortest = shortestPath.links(v1, null).get(v2);
-                                    DV min = shortest == null ? minValuePresent : minValuePresent.min(shortest);
-                                    to.put(v2, min);
-                                }
-                            }
-                            if (v2ToV1 == null) {
-                                Map<Variable, DV> to = toAdd3.computeIfAbsent(v2, k -> new HashMap<>());
-                                if (!to.containsKey(v1)) {
-                                    DV shortest = shortestPath.links(v2, null).get(v1);
-                                    DV min = shortest == null ? minValuePresent : minValuePresent.min(shortest);
-                                    to.put(v1, min);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        for (Map.Entry<Variable, Map<Variable, DV>> entry : toAdd3.entrySet()) {
-            LOGGER.trace("Augmenting links: from {} to {}", entry.getKey().simpleName(), entry.getValue());
-            weightedGraph.addNode(entry.getKey(), entry.getValue(), false, (v1, v2) -> {
-                throw new UnsupportedOperationException();
-            });
-        }
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
@@ -239,7 +172,7 @@ public class ComputeLinkedVariables {
                 && !curated.isDelayed()) {
             curated = curated.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
         }
-        weightedGraph.addNode(variable, curated.variables(), false, DV::min);
+        weightedGraph.addNode(variable, curated.variables());
         return curated;
     }
 
@@ -724,7 +657,7 @@ public class ComputeLinkedVariables {
             finalModified = new HashMap<>();
             for (Variable variable : variablesInClusters) {
                 DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
-                Map<Variable, DV> map = shortestPath.linksFollowIsHCOf(variable);
+                Map<Variable, DV> map = shortestPath.links(variable, LINK_DEPENDENT);
 
                 DV max = map.values().stream().reduce(DelayFactory.initialDelay(), DV::max);
                 CausesOfDelay clusterDelay = max.isInitialDelay() ? CausesOfDelay.EMPTY : max.causesOfDelay();
@@ -776,7 +709,7 @@ public class ComputeLinkedVariables {
                     VariableInfo vi = vic.best(stage);
                     DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
                     int finalValue;
-                    Map<Variable, DV> map = shortestPath.links(variable, LinkedVariables.LINK_DEPENDENT);
+                    Map<Variable, DV> map = shortestPath.links(variable, LINK_DEPENDENT);
                     if (modified.isDelayed() || modificationDelayIn(map.keySet())) {
                         finalValue = -1;
                     } else {

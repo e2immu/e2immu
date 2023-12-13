@@ -8,6 +8,4 @@ import java.util.Map;
 
 public interface ShortestPath {
     Map<Variable, DV> links(@NotNull Variable v, DV maxWeight);
-
-    Map<Variable, DV> linksFollowIsHCOf(Variable v);
 }

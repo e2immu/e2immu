@@ -6,13 +6,10 @@ import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.graph.op.DijkstraShortestPath;
-import org.jheaps.AddressableHeap;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
-import static org.e2immu.analyser.analyser.LinkedVariables.LINK_STATICALLY_ASSIGNED;
 
 /*
 Note: the comparator and the sum work according to different order of the values.
@@ -40,31 +37,30 @@ public class ShortestPathImpl implements ShortestPath {
         this.linkMap = linkMap;
     }
 
+    private static final int BITS = 12;
 
-    private static final long DELAYED = 1L << 10;
-    private static final long ASSIGNED = 1L << 20;
-    private static final long DEPENDENT = 1L << 30;
-    private static final long IS_HC_OF = 1L << 40;
-    private static final long COMMON_HC = 1L << 50;
+    private static final long DELAYED = 1L << BITS;
+    private static final long ASSIGNED = 1L << (2 * BITS);
+    private static final long DEPENDENT = 1L << (3 * BITS);
+    private static final long INDEPENDENT_HC = 1L << (4 * BITS);
 
     public static long toDistanceComponent(DV dv) {
         if (LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(dv)) return 1;
         if (dv.isDelayed()) return DELAYED;
         if (LinkedVariables.LINK_ASSIGNED.equals(dv)) return ASSIGNED;
         if (LinkedVariables.LINK_DEPENDENT.equals(dv)) return DEPENDENT;
-        if (LinkedVariables.LINK_IS_HC_OF.equals(dv)) return IS_HC_OF;
-        return COMMON_HC;
+        assert LinkedVariables.LINK_COMMON_HC.equals(dv);
+        return INDEPENDENT_HC;
     }
 
     public static DV fromDistanceSum(long l, CausesOfDelay someDelay) {
         if (l < DELAYED) return LinkedVariables.LINK_STATICALLY_ASSIGNED;
-        if (((l >> 10) & 1023) > 0) {
+        if (((l >> BITS) & (DELAYED - 1)) > 0) {
             assert someDelay != null && someDelay.isDelayed();
             return someDelay;
         }
         if (l < DEPENDENT) return LinkedVariables.LINK_ASSIGNED;
-        if (l < IS_HC_OF) return LinkedVariables.LINK_DEPENDENT;
-        if (l < COMMON_HC) return LinkedVariables.LINK_IS_HC_OF;
+        if (l < INDEPENDENT_HC) return LinkedVariables.LINK_DEPENDENT;
         return LinkedVariables.LINK_COMMON_HC;
     }
 
@@ -119,36 +115,6 @@ public class ShortestPathImpl implements ShortestPath {
         return result;
     }
 
-    /*
-    Once we have followed a -3-> edge, we can follow <-4-> edges too.
-     */
-
-    @Override
-    public Map<Variable, DV> linksFollowIsHCOf(Variable startingPoint) {
-        Map<Variable, DV> map = links(startingPoint, LinkedVariables.LINK_IS_HC_OF);
-        List<Variable> toDo = new ArrayList<>();
-        for (Map.Entry<Variable, DV> entry : map.entrySet()) {
-            if (entry.getValue().equals(LinkedVariables.LINK_IS_HC_OF)) {
-                toDo.add(entry.getKey());
-            }
-        }
-        while (!toDo.isEmpty()) {
-            Variable next = toDo.remove(0);
-            Map<Variable, DV> mapNext = links(next, null);
-            for (Map.Entry<Variable, DV> entry : mapNext.entrySet()) {
-                Variable v = entry.getKey();
-                if (!map.containsKey(v)) {
-                    DV dv = entry.getValue();
-                    if (dv.isDelayed() || dv.equals(LinkedVariables.LINK_COMMON_HC)) {
-                        map.put(v, dv);
-                    } else if (LinkedVariables.LINK_IS_HC_OF.equals(dv)) {
-                        toDo.add(v);
-                    }
-                }
-            }
-        }
-        return map;
-    }
     // for testing
 
     Variable variablesGet(int i) {

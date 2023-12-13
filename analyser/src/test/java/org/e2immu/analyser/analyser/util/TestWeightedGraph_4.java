@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
@@ -23,10 +24,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,13 +33,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*
 testing the increase in maxIncl
  */
-public class TestWeightedGraph_4 {
+public class TestWeightedGraph_4 extends CommonWG {
 
     Variable x, a, i, y, b, j;
-    final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v2 = LINK_DEPENDENT;
-    final DV v3 = LINK_IS_HC_OF;
-    final DV v4 = LINK_COMMON_HC;
     WeightedGraph wg1, wg2;
     List<WeightedGraph> wgs;
 
@@ -62,18 +56,18 @@ public class TestWeightedGraph_4 {
         j = makeVariable("j"); // type List<List<X>>
 
         wg1 = new WeightedGraphImpl();
-        wg1.addNode(x, Map.of(x, v0, a, v3));
-        wg1.addNode(y, Map.of(y, v0, b, v3));
-        wg1.addNode(a, Map.of(a, v0, b, v2, i, v3));
+        wg1.addNode(x, Map.of(x, v0, a, v4));
+        wg1.addNode(y, Map.of(y, v0, b, v4));
+        wg1.addNode(a, Map.of(a, v0, b, v2, i, v4));
         wg1.addNode(b, Map.of(b, v0, a, v2));
         wg1.addNode(i, Map.of(i, v0, j, v4));
         wg1.addNode(j, Map.of(j, v0));
 
         wg2 = new WeightedGraphImpl();
-        wg2.addNode(x, Map.of(x, v0, a, v3));
-        wg2.addNode(a, Map.of(a, v0, b, v2, i, v3));
+        wg2.addNode(x, Map.of(x, v0, a, v4));
+        wg2.addNode(a, Map.of(a, v0, b, v2, i, v4));
         wg2.addNode(i, Map.of(i, v0, j, v4));
-        wg2.addNode(y, Map.of(y, v0, b, v3));
+        wg2.addNode(y, Map.of(y, v0, b, v4));
         wg2.addNode(b, Map.of(b, v0, a, v2));
         wg2.addNode(j, Map.of(j, v0));
 
@@ -94,13 +88,13 @@ public class TestWeightedGraph_4 {
     @Test
     public void test2() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtX = wg.shortestPath().linksFollowIsHCOf(x);
+            Map<Variable, DV> startAtX = wg.shortestPath().links(x, null);
             assertEquals(5, startAtX.size());
             assertEquals(v0, startAtX.get(x));
             assertNull(startAtX.get(y));
-            assertEquals(v3, startAtX.get(a));
-            assertEquals(v3, startAtX.get(b));
-            assertEquals(v3, startAtX.get(i));
+            assertEquals(v4, startAtX.get(a));
+            assertEquals(v4, startAtX.get(b));
+            assertEquals(v4, startAtX.get(i));
             assertEquals(v4, startAtX.get(j));
         }
     }
@@ -108,19 +102,14 @@ public class TestWeightedGraph_4 {
     @Test
     public void test3() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtToDo = wg.shortestPath().linksFollowIsHCOf(a);
+            Map<Variable, DV> startAtToDo = wg.shortestPath().links(a, null);
             assertEquals(4, startAtToDo.size());
             assertNull(startAtToDo.get(x));
             assertNull(startAtToDo.get(y));
             assertEquals(v0, startAtToDo.get(a));
             assertEquals(v2, startAtToDo.get(b));
-            assertEquals(v3, startAtToDo.get(i));
+            assertEquals(v4, startAtToDo.get(i));
             assertEquals(v4, startAtToDo.get(j));
         }
-    }
-
-    private Variable makeVariable(String name) {
-        TypeInfo t = new TypeInfo("a.b.c", "T");
-        return new LocalVariableReference(new LocalVariable(name, new ParameterizedType(t, 0)));
     }
 }

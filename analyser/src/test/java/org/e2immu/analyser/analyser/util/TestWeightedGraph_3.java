@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.model.LocalVariable;
@@ -34,13 +35,9 @@ import java.util.TreeMap;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestWeightedGraph_3 {
+public class TestWeightedGraph_3 extends CommonWG {
 
     Variable d, n, node, nodeDependsOn, t, dependsOn, thisVar;
-    CausesOfDelay delay;
-    final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v2 = LINK_DEPENDENT;
-    final DV v3 = LINK_COMMON_HC;
     WeightedGraph wg;
 
     @BeforeEach
@@ -52,26 +49,20 @@ public class TestWeightedGraph_3 {
         t = makeVariable("t");
         dependsOn = makeVariable("dependsOn");
         thisVar = makeVariable("thisVar");
-        delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
         wg = new WeightedGraphImpl();
-        wg.addNode(d, Map.of(node, v3, nodeDependsOn, v3, dependsOn, v3, thisVar, delay));
+        wg.addNode(d, Map.of(node, v4, nodeDependsOn, v4, dependsOn, v4, thisVar, delay));
         wg.addNode(n, Map.of());
-        wg.addNode(node, Map.of(d, v3, nodeDependsOn, v2, dependsOn, v3));
-        wg.addNode(nodeDependsOn, Map.of(d, v3, node, v2, dependsOn, v3));
+        wg.addNode(node, Map.of(d, v4, nodeDependsOn, v2, dependsOn, v4));
+        wg.addNode(nodeDependsOn, Map.of(d, v4, node, v2, dependsOn, v4));
         wg.addNode(t, Map.of(thisVar, delay));
-        wg.addNode(dependsOn, Map.of(d, v3, node, v3, nodeDependsOn, v3));
+        wg.addNode(dependsOn, Map.of(d, v4, node, v4, nodeDependsOn, v4));
         wg.addNode(thisVar, Map.of(d, delay, t, delay));
     }
 
     @Test
     public void test1() {
-        Map<Variable, DV> thisLinks = wg.shortestPath().links(thisVar, v2);
+        Map<Variable, DV> thisLinks = wg.shortestPath().links(thisVar, LINK_DEPENDENT);
         assertEquals(3, thisLinks.size());
-    }
-
-    private Variable makeVariable(String name) {
-        TypeInfo t = new TypeInfo("a.b.c", "T");
-        return new LocalVariableReference(new LocalVariable(name, new ParameterizedType(t, 0)));
     }
 }

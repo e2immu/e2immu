@@ -42,14 +42,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /*
 testing the increase in maxIncl
  */
-public class TestWeightedGraph_6 {
+public class TestWeightedGraph_6 extends CommonWG {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestWeightedGraph_6.class);
 
     Variable x, e, se, s, lt;
-    final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v2 = LINK_DEPENDENT;
     List<ShortestPath> sps;
-    CausesOfDelay delay;
 
     @BeforeEach
     public void beforeEach() {
@@ -58,7 +55,6 @@ public class TestWeightedGraph_6 {
         se = makeVariable("s.e");
         s = makeVariable("s");
         lt = makeVariable("lt");
-        delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
         WeightedGraph wg1 = new WeightedGraphImpl();
         wg1.addNode(x, Map.of(e, v0, se, v0));
@@ -72,22 +68,22 @@ public class TestWeightedGraph_6 {
 
         // produces a different sorting, different order
         WeightedGraph wg2 = new WeightedGraphImpl();
-        wg2.addNode(x, e, v0, se, v0);
-        wg2.addNode(se, x, v0, e, v2, s, v2);
-        wg2.addNode(e, x, v0, se, delay);
-        wg2.addNode(s);
-        wg2.addNode(lt);
+        wg2.addNode(x, Map.of(e, v0, se, v0));
+        wg2.addNode(se, Map.of(x, v0, e, v2, s, v2));
+        wg2.addNode(e, Map.of(x, v0, se, delay));
+        wg2.addNode(s, Map.of());
+        wg2.addNode(lt, Map.of());
 
         ShortestPathImpl sp2 = (ShortestPathImpl) wg2.shortestPath();
         testSorted(sp2);
 
         // produces a different sorting, different order
         WeightedGraph wg3 = new WeightedGraphImpl();
-        wg3.addNode(x, se, v0, e, v0);
-        wg3.addNode(se, x, v0, e, v2, s, v2);
-        wg3.addNode(e, x, v0, se, delay);
-        wg3.addNode(s);
-        wg3.addNode(lt);
+        wg3.addNode(x, Map.of(se, v0, e, v0));
+        wg3.addNode(se, Map.of(x, v0, e, v2, s, v2));
+        wg3.addNode(e, Map.of(x, v0, se, delay));
+        wg3.addNode(s, Map.of());
+        wg3.addNode(lt, Map.of());
 
         ShortestPathImpl sp3 = (ShortestPathImpl) wg3.shortestPath();
         testSorted(sp3);
@@ -118,10 +114,5 @@ public class TestWeightedGraph_6 {
             assertNull(startAtX1.get(lt));
             cnt++;
         }
-    }
-
-    private Variable makeVariable(String name) {
-        TypeInfo t = new TypeInfo("a.b.c", "T");
-        return new LocalVariableReference(new LocalVariable(name, new ParameterizedType(t, 0)));
     }
 }

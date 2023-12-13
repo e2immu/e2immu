@@ -16,9 +16,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.support.Freezable;
 import org.jgrapht.alg.util.UnionFind;
@@ -26,7 +24,6 @@ import org.jgrapht.alg.util.UnionFind;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 
@@ -35,7 +32,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
     private final Map<Variable, Node> nodeMap;
     private final Cache cache;
 
-    // for testing
+    // for testing only!
     public WeightedGraphImpl() {
         this(new GraphCacheImpl(10));
     }
@@ -138,25 +135,8 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
     }
 
 
+    @SuppressWarnings("unchecked")
     public void addNode(Variable v, Map<Variable, DV> dependsOn) {
-        addNode(v, dependsOn, false, (o, n) -> o);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void addNode(Variable v, Object... variableDvPairs) {
-        Map<Variable, DV> dependsOn = new LinkedHashMap<>();
-        for (int i = 0; i < variableDvPairs.length; i += 2) {
-            dependsOn.put((Variable) variableDvPairs[i], (DV) variableDvPairs[i + 1]);
-        }
-        addNode(v, dependsOn, false, (o, n) -> o);
-    }
-
-    @SuppressWarnings("unchecked")
-    public void addNode(Variable v,
-                        Map<Variable, DV> dependsOn,
-                        boolean bidirectional,
-                        BinaryOperator<DV> merger) {
         ensureNotFrozen();
         Node node = getOrCreate(v);
         for (Map.Entry<Variable, DV> e : dependsOn.entrySet()) {
@@ -166,17 +146,20 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             DV linkLevel = e.getValue();
             assert !LinkedVariables.LINK_INDEPENDENT.equals(linkLevel);
 
-            node.dependsOn.merge(e.getKey(), linkLevel, merger);
-            if (bidirectional || LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(linkLevel)
-                    && !(e.getKey() instanceof This)
-                    && !(v instanceof This)
+            /*
+            ASSIGNED links are symmetrical, except for links involving the return variable.
+            All other links can be asymmetrical.
+             */
+            DV min = node.dependsOn.merge(e.getKey(), linkLevel, DV::min);
+            if ((LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(min)
+                    || LinkedVariables.LINK_ASSIGNED.equals(min))
                     && !(e.getKey() instanceof ReturnVariable)
                     && !(v instanceof ReturnVariable)) {
                 Node n = getOrCreate(e.getKey());
                 if (n.dependsOn == null) {
                     n.dependsOn = new LinkedHashMap<>();
                 }
-                n.dependsOn.merge(v, linkLevel, merger);
+                n.dependsOn.merge(v, min, DV::min);
             }
         }
     }

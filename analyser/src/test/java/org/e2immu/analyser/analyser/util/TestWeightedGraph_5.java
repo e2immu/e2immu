@@ -39,15 +39,12 @@ import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class TestWeightedGraph_5 {
+public class TestWeightedGraph_5 extends CommonWG {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestWeightedGraph_5.class);
 
     Variable x1, x2, x3, f, thisVar;
-    final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v3 = LINK_IS_HC_OF;
     WeightedGraph wg1, wg2;
     List<WeightedGraph> wgs;
-    CausesOfDelay delay;
 
     @BeforeEach
     public void beforeEach() {
@@ -56,10 +53,9 @@ public class TestWeightedGraph_5 {
         x3 = makeVariable("x3");
         f = makeVariable("f");
         thisVar = makeVariable("this");
-        delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
         wg1 = new WeightedGraphImpl();
-        wg1.addNode(x1, Map.of(f, v0, thisVar, v3, x3, delay));
+        wg1.addNode(x1, Map.of(f, v0, thisVar, v4, x3, delay));
         wg1.addNode(x2, Map.of(f, v0));
         wg1.addNode(x3, Map.of(x1, delay, f, delay, thisVar, delay));
         wg1.addNode(f, Map.of(x1, v0, x2, v0, x3, delay, thisVar, delay));
@@ -67,7 +63,7 @@ public class TestWeightedGraph_5 {
 
         wg2 = new WeightedGraphImpl();
         wg2.addNode(f, Map.of(x1, v0, x2, v0, x3, delay, thisVar, delay));
-        wg2.addNode(x1, Map.of(f, v0, thisVar, v3, x3, delay));
+        wg2.addNode(x1, Map.of(f, v0, thisVar, v4, x3, delay));
         wg2.addNode(x2, Map.of(f, v0));
         wg2.addNode(x3, Map.of(x1, delay, f, delay, thisVar, delay));
         wg2.addNode(thisVar, Map.of());
@@ -89,10 +85,5 @@ public class TestWeightedGraph_5 {
             assertEquals(delay, startAtX1.get(thisVar));
             cnt++;
         }
-    }
-
-    private Variable makeVariable(String name) {
-        TypeInfo t = new TypeInfo("a.b.c", "T");
-        return new LocalVariableReference(new LocalVariable(name, new ParameterizedType(t, 0)));
     }
 }

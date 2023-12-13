@@ -19,30 +19,23 @@ import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.TreeMap;
 
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class TestWeightedGraph_1 {
+public class TestWeightedGraph_1 extends CommonWG {
 
     Variable thisVar, toDo, nodeMap, cycle, smallerCycle, removed;
-    CausesOfDelay delay;
-    final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v4 = LINK_COMMON_HC;
     WeightedGraph wg;
     ShortestPath shortestPath;
+
     /*
      thisVar 0 <----D----> removed 0
        ^ <--\
@@ -64,7 +57,6 @@ public class TestWeightedGraph_1 {
         cycle = makeVariable("cycle");
         smallerCycle = makeVariable("smallerCycle");
         removed = makeVariable("removed");
-        delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
         wg = new WeightedGraphImpl();
         wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, v4, smallerCycle, v4));
@@ -88,7 +80,7 @@ public class TestWeightedGraph_1 {
 
     @Test
     public void test3() {
-        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, LINK_COMMON_HC);
+        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, null);
         assertEquals(6, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
         assertEquals(LINK_COMMON_HC, startAtToDo.get(cycle));
@@ -101,7 +93,7 @@ public class TestWeightedGraph_1 {
 
     @Test
     public void test4() {
-        Map<Variable, DV> startAtRemoved = shortestPath.links(removed, LINK_COMMON_HC);
+        Map<Variable, DV> startAtRemoved = shortestPath.links(removed, null);
         assertEquals(6, startAtRemoved.size());
         assertEquals(delay, startAtRemoved.get(thisVar));
         assertEquals(LINK_STATICALLY_ASSIGNED, startAtRemoved.get(removed));
@@ -121,8 +113,4 @@ public class TestWeightedGraph_1 {
         assertEquals(LINK_STATICALLY_ASSIGNED, startAtRemoved.get(removed));
     }
 
-    private Variable makeVariable(String name) {
-        TypeInfo t = new TypeInfo("a.b.c", "T");
-        return new LocalVariableReference(new LocalVariable(name, new ParameterizedType(t, 0)));
-    }
 }

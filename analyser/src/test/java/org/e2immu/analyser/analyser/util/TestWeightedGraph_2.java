@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.model.LocalVariable;
@@ -34,12 +35,9 @@ import java.util.TreeMap;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestWeightedGraph_2 {
+public class TestWeightedGraph_2 extends CommonWG {
 
     Variable first, next, sa, rv;
-    CausesOfDelay delay;
-    final DV v0 = LINK_STATICALLY_ASSIGNED;
-    final DV v3 = LINK_COMMON_HC;
     WeightedGraph wg;
 
     @BeforeEach
@@ -48,13 +46,12 @@ public class TestWeightedGraph_2 {
         next = makeVariable("next");
         sa = makeVariable("sa");
         rv = makeVariable("rv");
-        delay = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI));
 
         wg = new WeightedGraphImpl();
         wg.addNode(first, Map.of(sa, v0, next, delay));
-        wg.addNode(next, Map.of(sa, v3, first, delay, rv, v3));
-        wg.addNode(sa, Map.of(next, v3, first, v0, rv, v0));
-        wg.addNode(rv, Map.of(sa, v0, next, v3));
+        wg.addNode(next, Map.of(sa, v4, first, delay, rv, v4));
+        wg.addNode(sa, Map.of(next, v4, first, v0, rv, v0));
+        wg.addNode(rv, Map.of(sa, v0, next, v4));
     }
 
     @Test
@@ -65,10 +62,5 @@ public class TestWeightedGraph_2 {
         assertEquals(v0, startAtFirst.get(sa));
         assertEquals(delay, startAtFirst.get(next));
         assertEquals(v0, startAtFirst.get(rv));
-    }
-
-    private Variable makeVariable(String name) {
-        TypeInfo t = new TypeInfo("a.b.c", "T");
-        return new LocalVariableReference(new LocalVariable(name, new ParameterizedType(t, 0)));
     }
 }

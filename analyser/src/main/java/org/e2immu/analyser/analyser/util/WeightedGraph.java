@@ -64,16 +64,5 @@ public interface WeightedGraph {
     void addNode(@NotNull @Independent(hc = true) Variable v,
                  @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn);
 
-    // for testing, controlled order
-    @Modified
-    void addNode(@NotNull @Independent(hc = true) Variable v,
-                 @NotNull @Independent(hc = true) Object... variableDvPairs);
-
-    @Modified
-    void addNode(@NotNull @Independent(hc = true) Variable v,
-                 @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn,
-                 boolean bidirectional,
-                 BinaryOperator<DV> merger);
-
     DV edgeValueOrNull(Variable v1, Variable v2);
 }
