@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 
@@ -51,23 +50,15 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     // use .equals, not a marker
     public static final LinkedVariables EMPTY = new LinkedVariables(Map.of());
 
-    public static DV fromIndependentToLinkedVariableLevel(DV independent, ParameterizedType sourceType, SetOfTypes hiddenContentOfTargetType) {
+    public static DV fromIndependentToLinkedVariableLevel(DV independent) {
         if (independent.isDelayed()) return independent;
         if (MultiLevel.INDEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_INDEPENDENT;
         if (MultiLevel.DEPENDENT_DV.equals(independent)) return LinkedVariables.LINK_DEPENDENT;
-        return hiddenContentOfTargetType.contains(sourceType) ? LINK_IS_HC_OF : LINK_COMMON_HC;
+        return LINK_COMMON_HC;
     }
 
-    public static DV fromImmutableToLinkedVariableLevel(DV immutable,
-                                                        AnalyserContext analyserContext,
-                                                        TypeInfo currentType,
-                                                        ParameterizedType sourceType,
-                                                        ParameterizedType targetType) {
-        if (immutable.isDelayed()) return immutable;
-        // REC IMM -> NO_LINKING
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return LinkedVariables.LINK_INDEPENDENT;
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, currentType);
-        return computeIndependent.linkLevelOfTwoHCRelatedTypes(sourceType, targetType);
+    public static boolean isBidirectional(DV level) {
+        return level.isDelayed() || level.le(LINK_ASSIGNED);
     }
 
     public boolean isDelayed() {
@@ -78,7 +69,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     public static final DV LINK_STATICALLY_ASSIGNED = new NoDelay(0, "statically_assigned");
     public static final DV LINK_ASSIGNED = new NoDelay(1, "assigned");
     public static final DV LINK_DEPENDENT = new NoDelay(2, "dependent");
-    public static final DV LINK_IS_HC_OF = new NoDelay(3, "is_hc_of");
+    // 20231213 for simplicity's sake we keep COMMON_HC naming + index 4 for now; rename later to LINK_INDEPENDENT_HC
     public static final DV LINK_COMMON_HC = new NoDelay(4, "common_hc");
     public static final DV LINK_INDEPENDENT = new NoDelay(5, "independent");
 
@@ -177,10 +168,10 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         return variables.entrySet().stream();
     }
 
-    public LinkedVariables minimum(DV minimum) {
+    public LinkedVariables maximum(DV other) {
         if (this == NOT_YET_SET) return NOT_YET_SET;
         return of(variables.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> minimum.max(e.getValue()))));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> other.max(e.getValue()))));
     }
 
     public Stream<Variable> variablesAssigned() {
@@ -306,33 +297,5 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
 
     public Stream<Variable> assignedOrDependentVariables() {
         return variables.entrySet().stream().filter(e -> isAssignedOrLinked(e.getValue())).map(Map.Entry::getKey);
-    }
-
-    public LinkedVariables ensureDependent(Set<Variable> scopesOfStatically) {
-        if (isEmpty() || this == NOT_YET_SET) return this;
-        Map<Variable, DV> map = variables.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> {
-                    if (scopesOfStatically.contains(e.getKey())) {
-                        assert e.getValue().isDelayed() || LINK_IS_HC_OF.equals(e.getValue());
-                        return LINK_IS_HC_OF;
-                    }
-                    return e.getValue();
-                }));
-        return of(map);
-    }
-
-    /*
-    TODO also do this for dependent variables?
-     */
-    public Set<Variable> scopesOfStaticallyAssigned() {
-        return variables.entrySet().stream()
-                .filter(e -> e.getKey() instanceof FieldReference && e.getValue().equals(LINK_STATICALLY_ASSIGNED))
-                .map(e -> ((FieldReference) e.getKey()).scopeVariable())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    public boolean notOnlyDirectAssignment() {
-        return variables.values().stream().anyMatch(v -> !LINK_STATICALLY_ASSIGNED.equals(v));
     }
 }

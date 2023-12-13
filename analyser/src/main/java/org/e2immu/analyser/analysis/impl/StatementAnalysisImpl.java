@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.FlowDataConstants;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
@@ -1047,9 +1048,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), context, arrayBase, dv);
             }
             Properties valueProperties = context.evaluationContext().getValueProperties(arrayValue);
-            DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent,
-                    // CHECK that EMPTY is correct
-                    dv.parameterizedType, SetOfTypes.EMPTY);
+            DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
             if (lvIndependent.equals(LinkedVariables.LINK_INDEPENDENT)) {
                 linkedVariables = vic.initialLinkedVariables();
                 initialValue = arrayValue;
@@ -1542,54 +1541,29 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), index, loopVar, valueProperties);
         }
         LinkedVariables linkedOfIterable = evaluatedIterable.linkedVariables(EvaluationResultImpl.from(evaluationContext))
-                .minimum(LinkedVariables.LINK_ASSIGNED);
+                .maximum(LinkedVariables.LINK_ASSIGNED);
         DV linkOfLoopVarInIterable = linkOfLoopVarInIterable(evaluationContext, parameterizedType,
                 evaluatedIterable.returnType());
         LinkedVariables linked;
-        if (linkOfLoopVarInIterable.isDelayed()) {
-            linked = linkedOfIterable.changeToDelay(linkOfLoopVarInIterable.causesOfDelay());
+        if (linkOfLoopVarInIterable == null) {
+            linked = linkedOfIterable;
         } else {
-            DV immutableOfLoopVar = valueProperties.get(IMMUTABLE);
-            linked = combineLinkOfLoopVarAndLinkedOfIterable(linkedOfIterable, linkOfLoopVarInIterable, immutableOfLoopVar);
+            linked = linkedOfIterable.maximum(linkOfLoopVarInIterable);
         }
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationResult);
         builder.assignment(loopVar, value, linked);
         return builder.compose(evaluationResult).build();
     }
 
-    private LinkedVariables combineLinkOfLoopVarAndLinkedOfIterable(LinkedVariables linkedOfIterable,
-                                                                    DV linkOfLoopVarInIterable,
-                                                                    DV immutableOfLoopVar) {
-        assert linkOfLoopVarInIterable.isDone();
-
-        if (LinkedVariables.LINK_INDEPENDENT.equals(linkOfLoopVarInIterable)) {
-            return LinkedVariables.EMPTY;
-        }
-        if (LinkedVariables.LINK_DEPENDENT.equals(linkOfLoopVarInIterable)) {
-            return linkedOfIterable.minimum(LinkedVariables.LINK_DEPENDENT);
-        }
-
-        // T to List<T> type-wise; t:list --> list:1 -> list:3;
-        // t : someMethodExpression(list), with list:4 -> list:3
-        if (LinkedVariables.LINK_IS_HC_OF.equals(linkOfLoopVarInIterable)) {
-            return linkedOfIterable.changeAllToUnlessDelayed(LinkedVariables.LINK_IS_HC_OF);
-        }
-        // hidden content: how do the types relate? entry: map, the linkedOfIterable=map:2; Map.Entry is mutable -> keep :2
-        // the type were immutable without hc
-        assert LinkedVariables.LINK_COMMON_HC.equals(linkOfLoopVarInIterable);
-        if (MultiLevel.isMutable(immutableOfLoopVar)) {
-            return linkedOfIterable.minimum(LinkedVariables.LINK_DEPENDENT);
-        }
-
-        // so immutable with hidden content (because fully immutable would not result in common hc)
-        return linkedOfIterable.minimum(LinkedVariables.LINK_COMMON_HC);
-    }
-
     private DV linkOfLoopVarInIterable(EvaluationContext evaluationContext, ParameterizedType concreteType,
                                        ParameterizedType iterableType) {
-        DV immutable = evaluationContext.getAnalyserContext().typeImmutable(concreteType);
-        return LinkedVariables.fromImmutableToLinkedVariableLevel(immutable, evaluationContext.getAnalyserContext(),
-                evaluationContext.getCurrentType(), concreteType, iterableType);
+        ComputeIndependent computeIndependent = new ComputeIndependent(evaluationContext.getAnalyserContext(),
+                evaluationContext.getCurrentType());
+        DV immutable = computeIndependent.typeImmutable(concreteType);
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return null; // no linking!
+        DV linkLevel = MultiLevel.isAtLeastImmutableHC(immutable)
+                ? LinkedVariables.LINK_COMMON_HC : LinkedVariables.LINK_DEPENDENT;
+        return computeIndependent.typesAtLinkLevel(linkLevel, concreteType, immutable, iterableType);
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

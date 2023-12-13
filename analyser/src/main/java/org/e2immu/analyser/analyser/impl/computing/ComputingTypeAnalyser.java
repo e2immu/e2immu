@@ -120,7 +120,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         builder.add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_INDEPENDENT, this::analyseIndependent)
                 .add(ANALYSE_FIELDS_GUARDED_FOR_INHERITED_CONTAINER_PROPERTY,
-                        this::analyseFieldsGuardedForInheritedContainerProperty)
+                        iteration -> analyseFieldsGuardedForInheritedContainerProperty())
                 .add(ANALYSE_FIELDS_GUARDED_FOR_CONTAINER_PROPERTY, this::analyseFieldsGuardedForContainerProperty)
                 .add(ANALYSE_CONTAINER, this::analyseContainer);
         if (!typeInfo.isInterface()) {
@@ -649,8 +649,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 causes = causes.merge(linkedVariables.causesOfDelay());
             } else {
                 boolean linked = linkedVariables.variables().entrySet().stream()
-                        .filter(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())
-                                || LinkedVariables.LINK_COMMON_HC.equals(e.getValue()))
+                        .filter(e -> e.getValue().le(LinkedVariables.LINK_DEPENDENT))
                         .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
                                 && !analyserContext.getMethodInspection(pi.getMethod()).isPrivate());
                 if (linked) {
@@ -669,7 +668,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         return DONE;
     }
 
-    private AnalysisStatus analyseFieldsGuardedForInheritedContainerProperty(SharedState sharedState) {
+    private AnalysisStatus analyseFieldsGuardedForInheritedContainerProperty() {
         assert typeAnalysis.guardedForInheritedContainerPropertyDelays().isDelayed();
 
         CausesOfDelay causes = CausesOfDelay.EMPTY;
@@ -694,8 +693,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 causes = causes.merge(linkedVariables.causesOfDelay());
             } else {
                 boolean linked = linkedVariables.variables().entrySet().stream()
-                        .filter(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())
-                                || LinkedVariables.LINK_COMMON_HC.equals(e.getValue()))
+                        // TODO:IS_HC see also CMA.linkedToAnyOfTheFields, CTA.analyseFieldsGuardedForContainerProperty
+                        .filter(e -> e.getValue().le(LinkedVariables.LINK_DEPENDENT))
                         .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
                                 && !Collections.disjoint(methodsToLinkToFields,
                                 pi.getMethodInfo().methodResolution.get().overrides()));
@@ -802,7 +801,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 DV cm = lv.stream()
                                         .filter(e -> e.getKey() instanceof FieldReference fr
                                                 && fr.scopeIsRecursivelyThis() && fields.contains(fr.fieldInfo())
-                                                && LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()))
+                                                && e.getValue().le(LinkedVariables.LINK_DEPENDENT))
                                         .map(e -> vi.getProperty(CONTEXT_MODIFIED))
                                         .reduce(DelayFactory.initialDelay(), DV::max);
                                 return cm.valueIsTrue();

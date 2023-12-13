@@ -381,37 +381,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (!linkedVariablesOfObject.isEmpty()) {
             linkedVariablesOfParameters = LinkParameters.computeLinkedVariablesOfParameters(context,
                     parameterExpressions, parameterValues);
-            Map<ParameterInfo, LinkedVariables> linksToLinkedToObject = firstInCallCycle ? Map.of() :
-                    LinkParameters.fromParameterIntoObject(context,
-                            context.getAnalyserContext().getMethodInspection(methodInfo),
-                            linkedVariablesOfParameters, objectValue.returnType(),
-                            objectValue.formalObjectType(context.getAnalyserContext()));
-            if (!linksToLinkedToObject.isEmpty()) {
-                for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
-                    Variable linkedToObject = e.getKey();
-                    for (LinkedVariables lv : linksToLinkedToObject.values()) {
-                        for (Map.Entry<Variable, DV> ee : lv) {
-                            Variable linkedToParameter = ee.getKey();
-                            DV fromLinkedToParameterToLinkedToObject = ee.getValue();
-                            DV fromLinkedToObjectToObject = e.getValue();
-                            DV combined = fromLinkedToParameterToLinkedToObject.max(fromLinkedToObjectToObject);
-                            DV delayed;
-                            if (objectValue.isDelayed()) {
-                                /*
-                                this extra delay is necessary to prevent Lambda_AAPI_17 to come to too early a link conclusion
-                                adding stronger delays in LinkParameters.computeLinkedVariablesOfParameters is detrimental to
-                                ECI_10.
-                                 */
-                                delayed = combined.causesOfDelay().merge(objectValue.causesOfDelay());
-                            } else {
-                                delayed = combined;
-                            }
-                            builder.link(linkedToParameter, linkedToObject, delayed);
-                            linkDelays = linkDelays.merge(combined.causesOfDelay());
-                        }
-                    }
-                }
-            }
+            // TODO:IS_HC directly link into parameters
         } else {
             linkedVariablesOfParameters = null; // compute later, we don't want to compute if not needed
         }
@@ -1335,10 +1305,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // RULE 2: @Identity links to the 1st parameter
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.valueIsTrue()) {
-            return parameterExpressions.get(0).linkedVariables(context).minimum(LinkedVariables.LINK_ASSIGNED);
+            return parameterExpressions.get(0).linkedVariables(context).maximum(LinkedVariables.LINK_ASSIGNED);
         }
         LinkedVariables linkedVariablesOfObject = object.linkedVariables(context)
-                .minimum(LinkedVariables.LINK_ASSIGNED); // should be delay-able!
+                .maximum(LinkedVariables.LINK_ASSIGNED); // should be delay-able!
 
         if (identity.isDelayed() && !parameterExpressions.isEmpty()) {
             // temporarily link to both the object and the parameter, in a delayed way
@@ -1404,13 +1374,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         assert MultiLevel.INDEPENDENT_HC_DV.equals(methodIndependent);
         ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
                 context.getCurrentType());
+        DV immutable = computeIndependent.typeImmutable(concreteReturnType);
         Map<Variable, DV> newLinked = new HashMap<>();
         for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
             ParameterizedType pt1 = e.getKey().parameterizedType();
             // how does the return type fit in the object (or at least, the variable linked to the object)
-            DV linkLevel = computeIndependent.directedLinkLevelOfTwoHCRelatedTypes(concreteReturnType, pt1);
-            if (!LinkedVariables.LINK_INDEPENDENT.equals(linkLevel)) {
-                newLinked.put(e.getKey(), linkLevel);
+            DV independent = computeIndependent.typesAtLinkLevel(e.getValue(), concreteReturnType, immutable, pt1);
+            if (!MultiLevel.INDEPENDENT_DV.equals(independent)) {
+                newLinked.put(e.getKey(), LinkedVariables.fromIndependentToLinkedVariableLevel(independent));
             }
         }
         return LinkedVariables.of(newLinked);

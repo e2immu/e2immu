@@ -21,6 +21,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.LinkParameters;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -152,12 +153,9 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
      Example: other.map.forEach(this::put), in SetOnceMap.putAll
      equivalent of other.map.forEach((k,v) -> this.put(k,v))
      k and v as parameters of put are linked to this at independent_hc level, and should cause a link
-     from forEach:k --3--> this, forEach:v --3--> this, so that we end up with
+     from forEach:k <--4--> this, forEach:v <--4--> this, so that we end up with
        other.map <--4--> this, and other <--4--> this.
      We definitely don't want other <--2--> this.
-
-     Example:
-
      */
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
@@ -165,27 +163,12 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             return LinkedVariables.EMPTY;
         }
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
-        Map<Variable, DV> newLvMap = new HashMap<>();
         EvaluationResult scopeResult = scope.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         LinkedVariables scopeLv = scopeResult.value().linkedVariables(context);
-        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
-
-        for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
-            DV paramIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
-            if (!MultiLevel.INDEPENDENT_DV.equals(paramIndependent)) {
-                for (Map.Entry<Variable, DV> e : scopeLv) {
-                    int index = parameterAnalysis.getParameterInfo().index;
-                    // the concreteReturnType is the concrete functional type; grab the type parameter!
-                    ParameterizedType concreteParameterType = this.concreteReturnType.parameters.get(index);
-                    DV dv = computeIndependent.linkLevelOfParameterVsScope(e.getKey().parameterizedType(),
-                            e.getValue(), concreteParameterType, paramIndependent);
-                    if (!LinkedVariables.LINK_INDEPENDENT.equals(dv)) {
-                        newLvMap.merge(e.getKey(), dv, DV::min);
-                    }
-                }
-            }
-        }
-        return LinkedVariables.of(newLvMap);
+        List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses()
+                .stream().map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo())).toList();
+        return LinkParameters.fromParametersIntoObject(context, methodAnalysis, scopeLv, scope.returnType(),
+                parameterExpressions);
     }
 
     @Override

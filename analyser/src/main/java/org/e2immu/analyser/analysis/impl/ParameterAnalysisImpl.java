@@ -168,15 +168,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    DV correctedLinkLevel;
-                    if (linkLevel == LinkedVariables.LINK_COMMON_HC) {
-                        // FIXME improve this, but there's only a very few cases a t m
-                        correctedLinkLevel = pi.parameterizedType.isUnboundTypeParameter() ? LinkedVariables.LINK_IS_HC_OF
-                                : LinkedVariables.LINK_COMMON_HC;
-                    } else {
-                        correctedLinkLevel = linkLevel;
-                    }
-                    map.put(pi, correctedLinkLevel);
+                    // TODO:IS_HC
+                    map.put(pi, linkLevel);
                 }
             }
             LinkedVariables lv = LinkedVariables.of(map);

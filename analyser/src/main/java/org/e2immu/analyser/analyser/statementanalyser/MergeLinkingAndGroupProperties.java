@@ -202,14 +202,14 @@ class MergeLinkingAndGroupProperties {
                                 if (!linkedVariablesMap.containsKey(iterableVar)) {
                                     newToLinkedVariablesMap.add(iterableVar);
                                 }
-                                if (e.getValue().isDelayed()) {
-                                    link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
-                                    link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
-                                    causes = causes.merge(e.getValue().causesOfDelay());
-                                } else if (LinkedVariables.LINK_IS_HC_OF.equals(e.getValue())) {
-                                    link(linkedVariablesMap, iterableVar, targetOfLoopVar, LinkedVariables.LINK_COMMON_HC);
-                                    link(linkedVariablesMap, targetOfLoopVar, iterableVar, LinkedVariables.LINK_COMMON_HC);
-                                }
+                                // if (e.getValue().isDelayed()) {
+                                link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
+                                link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
+                                causes = causes.merge(e.getValue().causesOfDelay());
+                                // } else  { // TODO:IS_HC
+                                //     link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
+                                //     link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
+                                // }
                             }
                         }
                     }

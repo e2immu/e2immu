@@ -18,6 +18,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
+import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
@@ -299,12 +300,38 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         if (indexResult != null) builder.compose(indexResult);
 
         Variable source;
+        if (variable instanceof FieldReference fr && fr.scopeVariable() != null) {
+            assert scopeResult != null;
+            Expression computedScope = scopeResult.value();
+            DV link;
+            if (computedScope.isDelayed()) {
+                link = computedScope.causesOfDelay();
+            } else {
+                /* array[3] ->?-> array is wholly dependent on the immutability of array[3] */
+                ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
+                DV immutableOfScope = computeIndependent.typeImmutable(scopeValue.returnType());
+                link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
+            }
+            if (!MultiLevel.INDEPENDENT_DV.equals(link)) {
+                builder.link(fr, fr.scopeVariable(), LinkedVariables.fromIndependentToLinkedVariableLevel(link));
+            }
+        }
         if (variable instanceof DependentVariable dv) {
             assert scopeResult != null;
             assert indexResult != null;
             Expression computedScope = scopeResult.value();
-            DV link = computedScope.isDelayed() ? computedScope.causesOfDelay() : LinkedVariables.LINK_IS_HC_OF;
-            builder.link(dv, dv.arrayVariable(), link);
+            DV link;
+            if (computedScope.isDelayed()) {
+                link = computedScope.causesOfDelay();
+            } else {
+                /* array[3] ->?-> array is wholly dependent on the immutability of array[3] */
+                ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
+                DV immutableOfScope = computeIndependent.typeImmutable(scopeValue.returnType());
+                link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
+            }
+            if (!MultiLevel.INDEPENDENT_DV.equals(link) && dv.arrayVariable() != null) {
+                builder.link(dv, dv.arrayVariable(), LinkedVariables.fromIndependentToLinkedVariableLevel(link));
+            }
 
             if (computedScope instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {
                 // known array, known index (a[] = {1,2,3}, a[2] == 3)
@@ -314,7 +341,6 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 }
                 return builder.setExpression(initializer.multiExpression.expressions()[intIndex]).build();
             }
-
 
             if (dv.arrayVariable() instanceof LocalVariableReference lvr
                     && lvr.variableNature() instanceof VariableNature.ScopeVariable
@@ -332,10 +358,10 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 } else {
                     Expression instance = Instance.forArrayAccess(dv.getIdentifier(),
                             context.evaluationContext().statementIndex(), dv.parameterizedType, properties);
-                    if (lv.isEmpty()) {
+                    if (lv.isEmpty() || MultiLevel.INDEPENDENT_DV.equals(link)) {
                         replacement = instance;
                     } else {
-                        replacement = PropertyWrapper.propertyWrapper(instance, lv.minimum(LinkedVariables.LINK_IS_HC_OF));
+                        replacement = PropertyWrapper.propertyWrapper(instance, lv.maximum(link));
                     }
                 }
                 return builder.setExpression(replacement).build();
@@ -495,17 +521,28 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        return internalLinkedVariables(variable, LinkedVariables.LINK_STATICALLY_ASSIGNED);
+        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
+        return internalLinkedVariables(computeIndependent, variable, LinkedVariables.LINK_STATICALLY_ASSIGNED);
     }
 
-    static LinkedVariables internalLinkedVariables(Variable variable, DV linkLevel) {
+    static LinkedVariables internalLinkedVariables(ComputeIndependent computeIndependent, Variable variable, DV linkLevel) {
         if (variable instanceof DependentVariable dv) {
-            LinkedVariables recursive = internalLinkedVariables(dv.arrayVariable(), LinkedVariables.LINK_IS_HC_OF);
-            return LinkedVariables.of(variable, linkLevel).merge(recursive);
+            DV immutableOfScope = computeIndependent.typeImmutable(dv.arrayExpression().returnType());
+            DV link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
+            if (!MultiLevel.INDEPENDENT_DV.equals(link)) {
+                LinkedVariables recursive = internalLinkedVariables(computeIndependent, dv.arrayVariable(),
+                        LinkedVariables.fromIndependentToLinkedVariableLevel(link));
+                return LinkedVariables.of(variable, linkLevel).merge(recursive);
+            }
         }
         if (variable instanceof FieldReference fr && fr.scopeVariable() != null) {
-            LinkedVariables recursive = internalLinkedVariables(fr.scopeVariable(), LinkedVariables.LINK_IS_HC_OF);
-            return LinkedVariables.of(variable, linkLevel).merge(recursive);
+            DV immutableOfScope = computeIndependent.typeImmutable(fr.scope().returnType());
+            DV link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
+            if (!MultiLevel.INDEPENDENT_DV.equals(link)) {
+                LinkedVariables recursive = internalLinkedVariables(computeIndependent, fr.scopeVariable(),
+                        LinkedVariables.fromIndependentToLinkedVariableLevel(link));
+                return LinkedVariables.of(variable, linkLevel).merge(recursive);
+            }
         }
         return LinkedVariables.of(variable, linkLevel);
     }

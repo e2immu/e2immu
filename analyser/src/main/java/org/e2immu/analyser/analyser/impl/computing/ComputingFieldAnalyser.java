@@ -1472,15 +1472,14 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
 
         FieldReference me = new FieldReferenceImpl(analyserContext, fieldInfo);
-        Map<Variable, DV> reversePointingToMe = allMethodsAndConstructors(true)
+        Map<Variable, DV> reversePointingToMe = new HashMap<>();
+        allMethodsAndConstructors(true)
                 .map(m -> m.getMethodAnalysis().getLastStatement())
                 .filter(Objects::nonNull)
                 .flatMap(StatementAnalysis::variableStream)
                 .filter(VariableInfo::linkedVariablesIsSet)
-                .filter(vi -> LinkedVariables.LINK_IS_HC_OF.equals(vi.getLinkedVariables().value(me)))
-                .map(VariableInfo::variable)
-                .distinct()
-                .collect(Collectors.toUnmodifiableMap(e -> e, e -> LinkedVariables.LINK_IS_HC_OF));
+                .filter(vi -> vi.getLinkedVariables().value(me) != null)
+                .forEach(vi -> reversePointingToMe.merge(vi.variable(), vi.getLinkedVariables().value(me), DV::min));
 
         LinkedVariables linkedVariables;
         if (!reversePointingToMe.isEmpty()) {

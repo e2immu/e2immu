@@ -227,16 +227,16 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        // TODO link to scope if not null
-        // instance, no constructor parameter expressions
-        if (constructor == null || parameterExpressions.isEmpty()) return LinkedVariables.EMPTY;
+        if (constructor == null) {
+            return LinkedVariables.EMPTY;
+        }
         List<Expression> parameterValues = parameterExpressions.stream()
                 .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
                 .toList();
-        List<LinkedVariables> linkedVariables = LinkParameters.computeLinkedVariablesOfParameters(context,
-                parameterExpressions, parameterValues);
-        return LinkParameters.linkFromObjectToParameters(context, constructor.methodInspection.get(), linkedVariables,
-                returnType());
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(constructor);
+        ParameterizedType scopePt = returnType();
+        LinkedVariables scopeLv = scope == null ? LinkedVariables.EMPTY : scope.linkedVariables(context);
+        return LinkParameters.fromParametersIntoObject(context, methodAnalysis, scopeLv, scopePt, parameterValues);
     }
 
     @Override

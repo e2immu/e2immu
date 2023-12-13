@@ -1384,7 +1384,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private boolean linkedToAnyOfTheFields(LinkedVariables linkedVariables, Set<FieldInfo> fieldsToBeGuarded) {
         return linkedVariables.stream()
                 .filter(e -> e.getKey() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo()))
-                .anyMatch(e -> LinkedVariables.LINK_IS_HC_OF.equals(e.getValue()));
+                // TODO:IS_HC
+                .anyMatch(e -> e.getValue().le(LinkedVariables.LINK_DEPENDENT));
     }
 
     private class EvaluationContextImpl extends CommonEvaluationContext implements EvaluationContext {

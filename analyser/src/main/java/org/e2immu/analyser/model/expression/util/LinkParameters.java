@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.e2immu.analyser.model.MultiLevel.*;
 
@@ -52,7 +53,7 @@ public class LinkParameters {
             } else {
                 lv = value.linkedVariables(context);
             }
-            result.add(lv.minimum(LinkedVariables.LINK_DEPENDENT));
+            result.add(lv.maximum(LinkedVariables.LINK_DEPENDENT));
             i++;
         }
         return result;
@@ -174,7 +175,7 @@ public class LinkParameters {
             if (DEPENDENT_DV.equals(independent)) result.add(linkedVariablesOfScope);
             else if (INDEPENDENT_HC_DV.equals(independent)) {
                 // modify to :4
-                LinkedVariables lv = linkedVariablesOfScope.minimum(LinkedVariables.LINK_COMMON_HC);
+                LinkedVariables lv = linkedVariablesOfScope.maximum(LinkedVariables.LINK_COMMON_HC);
                 result.add(lv);
             }
         }
@@ -201,138 +202,32 @@ public class LinkParameters {
         return result;
     }
 
-    /*
-    Compute the links from the newly created object (constructor call) or the object (method call) to the
-    parameters of the constructor/method.
-    */
-    public static LinkedVariables linkFromObjectToParameters(EvaluationResult evaluationContext,
-                                                             MethodInspection methodInspection,
-                                                             List<LinkedVariables> linkedVariables,
-                                                             ParameterizedType objectType) {
-        DV immutableType = evaluationContext.getAnalyserContext().typeImmutable(objectType);
+    public static LinkedVariables fromParametersIntoObject(EvaluationResult context,
+                                                           MethodAnalysis methodAnalysis,
+                                                           LinkedVariables scopeLv,
+                                                           ParameterizedType scopePt,
+                                                           List<Expression> parameterExpressions) {
+        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
+        DV scopeImmutable = computeIndependent.typeImmutable(scopePt);
+        Map<Variable, DV> newLvMap = new HashMap<>(scopeLv.variables());
 
-        LinkedVariables result = LinkedVariables.EMPTY;
-        int i = 0;
-        for (LinkedVariables sub : linkedVariables) {
-            ParameterInfo parameterInfo;
-            if (i < methodInspection.getParameters().size()) {
-                parameterInfo = methodInspection.getParameters().get(i);
-            } else {
-                parameterInfo = methodInspection.getParameters().get(methodInspection.getParameters().size() - 1);
-                assert parameterInfo.parameterInspection.get().isVarArgs();
-            }
-            Map<Variable, DV> newLinkMap = new HashMap<>();
-            for (Map.Entry<Variable, DV> e : sub) {
-                Variable v = e.getKey();
-                DV linkLevel = e.getValue();
-                if (immutableType.isDelayed()) {
-                    newLinkMap.put(v, immutableType);
-                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableType)) {
-                    if (linkLevel.isDelayed()) {
-                        newLinkMap.put(v, linkLevel);
-                    } else {
-                        DV newLinkLevel = computeLinkLevelFromParameterAndItsLinkedVariables(evaluationContext,
-                                parameterInfo, linkLevel, v.parameterizedType(), objectType, false);
-                        if (newLinkLevel.lt(LinkedVariables.LINK_INDEPENDENT)) {
-                            newLinkMap.put(v, newLinkLevel);
-                        }
+        for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
+            DV paramIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+            if (!MultiLevel.INDEPENDENT_DV.equals(paramIndependent)) {
+
+                int index = parameterAnalysis.getParameterInfo().index;
+                Expression parameterExpression = parameterExpressions.get(index);
+                ParameterizedType concreteParameterType = parameterExpression.returnType();
+                DV linkLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(paramIndependent);
+                DV dv = computeIndependent.typesAtLinkLevel(linkLevel, scopePt, scopeImmutable, concreteParameterType);
+                if (!LinkedVariables.LINK_INDEPENDENT.equals(dv)) {
+                    LinkedVariables linkedVariables = parameterExpression.linkedVariables(context);
+                    for (Map.Entry<Variable, DV> e : linkedVariables) {
+                        newLvMap.merge(e.getKey(), dv, DV::max); // we follow the links
                     }
                 }
             }
-            LinkedVariables lv = LinkedVariables.of(newLinkMap);
-            result = result.merge(lv);
-            i++;
         }
-        return result.minimum(LinkedVariables.LINK_ASSIGNED);
-    }
-
-    /*
-     Compute the links from the parameters of a method into its object.
-     For now not implemented for constructors (we'll need some sort of temporary, reverse link version of IS_HC_OF)
-
-     Object type is important to cut short independence, but cannot be used on self! See e.g. EventuallyE2Immutable_0.
-     If we do that, we need to wait for IMMUTABLE of the type before we can compute linking, which is used for independence
-     of 'this', ... infinite loop, to be broken.
-    */
-    public static Map<ParameterInfo, LinkedVariables> fromParameterIntoObject(EvaluationResult context,
-                                                                              MethodInspection methodInspection,
-                                                                              List<LinkedVariables> linkedVariables,
-                                                                              ParameterizedType objectType,
-                                                                              ParameterizedType formalObjectType) {
-        /*
-         formal because we must take the same decision in every iteration. See Lambda_17, where we first find a
-         Lambda (in delayed form) and then an InlinedMethod. The return type of the inlined method is different from
-         the functional interface method's owner.
-         */
-        boolean myself = context.evaluationContext().isMyself(formalObjectType).toFalse(Property.IMMUTABLE);
-        DV immutableType = myself ? MultiLevel.MUTABLE_DV : context.getAnalyserContext().typeImmutable(formalObjectType);
-        Map<ParameterInfo, LinkedVariables> result = new HashMap<>();
-        int i = 0;
-        for (LinkedVariables sub : linkedVariables) {
-            ParameterInfo parameterInfo;
-            if (i < methodInspection.getParameters().size()) {
-                parameterInfo = methodInspection.getParameters().get(i);
-            } else {
-                parameterInfo = methodInspection.getParameters().get(methodInspection.getParameters().size() - 1);
-                assert parameterInfo.parameterInspection.get().isVarArgs();
-            }
-            Map<Variable, DV> newLinkMap = new HashMap<>();
-            for (Map.Entry<Variable, DV> e : sub) {
-                Variable v = e.getKey();
-                DV linkLevel = e.getValue().min(LinkedVariables.LINK_ASSIGNED);
-                if (immutableType.isDelayed()) {
-                    newLinkMap.put(v, immutableType);
-                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableType)) {
-                    if (linkLevel.isDelayed()) {
-                        newLinkMap.put(v, linkLevel);
-                    } else {
-                        ParameterizedType ot = myself ? formalObjectType : objectType;
-                        DV newLinkLevel = computeLinkLevelFromParameterAndItsLinkedVariables(context,
-                                parameterInfo, linkLevel, v.parameterizedType(), ot, true);
-                        if (newLinkLevel.lt(LinkedVariables.LINK_INDEPENDENT)) {
-                            newLinkMap.put(v, newLinkLevel);
-                        }
-                    }
-                }
-            }
-            LinkedVariables lv = LinkedVariables.of(newLinkMap);
-            result.put(parameterInfo, lv);
-            i++;
-        }
-        return result;
-    }
-
-    private static DV computeLinkLevelFromParameterAndItsLinkedVariables(EvaluationResult context,
-                                                                         ParameterInfo parameterInfo,
-                                                                         DV linkLevel,
-                                                                         ParameterizedType variableType,
-                                                                         ParameterizedType objectType,
-                                                                         boolean fromParameterToObject) {
-        assert linkLevel.isDone();
-
-        ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(parameterInfo);
-        DV independentOnParameter = parameterAnalysis.getProperty(Property.INDEPENDENT);
-
-        // shortcut: either is at max value, then there is no discussion
-        if (INDEPENDENT_DV.equals(independentOnParameter) || linkLevel.equals(LinkedVariables.LINK_INDEPENDENT)) {
-            return LinkedVariables.LINK_INDEPENDENT;
-        }
-
-        // any delay: wait!
-        CausesOfDelay causes = independentOnParameter.causesOfDelay();
-        if (causes.isDelayed()) return causes;
-
-        if (DEPENDENT_DV.equals(independentOnParameter)) {
-            // if linkLevel is already hidden content, then keep that level
-            return LinkedVariables.LINK_DEPENDENT.max(linkLevel);
-        }
-
-        // hidden content... use the relation of parameter type with respect to object type (not the return type!)
-        if (fromParameterToObject) {
-            ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
-                    context.getCurrentType());
-            return computeIndependent.directedLinkLevelOfTwoHCRelatedTypes(variableType, objectType);
-        }
-        return LinkedVariables.LINK_COMMON_HC;
+        return LinkedVariables.of(newLvMap);
     }
 }

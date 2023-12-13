@@ -901,7 +901,8 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             assert !LinkedVariables.LINK_INDEPENDENT.equals(level);
 
             internalLink(from, to, level);
-            if (!LinkedVariables.LINK_IS_HC_OF.equals(level) && !(from instanceof ReturnVariable)) {
+            // TODO:IS_HC
+            if (!(from instanceof ReturnVariable) && LinkedVariables.isBidirectional(level)) {
                 internalLink(to, from, level);
             }
         }

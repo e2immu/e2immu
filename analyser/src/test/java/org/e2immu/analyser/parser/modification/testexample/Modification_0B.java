@@ -21,16 +21,16 @@ import java.util.Set;
 
 @FinalFields
 @Container
-public class Modification_0 {
+public class Modification_0B<T> {
 
     @NotModified(absent = true)
     @Modified
-    public final Set<String> set1 = new HashSet<>();
+    public final Set<T> set = new HashSet<>();
 
     @NotModified(absent = true)
     @Modified
-    public void add(@NotNull String v) {
-        set1.add(v);
+    public void add(@NotNull T v) {
+        set.add(v);
     }
 
 }

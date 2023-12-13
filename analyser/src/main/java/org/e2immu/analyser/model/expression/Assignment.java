@@ -503,7 +503,7 @@ public class Assignment extends BaseExpression implements Expression {
         LinkedVariables lvOfResult = resultOfExpression.linkedVariables(context);
         LinkedVariables lvOfValue = value.linkedVariables(context);
         LinkedVariables lvMerged = lvOfResult.merge(lvOfValue);
-        LinkedVariables lvExpression = lvMerged.minimum(LinkedVariables.LINK_ASSIGNED);
+        LinkedVariables lvExpression = lvMerged.maximum(LinkedVariables.LINK_ASSIGNED);
         LinkedVariables linkedVariables;
         if (allowStaticallyAssigned) {
             Set<Variable> directAssignment = value.directAssignmentVariables();
@@ -518,12 +518,14 @@ public class Assignment extends BaseExpression implements Expression {
             /*
             additional rule: if we're directly assigned to a field, then the field's scope becomes LINK_IS_HC_OF:3.
              */
+           /*
+            TODO:IS_HC
             Set<Variable> scopesOfStatically = lv2.scopesOfStaticallyAssigned();
             if (!scopesOfStatically.isEmpty()) {
                 linkedVariables = lv2.ensureDependent(scopesOfStatically);
-            } else {
-                linkedVariables = lv2;
-            }
+            } else {*/
+            linkedVariables = lv2;
+            //}
         } else {
             linkedVariables = lvExpression;
         }

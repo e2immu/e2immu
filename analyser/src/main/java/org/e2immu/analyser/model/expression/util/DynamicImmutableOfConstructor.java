@@ -104,16 +104,7 @@ public class DynamicImmutableOfConstructor {
                 } else if (MultiLevel.INDEPENDENT_DV.gt(independent)) {
                     DV dv;
                     if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
-                        ComputeIndependent ci = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
-                        ParameterizedType formalParameterType = methodInspection.formalParameterType(i);
-                        DV linkLevel = ci.directedLinkLevelOfTwoHCRelatedTypes(formalParameterType,
-                                methodInspection.getReturnType());
-                        boolean shareHiddenContent = LinkedVariables.LINK_COMMON_HC.equals(linkLevel);
-                        if (shareHiddenContent) {
-                            dv = ci.immutableOfIntersectionOfHiddenContent(pe.returnType(), concreteReturnType);
-                        } else {
-                            dv = immutable;
-                        }
+                        throw new UnsupportedOperationException("TODO:IS_HC");
                     } else {
                         // dependent, directly take immutable value
                         dv = immutable;
