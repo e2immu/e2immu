@@ -313,7 +313,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
             }
             if (!MultiLevel.INDEPENDENT_DV.equals(link)) {
-                builder.link(fr, fr.scopeVariable(), LinkedVariables.fromIndependentToLinkedVariableLevel(link));
+                builder.link(fr, fr.scopeVariable(), LinkedVariables.fromIndependentToLinkedVariableLevel(link),
+                        false);
             }
         }
         if (variable instanceof DependentVariable dv) {
@@ -330,7 +331,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
             }
             if (!MultiLevel.INDEPENDENT_DV.equals(link) && dv.arrayVariable() != null) {
-                builder.link(dv, dv.arrayVariable(), LinkedVariables.fromIndependentToLinkedVariableLevel(link));
+                builder.link(dv, dv.arrayVariable(), LinkedVariables.fromIndependentToLinkedVariableLevel(link),
+                        false);
             }
 
             if (computedScope instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {

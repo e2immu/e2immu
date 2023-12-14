@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.modification.testexample.Modification_0A;
+import org.e2immu.analyser.parser.modification.testexample.Modification_0B;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -64,10 +65,14 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
         TypeInfo hashSet = d.typeMap().get(Set.class);
         assertEquals(MultiLevel.CONTAINER_DV, d.getTypeAnalysis(hashSet).getProperty(Property.CONTAINER));
+
+        TypeInfo sb = d.typeMap().get(StringBuilder.class);
+        assertEquals(MultiLevel.MUTABLE_DV, d.getTypeAnalysis(sb).getProperty(Property.IMMUTABLE));
     };
 
+    // String is immutable
     @Test
-    public void test0() throws IOException {
+    public void test_0A() throws IOException {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
@@ -115,7 +120,8 @@ public class Test_16_Modification_0 extends CommonTestRunner {
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<String>", e.toString());
 
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it(0, ""));
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it0("NOT_YET_SET"),
+                        it(1, ""));
             }
         };
 
@@ -127,20 +133,28 @@ public class Test_16_Modification_0 extends CommonTestRunner {
                 .build());
     }
 
-
+    // T is immutable_hc
     @Test
     public void test_0B() throws IOException {
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                ChangeData cd = d.findValueChangeByToString(Modification_0B.class.getCanonicalName() + ".add(T):0:v");
+                assertLinked(d, cd.linkedVariables(), it0("this.set:4,this:-1"), it(1, "this.set:4,this:4"));
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "v".equals(pi.name)) {
-                    assertLinked(d, it(0, "set:4,this:4"));
+                    assertLinked(d, it0("this.set:-1,this:-1"), it(1, "this.set:4,this:4"));
                 }
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() == 0 ? "<f:set>"
                             : "instance 0 type Set<T>/*this.size()>=1&&this.contains(v)*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    assertLinked(d, it(0, "this:2"));
+                    assertLinked(d, it(0, "this:2,v:4"));
                 }
                 // important: the link from set ->2-> this is unidirectional!
                 if (d.variable() instanceof This) {
@@ -155,13 +169,13 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<T>", e.toString());
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it(0, "")); // FIXME
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it0("v:-1"), it(1, "v:4"));
             }
         };
 
 
         testClass("Modification_0B", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -175,16 +189,17 @@ public class Test_16_Modification_0 extends CommonTestRunner {
     @Test
     public void test_0C() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "v".equals(pi.name)) {
-                    assertLinked(d, it(0, "set:2,this:2"));
+                    assertLinked(d, it0("this.set:-1,this:-1"), it(1, "this.set:4,this:4"));
                 }
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     String expectValue = d.iteration() == 0 ? "<f:set>"
-                            : "instance 0 type Set<T>/*this.size()>=1&&this.contains(v)*/";
+                            : "instance 0 type Set<StringBuilder>/*this.size()>=1&&this.contains(v)*/";
                     assertEquals(expectValue, d.currentValue().toString());
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
-                    assertLinked(d, it(0, "this:2"));
+                    assertLinked(d, it(0, "this:2,v:4"));
                 }
                 if (d.variable() instanceof This) {
                     assertLinked(d, it(0, ""));
@@ -198,8 +213,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<StringBuilder>", e.toString());
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it(0, "")); // FIXME
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it0("v:-1"), it(1, "v:4"));
             }
         };
 

@@ -258,14 +258,17 @@ public class MethodLinkHelper {
                     ParameterizedType concreteParameterType = parameterValue.returnType();
                     DV linkLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(formalParameterIndependent);
                     DV parameterIndependent = computeIndependent.typesAtLinkLevel(linkLevel, objectPt, scopeImmutable, concreteParameterType);
+                    DV parameterIndependentLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(parameterIndependent);
 
                     if (!INDEPENDENT_DV.equals(parameterIndependent)) {
+                        assert LinkedVariables.LINK_DEPENDENT.equals(parameterIndependentLevel)
+                                || LinkedVariables.LINK_COMMON_HC.equals(parameterIndependentLevel);
                         LinkedVariables linkedVariablesOfParameter = formalAndValueLinkedVariables(parameterExpression, parameterValue);
 
                         for (Map.Entry<Variable, DV> eFrom : linkedVariablesOfObject) {
                             for (Map.Entry<Variable, DV> eTo : linkedVariablesOfParameter) {
-                                DV level = eFrom.getValue().max(eTo.getValue()).max(LinkedVariables.LINK_DEPENDENT);
-                                builder.link(eFrom.getKey(), eTo.getKey(), level);
+                                DV level = eFrom.getValue().max(eTo.getValue()).max(parameterIndependentLevel);
+                                builder.link(eFrom.getKey(), eTo.getKey(), level, true);
                             }
                         }
                     }
@@ -440,7 +443,7 @@ public class MethodLinkHelper {
         Expression parameterValue = parameterValues.get(targetIndex);
         CausesOfDelay delays = parameterValue.causesOfDelay().merge(source.causesOfDelay());
         targetLinks.variables().forEach((v, l) ->
-                builder.link(source.variable(), v, delays.isDelayed() ? delays : level.max(l)));
+                builder.link(source.variable(), v, delays.isDelayed() ? delays : level.max(l), true));
     }
 
     /*

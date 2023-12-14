@@ -57,10 +57,6 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         return LINK_COMMON_HC;
     }
 
-    public static boolean isBidirectional(DV level) {
-        return level.isDelayed() || level.le(LINK_ASSIGNED);
-    }
-
     public boolean isDelayed() {
         if (this == NOT_YET_SET) return true;
         return variables.values().stream().anyMatch(DV::isDelayed);

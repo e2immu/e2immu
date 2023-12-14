@@ -1428,7 +1428,13 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)
                         .filter(vi -> vi.isAssigned() || !ignoreContextModified && !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
-                        .map(vi -> vi.getLinkedVariables().causesOfDelay()))
+                        .map(vi -> {
+                            CausesOfDelay lvDelay = vi.getLinkedVariables().causesOfDelay();
+                            if (vi.isAssigned() || ignoreContextModified) {
+                                return lvDelay;
+                            }
+                            return lvDelay.merge(vi.getProperty(CONTEXT_MODIFIED).causesOfDelay());
+                        }))
                 .filter(DV::isDelayed)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (causesOfDelay.isDelayed()) {

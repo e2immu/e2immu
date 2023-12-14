@@ -800,7 +800,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
 
             // TODO not too efficient, but for now... we want to get the symmetry right
             for (Map.Entry<Variable, DV> entry : linkedVariables) {
-                link(assignmentTarget, entry.getKey(), entry.getValue());
+                link(assignmentTarget, entry.getKey(), entry.getValue(), true);
             }
             return this;
         }
@@ -897,12 +897,12 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         delayed links must be symmetrical, until we know whether the direction is LINK_IS_HC_OF or not.
         you can never link to the return variable.
          */
-        public void link(Variable from, Variable to, DV level) {
+        public void link(Variable from, Variable to, DV level, boolean bidirectional) {
             assert !LinkedVariables.LINK_INDEPENDENT.equals(level);
 
             internalLink(from, to, level);
             // TODO:IS_HC
-            if (!(from instanceof ReturnVariable) && LinkedVariables.isBidirectional(level)) {
+            if (!(from instanceof ReturnVariable) && bidirectional) {
                 internalLink(to, from, level);
             }
         }

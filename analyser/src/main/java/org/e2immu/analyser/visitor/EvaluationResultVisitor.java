@@ -15,6 +15,7 @@
 package org.e2immu.analyser.visitor;
 
 import org.e2immu.analyser.analyser.ChangeData;
+import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
@@ -34,7 +35,7 @@ public interface EvaluationResultVisitor {
                 StatementAnalysis statementAnalysis,
                 EvaluationResult evaluationResult,
                 ProgressAndDelay status,
-                ProgressAndDelay externalStatus) {
+                ProgressAndDelay externalStatus) implements CommonVisitorData {
 
         public boolean haveSetProperty(String variableName, Property property) {
             return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName)
@@ -75,6 +76,16 @@ public interface EvaluationResultVisitor {
 
         public MethodInfo enclosingMethod() {
             return methodInfo().typeInfo.typeInspection.get().enclosingMethod();
+        }
+
+        @Override
+        public DV getProperty(Property property) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String label() {
+            throw new UnsupportedOperationException();
         }
     }
 }

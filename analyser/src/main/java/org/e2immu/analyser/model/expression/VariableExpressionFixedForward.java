@@ -53,7 +53,7 @@ public class VariableExpressionFixedForward extends VariableExpression {
             VariableCause cause = new VariableCause(variable(), context.evaluationContext().getLocation(Stage.EVALUATION),
                     CauseOfDelay.Cause.INITIAL_VALUE);
             CausesOfDelay causes = DelayFactory.createDelay(cause);
-            builder.link(variable(), new This(InspectionProvider.DEFAULT, context.getCurrentType()), causes);
+            builder.link(variable(), new This(InspectionProvider.DEFAULT, context.getCurrentType()), causes, true);
             return builder.compose(result).build();
         }
         return result;

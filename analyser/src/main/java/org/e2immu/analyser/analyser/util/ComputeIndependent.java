@@ -120,7 +120,9 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         HCAnalysis s2 = hiddenContentTypes(a2);
         CausesOfDelay causes = s1.delay.merge(s2.delay);
         if (causes.isDelayed()) return causes;
-        return DV.fromBoolDv(!s1.setOfTypes.intersection(s2.setOfTypes).isEmpty());
+        return DV.fromBoolDv(s1.setOfTypes.contains(a2)
+                || s2.setOfTypes.contains(a1)
+                || !s1.setOfTypes.intersection(s2.setOfTypes).isEmpty());
     }
 
     private HCAnalysis hiddenContentTypes(ParameterizedType pt) {
@@ -140,7 +142,9 @@ public record ComputeIndependent(AnalyserContext analyserContext,
         if (delays.isDelayed()) {
             return new HCAnalysis(null, delays);
         }
-        return new HCAnalysis(typeAnalysis.getHiddenContentTypes(), CausesOfDelay.EMPTY);
+        SetOfTypes untranslated = typeAnalysis.getHiddenContentTypes();
+        SetOfTypes translated = untranslated.translate(analyserContext, pt);
+        return new HCAnalysis(translated, CausesOfDelay.EMPTY);
     }
 
     private record HCAnalysis(SetOfTypes setOfTypes, CausesOfDelay delay) {

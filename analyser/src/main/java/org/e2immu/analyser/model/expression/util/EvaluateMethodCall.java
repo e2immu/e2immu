@@ -324,7 +324,7 @@ public class EvaluateMethodCall {
                     are the only types of variables that end up in ExpandedVariable expressions--parameters generally
                     are expanded
                     */
-                    builder.link(ive.variable(), thisVar, finalDelays);
+                    builder.link(ive.variable(), thisVar, finalDelays, true);
                 }
             }
         } // else: cannot be expanded, so this extra delay is not necessary
