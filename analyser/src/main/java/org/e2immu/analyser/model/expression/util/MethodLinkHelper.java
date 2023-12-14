@@ -231,15 +231,16 @@ public class MethodLinkHelper {
                                                      boolean addLinksBetweenParameters) {
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
+        linkedVariablesOfObject = formalAndValueLinkedVariables(object, objectValue);
+
         if (methodInspection.getParameters().isEmpty()) {
-            return builder.build(); // nothing we can do here
+            return builder.build(); // nothing more we can do here
         }
 
         ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
                 context.getCurrentType());
 
         ParameterizedType objectPt = object.returnType();
-        linkedVariablesOfObject = formalAndValueLinkedVariables(object, objectValue);
 
         List<LinkedVariables> parameterLv = computeLinkedVariablesOfParameters(parameterExpressions, parameterValues);
 

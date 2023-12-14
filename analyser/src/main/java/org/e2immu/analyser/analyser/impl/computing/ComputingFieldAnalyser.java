@@ -1485,6 +1485,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .flatMap(StatementAnalysis::variableStream)
                 .filter(VariableInfo::linkedVariablesIsSet)
                 .filter(vi -> vi.getLinkedVariables().value(me) != null)
+                .filter(vi -> !(vi.variable() instanceof LocalVariableReference)
+                        && !(vi.variable() instanceof ReturnVariable)
+                        && !(vi.variable() instanceof This))
                 .forEach(vi -> reversePointingToMe.merge(vi.variable(), vi.getLinkedVariables().value(me), DV::min));
 
         LinkedVariables linkedVariables;
