@@ -21,6 +21,7 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.MethodLinkHelper;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.Block;
@@ -292,7 +293,7 @@ public class Lambda extends BaseExpression implements Expression {
         } else {
             MethodAnalysis methodAnalysis = context.evaluationContext().findMethodAnalysisOfLambda(methodInfo);
             boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            boolean recursiveCall = MethodCall.recursiveCall(methodInfo, context.evaluationContext());
+            boolean recursiveCall = MethodLinkHelper.recursiveCall(methodInfo, context.evaluationContext());
             boolean firstInCycle = breakCallCycleDelay || recursiveCall;
             String statementIndex = context.evaluationContext().statementIndex();
             if (firstInCycle) {

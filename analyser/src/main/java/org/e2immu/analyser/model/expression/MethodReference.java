@@ -16,23 +16,18 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
-import org.e2immu.analyser.analyser.util.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
-import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.expression.util.LinkParameters;
+import org.e2immu.analyser.model.expression.util.MethodLinkHelper;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -118,12 +113,12 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
+        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
 
         ForwardEvaluationInfo scopeForward;
 
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
         if (contextContainer.equals(MultiLevel.NOT_CONTAINER_DV)) {
-            MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
             DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
             scopeForward = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
@@ -145,6 +140,17 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         }
         EvaluationResult scopeResult = scope.evaluate(context, scopeForward);
         builder.compose(scopeResult);
+
+        // links between parameters, and from scope to parameters
+        // the parameters are never evaluated, they remain the formal variables
+        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
+        List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses().stream()
+                .map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo()))
+                .toList();
+        EvaluationResult links = methodLinkHelper.fromParametersIntoObject(scope, scopeResult.value(),
+                parameterExpressions, parameterExpressions, true, true);
+        builder.compose(links);
+
         builder.setExpression(this);
         return builder.build();
     }
@@ -164,11 +170,19 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         }
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
         EvaluationResult scopeResult = scope.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-        LinkedVariables scopeLv = scopeResult.value().linkedVariables(context);
-        List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses()
-                .stream().map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo())).toList();
-        return LinkParameters.fromParametersIntoObject(context, methodAnalysis, scopeLv, scope.returnType(),
-                parameterExpressions);
+        Expression scopeValue = scopeResult.value();
+        IsVariableExpression ive = scopeValue.asInstanceOf(IsVariableExpression.class);
+        if (ive == null) return LinkedVariables.EMPTY;
+
+        List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses().stream()
+                .map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo()))
+                .toList();
+        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
+        EvaluationResult links = methodLinkHelper.fromParametersIntoObject(
+                scope, scopeValue,
+                parameterExpressions, parameterExpressions, false, true);
+        ChangeData cd = links.changeData().get(ive.variable());
+        return cd.linkedVariables();
     }
 
     @Override

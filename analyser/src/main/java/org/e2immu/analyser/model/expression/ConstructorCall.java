@@ -230,13 +230,22 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         if (constructor == null) {
             return LinkedVariables.EMPTY;
         }
+        Expression theScope = scope == null ? new VariableExpression(getIdentifier(),
+                context.evaluationContext().currentThis()) : scope;
+        Expression scopeValue = scope == null ? theScope : scope.evaluate(context, ForwardEvaluationInfo.DEFAULT).value();
+        IsVariableExpression scopeVariable;
+        if ((scopeVariable = theScope.asInstanceOf(IsVariableExpression.class)) == null) {
+            return LinkedVariables.EMPTY;
+        }
         List<Expression> parameterValues = parameterExpressions.stream()
                 .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
                 .toList();
-        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(constructor);
-        ParameterizedType scopePt = returnType();
-        LinkedVariables scopeLv = scope == null ? LinkedVariables.EMPTY : scope.linkedVariables(context);
-        return LinkParameters.fromParametersIntoObject(context, methodAnalysis, scopeLv, scopePt, parameterValues);
+        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, constructor);
+        EvaluationResult links = methodLinkHelper.fromParametersIntoObject(
+                theScope, scopeValue,
+                parameterExpressions, parameterValues, true, false);
+        ChangeData cd = links.changeData().get(scopeVariable.variable());
+        return cd == null ? LinkedVariables.EMPTY : cd.linkedVariables();
     }
 
     @Override
@@ -457,10 +466,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
 
         EvaluationResult scopeResult;
+        Expression scopeValue;
         if (scope != null) {
             scopeResult = scope.evaluate(context, forwardEvaluationInfo);
+            scopeValue = scopeResult.value();
         } else {
             scopeResult = null;
+            scopeValue = null;
         }
 
         // arrayInitializer variant
@@ -487,13 +499,27 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             return delayedConstructorCall(context, res.k, parameterDelays);
         }
 
+        // linking
+
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
+        builder.compose(res.k.build());
+
+        if (constructor != null) {
+            MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, constructor);
+            EvaluationResult links = methodLinkHelper.fromParametersIntoObject(
+                    scope == null ? EmptyExpression.EMPTY_EXPRESSION : scope,
+                    scopeValue == null ? EmptyExpression.EMPTY_EXPRESSION : scopeValue,
+                    parameterExpressions, res.v, false, true);
+            builder.compose(links);
+        }
+
         // check state changes of companion methods
         Expression instance;
         if (constructor != null) {
             int sumComplexity = res.v.stream().mapToInt(Expression::getComplexity).sum();
             ConstructorCall withEvalParam = sumComplexity >= Expression.CONSTRUCTOR_CALL_EXPANSION_LIMIT
                     ? this : withParameterExpressions(res.v);
-            MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, res.k, context,
+            MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, builder, context,
                     constructor, null, withEvalParam, res.v, this, DV.TRUE_DV);
             if (modReturn == null) {
                 instance = withEvalParam;
@@ -507,11 +533,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         } else {
             instance = this;
         }
-        res.k.setExpression(instance);
+        builder.setExpression(instance);
 
         if (constructor != null &&
                 (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
-            res.k.incrementStatementTime();
+            builder.incrementStatementTime();
         }
 
         // links from object into the parameters  new List(x), which may render x --3--> new object
@@ -520,9 +546,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
         DV cImm = forwardEvaluationInfo.getProperty(Property.CONTEXT_IMMUTABLE);
         if (MultiLevel.isAfterThrowWhenNotEventual(cImm)) {
-            res.k.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
+            builder.raiseError(getIdentifier(), Message.Label.EVENTUAL_AFTER_REQUIRED);
         }
-        return res.k.build();
+        return builder.build();
     }
 
     private EvaluationResult evaluateComponents(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {

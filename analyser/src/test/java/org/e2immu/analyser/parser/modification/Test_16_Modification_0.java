@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser.modification;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
@@ -25,6 +26,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.modification.testexample.Modification_0A;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -36,8 +38,7 @@ import java.util.Set;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_16_Modification_0 extends CommonTestRunner {
 
@@ -68,6 +69,20 @@ public class Test_16_Modification_0 extends CommonTestRunner {
     @Test
     public void test0() throws IOException {
 
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:add>" : "instance 0 type boolean";
+                assertEquals(expected, d.evaluationResult().value().toString());
+                ChangeData cd = d.findValueChangeByToString("set");
+                if (d.iteration() == 0) {
+                    assertNull(cd.value());
+                } else {
+                    assertEquals("instance 0 type Set<String>/*this.size()>=1&&this.contains(v)*/",
+                            cd.value().toString());
+                }
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
@@ -86,7 +101,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
                     assertEquals("this.set:0,this:2", lvSet.toString());
                     // end separate test
                 }
-                // important: the link from set ->2-> this is unidirectional!
+                // important: the link from set ->2-> this is unidirectional, so this is not linked to set.
                 if (d.variable() instanceof This) {
                     assertLinked(d, it(0, ""));
                 }
@@ -106,6 +121,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
         testClass("Modification_0A", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
@@ -114,16 +130,12 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
     @Test
     public void test_0B() throws IOException {
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ParameterInfo pi && "v".equals(pi.name)) {
-         //     FIXME      assertLinked(d, it(0, "set:4,this:4"));
+                    assertLinked(d, it(0, "set:4,this:4"));
                 }
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
-                    assertTrue(d.variableInfoContainer().hasEvaluation()
-                            && !d.variableInfoContainer().hasMerge());
-                    assertTrue(d.variableInfo().isRead());
                     String expectValue = d.iteration() == 0 ? "<f:set>"
                             : "instance 0 type Set<T>/*this.size()>=1&&this.contains(v)*/";
                     assertEquals(expectValue, d.currentValue().toString());
@@ -168,9 +180,6 @@ public class Test_16_Modification_0 extends CommonTestRunner {
                     assertLinked(d, it(0, "set:2,this:2"));
                 }
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
-                    assertTrue(d.variableInfoContainer().hasEvaluation()
-                            && !d.variableInfoContainer().hasMerge());
-                    assertTrue(d.variableInfo().isRead());
                     String expectValue = d.iteration() == 0 ? "<f:set>"
                             : "instance 0 type Set<T>/*this.size()>=1&&this.contains(v)*/";
                     assertEquals(expectValue, d.currentValue().toString());

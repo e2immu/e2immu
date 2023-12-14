@@ -24,6 +24,7 @@ import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.MethodLinkHelper;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -236,7 +237,8 @@ public class TestLinkingExpression {
                 new TypeExpression(Identifier.CONSTANT, collectionInteger, Diamond.NO), addAll, parameterValues);
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
-        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
+        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, addAll);
+        methodLinkHelper.linksBetweenParameters(builder, addAll, parameterValues, parameterValues,
                 // no prior additional links, not that any would be possible
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
@@ -269,7 +271,8 @@ public class TestLinkingExpression {
         assertEquals("Collection.addAll(v,i,j)", methodCall.toString());
 
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
-        methodCall.linksBetweenParameters(builder, context, methodCall.methodInfo, parameterValues,
+        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, addAll);
+        methodLinkHelper.linksBetweenParameters(builder, addAll, parameterValues, parameterValues,
                 // no prior additional links
                 List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
                         LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
