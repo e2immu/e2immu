@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,7 +46,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.NOT_NULL_EXPRESSION));
                     // not a direct assignment!
-                    assertEquals("setC:1", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("setC:1,this:2", d.variableInfo().getLinkedVariables().toString());
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                 }
                 if (d.variable() instanceof ParameterInfo setC && "setC".equals(setC.name)) {
@@ -69,10 +71,10 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(Property.CONTEXT_NOT_NULL));
                     assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
 
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertLinked(d, it(0, "this:2"));
                 }
                 if (d.variable() instanceof ParameterInfo s && "string".equals(s.name)) {
-                    assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                    assertLinked(d, it(0, ""));
                 }
             }
 
@@ -99,7 +101,7 @@ public class Test_16_Modification_11 extends CommonTestRunner {
                     }
                     if ("2".equals(d.statementId())) {
                         String expectLinked = switch (d.iteration()) {
-                            case 0, 1 -> "c.set:-1,localD.set:-1,localD:-1,this.s2:-1,this:-1";
+                            case 0, 1 -> "this.s2:-1,this:-1";
                             default -> "this.s2:2,this:3";
                         };
                         assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());

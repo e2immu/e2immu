@@ -262,7 +262,8 @@ public class MethodLinkHelper {
                     DV parameterIndependentLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(parameterIndependent);
 
                     if (!INDEPENDENT_DV.equals(parameterIndependent)) {
-                        assert LinkedVariables.LINK_DEPENDENT.equals(parameterIndependentLevel)
+                        assert parameterIndependentLevel.isDelayed()
+                                || LinkedVariables.LINK_DEPENDENT.equals(parameterIndependentLevel)
                                 || LinkedVariables.LINK_COMMON_HC.equals(parameterIndependentLevel);
                         LinkedVariables linkedVariablesOfParameter = formalAndValueLinkedVariables(parameterExpression, parameterValue);
 

@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_0 extends CommonTestRunner {
@@ -107,8 +109,8 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                     String expectReturn = d.iteration() == 0 ? "<f:explicitlyFinal>" : "\"abc\"";
                     assertEquals(expectReturn, d.currentValue().toString());
 
-                    String linked = "this.explicitlyFinal:0,this:3";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it0("this.explicitlyFinal:0,this:-1"),
+                            it(1, "this.explicitlyFinal:0,this:2"));
 
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                     assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);

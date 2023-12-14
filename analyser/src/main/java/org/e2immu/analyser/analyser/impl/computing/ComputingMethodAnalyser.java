@@ -1214,8 +1214,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             } else {
                 computed = linkedVariables.stream()
-                        .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis()
-                                || e.getKey() instanceof This)
+                        // TODO:IS_HC removed links to 'this', see Basics_14
+                        .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis())
                         .map(e -> {
                             if (e.getKey() instanceof This && e.getValue().le(LinkedVariables.LINK_ASSIGNED)) {
                                 // return this

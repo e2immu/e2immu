@@ -120,8 +120,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<String>", e.toString());
 
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it0("NOT_YET_SET"),
-                        it(1, ""));
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it(0, ""));
             }
         };
 
@@ -169,7 +168,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<T>", e.toString());
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it0("v:-1"), it(1, "v:4"));
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it(0, "v:4"));
             }
         };
 
@@ -213,7 +212,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<StringBuilder>", e.toString());
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it0("v:-1"), it(1, "v:4"));
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),  it(0, "v:4"));
             }
         };
 

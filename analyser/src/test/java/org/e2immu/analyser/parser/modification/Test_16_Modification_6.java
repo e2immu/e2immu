@@ -75,7 +75,7 @@ public class Test_16_Modification_6 extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "set6".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertEquals(DV.FALSE_DV, d.getProperty(Property.CONTEXT_MODIFIED));
-                        assertEquals("in6:0", d.variableInfo().getLinkedVariables().toString());
+                        assertEquals("in6:0,this:2", d.variableInfo().getLinkedVariables().toString());
                     }
                 }
             }

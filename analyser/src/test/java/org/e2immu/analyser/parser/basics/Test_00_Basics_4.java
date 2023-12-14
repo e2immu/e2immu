@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.EXTERNAL_NOT_NULL;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_00_Basics_4 extends CommonTestRunner {
@@ -45,11 +46,11 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                 if (I.equals(d.variableName())) {
                     String expect = switch (d.iteration()) {
                         case 0 -> "1+<f:i>";
-                //        case 1 -> "<wrapped:i>";
+                        //        case 1 -> "<wrapped:i>";
                         default -> "1+i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this:2", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if ("getI".equals(d.methodInfo().name)) {
@@ -63,8 +64,8 @@ public class Test_00_Basics_4 extends CommonTestRunner {
                         default -> "i$0";
                     };
                     assertEquals(expect, d.currentValue().toString());
-                    String linked = "this.i:0,this:3";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it(0, 1, "this.i:0,this:-1"),
+                            it(2, "this.i:0,this:2"));
                     assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                 }
             }

@@ -59,47 +59,6 @@ public class Test_16_Modification extends CommonTestRunner {
                 .build());
     }
 
-
-    @Test
-    public void test13() throws IOException {
-        final String INNER_THIS = "org.e2immu.analyser.parser.modification.testexample.Modification_13.Inner.this";
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("clearIfExceeds".equals(d.methodInfo().name) && INNER_THIS.equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
-                    assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                }
-                if ("0.0.0".equals(d.statementId())) {
-                    assertDv(d, 0, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                }
-            }
-            if ("Modification_13".equals(d.methodInfo().name)) {
-                assertEquals("0", d.statementId());
-                if (d.variable() instanceof ParameterInfo pi && "input".equals(pi.name)) {
-                    assertEquals("this.set:4", d.variableInfo().getLinkedVariables().toString());
-                }
-            }
-        };
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("clearIfExceeds".equals(d.methodInfo().name)) {
-                assertDv(d, 1, DV.TRUE_DV, Property.MODIFIED_METHOD);
-            }
-            if ("Modification_13".equals(d.methodInfo().name)) {
-                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
-            }
-        };
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("Modification_13".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-            }
-        };
-        testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
-                .build());
-    }
-
     @Test
     public void test14() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -220,7 +179,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         if ("0".equals(d.statementId())) {
                             assertLinked(d,
                                     it(0, 1, "this.messages:-1,this:-1"),
-                                    it(2, "this.messages:3,this:3"));
+                                    it(2, "this.messages:4,this:4"));
                         }
                     }
                     if (d.variable() instanceof FieldReference fr && "messages".equals(fr.fieldInfo().name)) {
@@ -228,7 +187,7 @@ public class Test_16_Modification extends CommonTestRunner {
                             // asymmetrical link!
                             assertLinked(d,
                                     it(0, 1, "errorMessage:-1,this:-1"),
-                                    it(2, ""));
+                                    it(2, "errorMessage:4,this:2"));
                         }
                     }
                 }
@@ -258,7 +217,8 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if ("FaultyImplementation".equals(d.methodInfo().typeInfo.simpleName)) {
                     assertDv(d.p(0), 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                    assertDv(d.p(0), 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
+                    assertDv(d.p(0), 3, DV.TRUE_DV, Property.MODIFIED_VARIABLE);
+                    assertDv(d.p(0), 3, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 }
             }
         };

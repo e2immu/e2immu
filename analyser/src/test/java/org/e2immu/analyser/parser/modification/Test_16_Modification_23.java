@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Test_16_Modification_23 extends CommonTestRunner {
@@ -39,6 +40,64 @@ public class Test_16_Modification_23 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertEquals("new HashMap<>(in)/*this.size()==in.size()*/",
                                 d.currentValue().toString());
+                    }
+                    // now comes a method call modifying the keySet, which is dependent on middle
+                    if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<mod:Set<String>>"
+                                : "instance 2 type HashMap<String,Integer>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if ("keySet".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("middle.keySet()/*@NotNull this.size()==in.size()*/",
+                                d.currentValue().toString());
+                        assertEquals("middle:2", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("2".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<mod:Set<String>>" : "middle.keySet()/*@NotNull*/";
+                        assertEquals(expected, d.currentValue().toString());
+                        assertEquals("middle:2", d.variableInfo().getLinkedVariables().toString());
+                    }
+                }
+            }
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("middle".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new HashMap<>(in)/*this.size()==in.size()*/",
+                                d.currentValue().toString());
+                    }
+                    // now comes a method call modifying the keySet, which is dependent on middle
+                    if ("1".equals(d.statementId())) {
+                        String expected = d.iteration() == 0 ? "<mod:Set<String>>"
+                                : "instance 1 type HashMap<String,Integer>";
+                        assertEquals(expected, d.currentValue().toString());
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    if ("2".equals(d.statementId())) {
+                        assertCurrentValue(d, 1, "middle$1.size()");
+                    }
+                }
+            }
+        };
+
+
+        testClass("Modification_23", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    // T instead of String for key type
+    @Test
+    public void testB() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method1".equals(d.methodInfo().name)) {
+                if ("middle".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new HashMap<>(in)/*this.size()==in.size()*/",
+                                d.currentValue().toString());
+                        assertLinked(d, it(0, "in:4"));
                     }
                     // now comes a method call modifying the keySet, which is dependent on middle
                     if ("2".equals(d.statementId()) || "3".equals(d.statementId())) {
@@ -83,7 +142,7 @@ public class Test_16_Modification_23 extends CommonTestRunner {
         };
 
 
-        testClass("Modification_23", 0, 0, new DebugConfiguration.Builder()
+        testClass("Modification_23B", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

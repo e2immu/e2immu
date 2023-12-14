@@ -16,6 +16,7 @@
 package org.e2immu.analyser.parser.basics;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.Stage;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -24,10 +25,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -143,6 +141,10 @@ public class Test_00_Basics_14 extends CommonTestRunner {
                 // not contracted
                 assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(CONTAINER));
             }
+            if ("getT".equals(d.methodInfo().name)) {
+                assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
+                assertDv(d, 2, MultiLevel.INDEPENDENT_HC_DV, INDEPENDENT);
+            }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
@@ -151,11 +153,14 @@ public class Test_00_Basics_14 extends CommonTestRunner {
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
+
         testClass("Basics_14", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
 }

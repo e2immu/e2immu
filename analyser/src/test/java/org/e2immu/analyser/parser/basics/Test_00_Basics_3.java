@@ -34,6 +34,8 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.NOT_IGNORE_MODS_DV;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
@@ -158,41 +160,33 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     }
                 }
                 if (S.equals(d.variableName())) {
+                    assertLinked(d, it(0, "this:2"));
                     if ("0.0.0".equals(d.statementId())) {
                         assertCurrentValue(d, 2, "nullable instance type String");
                         assertFalse(d.variableInfo().isAssigned());
-
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                     if ("0.0.1".equals(d.statementId())) {
                         assertEquals("\"xyz\"", d.currentValue().toString());
                         assertTrue(d.variableInfo().isAssigned());
 
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                         // not null of assignment
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
                     if ("0.1.0".equals(d.statementId())) {
                         assertEquals("\"abc\"", d.currentValue().toString());
                         assertTrue(d.variableInfo().isAssigned());
-
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                     }
                     if ("0".equals(d.statementId())) {
                         assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, d.getProperty(NOT_NULL_EXPRESSION));
                         assertTrue(d.variableInfoContainer().hasMerge());
-
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                         assertTrue(d.variableInfo().isAssigned());
                         assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         String expected = d.iteration() == 0 ? "<f:s>" : "input1.contains(\"a\")?\"xyz\":\"abc\"";
                         assertEquals(expected, d.currentValue().toString());
-
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                         assertEquals("0.0.1-E,0.1.0-E,0:M", d.variableInfo().getAssignmentIds().toString());
 
                         assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
@@ -205,7 +199,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isAssigned());
                     assertEquals("input2", d.currentValue().toString());
-                    assertEquals("input2:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("input2:0,this:2", d.variableInfo().getLinkedVariables().toString());
 
                     assertEquals(DV.FALSE_DV, d.getProperty(CONTEXT_MODIFIED));
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
@@ -215,7 +209,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     assertCurrentValue(d, 2, "nullable instance type String");
 
-                    assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("this:2", d.variableInfo().getLinkedVariables().toString());
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);
                     assertEquals(MultiLevel.NULLABLE_DV, d.getProperty(CONTEXT_NOT_NULL));
                     assertDv(d, DV.FALSE_DV, CONTEXT_MODIFIED);
@@ -228,8 +222,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         default -> "s$0";
                     };
                     assertEquals(expectValue, d.currentValue().toString());
-                    String linked = "this.s:0,this:3";
-                    assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                    assertLinked(d, it(0, 1, "this.s:0,this:-1"), it(2, "this.s:0,this:2"));
 
                     // copied from S
                     assertDv(d, 2, MultiLevel.NULLABLE_DV, NOT_NULL_EXPRESSION);

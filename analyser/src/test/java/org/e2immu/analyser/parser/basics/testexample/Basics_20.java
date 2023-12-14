@@ -73,15 +73,6 @@ public class Basics_20 {
         list.add(i);
         C1<I> ci = new C1<>(list); // ci linked dependently to list
         C1<I> ci2 = new C1<>(new ArrayList<>(list));
-        /*
-         Weighted graph at this point:
-         i -3-> ci, -3-> list
-         list -2-> ci, -4-> ci2
-         ci -2-> list
-         ci2 -4-> list
-
-         because 'i' is modified, the path from 'i' to 'list' modifies both ci and ci2
-         */
         System.out.println(ci + ", " + ci2);
     }
 

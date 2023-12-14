@@ -39,20 +39,82 @@ public class Test_16_Modification_10 extends CommonTestRunner {
         super(true);
     }
 
-    @Test
-    public void test10() throws IOException {
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("addAll".equals(d.methodInfo().name) && "d".equals(d.variableName())) {
+            assertEquals(DV.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+        }
+        if ("addAll".equals(d.methodInfo().name) && "c".equals(d.variableName())) {
+            assertEquals(DV.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
+        }
+    };
 
-            if ("addAll".equals(d.methodInfo().name) && "d".equals(d.variableName())) {
-                assertEquals(DV.FALSE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
-            }
-            if ("addAll".equals(d.methodInfo().name) && "c".equals(d.variableName())) {
-                assertEquals(DV.TRUE_DV, d.getProperty(Property.MODIFIED_VARIABLE));
-            }
-        };
+    TypeMapVisitor typeMapVisitor = d -> {
+        TypeInfo set = d.typeMap().get(Set.class);
+
+        MethodInfo addAll = set.findUniqueMethod("addAll", 1);
+        assertEquals(DV.TRUE_DV, d.getMethodAnalysis(addAll).getProperty(Property.MODIFIED_METHOD));
+
+        ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
+        assertEquals(DV.FALSE_DV, d.getParameterAnalysis(first).getProperty(Property.MODIFIED_VARIABLE));
+    };
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        FieldInfo fieldInfo = d.fieldInfo();
+        if ("c0".equals(fieldInfo.name)) {
+            assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+        }
+        if ("s0".equals(fieldInfo.name)) {
+            assertDv(d, DV.FALSE_DV, Property.MODIFIED_OUTSIDE_METHOD);
+        }
+    };
+
+    @Test
+    public void test_10() throws IOException {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("Modification_10".equals(d.methodInfo().name)) {
+                ParameterAnalysis list = d.parameterAnalyses().get(0);
+
+                String assigned = d.iteration() == 0 ? ""
+                        : "c0=assigned:1, c1=dependent:2, l0=independent:5, l1=independent:5, l2=independent:5, s0=independent:5, s1=independent:5";
+
+                assertEquals(assigned, list.getAssignedToField().entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
+
+                assertDv(d.p(0), 1, DV.FALSE_DV, Property.MODIFIED_VARIABLE);
+
+                assertEquals(d.iteration() >= 1, list.isAssignedToFieldDelaysResolved());
+
+                ParameterAnalysis set3 = d.parameterAnalyses().get(1);
+                String assigned3 = d.iteration() == 0 ? ""
+                        : "c0=independent:5, c1=independent:5, l0=independent:5, l1=independent:5, l2=independent:5, s0=assigned:1, s1=independent:5";
+
+                assertEquals(assigned3, set3.getAssignedToField().entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue()).sorted().collect(Collectors.joining(", ")));
+                assertEquals(d.iteration() >= 1, set3.isAssignedToFieldDelaysResolved());
+            }
+        };
+
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if ("Modification_10".equals(d.typeInfo().simpleName)) {
+                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            }
+        };
+
+        testClass("Modification_10", 0, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test_10B() throws IOException {
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("Modification_10B".equals(d.methodInfo().name)) {
                 ParameterAnalysis list = d.parameterAnalyses().get(0);
 
                 String assigned = d.iteration() == 0 ? ""
@@ -75,39 +137,13 @@ public class Test_16_Modification_10 extends CommonTestRunner {
             }
         };
 
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            int iteration = d.iteration();
-            FieldInfo fieldInfo = d.fieldInfo();
-            if ("c0".equals(fieldInfo.name)) {
-                if (iteration >= 2) {
-                    assertEquals(DV.FALSE_DV, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
-                }
-            }
-            if ("s0".equals(fieldInfo.name)) {
-                if (iteration >= 2) {
-                    assertEquals(DV.TRUE_DV, d.fieldAnalysis().getProperty(Property.MODIFIED_OUTSIDE_METHOD));
-                }
-            }
-        };
-
-        TypeMapVisitor typeMapVisitor = d -> {
-            TypeInfo set = d.typeMap().get(Set.class);
-
-            MethodInfo addAll = set.findUniqueMethod("addAll", 1);
-            assertEquals(DV.TRUE_DV, d.getMethodAnalysis(addAll).getProperty(Property.MODIFIED_METHOD));
-
-            ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
-            assertEquals(DV.FALSE_DV, d.getParameterAnalysis(first).getProperty(Property.MODIFIED_VARIABLE));
-
-        };
-
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if ("Modification_10".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            if ("Modification_10B".equals(d.typeInfo().simpleName)) {
+                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
             }
         };
 
-        testClass("Modification_10", 0, 0, new DebugConfiguration.Builder()
+        testClass("Modification_10B", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

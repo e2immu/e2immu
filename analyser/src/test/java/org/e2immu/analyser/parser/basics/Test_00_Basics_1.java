@@ -69,7 +69,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(FIELD1, d.variableName());
                 if ("1".equals(d.statementId())) {
                     assertTrue(d.variableInfo().isAssigned());
-                    assertEquals("p0:0,s1:0", d.variableInfo().getLinkedVariables().toString());
+                    assertEquals("p0:0,s1:0,this:2", d.variableInfo().getLinkedVariables().toString());
 
                     assertEquals(MUTABLE_DV, d.getProperty(CONTEXT_IMMUTABLE));
 
@@ -118,13 +118,13 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
                     assertDv(d, MUTABLE_DV, CONTEXT_IMMUTABLE);
 
-                    assertDv(d, 2, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
-                    assertTrue(d.iteration() <= 2);
+                    assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
+                    assertTrue(d.iteration() <= 1);
                     assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     assertEquals(MUTABLE_DV, d.getProperty(IMMUTABLE));
-                    assertDv(d, 2, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
+                    assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, EXTERNAL_IMMUTABLE);
                 }
             }
         }
@@ -133,7 +133,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals("0", d.statementId());
                 String expected = d.iteration() == 0 ? "<f:f1>" : "nullable instance type Set<String>";
                 assertEquals(expected, d.currentValue().toString());
-                assertLinked(d, it0("s:-1"), it(1, ""));
+                assertLinked(d, it(0, "this:2"));
                 assertDv(d, 1, NULLABLE_DV, CONTEXT_NOT_NULL);
                 assertDv(d, 1, NOT_IGNORE_MODS_DV, IGNORE_MODIFICATIONS);
                 assertDv(d, 1, NOT_IGNORE_MODS_DV, EXTERNAL_IGNORE_MODIFICATIONS);
@@ -145,7 +145,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertTrue(d.variableInfo().isRead());
 
                 assertCurrentValue(d, 1, "initial:this.f1@Method_getF1_0-C;initial@Field_f1", "nullable instance type Set<String>");
-                assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                assertEquals("this:2", d.variableInfo().getLinkedVariables().toString());
 
                 assertDv(d, 1, NULLABLE_DV, NOT_NULL_EXPRESSION);
                 assertDv(d, 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
@@ -157,8 +157,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 assertEquals(GET_F1_RETURN, d.variableName());
                 assertTrue(d.variableInfo().isAssigned());
 
-                String linked = "this.f1:0,this:3";
-                assertEquals(linked, d.variableInfo().getLinkedVariables().toString()); // without p0
+                assertLinked(d, it0("this.f1:0,this:-1"), it(1, "this.f1:0,this:2"));
 
                 String expectValue = d.iteration() == 0 ? "<f:f1>" : "f1";
                 assertEquals(expectValue, d.currentValue().toString());
@@ -173,7 +172,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
         }
         if ("getF1".equals(d.methodInfo().name)) {
-            assertTrue(d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
+            assertEquals(d.iteration() >= 1, d.statementAnalysis().methodLevelData().linksHaveBeenEstablished());
         }
     };
 
@@ -182,21 +181,20 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             assertEquals(TRUE_DV, d.fieldAnalysis().getProperty(FINAL));
 
             assertEquals("p0", d.fieldAnalysis().getValue().toString());
-            assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                    it0("p0:-1,s1:-1,s:-1"), it(1, "p0:0"));
+            assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it(0, "p0:0"));
 
-            assertDv(d, 1, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+            assertDv(d, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
             assertDv(d, NULLABLE_DV, EXTERNAL_NOT_NULL);
             assertDv(d, MUTABLE_DV, EXTERNAL_IMMUTABLE);
-            assertDv(d, 1, DEPENDENT_DV, INDEPENDENT);
+            assertDv(d, DEPENDENT_DV, INDEPENDENT);
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name)) {
             assertDv(d.p(0), 1, FALSE_DV, CONTEXT_MODIFIED);
-            assertDv(d.p(0), 2, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
-            assertDv(d.p(0), 2, FALSE_DV, MODIFIED_VARIABLE);
+            assertDv(d.p(0), 1, FALSE_DV, MODIFIED_OUTSIDE_METHOD);
+            assertDv(d.p(0), 1, FALSE_DV, MODIFIED_VARIABLE);
 
             assertDv(d.p(0), 1, NULLABLE_DV, CONTEXT_NOT_NULL);
             assertDv(d.p(0), 1, NULLABLE_DV, EXTERNAL_NOT_NULL);
@@ -211,7 +209,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Basics_1".equals(d.typeInfo().simpleName)) {
             assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
-            assertDv(d, 1, EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
+            assertDv(d, EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
         }
     };
 

@@ -182,7 +182,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 scope, scopeValue,
                 parameterExpressions, parameterExpressions, false, true);
         ChangeData cd = links.changeData().get(ive.variable());
-        return cd.linkedVariables();
+        return cd == null ? LinkedVariables.EMPTY : cd.linkedVariables();
     }
 
     @Override

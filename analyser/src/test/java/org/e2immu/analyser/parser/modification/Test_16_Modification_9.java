@@ -48,7 +48,7 @@ public class Test_16_Modification_9 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:s2>" : "s2";
                         assertEquals(expectValue, d.currentValue().toString());
-                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                     if ("2".equals(d.statementId())) {
                         String expectValue = d.iteration() == 0 ? "<f:s2>" : "s2";
@@ -56,18 +56,17 @@ public class Test_16_Modification_9 extends CommonTestRunner {
 
                         assertLinked(d,
                                 it0("Modification_9.LOGGER:-1,this.s2:0,this:-1"),
-                                it(1, "this.s2:0,this:3"));
+                                it(1, "this.s2:0,this:2"));
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "s2".equals(fr.fieldInfo().name)) {
                     String expectLinked;
                     if ("0".equals(d.statementId())) {
-                        assertLinked(d, it(0, "theSet:0,this:3"));
-                    } else {
-                        assertLinked(d,
-                                it0("Modification_9.LOGGER:-1,theSet:0,this:-1"),
-                                it(1, "theSet:0,this:3"));
+                        assertLinked(d, it0("theSet:0,this:-1"), it(1, "theSet:0,this:2"));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it0("theSet:0,this:-1"), it(1, "theSet:0,this:2"));
                     }
                     if (("2".equals(d.statementId()) || "3".equals(d.statementId()))) {
                         assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);

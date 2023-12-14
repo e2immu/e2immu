@@ -111,7 +111,10 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
                 .add(ANONYMOUS_TYPE_ANALYSER, anonymousTypeAnalyser)
                 .add(EVALUATE_INITIALISER, this::evaluateInitializer)
-                .add(ANALYSE_FINAL, this::analyseFinal)
+                .add(ANALYSE_FINAL, sharedState -> {
+                    analyseFinal(sharedState);
+                    return DONE;
+                })
                 .add(ANALYSE_VALUES, sharedState -> analyseValues())
                 .add(ANALYSE_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
@@ -569,7 +572,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, fieldAnalysis.valuesStatus());
             return fieldAnalysis.valuesStatus(); //DELAY EXIT POINT
         }
-        assert fieldAnalysis.getValues().size() > 0;
+        assert !fieldAnalysis.getValues().isEmpty();
 
         /*
         The choice here is between deciding the @NotNull based on the value and the context of
@@ -907,18 +910,11 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
     }
 
     private DV immutableOfProxy(ValueAndPropertyProxy proxy) {
-        //   if (isMyOwnType(proxy.getValue().returnType())) {
-        //       return myTypeAnalyser.getTypeAnalysis().getProperty(Property.IMMUTABLE);
-        //   }
         DV breakValue = proxy.getPropertyOrDefaultNull(IMMUTABLE_BREAK);
         if (breakValue != null && breakValue.isDone()) return breakValue;
         return proxy.getProperty(Property.IMMUTABLE);
     }
 
-    private boolean isMyOwnType(ParameterizedType returnType) {
-        if (returnType.typeInfo == null) return false;
-        return returnType.typeInfo == fieldInfo.owner;
-    }
 
     private DV correctForExposureBefore(DV immutable) {
         if (immutable.isDelayed()) return immutable;
@@ -1046,7 +1042,6 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
     private Expression replaceLocalVariablesByInstance(Expression expression, Properties properties) {
         if (expression.isDelayed()) return expression;
-        VariableExpression ve;
         if (expression.collect(VariableExpression.class).stream().anyMatch(e -> e.variable() instanceof LocalVariableReference)) {
             // contains an instance somewhere... not returning
             return Instance.forField(fieldInfo, fieldInfo.type, properties);
@@ -1428,13 +1423,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         CausesOfDelay causesOfDelay = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo)
                         .filter(vi -> vi.isAssigned() || !ignoreContextModified && !vi.getProperty(CONTEXT_MODIFIED).valueIsFalse())
-                        .map(vi -> {
-                            CausesOfDelay lvDelay = vi.getLinkedVariables().causesOfDelay();
-                            if (vi.isAssigned() || ignoreContextModified) {
-                                return lvDelay;
-                            }
-                            return lvDelay.merge(vi.getProperty(CONTEXT_MODIFIED).causesOfDelay());
-                        }))
+                        .map(vi -> vi.getLinkedVariables().causesOfDelay()))
                 .filter(DV::isDelayed)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         if (causesOfDelay.isDelayed()) {
@@ -1469,7 +1458,6 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         Map<Variable, DV> map = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .filter(VariableInfo::linkedVariablesIsSet)
-                .filter(vi -> vi.isAssigned() || vi.getProperty(CONTEXT_MODIFIED).valueIsTrue())
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
                         && !(e.getKey() instanceof ReturnVariable)
@@ -1501,13 +1489,13 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         return DONE;
     }
 
-    private AnalysisStatus analyseFinal(SharedState sharedState) {
+    private void analyseFinal(SharedState sharedState) {
         assert fieldAnalysis.getProperty(Property.FINAL).isDelayed();
         assert sharedState.iteration() == 0;
 
         if (fieldInfo.isExplicitlyFinal()) {
             fieldAnalysis.setProperty(Property.FINAL, DV.TRUE_DV);
-            return DONE;
+            return;
         }
 
         boolean isFinal;
@@ -1536,7 +1524,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 }
             }
         }
-        return DONE;
+        return;
     }
 
     private Stream<MethodAnalyser> methodsForModification() {

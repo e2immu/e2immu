@@ -35,6 +35,8 @@ import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.MUTABLE_DV;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_00_Basics_7 extends CommonTestRunner {
@@ -187,15 +189,15 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                     };
                     if ("1.0.0".equals(d.statementId())) {
                         assertEquals(expect, d.currentValue().toString());
-                        String linked = "this.i:0,this:3";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "this.i:0,this:-1"),
+                                it(2, "this.i:0,this:2"));
                     }
                     // at 1.0.1, i gets incremented, j should not be linked to this.i anymore
                     if ("1.0.1".equals(d.statementId())) {
-                        assertEquals("this:3", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "this:-1"), it(2, "this:2"));
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        assertEquals("this:3", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "this:-1"), it(2, "this:2"));
                     }
                 }
 
@@ -209,7 +211,7 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(expect0_100, d.currentValue().toString());
                         assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
 
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                        assertLinked(d, it(0, "this:2"));
                         assertTrue(d.variableInfo().linkedVariablesIsSet());
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
                     }
@@ -221,14 +223,12 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(expect0_100, d.currentValue().toString());
                         assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
                         assertDv(d, 2, MultiLevel.EFFECTIVELY_NOT_NULL_DV, EXTERNAL_NOT_NULL);
-                        String linked = "j:0,this:3";
-                        assertEquals(linked, d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, 1, "j:0,this:-1"), it(2, "j:0,this:2"));
                     }
                     if ("1.0.1".equals(d.statementId())) {
                         // we switch to NOT_INVOLVED, given that the field has been assigned; its external value is of no use
                         assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
-                        assertTrue(d.variableInfo().linkedVariablesIsSet());
+                        assertLinked(d, it(0, "this:2"));
                     }
                     String expect102 = switch (d.iteration()) {
                         case 0 -> "1+<f:i>";
@@ -239,15 +239,15 @@ public class Test_00_Basics_7 extends CommonTestRunner {
                         assertEquals(expect102, d.currentValue().toString());
                         assertEquals("1.0.2-E", d.variableInfo().getReadId());
                         assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
-                        assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                        assertLinked(d, it(0, "this:2"));
                     }
                     if ("1.0.3".equals(d.statementId())) {
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, "this:2"));
                         assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals(expect102, d.currentValue().toString());
-                        assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                        assertLinked(d, it(0, "this:2"));
                         assertDv(d, 2, MultiLevel.NOT_INVOLVED_DV, EXTERNAL_NOT_NULL);
                     }
                 }
