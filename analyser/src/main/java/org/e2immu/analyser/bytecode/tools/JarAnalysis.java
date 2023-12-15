@@ -2,7 +2,6 @@ package org.e2immu.analyser.bytecode.tools;
 
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.graph.analyser.TypeGraphIO;
-import org.e2immu.support.SetOnce;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.slf4j.Logger;
@@ -12,6 +11,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -21,12 +21,14 @@ import static org.e2immu.graph.analyser.TypeGraphIO.createPackageGraph;
 public class JarAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(JarAnalysis.class);
     private final InputConfiguration inputConfiguration;
+    private final String fileSeparator;
 
-    public JarAnalysis(InputConfiguration inputConfiguration) {
+    public JarAnalysis(InputConfiguration inputConfiguration, String fileSeparator) {
         this.inputConfiguration = inputConfiguration;
+        this.fileSeparator = fileSeparator;
     }
 
-    public int go(File typeGraphGml) throws IOException {
+    public int go(File typeGraphGml) throws IOException, URISyntaxException {
         LOGGER.info("Classpath size: {}", inputConfiguration.classPathParts().size());
         LOGGER.info("Runtime classpath size: {}", inputConfiguration.runtimeClassPathParts().size());
         LOGGER.info("Test classpath size: {}", inputConfiguration.testClassPathParts().size());
@@ -40,7 +42,52 @@ public class JarAnalysis {
         }
         Map<String, Artifact> artifactMap = readArtifacts();
         writeArtifacts(artifactMap.values(), a -> a.initialConfiguration);
+        Map<String, URI> uriMap = composeUriMap(artifactMap.values());
+        artifactMap.values().forEach(a -> a.uri = uriMap.get(a.key));
         return 0;
+    }
+
+    private Map<String, URI> composeUriMap(Collection<Artifact> artifacts) throws URISyntaxException {
+        Set<String> allPaths = new HashSet<>(inputConfiguration.classPathParts());
+        allPaths.addAll(inputConfiguration.runtimeClassPathParts());
+        allPaths.addAll(inputConfiguration.testClassPathParts());
+        allPaths.addAll(inputConfiguration.testRuntimeClassPathParts());
+        Map<String, Artifact> artifactsByNameVersion = new HashMap<>();
+        Set<String> duplicateNameVersions = new HashSet<>();
+        for (Artifact artifact : artifacts) {
+            String nameVersion = artifact.artifactId + "-" + artifact.version;
+            Artifact prev = artifactsByNameVersion.put(nameVersion, artifact);
+            if (prev != null) {
+                LOGGER.info("Duplicate name-version {} and {}", prev, artifact);
+                duplicateNameVersions.add(nameVersion);
+            }
+        }
+        LOGGER.info("Have {} artifactsByNameVersion, {} duplicate, {} paths, file separator '{}'",
+                artifactsByNameVersion.size(), duplicateNameVersions.size(), allPaths.size(), fileSeparator);
+        Map<String, URI> map = new HashMap<>();
+        for (String path : allPaths) {
+            if (path.endsWith(".jar")) {
+                // /Users/xxx/.gradle/caches/modules-2/files-2.1/org.graalvm.sdk/graal-sdk/21.2.0/a6f3d634a1a648e68824d5edcebf14b368f8db1b/graal-sdk-21.2.0.jar
+                //  ~/.m2/repository/org/graalvm/sdk/graal-sdk/21.2.0/graal-sdk-21.2.0.jar
+                int sep = path.lastIndexOf(fileSeparator);
+                String nameVersion = path.substring(sep + 1, path.length() - 4);
+                Artifact fromNameVersion = artifactsByNameVersion.get(nameVersion);
+                String key;
+                if (duplicateNameVersions.contains(nameVersion) || fromNameVersion == null) {
+                    key = null;
+                } else {
+                    key = fromNameVersion.key;
+                }
+                if (key != null) {
+                    URI uri = new URI(path);
+                    map.put(key, uri);
+                } else {
+                    LOGGER.info("No URI for {}", key);
+                }
+            } // else: jmod, directory, ... simply ignore
+        }
+        LOGGER.info("Artifact key->URI: {}", map.size());
+        return map;
     }
 
     private Map<String, Artifact> readArtifacts() {
@@ -70,7 +117,7 @@ public class JarAnalysis {
         if (groupId.isBlank() || artifactId.isBlank() || version.isBlank()) {
             throw new UnsupportedOperationException("Blank key: '" + dependency + "'");
         }
-        return new Artifact(groupId, artifactId, version, null, initialConfig);
+        return new Artifact(groupId, artifactId, version, initialConfig);
     }
 
     private void writeArtifacts(Collection<Artifact> artifacts, Function<Artifact, Configuration> configurationFunction) {
@@ -124,25 +171,29 @@ public class JarAnalysis {
         private final String artifactId;
         private final String version;
         private final String key;
-        private final URI uri;
-
         private final Configuration initialConfiguration;
+
+        private URI uri;
         private Configuration computedConfiguration;
         private Set<String> types; // read from Jar
         private Set<String> dependentTypes; // computed
 
-        public Artifact(String groupId, String artifactId, String version, URI uri, Configuration initialConfiguration) {
+        public Artifact(String groupId, String artifactId, String version, Configuration initialConfiguration) {
             this.initialConfiguration = Objects.requireNonNull(initialConfiguration);
             this.groupId = groupId;
             this.artifactId = artifactId;
             this.version = version;
             this.key = groupId + ":" + artifactId + ":" + version;
-            this.uri = uri;
         }
 
         @Override
         public int compareTo(Artifact o) {
             return key.compareTo(o.key);
+        }
+
+        @Override
+        public String toString() {
+            return key;
         }
     }
 }

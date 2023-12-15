@@ -28,6 +28,8 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
+    public static final String FILE_SEPARATOR = System.getProperty("file.separator");
+
     public static final String COMMA = ",";
     public static final String COMMA_ALLOW_SPACE = ",\\s*";
 

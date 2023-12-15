@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
@@ -41,7 +42,7 @@ public class Action {
         if ("JarAnalysis".equals(action)) {
             try {
                 return jarAnalysis(actionParameters, configuration);
-            } catch (IOException e) {
+            } catch (IOException | URISyntaxException e) {
                 LOGGER.error("Caught exception", e);
             }
         }
@@ -53,7 +54,7 @@ public class Action {
         Main.main(actionParameters);
     }
 
-    private static int jarAnalysis(String[] actionParameters, Configuration configuration) throws IOException {
+    private static int jarAnalysis(String[] actionParameters, Configuration configuration) throws IOException, URISyntaxException {
         InputConfiguration inputConfiguration = configuration.inputConfiguration();
         if (actionParameters.length == 0) {
             LOGGER.error("Need type graph file as first parameter");
@@ -64,8 +65,7 @@ public class Action {
             LOGGER.error("Need type graph file as first parameter, found '{}'", actionParameters[0]);
             return 1;
         }
-        String typeGraphFile = actionParameters[0];
-        JarAnalysis jarAnalysis = new JarAnalysis(inputConfiguration);
+        JarAnalysis jarAnalysis = new JarAnalysis(inputConfiguration, org.e2immu.analyser.cli.Main.FILE_SEPARATOR);
         return jarAnalysis.go(typeGraph);
     }
 
