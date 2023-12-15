@@ -67,6 +67,60 @@ public class JarAnalysis {
             TypeGraphIO.Node target = graph.getEdgeTarget(edge);
             typesRequiredBySource.add(target.getLabel());
         }
+        fromSourceToCompileConfiguration(typesRequiredBySource, typesInArtifacts, typesInJMods);
+        fromCompileConfigurationToRuntimeConfiguration(artifactMap, typesInArtifacts, typesInJMods);
+        writeArtifacts(artifactMap.values(), a -> a.computedConfiguration);
+        return 0;
+    }
+
+    private void fromCompileConfigurationToRuntimeConfiguration(Map<String, Artifact> artifactMap,
+                                                                Map<String, List<Artifact>> typesInArtifacts,
+                                                                Map<String, String> typesInJMods) {
+        Map<String, Artifact> required = new HashMap<>();
+        for (Artifact a : artifactMap.values()) {
+            if (a.computedConfiguration == Configuration.COMPILE || a.computedConfiguration == Configuration.COMPILE_TRANSITIVE) {
+                for (String d : a.dependentTypes) {
+                    required.put(d, a);
+                }
+            }
+        }
+        int iteration = 0;
+        Set<String> complainedAbout = new HashSet<>();
+        Map<Artifact, Set<String>> cannotFind = new HashMap<>();
+        while (true) {
+            iteration++;
+            Set<String> newTypes = new HashSet<>();
+            LOGGER.info("Iteration {}, have {} dependent types", iteration, required.size());
+            for (Map.Entry<String, Artifact> entry : required.entrySet()) {
+                String type = entry.getKey();
+                if (!typesInJMods.containsKey(type)) {
+                    List<Artifact> artifacts = typesInArtifacts.get(type);
+                    if (artifacts == null) {
+                        cannotFind.computeIfAbsent(entry.getValue(), a -> new HashSet<>()).add(type);
+                    } else if (artifacts.size() == 1) {
+                        Artifact a = artifacts.get(0);
+                        if (a.computedConfiguration == null) {
+                            boolean transitive = a.initialConfiguration.transitive;
+                            a.computedConfiguration = transitive ? Configuration.RUNTIME_TRANSITIVE : Configuration.RUNTIME;
+                            newTypes.addAll(a.dependentTypes);
+                        } else if (a.computedConfiguration != a.initialConfiguration && complainedAbout.add(a.key)) {
+                            LOGGER.error("Artifact {} can become RUNTIME", a);
+                        }
+                    }
+                }
+            }
+            if (newTypes.isEmpty()) break;
+        }
+        for (Map.Entry<Artifact, Set<String>> entry : cannotFind.entrySet()) {
+            Artifact a = entry.getKey();
+            LOGGER.error("Cannot find types in artifact {}, {} -> {}:", a, a.initialConfiguration, a.computedConfiguration);
+            for (String type : entry.getValue()) {
+                LOGGER.error("    - {}", type);
+            }
+        }
+    }
+
+    private static void fromSourceToCompileConfiguration(Set<String> typesRequiredBySource, Map<String, List<Artifact>> typesInArtifacts, Map<String, String> typesInJMods) {
         LOGGER.info("Have {} types required by source code", typesRequiredBySource.size());
         for (String type : typesRequiredBySource) {
             List<Artifact> artifacts = typesInArtifacts.get(type);
@@ -89,7 +143,6 @@ public class JarAnalysis {
                 }
             }
         }
-        return 0;
     }
 
     private Map<String, String> typesInJMods(Set<String> allPaths) throws IOException {
@@ -248,7 +301,9 @@ public class JarAnalysis {
         for (Artifact artifact : sorted) {
             Configuration configuration = configurationFunction.apply(artifact);
             String line;
-            if (configuration.transitive) {
+            if (configuration == null) {
+                line = "//UNUSED \"" + artifact.key + "\"";
+            } else if (configuration.transitive) {
                 Configuration nonTransitive = configuration.nonTransitive();
                 line = "//" + nonTransitive.gradle + " \"" + artifact.key + "\"  transitive";
             } else {
