@@ -2,6 +2,9 @@ package org.e2immu.analyser.cli;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.e2immu.analyser.bytecode.tools.ExtractTypesFromClassFile;
+import org.e2immu.analyser.bytecode.tools.JarAnalysis;
+import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.graph.G;
 import org.e2immu.graph.analyser.Main;
@@ -19,7 +22,7 @@ import java.util.*;
 public class Action {
     private static final Logger LOGGER = LoggerFactory.getLogger(Action.class);
 
-    public static int execAction(String action, String[] actionParameters) {
+    public static int execAction(String action, String[] actionParameters, Configuration configuration) {
         if ("ExtractTypesFromClassFile".equals(action)) {
             try {
                 return extractTypesFromClassFile(actionParameters);
@@ -35,12 +38,35 @@ public class Action {
                 LOGGER.error("Caught exception", e);
             }
         }
+        if ("JarAnalysis".equals(action)) {
+            try {
+                return jarAnalysis(actionParameters, configuration);
+            } catch (IOException e) {
+                LOGGER.error("Caught exception", e);
+            }
+        }
         LOGGER.error("Action '{}' not recognized", action);
         return 1;
     }
 
     private static void graph(String[] actionParameters) throws IOException {
         Main.main(actionParameters);
+    }
+
+    private static int jarAnalysis(String[] actionParameters, Configuration configuration) throws IOException {
+        InputConfiguration inputConfiguration = configuration.inputConfiguration();
+        if (actionParameters.length == 0) {
+            LOGGER.error("Need type graph file as first parameter");
+            return 1;
+        }
+        File typeGraph = new File(actionParameters[0]);
+        if (!typeGraph.canRead()) {
+            LOGGER.error("Need type graph file as first parameter, found '{}'", actionParameters[0]);
+            return 1;
+        }
+        String typeGraphFile = actionParameters[0];
+        JarAnalysis jarAnalysis = new JarAnalysis(inputConfiguration);
+        return jarAnalysis.go(typeGraph);
     }
 
     private static int extractTypesFromClassFile(String[] actionParameters) throws IOException {

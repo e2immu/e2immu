@@ -16,6 +16,12 @@ package org.e2immu.gradleplugin;
 
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+import org.gradle.api.artifacts.result.DependencyResult;
+import org.gradle.api.artifacts.result.ResolvedArtifactResult;
+import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -25,10 +31,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.e2immu.analyser.cli.Main;
@@ -99,6 +102,7 @@ public record AnalyserPropertyComputer(
     private void detectProperties(Project project, Map<String, Object> properties, AnalyserExtension extension) {
         properties.put(Main.DEBUG, extension.debug);
         properties.put(Main.SOURCE_PACKAGES, extension.sourcePackages);
+        properties.put(Main.TEST_SOURCE_PACKAGES, extension.testSourcePackages);
         properties.put(Main.JRE, extension.jre);
         properties.put(Main.IGNORE_ERRORS, extension.ignoreErrors);
         properties.put(Main.SKIP_ANALYSIS, extension.skipAnalysis);
@@ -153,6 +157,20 @@ public record AnalyserPropertyComputer(
         });
     }
 
+    private static final String[] UNRESOLVABLE_CONFIGURATIONS = new String[]{"implementation", "runtimeOnly", "testImplementation", "testRuntimeOnly"};
+    private static final String[] RESOLVABLE_CONFIGURATIONS = new String[]{"compileClasspath", "runtimeClasspath", "testCompileClasspath", "testRuntimeClasspath"};
+
+    private static final Map<String, String> CONFIG_SHORTHAND = Map.of(
+            "implementation", "i",
+            "runtimeOnly", "r",
+            "testImplementation", "ti",
+            "testRuntimeOnly", "tr",
+            "compileClasspath", "i-t",
+            "runtimeClasspath", "r-t",
+            "testCompileClasspath", "ti-t",
+            "testRuntimeClasspath", "tr-t"
+    );
+
     private static boolean detectSourceDirsAndJavaClasspath(Project project, Map<String, Object> properties, String jmods) {
         JavaPluginExtension javaPluginExtension = new DslObject(project).getExtensions().getByType(JavaPluginExtension.class);
 
@@ -175,8 +193,43 @@ public record AnalyserPropertyComputer(
         String classPathSeparated = jmodsSeparated + Main.PATH_SEPARATOR + librariesFromSourceSet(main);
         properties.put(Main.CLASSPATH, classPathSeparated);
 
+        String runtimeClassPathSeparated = runtimeLibrariesFromSourceSet(main);
+        properties.put(Main.RUNTIME_CLASSPATH, runtimeClassPathSeparated);
+
         String testClassPathSeparated = librariesFromSourceSet(test);
         properties.put(Main.TEST_CLASSPATH, testClassPathSeparated);
+
+        String testRuntimeClassPathSeparated = runtimeLibrariesFromSourceSet(test);
+        properties.put(Main.TESTS_RUNTIME_CLASSPATH, testRuntimeClassPathSeparated);
+
+        List<String> dependencyList = new LinkedList<>();
+        Set<String> seen = new HashSet<>();
+        for (String configurationName : UNRESOLVABLE_CONFIGURATIONS) {
+            Configuration configuration = project.getConfigurations().getByName(configurationName);
+            String configShortHand = Objects.requireNonNull(CONFIG_SHORTHAND.get(configurationName));
+            for (Dependency d : configuration.getDependencies()) {
+                String description = d.getGroup() + ":" + d.getName() + ":" + d.getVersion();
+                seen.add(description);
+                dependencyList.add(description + ":" + configShortHand);
+            }
+        }
+        // now the resolved path
+        for (String configurationName : RESOLVABLE_CONFIGURATIONS) {
+            Configuration configuration = project.getConfigurations().getByName(configurationName);
+            String configShortHand = Objects.requireNonNull(CONFIG_SHORTHAND.get(configurationName));
+            for (ResolvedArtifactResult rar : configuration.getIncoming().getArtifacts().getArtifacts()) {
+                if (rar.getVariant().getOwner() instanceof ModuleComponentIdentifier mci) {
+                    String description = mci.getGroup() + ":" + mci.getModule() + ":" + mci.getVersion();
+                    if (seen.add(description)) {
+                        dependencyList.add(description + ":" + configShortHand);
+                    }
+                }
+            }
+        }
+
+        String dependencies = String.join(",", dependencyList);
+        LOGGER.info("Dependencies: {}", dependencies);
+        properties.put(Main.DEPENDENCIES, dependencies);
 
         return !sourceDirectoriesPathSeparated.isEmpty() || !testDirectoriesPathSeparated.isEmpty();
     }
@@ -191,6 +244,14 @@ public record AnalyserPropertyComputer(
 
     private static String librariesFromSourceSet(SourceSet sourceSet) {
         return sourceSet.getCompileClasspath().getFiles()
+                .stream()
+                .filter(File::canRead)
+                .map(File::getAbsolutePath)
+                .collect(Collectors.joining(Main.PATH_SEPARATOR));
+    }
+
+    private static String runtimeLibrariesFromSourceSet(SourceSet sourceSet) {
+        return sourceSet.getRuntimeClasspath().getFiles()
                 .stream()
                 .filter(File::canRead)
                 .map(File::getAbsolutePath)
