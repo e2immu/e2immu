@@ -89,7 +89,7 @@ public class JarAnalysis {
         Map<Artifact, Set<String>> cannotFind = new HashMap<>();
         while (true) {
             iteration++;
-            Set<String> newTypes = new HashSet<>();
+            Map<String, Artifact> newTypes = new HashMap<>();
             LOGGER.info("Iteration {}, have {} dependent types", iteration, required.size());
             for (Map.Entry<String, Artifact> entry : required.entrySet()) {
                 String type = entry.getKey();
@@ -102,14 +102,20 @@ public class JarAnalysis {
                         if (a.computedConfiguration == null) {
                             boolean transitive = a.initialConfiguration.transitive;
                             a.computedConfiguration = transitive ? Configuration.RUNTIME_TRANSITIVE : Configuration.RUNTIME;
-                            newTypes.addAll(a.dependentTypes);
+                            for (String dt : a.dependentTypes) {
+                                newTypes.putIfAbsent(dt, a);
+                            }
                         } else if (a.computedConfiguration != a.initialConfiguration && complainedAbout.add(a.key)) {
                             LOGGER.error("Artifact {} can become RUNTIME", a);
                         }
+                        a.reasonForInclusion.add(entry.getValue());
+                    } else {
+                        // FIXME implement!
                     }
                 }
             }
             if (newTypes.isEmpty()) break;
+            newTypes.forEach(required::putIfAbsent);
         }
         for (Map.Entry<Artifact, Set<String>> entry : cannotFind.entrySet()) {
             Artifact a = entry.getKey();
@@ -234,7 +240,7 @@ public class JarAnalysis {
             String nameVersion = artifact.artifactId + "-" + artifact.version;
             Artifact prev = artifactsByNameVersion.put(nameVersion, artifact);
             if (prev != null) {
-                LOGGER.info("Duplicate name-version {} and {}", prev, artifact);
+                LOGGER.error("Duplicate name-version {} and {}", prev, artifact);
                 duplicateNameVersions.add(nameVersion);
             }
         }
@@ -248,17 +254,11 @@ public class JarAnalysis {
                 int sep = path.lastIndexOf(fileSeparator);
                 String nameVersion = path.substring(sep + 1, path.length() - 4);
                 Artifact fromNameVersion = artifactsByNameVersion.get(nameVersion);
-                String key;
-                if (duplicateNameVersions.contains(nameVersion) || fromNameVersion == null) {
-                    key = null;
-                } else {
-                    key = fromNameVersion.key;
-                }
-                if (key != null) {
+
+                if (!duplicateNameVersions.contains(nameVersion) && fromNameVersion != null) {
+                    String key = fromNameVersion.key;
                     URI uri = new URI(path);
                     map.put(key, uri);
-                } else {
-                    LOGGER.info("No URI for {}", key);
                 }
             } // else: jmod, directory, ... simply ignore
         }
@@ -300,16 +300,30 @@ public class JarAnalysis {
         List<Artifact> sorted = artifacts.stream().sorted().toList();
         for (Artifact artifact : sorted) {
             Configuration configuration = configurationFunction.apply(artifact);
-            String line;
-            if (configuration == null) {
-                line = "//UNUSED \"" + artifact.key + "\"";
-            } else if (configuration.transitive) {
-                Configuration nonTransitive = configuration.nonTransitive();
-                line = "//" + nonTransitive.gradle + " \"" + artifact.key + "\"  transitive";
-            } else {
-                line = configuration.gradle + " \"" + artifact.key + "\"";
+            if (configuration != null) {
+                String reason;
+                if (configuration == Configuration.RUNTIME || configuration == Configuration.RUNTIME_TRANSITIVE) {
+                    String reasons = artifact.reasonForInclusion.stream().map(a -> a.key)
+                            .sorted().collect(Collectors.joining(", "));
+                    reason = " < " + reasons;
+                } else {
+                    reason = "";
+                }
+                String line;
+                if (configuration.transitive) {
+                    Configuration nonTransitive = configuration.nonTransitive();
+                    line = "//" + nonTransitive.gradle + " \"" + artifact.key + "\"  transitive" + reason;
+                } else {
+                    line = configuration.gradle + " \"" + artifact.key + "\"" + (reason.isBlank() ? "" : "//" + reason);
+                }
+                LOGGER.info(line);
             }
-            LOGGER.info(line);
+        }
+        for (Artifact artifact : sorted) {
+            Configuration configuration = configurationFunction.apply(artifact);
+            if (configuration == null) {
+                LOGGER.info("//UNUSED \"" + artifact.key + "\"");
+            }
         }
     }
 
@@ -356,6 +370,7 @@ public class JarAnalysis {
         private Set<String> types; // read from Jar
         private Set<String> dependentTypes; // computed
         private int sourceTypesThatUseOneOfMyTypes;
+        private Set<Artifact> reasonForInclusion = new HashSet<>();
 
         public Artifact(String groupId, String artifactId, String version, Configuration initialConfiguration) {
             this.initialConfiguration = Objects.requireNonNull(initialConfiguration);
@@ -373,6 +388,17 @@ public class JarAnalysis {
         @Override
         public String toString() {
             return key;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) return true;
+            return o instanceof Artifact a && key.equals(a.key);
+        }
+
+        @Override
+        public int hashCode() {
+            return key.hashCode();
         }
     }
 }
