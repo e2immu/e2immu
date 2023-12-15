@@ -1,9 +1,14 @@
 package org.e2immu.analyser.bytecode.tools;
 
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.util.Resources;
+import org.e2immu.analyser.util.Source;
+import org.e2immu.graph.G;
+import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.graph.analyser.TypeGraphIO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,10 +17,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.bytecode.asm.MyClassVisitor.pathToFqn;
 import static org.e2immu.graph.analyser.TypeGraphIO.createPackageGraph;
 
 public class JarAnalysis {
@@ -43,7 +50,56 @@ public class JarAnalysis {
         Map<String, Artifact> artifactMap = readArtifacts();
         writeArtifacts(artifactMap.values(), a -> a.initialConfiguration);
         Map<String, URI> uriMap = composeUriMap(artifactMap.values());
-        artifactMap.values().forEach(a -> a.uri = uriMap.get(a.key));
+        for (Artifact a : artifactMap.values()) {
+            a.uri = uriMap.get(a.key);
+            if (a.uri != null) {
+                Resources resources = new Resources();
+                URL url = new URL("jar:file:" + a.uri + "!/");
+                resources.addJar(url);
+                Set<String> localTypes = new HashSet<>();
+                Set<String> dependentTypes = new HashSet<>();
+                ExtractTypesFromClassFile.MyClassVisitor myClassVisitor = new ExtractTypesFromClassFile
+                        .MyClassVisitor(a.key, new ExtractTypesFromClassFile.GraphAction() {
+                    @Override
+                    public void typeInJar(String type, String jar) {
+                        // not needed
+                    }
+
+                    @Override
+                    public void typeDependsOnType(String from, String to, long value) {
+                        dependentTypes.add(to);
+                    }
+                });
+                resources.visit(new String[]{}, (prefix, uris) -> {
+                    URI uri = uris.get(0);
+                    if (uri.toString().endsWith(".class") && !uri.toString().endsWith("/module-info.class")) {
+                        String fqn = pathToFqn(String.join(".", prefix));
+                        localTypes.add(fqn);
+                        LOGGER.debug("Parsing {} in jar {}", fqn, a.key);
+
+                        Source source = resources.fqnToPath(fqn, ".class");
+                        if (source != null && source.path() != null) {
+                            byte[] classBytes = resources.loadBytes(source.path());
+                            if (classBytes != null) {
+                                ClassReader classReader = new ClassReader(classBytes);
+
+                                classReader.accept(myClassVisitor, 0);
+                                LOGGER.debug("Constructed class reader with {} bytes", classBytes.length);
+                            } else {
+                                LOGGER.warn("Skipping {}, no class bytes", uri);
+                            }
+                        } else {
+                            LOGGER.debug("Skipping {}, empty source or source path: {}", fqn, uri);
+                        }
+                    }
+                });
+                Set<String> dependentTypesMinusMine = new HashSet<>(dependentTypes);
+                dependentTypesMinusMine.removeAll(localTypes);
+                a.types = Set.copyOf(localTypes);
+                a.dependentTypes = Set.copyOf(dependentTypesMinusMine);
+                LOGGER.info("** {} has {} types, {} dependent types", a, a.types.size(), a.dependentTypes.size());
+            }
+        }
         return 0;
     }
 

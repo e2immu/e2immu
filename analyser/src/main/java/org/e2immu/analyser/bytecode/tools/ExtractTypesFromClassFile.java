@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -44,7 +45,17 @@ public class ExtractTypesFromClassFile {
                 byte[] classBytes = resources.loadBytes(source.path());
                 if (classBytes != null) {
                     ClassReader classReader = new ClassReader(classBytes);
-                    MyClassVisitor myClassVisitor = new MyClassVisitor(jarName, typeGraphBuilder);
+                    MyClassVisitor myClassVisitor = new MyClassVisitor(jarName, new GraphAction() {
+                        @Override
+                        public void typeInJar(String type, String jar) {
+                            addTypeToJar(type, jar);
+                        }
+
+                        @Override
+                        public void typeDependsOnType(String from, String to, long value) {
+                            typeGraphBuilder.mergeEdge(from, to, value);
+                        }
+                    });
                     classReader.accept(myClassVisitor, 0);
                     LOGGER.debug("Constructed class reader with {} bytes", classBytes.length);
                 } else {
@@ -75,35 +86,41 @@ public class ExtractTypesFromClassFile {
         typesInJar.computeIfAbsent(jarName, m -> new HashSet<>()).add(fqn);
     }
 
-    class MyClassVisitor extends ClassVisitor {
-        private final G.Builder<String> typeGraph;
+    interface GraphAction {
+        void typeInJar(String type, String jar);
+
+        void typeDependsOnType(String from, String to, long value);
+    }
+
+    static class MyClassVisitor extends ClassVisitor {
         private final String jarName;
+        private final GraphAction graphAction;
         private String fqn;
 
-        public MyClassVisitor(String jarName, G.Builder<String> typeGraph) {
+        public MyClassVisitor(String jarName, GraphAction graphAction) {
             super(ASM9);
-            this.typeGraph = typeGraph;
+            this.graphAction = graphAction;
             this.jarName = jarName;
         }
 
         @Override
         public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             fqn = pathToFqn(name);
-            addTypeToJar(fqn, jarName);
-            typeGraph.addVertex(fqn);
+            graphAction.typeInJar(fqn, jarName);
+            // typeGraph.addVertex(fqn);
             LOGGER.debug("Visiting {} in jar {}", fqn, jarName);
 
             if (signature == null) {
                 String parentFqn = superName == null ? null : pathToFqn(superName);
                 if (parentFqn != null && notJavaLang(parentFqn)) {
-                    typeGraph.mergeEdge(fqn, parentFqn, PackedInt.HIERARCHY.of(1));
+                    graphAction.typeDependsOnType(fqn, parentFqn, PackedInt.HIERARCHY.of(1));
                     LOGGER.debug(" ->> {} -> {}, parent", superName, parentFqn);
                 }
                 if (interfaces != null) {
                     for (String interfaceName : interfaces) {
                         String interfaceFqn = pathToFqn(interfaceName);
                         if (notJavaLang(interfaceFqn)) {
-                            typeGraph.mergeEdge(fqn, interfaceFqn, PackedInt.HIERARCHY.of(1));
+                            graphAction.typeDependsOnType(fqn, interfaceFqn, PackedInt.HIERARCHY.of(1));
                             LOGGER.debug(" ->> {} -> {}, interface", interfaceName, interfaceFqn);
                         }
                     }
@@ -111,7 +128,7 @@ public class ExtractTypesFromClassFile {
             } else {
                 List<String> types = extract(signature);
                 for (String type : types) {
-                    typeGraph.mergeEdge(fqn, type, PackedInt.HIERARCHY.of(1));
+                    graphAction.typeDependsOnType(fqn, type, PackedInt.HIERARCHY.of(1));
                 }
             }
         }
@@ -125,19 +142,19 @@ public class ExtractTypesFromClassFile {
             if (signature != null) {
                 List<String> types = extract(signature);
                 for (String type : types) {
-                    typeGraph.mergeEdge(fqn, type, PackedInt.HIERARCHY.of(1));
+                    graphAction.typeDependsOnType(fqn, type, PackedInt.HIERARCHY.of(1));
                 }
             }
             if (exceptions != null) {
                 for (String exceptionName : exceptions) {
                     String exceptionFqn = pathToFqn(exceptionName);
                     if (notJavaLang(exceptionFqn)) {
-                        typeGraph.mergeEdge(fqn, exceptionFqn, PackedInt.METHOD.of(1));
+                        graphAction.typeDependsOnType(fqn, exceptionFqn, PackedInt.METHOD.of(1));
                         LOGGER.debug(" ->> {} -> {}, exception", exceptionName, exceptionFqn);
                     }
                 }
             }
-            return new MyMethodVisitor(fqn, typeGraph);
+            return new MyMethodVisitor(fqn, graphAction);
         }
 
         @Override
@@ -145,7 +162,7 @@ public class ExtractTypesFromClassFile {
             if (signature != null) {
                 List<String> types = extract(signature);
                 for (String type : types) {
-                    typeGraph.mergeEdge(fqn, type, PackedInt.FIELD.of(1));
+                    graphAction.typeDependsOnType(fqn, type, PackedInt.FIELD.of(1));
                 }
             }
             return null;
@@ -153,24 +170,36 @@ public class ExtractTypesFromClassFile {
 
         @Override
         public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-            LOGGER.info("Type annotation {} {} {} {}", typeRef, typePath, descriptor, visible);
+            LOGGER.debug("Type annotation {} {} {} {}", typeRef, typePath, descriptor, visible);
+            if(descriptor != null) {
+                List<String> types = extract(descriptor);
+                for (String type : types) {
+                    graphAction.typeDependsOnType(fqn, type, PackedInt.FIELD.of(1));
+                }
+            }
             return super.visitTypeAnnotation(typeRef, typePath, descriptor, visible);
         }
     }
 
     static class MyMethodVisitor extends MethodVisitor {
         private final String fqn;
-        private final G.Builder<String> typeGraph;
+        private final GraphAction graphAction;
 
-        MyMethodVisitor(String fqn, G.Builder<String> typeGraph) {
+        MyMethodVisitor(String fqn, GraphAction graphAction) {
             super(ASM9);
             this.fqn = fqn;
-            this.typeGraph = typeGraph;
+            this.graphAction = graphAction;
         }
 
         @Override
         public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-            LOGGER.info("Type annotation {} {} {} {}", typeRef, typePath, descriptor, visible);
+            LOGGER.debug("Type annotation {} {} {} {}", typeRef, typePath, descriptor, visible);
+            if(descriptor != null) {
+                List<String> types = extract(descriptor);
+                for (String type : types) {
+                    graphAction.typeDependsOnType(fqn, type, PackedInt.FIELD.of(1));
+                }
+            }
             return super.visitTypeAnnotation(typeRef, typePath, descriptor, visible);
         }
 
@@ -180,12 +209,12 @@ public class ExtractTypesFromClassFile {
                 String typeFqn = extractPlain(type);
                 if (typeFqn != null) {
                     LOGGER.debug("Type instruction {} -> {}", type, typeFqn);
-                    typeGraph.mergeEdge(fqn, typeFqn, PackedInt.METHOD.of(1));
+                    graphAction.typeDependsOnType(fqn, typeFqn, PackedInt.METHOD.of(1));
                 } else {
                     List<String> extracted = extract(type);
                     for (String eFqn : extracted) {
                         LOGGER.debug("Type instruction {} -> {}", type, eFqn);
-                        typeGraph.mergeEdge(fqn, eFqn, PackedInt.METHOD.of(1));
+                        graphAction.typeDependsOnType(fqn, eFqn, PackedInt.METHOD.of(1));
                     }
                 }
             }
@@ -196,7 +225,7 @@ public class ExtractTypesFromClassFile {
             if (descriptor != null) {
                 List<String> fieldTypes = extract(descriptor);
                 fieldTypes.forEach(type -> {
-                    typeGraph.mergeEdge(fqn, type, PackedInt.EXPRESSION.of(1));
+                    graphAction.typeDependsOnType(fqn, type, PackedInt.EXPRESSION.of(1));
                     LOGGER.debug("Field instruction {} -> {}", descriptor, type);
                 });
             }
@@ -207,7 +236,7 @@ public class ExtractTypesFromClassFile {
             if (descriptor != null) {
                 List<String> fieldTypes = extract(descriptor);
                 fieldTypes.forEach(type -> {
-                    typeGraph.mergeEdge(fqn, type, PackedInt.EXPRESSION.of(1));
+                    graphAction.typeDependsOnType(fqn, type, PackedInt.EXPRESSION.of(1));
                     LOGGER.debug("Multi-array {} -> {}", descriptor, type);
                 });
             }
@@ -222,7 +251,7 @@ public class ExtractTypesFromClassFile {
             String parameters = descriptor.substring(open + 1, close);
             List<String> parameterTypes = extract(parameters);
             Stream.concat(returnTypes.stream(), parameterTypes.stream()).forEach(type -> {
-                typeGraph.mergeEdge(fqn, type, PackedInt.EXPRESSION.of(1));
+                graphAction.typeDependsOnType(fqn, type, PackedInt.EXPRESSION.of(1));
                 LOGGER.debug("Method call type {} -> {}", returnType, type);
             });
         }
@@ -234,7 +263,7 @@ public class ExtractTypesFromClassFile {
             if (signature != null) {
                 List<String> types = extract(signature);
                 for (String type : types) {
-                    typeGraph.mergeEdge(fqn, type, PackedInt.METHOD.of(1));
+                    graphAction.typeDependsOnType(fqn, type, PackedInt.METHOD.of(1));
                     LOGGER.debug("Local {} {} -> {}", name, signature, type);
                 }
             }

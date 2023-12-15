@@ -67,7 +67,22 @@ public class MyClassVisitor extends ClassVisitor {
     }
 
     public static String pathToFqn(String path) {
-        return StringUtil.stripDotClass(path).replaceAll("[/$]", ".");
+        String stripDotClass = StringUtil.stripDotClass(path);
+        if (stripDotClass.endsWith("$")) {
+            // scala
+            return stripDotClass.substring(0, stripDotClass.length() - 1).replaceAll("[/$]", ".") + ".object";
+        }
+        if (stripDotClass.endsWith("$class")) {
+            // scala; keep it as is, ending in .class
+            return stripDotClass.replaceAll("[/$]", ".");
+        }
+        int anon;
+        if ((anon = stripDotClass.indexOf("$$anonfun")) > 0) {
+            // scala
+            String random = Integer.toString(Math.abs(stripDotClass.hashCode()));
+            return stripDotClass.substring(0, anon).replaceAll("[/$]", ".") + "." + random;
+        }
+        return stripDotClass.replaceAll("[/$]", ".");
     }
 
     private static TypeNature typeNatureFromOpCode(int opCode) {
