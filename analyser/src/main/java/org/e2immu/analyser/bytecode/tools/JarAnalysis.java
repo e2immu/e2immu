@@ -4,6 +4,7 @@ import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Source;
 import org.e2immu.graph.G;
+import org.e2immu.graph.V;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.graph.analyser.TypeGraphIO;
 import org.jgrapht.Graph;
@@ -49,7 +50,77 @@ public class JarAnalysis {
         }
         Map<String, Artifact> artifactMap = readArtifacts();
         writeArtifacts(artifactMap.values(), a -> a.initialConfiguration);
-        Map<String, URI> uriMap = composeUriMap(artifactMap.values());
+        Set<String> allPaths = allPaths();
+        Map<String, String> typesInJMods = typesInJMods(allPaths);
+        Map<String, URI> uriMap = composeUriMap(allPaths, artifactMap.values());
+        loadByteCodeToDetermineDependentTypes(artifactMap, uriMap);
+        Map<String, List<Artifact>> typesInArtifacts = new HashMap<>();
+        for (Artifact a : artifactMap.values()) {
+            if (a.types != null) {
+                for (String type : a.types) {
+                    typesInArtifacts.computeIfAbsent(type, t -> new ArrayList<>()).add(a);
+                }
+            }
+        }
+        Set<String> typesRequiredBySource = new HashSet<>();
+        for (DefaultWeightedEdge edge : graph.edgeSet()) {
+            TypeGraphIO.Node target = graph.getEdgeTarget(edge);
+            typesRequiredBySource.add(target.getLabel());
+        }
+        LOGGER.info("Have {} types required by source code", typesRequiredBySource.size());
+        for (String type : typesRequiredBySource) {
+            List<Artifact> artifacts = typesInArtifacts.get(type);
+            if (artifacts == null) {
+                if (!typesInJMods.containsKey(type)) {
+                    LOGGER.error("Have no artifact for type required by source {}", type);
+                }
+            } else if (artifacts.size() > 1) {
+                LOGGER.error("Type {} is present in multiple artifacts: {}", type, artifacts);
+            } else {
+                Artifact a = artifacts.get(0);
+                a.sourceTypesThatUseOneOfMyTypes++;
+                if (a.computedConfiguration == null) {
+                    a.computedConfiguration = a.initialConfiguration;
+                    if (a.initialConfiguration != Configuration.COMPILE
+                            && a.initialConfiguration != Configuration.COMPILE_TRANSITIVE) {
+                        LOGGER.error("Artifact {} has configuration {}, should be COMPILE or COMPILE_TRANSITIVE; type is {}",
+                                a, a.initialConfiguration, type);
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    private Map<String, String> typesInJMods(Set<String> allPaths) throws IOException {
+        Map<String, String> typeToJMod = new HashMap<>();
+        for (String path : allPaths) {
+            if (path.endsWith(".jmod")) {
+                Resources resources = new Resources();
+                URL url = Resources.constructJModURL(path, inputConfiguration.alternativeJREDirectory());
+                resources.addJmod(url);
+                resources.visit(new String[]{}, (prefix, uris) -> {
+                    URI uri = uris.get(0);
+                    if (uri.toString().endsWith(".class") && !uri.toString().endsWith("/module-info.class")) {
+                        String fqn = pathToFqn(String.join(".", prefix));
+                        typeToJMod.putIfAbsent(fqn, path);
+                    }
+                });
+            }
+        }
+        return typeToJMod;
+    }
+
+    private Set<String> allPaths() {
+        Set<String> allPaths = new HashSet<>(inputConfiguration.classPathParts());
+        allPaths.addAll(inputConfiguration.runtimeClassPathParts());
+        allPaths.addAll(inputConfiguration.testClassPathParts());
+        allPaths.addAll(inputConfiguration.testRuntimeClassPathParts());
+        return allPaths;
+    }
+
+    private static void loadByteCodeToDetermineDependentTypes(Map<String, Artifact> artifactMap,
+                                                              Map<String, URI> uriMap) throws IOException {
         for (Artifact a : artifactMap.values()) {
             a.uri = uriMap.get(a.key);
             if (a.uri != null) {
@@ -100,14 +171,10 @@ public class JarAnalysis {
                 LOGGER.info("** {} has {} types, {} dependent types", a, a.types.size(), a.dependentTypes.size());
             }
         }
-        return 0;
     }
 
-    private Map<String, URI> composeUriMap(Collection<Artifact> artifacts) throws URISyntaxException {
-        Set<String> allPaths = new HashSet<>(inputConfiguration.classPathParts());
-        allPaths.addAll(inputConfiguration.runtimeClassPathParts());
-        allPaths.addAll(inputConfiguration.testClassPathParts());
-        allPaths.addAll(inputConfiguration.testRuntimeClassPathParts());
+    private Map<String, URI> composeUriMap(Set<String> allPaths,
+                                           Collection<Artifact> artifacts) throws URISyntaxException {
         Map<String, Artifact> artifactsByNameVersion = new HashMap<>();
         Set<String> duplicateNameVersions = new HashSet<>();
         for (Artifact artifact : artifacts) {
@@ -233,6 +300,7 @@ public class JarAnalysis {
         private Configuration computedConfiguration;
         private Set<String> types; // read from Jar
         private Set<String> dependentTypes; // computed
+        private int sourceTypesThatUseOneOfMyTypes;
 
         public Artifact(String groupId, String artifactId, String version, Configuration initialConfiguration) {
             this.initialConfiguration = Objects.requireNonNull(initialConfiguration);

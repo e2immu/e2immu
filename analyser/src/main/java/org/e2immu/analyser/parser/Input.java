@@ -212,19 +212,7 @@ public record Input(Configuration configuration,
                 }
             } else if (part.endsWith(".jmod")) {
                 try {
-                    URL url;
-                    if (part.startsWith("/")) {
-                        url = new URL("jar:file:" + part + "!/");
-                    } else {
-                        String jre;
-                        if (configuration.inputConfiguration().alternativeJREDirectory() == null) {
-                            jre = System.getProperty("java.home");
-                        } else {
-                            jre = configuration.inputConfiguration().alternativeJREDirectory();
-                        }
-                        if (!jre.endsWith("/")) jre = jre + "/";
-                        url = new URL("jar:file:" + jre + part + "!/");
-                    }
+                    URL url = Resources.constructJModURL(part, configuration.inputConfiguration().alternativeJREDirectory());
                     int entries = resources.addJmod(url);
                     LOGGER.debug("Added {} entries for jmod {}", entries, part);
                 } catch (IOException e) {

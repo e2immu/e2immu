@@ -186,6 +186,20 @@ public class Resources {
         return entries.get();
     }
 
+    public static URL constructJModURL(String part, String altJREDirectory) throws MalformedURLException {
+        if (part.startsWith("/")) {
+            return new URL("jar:file:" + part + "!/");
+        }
+        String jre;
+        if (altJREDirectory == null) {
+            jre = System.getProperty("java.home");
+        } else {
+            jre = altJREDirectory;
+        }
+        if (!jre.endsWith("/")) jre = jre + "/";
+        return new URL("jar:file:" + jre + part + "!/");
+    }
+
     /**
      * Add a java module to the trie. Format should be like
      * jar:file:/Library/Java/JavaVirtualMachines/adoptopenjdk-13.jdk/Contents/Home/jmods/java.base.jmod!/
