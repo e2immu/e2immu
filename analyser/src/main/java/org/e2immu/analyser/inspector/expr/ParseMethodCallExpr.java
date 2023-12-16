@@ -544,7 +544,11 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             if (actualTypeReplaced == ParameterizedType.NULL_CONSTANT) {
                                 // compute the distance to Object, so that the nearest one loses. See MethodCall_66
                                 // IMPROVE why 100?
-                                compatible = 100 - callIsAssignableFrom(formalTypeReplaced, typeContext.getPrimitives().objectParameterizedType(), explain);
+                                if (formalTypeReplaced.isPrimitiveExcludingVoid()) {
+                                    compatible = -1; // MethodCall_69
+                                } else {
+                                    compatible = 100 - callIsAssignableFrom(formalTypeReplaced, typeContext.getPrimitives().objectParameterizedType(), explain);
+                                }
                             } else if (paramIsErasure && actualTypeReplaced != actualType) {
                                 /*
                                  See 'method' call in MethodCall_32; this feels like a hack.

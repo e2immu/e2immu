@@ -60,13 +60,23 @@ public class Action {
             LOGGER.error("Need type graph file as first parameter");
             return 1;
         }
-        File typeGraph = new File(actionParameters[0]);
-        if (!typeGraph.canRead()) {
-            LOGGER.error("Need type graph file as first parameter, found '{}'", actionParameters[0]);
+        File sourceTypeGraph = new File(actionParameters[0]);
+        if (!sourceTypeGraph.canRead()) {
+            LOGGER.error("Need source type graph file as first parameter, found '{}'", actionParameters[0]);
             return 1;
         }
+        File testTypeGraph;
+        if (actionParameters.length == 2) {
+            testTypeGraph = new File(actionParameters[1]);
+            if (!testTypeGraph.canRead()) {
+                LOGGER.error("Need test type graph file as second parameter, found '{}'", actionParameters[1]);
+                return 1;
+            }
+        } else {
+            testTypeGraph = null;
+        }
         JarAnalysis jarAnalysis = new JarAnalysis(inputConfiguration, org.e2immu.analyser.cli.Main.FILE_SEPARATOR);
-        return jarAnalysis.go(typeGraph);
+        return jarAnalysis.go(sourceTypeGraph, testTypeGraph);
     }
 
     private static int extractTypesFromClassFile(String[] actionParameters) throws IOException {

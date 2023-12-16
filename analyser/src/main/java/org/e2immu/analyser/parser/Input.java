@@ -19,6 +19,7 @@ import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.bytecode.asm.ByteCodeInspectorImpl;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
@@ -32,12 +33,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.InspectionState.INIT_JAVA_PARSER;
 
@@ -65,8 +64,9 @@ public record Input(Configuration configuration,
     public static final String JAR_WITH_PATH_PREFIX = "jar-on-classpath:";
 
     public static Input create(Configuration configuration) throws IOException {
-        Resources classPath = assemblePath(configuration, true, "Classpath",
-                configuration.inputConfiguration().classPathParts());
+        List<String> classPathAsList = classPathAsList(configuration.inputConfiguration());
+        LOGGER.info("Combined classpath and test classpath has {} entries", classPathAsList.size());
+        Resources classPath = assemblePath(configuration, true, "Classpath", classPathAsList);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder(classPath, configuration.parallel()));
@@ -86,9 +86,15 @@ public record Input(Configuration configuration,
                                    ByteCodeInspector byteCodeInspector) throws IOException {
         Resources sourcePath = assemblePath(configuration, false, "Source path",
                 configuration.inputConfiguration().sources());
+        Resources testSourcePath = assemblePath(configuration, false, "Test source path",
+                configuration.inputConfiguration().testSources());
         Trie<TypeInfo> sourceTypes = new Trie<>();
         Map<TypeInfo, URI> sourceURLs = computeSourceURLs(sourcePath, globalTypeContext,
                 configuration.inputConfiguration().restrictSourceToPackages(), sourceTypes, "source path");
+        Map<TypeInfo, URI> testSourceURLs = computeSourceURLs(testSourcePath, globalTypeContext,
+                configuration.inputConfiguration().restrictTestSourceToPackages(), sourceTypes, "test source path");
+        sourceURLs.putAll(testSourceURLs);
+        sourceTypes.freeze();
 
         Resources annotatedAPIsPath = assemblePath(configuration, false, "Annotated APIs path",
                 configuration.annotatedAPIConfiguration().annotatedAPISourceDirs());
@@ -96,20 +102,26 @@ public record Input(Configuration configuration,
         Map<TypeInfo, URI> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext,
                 configuration.annotatedAPIConfiguration().readAnnotatedAPIPackages(),
                 annotatedAPITypes, "annotated API path");
+        annotatedAPITypes.freeze();
 
-        return new Input(configuration, globalTypeContext, byteCodeInspector, annotatedAPIs, sourceURLs, sourceTypes,
-                annotatedAPITypes, classPath);
+        return new Input(configuration, globalTypeContext, byteCodeInspector, Map.copyOf(annotatedAPIs),
+                Map.copyOf(sourceURLs), sourceTypes, annotatedAPITypes, classPath);
     }
 
     /*
     Almost the same as create + createNext, but we keep the current global type context, the current primitives.
      */
     public Input copy(Configuration configuration) throws IOException {
-        Resources classPath = assemblePath(configuration, true, "Classpath",
-                configuration.inputConfiguration().classPathParts());
+        List<String> classPathAsList = classPathAsList(configuration.inputConfiguration());
+        Resources classPath = assemblePath(configuration, true, "Classpath", classPathAsList);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
         ByteCodeInspector byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationStore, globalTypeContext);
         return createNext(configuration, classPath, globalTypeContext, byteCodeInspector);
+    }
+
+    private static List<String> classPathAsList(InputConfiguration inputConfiguration) {
+        return Stream.concat(inputConfiguration.classPathParts().stream(),
+                inputConfiguration.testClassPathParts().stream()).distinct().toList();
     }
 
     private static Map<TypeInfo, URI> computeSourceURLs(Resources sourcePath,
@@ -140,7 +152,6 @@ public record Input(Configuration configuration,
             }
         });
         LOGGER.info("Found {} .java files in {}, skipped {}", sourceURLs.size(), what, ignored);
-        trie.freeze();
         return sourceURLs;
     }
 
