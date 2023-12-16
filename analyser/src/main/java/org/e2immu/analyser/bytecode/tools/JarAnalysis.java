@@ -300,18 +300,24 @@ public class JarAnalysis {
         Map<String, Configuration> configurationMap = Arrays.stream(JarAnalysis.Configuration.values())
                 .collect(Collectors.toUnmodifiableMap(c -> c.abbrev, c -> c));
         for (String dependency : inputConfiguration.dependencies()) {
-            String[] parts = dependency.split(":");
+            int bracket = dependency.indexOf("[-");
+            String withoutExclusion = bracket < 0 ? dependency : dependency.substring(0, bracket);
+            String exclusions = bracket < 0 ? "" : dependency.substring(bracket + 2, dependency.length() - 1);
+            String[] parts = withoutExclusion.split(":");
             if (parts.length != 4) {
                 throw new UnsupportedOperationException("Expect 4 parts in '" + dependency + "'");
             }
             Configuration initialConfig = configurationMap.get(parts[3]);
-            Artifact artifact = createArtifact(dependency, initialConfig, parts);
+            Artifact artifact = createArtifact(dependency, initialConfig, parts, exclusions);
             map.put(artifact.key, artifact);
         }
         return map;
     }
 
-    private static Artifact createArtifact(String dependency, Configuration initialConfig, String[] parts) {
+    private static Artifact createArtifact(String dependency,
+                                           Configuration initialConfig,
+                                           String[] parts,
+                                           String exclusionGroup) {
         if (initialConfig == null) {
             throw new UnsupportedOperationException("Cannot read configuration from '" + parts[3] + "'," +
                     " extracted from dependency '" + dependency + "'");
@@ -322,7 +328,14 @@ public class JarAnalysis {
         if (groupId.isBlank() || artifactId.isBlank() || version.isBlank()) {
             throw new UnsupportedOperationException("Blank key: '" + dependency + "'");
         }
-        return new Artifact(groupId, artifactId, version, initialConfig);
+        Set<ExcludeRule> excludeRules;
+        if (exclusionGroup.isBlank()) {
+            excludeRules = Set.of();
+        } else {
+            excludeRules = Arrays.stream(exclusionGroup.split(";"))
+                    .map(s -> ExcludeRule.from(s)).collect(Collectors.toUnmodifiableSet());
+        }
+        return new Artifact(groupId, artifactId, version, initialConfig, excludeRules);
     }
 
     private void writeArtifacts(Collection<Artifact> artifacts, Function<Artifact, Configuration> configurationFunction) {
@@ -340,10 +353,21 @@ public class JarAnalysis {
                 }
                 String line;
                 if (configuration.transitive) {
+                    // //runtimeOnly "org.beanshell:bsh-core:2.0b4"  transitive < org.owasp.esapi:esapi:2.0.1
                     Configuration nonTransitive = configuration.nonTransitive();
                     line = "//" + nonTransitive.gradle + " \"" + artifact.key + "\"  transitive" + reason;
                 } else {
-                    line = configuration.gradle + " \"" + artifact.key + "\"" + (reason.isBlank() ? "" : "//" + reason);
+                    String reasonOrEmpty = reason.isBlank() ? "" : "//" + reason;
+                    if (!artifact.excludeRules.isEmpty()) {
+                        line = configuration.gradle + " (\"" + artifact.key + "\") {" + reasonOrEmpty
+                                + "\n" + artifact.excludeRules.stream()
+                                .map(er -> "  exclude group: \"" + er.group + "\", module: \"" + er.module + "\"\n")
+                                .collect(Collectors.joining())
+                                + "}\n";
+                    } else {
+                        // runtimeOnly "org.checkerframework:checker-qual:3.5.0"// < com.google.guava:guava:28.1-jre
+                        line = configuration.gradle + " \"" + artifact.key + "\"" + reasonOrEmpty;
+                    }
                 }
                 LOGGER.info(line);
             }
@@ -387,22 +411,35 @@ public class JarAnalysis {
         }
     }
 
+    record ExcludeRule(String group, String module) {
+        public static ExcludeRule from(String s) {
+            String[] split = s.split(":");
+            return new ExcludeRule(split[0], split[1]);
+        }
+    }
+
     static class Artifact implements Comparable<Artifact> {
         private final String groupId;
         private final String artifactId;
         private final String version;
         private final String key;
         private final Configuration initialConfiguration;
+        private final Set<ExcludeRule> excludeRules;
 
         private URI uri;
         private Configuration computedConfiguration;
         private Set<String> types; // read from Jar
         private Set<String> dependentTypes; // computed
         private int sourceTypesThatUseOneOfMyTypes;
-        private Set<Artifact> reasonForInclusion = new HashSet<>();
+        private final Set<Artifact> reasonForInclusion = new HashSet<>();
 
-        public Artifact(String groupId, String artifactId, String version, Configuration initialConfiguration) {
+        public Artifact(String groupId,
+                        String artifactId,
+                        String version,
+                        Configuration initialConfiguration,
+                        Set<ExcludeRule> excludeRules) {
             this.initialConfiguration = Objects.requireNonNull(initialConfiguration);
+            this.excludeRules = Objects.requireNonNull(excludeRules);
             this.groupId = groupId;
             this.artifactId = artifactId;
             this.version = version;
