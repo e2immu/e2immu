@@ -3,9 +3,6 @@ package org.e2immu.analyser.bytecode.tools;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Source;
-import org.e2immu.graph.G;
-import org.e2immu.graph.V;
-import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.graph.analyser.TypeGraphIO;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -73,6 +70,15 @@ public class JarAnalysis {
         return 0;
     }
 
+    private static final Comparator<Artifact> BEST_ARTIFACT = (a1, a2) -> {
+        int c = a2.sourceTypesThatUseOneOfMyTypes - a1.sourceTypesThatUseOneOfMyTypes;
+        if (c != 0) return c; // most used by other types
+        if (a1.groupId.equals(a2.groupId) && a1.artifactId.equals(a2.artifactId)) {
+            return a2.version.compareTo(a1.version); // highest version
+        }
+        return a1.compareTo(a2); // by key, alphabetically
+    };
+
     private void fromCompileConfigurationToRuntimeConfiguration(Map<String, Artifact> artifactMap,
                                                                 Map<String, List<Artifact>> typesInArtifacts,
                                                                 Map<String, String> typesInJMods) {
@@ -91,6 +97,7 @@ public class JarAnalysis {
             iteration++;
             Map<String, Artifact> newTypes = new HashMap<>();
             LOGGER.info("Iteration {}, have {} dependent types", iteration, required.size());
+            Map<String, List<Artifact>> multiples = new HashMap<>();
             for (Map.Entry<String, Artifact> entry : required.entrySet()) {
                 String type = entry.getKey();
                 if (!typesInJMods.containsKey(type)) {
@@ -99,20 +106,16 @@ public class JarAnalysis {
                         cannotFind.computeIfAbsent(entry.getValue(), a -> new HashSet<>()).add(type);
                     } else if (artifacts.size() == 1) {
                         Artifact a = artifacts.get(0);
-                        if (a.computedConfiguration == null) {
-                            boolean transitive = a.initialConfiguration.transitive;
-                            a.computedConfiguration = transitive ? Configuration.RUNTIME_TRANSITIVE : Configuration.RUNTIME;
-                            for (String dt : a.dependentTypes) {
-                                newTypes.putIfAbsent(dt, a);
-                            }
-                        } else if (a.computedConfiguration != a.initialConfiguration && complainedAbout.add(a.key)) {
-                            LOGGER.error("Artifact {} can become RUNTIME", a);
-                        }
-                        a.reasonForInclusion.add(entry.getValue());
+                        decideForRuntime(a, entry.getValue(), newTypes, complainedAbout);
                     } else {
-                        // FIXME implement!
+                        multiples.put(type, artifacts);
                     }
                 }
+            }
+            for (Map.Entry<String, List<Artifact>> entry : multiples.entrySet()) {
+                Artifact best = entry.getValue().stream().min(BEST_ARTIFACT).orElseThrow();
+                LOGGER.info("Choose {} for duplicate type {}", best, entry.getKey());
+                decideForRuntime(best, required.get(entry.getKey()), newTypes, complainedAbout);
             }
             if (newTypes.isEmpty()) break;
             newTypes.forEach(required::putIfAbsent);
@@ -126,8 +129,23 @@ public class JarAnalysis {
         }
     }
 
+    private void decideForRuntime(Artifact a, Artifact reason, Map<String, Artifact> newTypes, Set<String> complainedAbout) {
+        if (a.computedConfiguration == null) {
+            boolean transitive = a.initialConfiguration.transitive;
+            a.computedConfiguration = transitive ? Configuration.RUNTIME_TRANSITIVE : Configuration.RUNTIME;
+            for (String dt : a.dependentTypes) {
+                newTypes.putIfAbsent(dt, a);
+            }
+        } else if (a.computedConfiguration != a.initialConfiguration && complainedAbout.add(a.key)) {
+            LOGGER.error("Artifact {} can become RUNTIME", a);
+        }
+        a.reasonForInclusion.add(reason);
+        a.sourceTypesThatUseOneOfMyTypes++; // additional dependency
+    }
+
     private static void fromSourceToCompileConfiguration(Set<String> typesRequiredBySource, Map<String, List<Artifact>> typesInArtifacts, Map<String, String> typesInJMods) {
         LOGGER.info("Have {} types required by source code", typesRequiredBySource.size());
+        Map<String, List<Artifact>> multiples = new HashMap<>();
         for (String type : typesRequiredBySource) {
             List<Artifact> artifacts = typesInArtifacts.get(type);
             if (artifacts == null) {
@@ -135,19 +153,29 @@ public class JarAnalysis {
                     LOGGER.error("Have no artifact for type required by source {}", type);
                 }
             } else if (artifacts.size() > 1) {
-                LOGGER.error("Type {} is present in multiple artifacts: {}", type, artifacts);
+                multiples.put(type, artifacts);
             } else {
                 Artifact a = artifacts.get(0);
-                a.sourceTypesThatUseOneOfMyTypes++;
-                if (a.computedConfiguration == null) {
-                    a.computedConfiguration = a.initialConfiguration;
-                    if (a.initialConfiguration != Configuration.COMPILE
-                            && a.initialConfiguration != Configuration.COMPILE_TRANSITIVE) {
-                        LOGGER.error("Artifact {} has configuration {}, should be COMPILE or COMPILE_TRANSITIVE; type is {}",
-                                a, a.initialConfiguration, type);
-                    }
-                }
+                decideForCompile(type, a);
             }
+        }
+        for (Map.Entry<String, List<Artifact>> entry : multiples.entrySet()) {
+            Artifact best = entry.getValue().stream().min(BEST_ARTIFACT).orElseThrow();
+            LOGGER.info("Choose {} for duplicate type {}", best, entry.getKey());
+            decideForCompile(entry.getKey(), best);
+        }
+    }
+
+    private static void decideForCompile(String type, Artifact a) {
+        a.sourceTypesThatUseOneOfMyTypes++;
+        if (a.computedConfiguration == null) {
+            boolean transitive = a.initialConfiguration.transitive;
+            a.computedConfiguration = transitive ? Configuration.COMPILE_TRANSITIVE : Configuration.COMPILE;
+        }
+        if (a.initialConfiguration != Configuration.COMPILE
+                && a.initialConfiguration != Configuration.COMPILE_TRANSITIVE) {
+            LOGGER.error("Artifact {} has configuration {}, should be COMPILE or COMPILE_TRANSITIVE; type is {}",
+                    a, a.initialConfiguration, type);
         }
     }
 
@@ -158,6 +186,7 @@ public class JarAnalysis {
                 Resources resources = new Resources();
                 URL url = Resources.constructJModURL(path, inputConfiguration.alternativeJREDirectory());
                 resources.addJmod(url);
+                LOGGER.info("Adding jmod uri {}", url);
                 resources.visit(new String[]{}, (prefix, uris) -> {
                     URI uri = uris.get(0);
                     if (uri.toString().endsWith(".class") && !uri.toString().endsWith("/module-info.class")) {
@@ -305,7 +334,7 @@ public class JarAnalysis {
                 if (configuration == Configuration.RUNTIME || configuration == Configuration.RUNTIME_TRANSITIVE) {
                     String reasons = artifact.reasonForInclusion.stream().map(a -> a.key)
                             .sorted().collect(Collectors.joining(", "));
-                    reason = " < " + reasons;
+                    reason = reasons.isBlank() ? "" : " < " + reasons;
                 } else {
                     reason = "";
                 }
