@@ -43,21 +43,18 @@ public class JarAnalysis {
     public int go(File sourceTypeGraphGml, File testTypeGraphGml) throws IOException, URISyntaxException {
         LOGGER.info("Classpath size: {}", inputConfiguration.classPathParts().size());
         LOGGER.info("Runtime classpath size: {}", inputConfiguration.runtimeClassPathParts().size());
-        if (!new HashSet<>(inputConfiguration.runtimeClassPathParts()).containsAll(inputConfiguration.classPathParts())) {
-            LOGGER.error("Working on the assumption that the runtime classpath fully contains the compile class path");
+        if (checkRuntimeContainsCompileFails()) {
             return 1;
         }
         if (testTypeGraphGml == null) {
             LOGGER.info("Skipping test configurations, no test type graph");
         } else {
             LOGGER.info("Test classpath size: {}", inputConfiguration.testClassPathParts().size());
-            if (!new HashSet<>(inputConfiguration.testClassPathParts()).containsAll(inputConfiguration.classPathParts())) {
-                LOGGER.error("Working on the assumption that the test classpath fully contains the compile class path");
+            if (checkTestContainsCompileFails()) {
                 return 1;
             }
             LOGGER.info("Test runtime classpath size: {}", inputConfiguration.testRuntimeClassPathParts().size());
-            if (!new HashSet<>(inputConfiguration.testRuntimeClassPathParts()).containsAll(inputConfiguration.testClassPathParts())) {
-                LOGGER.error("Working on the assumption that the test runtime classpath fully contains the test class path");
+            if (checkTestRuntimeContainsTestFails()) {
                 return 1;
             }
         }
@@ -68,7 +65,7 @@ public class JarAnalysis {
                 : readTypeGraph(testTypeGraphGml, "test");
 
         Map<String, Artifact> artifactMap = readArtifactsFromDependencies();
-        logArtifacts(artifactMap.values(), a -> a.initialConfiguration);
+        logArtifacts(artifactMap.values(), true);
 
         Set<String> allPaths = allPaths();
         Map<String, String> typesInJMods = typesInJMods(allPaths);
@@ -100,8 +97,58 @@ public class JarAnalysis {
             fromSourceOrTestToConfiguration(false, typesRequiredByTest, typesInArtifacts, typesInJMods);
             intoRuntimeConfiguration(false, artifactMap, typesInArtifacts, typesInJMods);
         }
-        logArtifacts(artifactMap.values(), a -> a.computedConfiguration);
+        for (Artifact a : artifactMap.values()) {
+            if (a.computedConfiguration != null && a.computedConfiguration.transitive
+                    && a.isRecursivelyUnused(new HashSet<>())) {
+                Configuration cc = a.computedConfiguration;
+                a.computedConfiguration = cc.nonTransitive();
+                LOGGER.info("Changing {} from {} to {}, parents in graph unused", a, cc, a.computedConfiguration);
+            }
+        }
+        logArtifacts(artifactMap.values(), false);
         return 0;
+    }
+
+    private boolean checkTestRuntimeContainsTestFails() {
+        Set<String> testWithoutJmod = inputConfiguration.testClassPathParts().stream()
+                .filter(p -> !p.endsWith(".jmod")).collect(Collectors.toUnmodifiableSet());
+        if (!new HashSet<>(inputConfiguration.testRuntimeClassPathParts()).containsAll(testWithoutJmod)) {
+            LOGGER.error("Working on the assumption that the test runtime classpath fully contains the test class path");
+            Set<String> test = new HashSet<>(testWithoutJmod);
+            inputConfiguration.testRuntimeClassPathParts().forEach(test::remove);
+            LOGGER.error("On test path, but not on test runtime path:");
+            test.forEach(c -> LOGGER.error("   - {}", c));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkTestContainsCompileFails() {
+        Set<String> compileWithoutJmod = inputConfiguration.classPathParts().stream()
+                .filter(p -> !p.endsWith(".jmod")).collect(Collectors.toUnmodifiableSet());
+        if (!new HashSet<>(inputConfiguration.testClassPathParts()).containsAll(compileWithoutJmod)) {
+            LOGGER.error("Working on the assumption that the test classpath fully contains the compile class path");
+            Set<String> compile = new HashSet<>(compileWithoutJmod);
+            inputConfiguration.testClassPathParts().forEach(compile::remove);
+            LOGGER.error("On compile path, but not on test path:");
+            compile.forEach(c -> LOGGER.error("   - {}", c));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkRuntimeContainsCompileFails() {
+        Set<String> compileWithoutJmod = inputConfiguration.classPathParts().stream()
+                .filter(p -> !p.endsWith(".jmod")).collect(Collectors.toUnmodifiableSet());
+        if (!new HashSet<>(inputConfiguration.runtimeClassPathParts()).containsAll(compileWithoutJmod)) {
+            LOGGER.error("Working on the assumption that the runtime classpath fully contains the compile class path");
+            Set<String> compile = new HashSet<>(compileWithoutJmod);
+            inputConfiguration.runtimeClassPathParts().forEach(compile::remove);
+            LOGGER.error("On compile path, but not in runtime path:");
+            compile.forEach(c -> LOGGER.error("   - {}", c));
+            return true;
+        }
+        return false;
     }
 
     private static Graph<TypeGraphIO.Node, DefaultWeightedEdge> readTypeGraph(File graphGml, String label)
@@ -160,7 +207,9 @@ public class JarAnalysis {
             }
             for (Map.Entry<String, List<Artifact>> entry : multiples.entrySet()) {
                 Artifact best = entry.getValue().stream().min(BEST_ARTIFACT).orElseThrow();
-                LOGGER.info("Choose {} for duplicate type {} in {}", best, entry.getKey(), label);
+                if (complainedAbout.add(best + "<-" + entry.getValue())) {
+                    LOGGER.info("Choose {} for duplicate type {} in {}", best, entry.getKey(), label);
+                }
                 decideForRuntime(best, required.get(entry.getKey()), newTypes, complainedAbout);
             }
             if (newTypes.isEmpty()) break;
@@ -170,8 +219,14 @@ public class JarAnalysis {
             Artifact a = entry.getKey();
             LOGGER.error("{}, cannot find types in artifact {}, {} -> {}:", label, a, a.initialConfiguration,
                     a.computedConfiguration);
+            int cnt = 0;
             for (String type : entry.getValue()) {
                 LOGGER.error("    - {}", type);
+                cnt++;
+                if (cnt > 20) {
+                    LOGGER.error("    - ... in total {}", entry.getValue().size());
+                    break;
+                }
             }
         }
     }
@@ -222,9 +277,9 @@ public class JarAnalysis {
         Configuration ic = a.initialConfiguration;
         if (a.computedConfiguration == null) {
             boolean transitive = ic.transitive;
-            a.computedConfiguration =
-                    compileOrTest ? (transitive ? Configuration.COMPILE_TRANSITIVE : Configuration.COMPILE)
-                            : (transitive ? Configuration.TEST_TRANSITIVE : Configuration.TEST);
+            a.computedConfiguration = compileOrTest
+                    ? (transitive ? Configuration.COMPILE_TRANSITIVE : Configuration.COMPILE)
+                    : (transitive ? Configuration.TEST_TRANSITIVE : Configuration.TEST);
         }
         if (compileOrTest) {
             if (ic != Configuration.COMPILE && ic != Configuration.COMPILE_TRANSITIVE) {
@@ -395,10 +450,10 @@ public class JarAnalysis {
         return new Artifact(groupId, artifactId, version, initialConfig, excludeRules);
     }
 
-    private void logArtifacts(Collection<Artifact> artifacts, Function<Artifact, Configuration> configurationFunction) {
+    private void logArtifacts(Collection<Artifact> artifacts, boolean initial) {
         List<Artifact> sorted = artifacts.stream().sorted().toList();
         for (Artifact artifact : sorted) {
-            Configuration configuration = configurationFunction.apply(artifact);
+            Configuration configuration = initial ? artifact.initialConfiguration : artifact.computedConfiguration;
             if (configuration != null) {
                 String reason;
                 if (configuration == Configuration.RUNTIME || configuration == Configuration.RUNTIME_TRANSITIVE) {
@@ -430,8 +485,8 @@ public class JarAnalysis {
             }
         }
         for (Artifact artifact : sorted) {
-            Configuration configuration = configurationFunction.apply(artifact);
-            if (configuration == null) {
+            Configuration configuration = initial ? artifact.initialConfiguration : artifact.computedConfiguration;
+            if (configuration == null && !artifact.initialConfiguration.transitive) {
                 LOGGER.info("//UNUSED \"" + artifact.key + "\"");
             }
         }
@@ -524,6 +579,16 @@ public class JarAnalysis {
         @Override
         public int hashCode() {
             return key.hashCode();
+        }
+
+        public boolean isRecursivelyUnused(Set<Artifact> done) {
+            if (!done.add(this)) {
+                return true;
+            }
+            if (computedConfiguration == null) {
+                return true;
+            }
+            return reasonForInclusion.stream().allMatch(a -> a.isRecursivelyUnused(done));
         }
     }
 }

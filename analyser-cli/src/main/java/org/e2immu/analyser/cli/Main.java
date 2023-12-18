@@ -438,6 +438,7 @@ public class Main {
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, TESTS_RUNTIME_CLASSPATH, builder::addTestRuntimeClassPath);
         setSplitStringProperty(analyserProperties, COMMA, DEPENDENCIES, builder::addDependencies);
         setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
+        setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, TEST_SOURCE_PACKAGES, builder::addRestrictTestSourceToPackages);
         return builder.build();
     }
 
