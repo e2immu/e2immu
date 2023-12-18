@@ -131,7 +131,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         // Same package, and * imports (in that order!)
         if (parentContext != null) {
             NamedType fromParent = parentContext.getSimpleName(name);
-            if(fromParent != null) {
+            if (fromParent != null) {
                 return fromParent;
             }
         }
@@ -407,7 +407,9 @@ public class TypeContext implements TypeAndInspectionProvider {
                     int score = distance
                             // add a penalty for shallowly analysed, non-public methods
                             // See the java.lang.StringBuilder AbstractStringBuilder CharSequence length() problem
-                            + (shallowAnalysis && !m.isPubliclyAccessible(this) ? 100 : 0);
+                            + (shallowAnalysis && !m.isPubliclyAccessible(this) ? 100 : 0)
+                            // see e.g. MethodCall_70, where we must choose between a static and instance method
+                            + (m.getMethodInfo().isStatic() && scopeNature == Scope.ScopeNature.INSTANCE ? 100 : 0);
                     result.merge(mt, score, Integer::min);
                 });
 

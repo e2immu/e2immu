@@ -56,6 +56,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     public static final int TYPE_BOUND = 5;
     public static final int IN_HIERARCHY = 10;
     private static final int UNBOUND_WILDCARD = 100;
+    private static final int ARRAY_PENALTY = 100;
 
     public enum Mode {
         INVARIANT, // everything has to be identical, there is no leeway with respect to hierarchy
@@ -86,7 +87,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                 return IN_HIERARCHY * pathToJLO(from);
             }
         } else if (target.isJavaLangObject()) {
-            return IN_HIERARCHY * pathToJLO(from);
+            return IN_HIERARCHY * pathToJLO(from.copyWithoutArrays()) + (from.arrays * ARRAY_PENALTY);
         }
 
 
@@ -168,7 +169,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             return NOT_ASSIGNABLE;
         }
         if (target.arrays > 0 && from.arrays < target.arrays) {
-            return NOT_ASSIGNABLE;
+            return ARRAY_PENALTY * (target.arrays - from.arrays);
         }
 
         List<ParameterizedType> targetTypeBounds = target.typeParameter.getTypeBounds();

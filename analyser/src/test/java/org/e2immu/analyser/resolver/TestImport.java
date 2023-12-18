@@ -33,6 +33,7 @@ public class TestImport extends CommonTest {
     // remember: the . at the end means: also include subpackages.
     public static final String IMPORT_HELPER = "org.e2immu.analyser.resolver.testexample.importhelper.";
     public static final String A = "org.e2immu.analyser.resolver.testexample.a";
+    public static final String B = "org.e2immu.analyser.resolver.testexample.b";
     public static final String ACCESS = "org.e2immu.analyser.resolver.testexample.access";
 
     /**

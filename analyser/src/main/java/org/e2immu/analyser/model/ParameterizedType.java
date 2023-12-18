@@ -95,6 +95,9 @@ public class ParameterizedType {
         this.arrays = 0;
         this.wildCard = wildCard;
         if (wildCard != WildCard.EXTENDS && wildCard != WildCard.SUPER) throw new UnsupportedOperationException();
+        if (WildCard.EXTENDS == wildCard && typeInfo.isJavaLangObject()) {
+            throw new UnsupportedOperationException("'?' rather than '? extends Object'");
+        }
     }
 
     // String, Function<R, ? super T>
@@ -340,8 +343,13 @@ public class ParameterizedType {
                 ParameterizedType pt = parameters.get(i);
                 if (pt != null && pt.isUnboundWildcard() && !parameter.typeParameter.getTypeBounds().isEmpty()) {
                     // replace '?' by '? extends X', with 'X' the first type bound, see TypeParameter_3
-                    recursive = new ParameterizedType(parameter.typeParameter.getTypeBounds().get(0).typeInfo,
-                            WildCard.EXTENDS);
+                    // but never do this for JLO (see e.g. issues described in MethodCall_73)
+                    TypeInfo bound = parameter.typeParameter.getTypeBounds().get(0).typeInfo;
+                    if (bound.isJavaLangObject()) {
+                        recursive = ParameterizedType.WILDCARD_PARAMETERIZED_TYPE;
+                    } else {
+                        recursive = new ParameterizedType(bound, WildCard.EXTENDS);
+                    }
                 } else {
                     recursive = pt;
                 }

@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ForEachStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import static org.e2immu.analyser.resolver.TestImport.A;
+import static org.e2immu.analyser.resolver.TestImport.B;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMethodCall extends CommonTest {
@@ -535,5 +537,39 @@ public class TestMethodCall extends CommonTest {
     @Test
     public void test_69() throws IOException {
         inspectAndResolve(MethodCall_69.class);
+    }
+
+    @Test
+    public void test_70() throws IOException {
+        TypeMap typeMap = inspectAndResolve(B, MethodCall_70.class);
+        TypeInfo typeInfo = typeMap.get(MethodCall_70.class);
+        MethodInfo method = typeInfo.findUniqueMethod("method1", 1);
+        Block block = method.methodInspection.get().getMethodBody();
+        MethodCall present = (MethodCall) ((ReturnStatement) block.structure.getStatements().get(0)).expression;
+        assertEquals("org.e2immu.analyser.resolver.testexample.b.A.doNothing()", present.methodInfo.fullyQualifiedName);
+    }
+
+
+    @Test
+    public void test_71() throws IOException {
+        inspectAndResolve(MethodCall_71.class);
+    }
+
+    @Test
+    public void test_72() throws IOException {
+        inspectAndResolve(MethodCall_72.class);
+    }
+
+    @Test
+    public void test_73() throws IOException {
+        TypeMap tm = inspectAndResolve(MethodCall_73.class);
+        TypeInfo object = tm.get(Object.class);
+        MethodInfo getClass = object.findUniqueMethod("getClass", 0);
+        assertEquals("Type Class<?>", getClass.returnType().toString());
+    }
+
+    @Test
+    public void test_74() throws IOException {
+        inspectAndResolve(MethodCall_74.class);
     }
 }

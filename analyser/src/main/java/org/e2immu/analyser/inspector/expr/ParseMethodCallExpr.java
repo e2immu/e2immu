@@ -105,6 +105,9 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             MethodCallExpr methodCallExpr,
                             ForwardReturnTypeInfo forwardReturnTypeInfo) {
         String methodName = methodCallExpr.getName().asString();
+        if ("setVehicleReservationView".equals(methodName) && "PENFODVehicleReservationImportUnitTest".equals(expressionContext.enclosingType().simpleName)) {
+            LOGGER.debug("debug point");
+        }
         int numArguments = methodCallExpr.getArguments().size();
         LOGGER.debug("Start parsing method call {}, method name {}, {} args, fwd {}", methodCallExpr,
                 methodName, numArguments, forwardReturnTypeInfo.toString(expressionContext.typeContext()));
@@ -494,6 +497,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 ParameterizedType bestAcceptedType = null;
                 int bestCompatible = Integer.MIN_VALUE;
 
+                int varargsPenalty;
                 ParameterizedType formalType;
                 if (parameterInfo.parameterInspection.get().isVarArgs()) {
                     if (acceptedErased == null) {
@@ -526,11 +530,16 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             thisAcceptedErasedTypesCombination.put(pos, bestAcceptedType);
                             break;
                         } // else: we have another one to try!
+                        // see Constructor_18 for example where varargsPenalty is important
+                        varargsPenalty = 50;
+                    } else {
+                        varargsPenalty = 0;
                     }
                     formalType = parameterInfo.parameterizedType.copyWithOneFewerArrays();
                 } else {
                     assert acceptedErased != null;
                     formalType = parameterInfo.parameterizedType;
+                    varargsPenalty = 0;
                 }
 
 
@@ -547,7 +556,12 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                 if (formalTypeReplaced.isPrimitiveExcludingVoid()) {
                                     compatible = -1; // MethodCall_69
                                 } else {
-                                    compatible = 100 - callIsAssignableFrom(formalTypeReplaced, typeContext.getPrimitives().objectParameterizedType(), explain);
+                                    // note: always assignable! array penalties easily go into the 100's so 1000 seems safe
+                                    ParameterizedType objectPt = typeContext.getPrimitives().objectParameterizedType();
+                                    int c = callIsAssignableFrom(formalTypeReplaced, objectPt, explain);
+                                    assert c >= 0;
+                                    // See MethodCall_66, resp. _74 for the '-' and the '1000'
+                                    compatible = varargsPenalty + 1000 - c;
                                 }
                             } else if (paramIsErasure && actualTypeReplaced != actualType) {
                                 /*
@@ -558,7 +572,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                 compatible = Math.max(callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced, explain),
                                         callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced, explain));
                             } else {
-                                compatible = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced, explain);
+                                int c = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced, explain);
+                                compatible = c < 0 ? c : varargsPenalty + c;
                             }
 
                             if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE
