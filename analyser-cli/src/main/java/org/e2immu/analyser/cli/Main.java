@@ -19,7 +19,6 @@ import org.e2immu.analyser.config.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -115,7 +114,7 @@ public class Main {
         Configuration configuration = parseConfiguration(cmd, options);
         if (action != null) {
             String[] actionParameters = cmd.getOptionValues(ACTION_PARAMETER);
-            return Action.execAction(action, actionParameters, configuration);
+            return ExecuteAction.run(action, actionParameters, configuration);
         }
         configuration.initializeLoggers();
         // the following will be output if the CONFIGURATION logger is active!

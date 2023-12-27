@@ -14,16 +14,15 @@
 
 package org.e2immu.gradleplugin;
 
-import org.e2immu.analyser.bytecode.tools.JarAnalysis;
+import org.e2immu.analyser.cli.GradleConfiguration;
+import org.e2immu.analyser.cli.Main;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
-import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
-import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -35,8 +34,6 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import org.e2immu.analyser.cli.Main;
 
 /**
  * Property names are identical to those of the CLI (.cli.Main). In the system properties,
@@ -160,15 +157,15 @@ public record AnalyserPropertyComputer(
     }
 
     private static final String[] UNRESOLVABLE_CONFIGURATIONS =
-            Arrays.stream(JarAnalysis.Configuration.values()).filter(c -> !c.transitive)
+            Arrays.stream(GradleConfiguration.values()).filter(c -> !c.transitive)
                     .map(c -> c.gradle).toArray(String[]::new);
 
     private static final String[] RESOLVABLE_CONFIGURATIONS =
-            Arrays.stream(JarAnalysis.Configuration.values()).filter(c -> c.transitive)
+            Arrays.stream(GradleConfiguration.values()).filter(c -> c.transitive)
                     .map(c -> c.gradle).toArray(String[]::new);
 
     private static final Map<String, String> CONFIG_SHORTHAND =
-            Arrays.stream(JarAnalysis.Configuration.values()).collect(Collectors.toUnmodifiableMap(
+            Arrays.stream(GradleConfiguration.values()).collect(Collectors.toUnmodifiableMap(
                     c -> c.gradle, c -> c.abbrev
             ));
 

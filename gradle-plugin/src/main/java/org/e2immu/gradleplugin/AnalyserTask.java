@@ -14,7 +14,7 @@
 
 package org.e2immu.gradleplugin;
 
-import org.e2immu.analyser.cli.Action;
+import org.e2immu.analyser.cli.ExecuteAction;
 import org.e2immu.analyser.cli.Main;
 import org.e2immu.analyser.cli.RunAnalyser;
 import org.e2immu.analyser.config.Configuration;
@@ -52,8 +52,8 @@ public class AnalyserTask extends ConventionTask {
         String action = properties.get(Main.ACTION);
         if (action != null) {
             String ap = properties.get(Main.ACTION_PARAMETER);
-            String[] actionParameters = ap.split(AnalyserPropertyComputer.M_A_G_I_C);
-            int exitValue = Action.execAction(action, actionParameters, configuration);
+            String[] actionParameters = ap == null ? new String[0] : ap.split(AnalyserPropertyComputer.M_A_G_I_C);
+            int exitValue = ExecuteAction.run(action, actionParameters, configuration);
             if (exitValue != 0) {
                 throw new RuntimeException("Analyser exited with error value " + exitValue + ": " + Main.exitMessage(exitValue));
             }

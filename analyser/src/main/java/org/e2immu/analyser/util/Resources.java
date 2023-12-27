@@ -132,8 +132,10 @@ public class Resources {
         while (roots.hasMoreElements()) {
             URL url = roots.nextElement();
             String urlString = url.toString();
+            boolean endWithSlash = urlString.endsWith("/") && !prefix.endsWith("/");
             LOGGER.debug("Found classpath root {} for {}", url, prefix);
-            URL strippedURL = new URL(urlString.substring(0, urlString.length() - prefix.length()));
+            int totalPrefix = (endWithSlash ? 1 : 0) + prefix.length();
+            URL strippedURL = new URL(urlString.substring(0, urlString.length() - totalPrefix));
             LOGGER.debug("Stripped URL is {}", strippedURL);
             if ("jar".equals(strippedURL.getProtocol())) {
                 entries += addJar(strippedURL);

@@ -130,7 +130,7 @@ public class Cast extends BaseExpression implements Expression {
 
     @Override
     public void visit(Predicate<Element> predicate) {
-        if (predicate.test(expression)) {
+        if (predicate.test(this)) {
             expression.visit(predicate);
         }
     }
