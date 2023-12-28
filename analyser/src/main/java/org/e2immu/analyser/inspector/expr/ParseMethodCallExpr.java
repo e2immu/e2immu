@@ -87,7 +87,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         TypeInfo methodType = mc.methodInspection.getMethodInfo().typeInfo;
         TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
         TypeParameterMap merged;
-        if (scopeType != null && !methodType.equals(scope.type().typeInfo)) {
+        if (scopeType != null && !methodType.equals(scopeType)) {
             // method is defined in a super-type, so we need an additional translation
             ParameterizedType superType = methodType.asParameterizedType(typeContext);
             Map<NamedType, ParameterizedType> sm = scopeType.mapInTermsOfParametersOfSuperType(typeContext, superType);
