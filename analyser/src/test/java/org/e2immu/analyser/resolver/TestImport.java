@@ -16,6 +16,8 @@ package org.e2immu.analyser.resolver;
 
 
 import ch.qos.logback.classic.LoggerContext;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMap;
@@ -128,5 +130,15 @@ public class TestImport extends CommonTest {
     @Test
     public void test_15() throws IOException {
         inspectAndResolve(IMPORT_HELPER, Import_15.class);
+    }
+
+    @Test
+    public void test_16() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Import_16.class);
+        TypeInfo import16 = typeMap.get(Import_16.class);
+        MethodInfo test = import16.findUniqueMethod("method", 2);
+        ParameterInfo p1 = test.methodInspection.get().getParameters().get(1);
+        assertEquals("Type org.e2immu.analyser.resolver.testexample.Import_16.SortedSet<Integer>",
+                p1.parameterizedType.toString());
     }
 }

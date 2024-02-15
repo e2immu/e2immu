@@ -187,7 +187,11 @@ public class Lambda extends BaseExpression implements Expression {
     public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             Expression single = singleExpression();
-            if (single != null) single.visit(predicate);
+            if (single != null) {
+                single.visit(predicate);
+            } else {
+                block.visit(predicate);
+            }
         }
     }
 
