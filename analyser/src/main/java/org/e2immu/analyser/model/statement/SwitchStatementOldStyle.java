@@ -172,6 +172,18 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            expression.visit(visitor);
+            visitor.startSubBlock(0);
+            labelExpressions.forEach(e -> e.visit(visitor));
+            structure.block().visit(visitor);
+            visitor.endSubBlock(0);
+        }
+        visitor.afterStatement(this);
+    }
+
+    @Override
     public int getComplexity() {
         return 100; // TODO
     }

@@ -347,6 +347,14 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            parameterExpressions.forEach(p -> p.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public boolean isNumeric() {
         return parameterizedType.isType() && parameterizedType.typeInfo.isNumeric();
     }

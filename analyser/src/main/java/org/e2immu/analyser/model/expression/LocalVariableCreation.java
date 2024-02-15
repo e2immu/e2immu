@@ -332,4 +332,15 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
             }
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            localVariableReference.visit(visitor);
+            for (Declaration declaration : moreDeclarations) {
+                declaration.localVariableReference.visit(visitor);
+            }
+        }
+        visitor.afterExpression(this);
+    }
 }

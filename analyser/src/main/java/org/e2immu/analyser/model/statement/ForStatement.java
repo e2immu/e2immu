@@ -144,4 +144,17 @@ public class ForStatement extends LoopStatement {
             subElements().forEach(se -> se.visit(predicate));
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            structure.initialisers().forEach(e -> e.visit(visitor));
+            expression.visit(visitor);
+            structure.updaters().forEach(e -> e.visit(visitor));
+            visitor.startSubBlock(0);
+            structure.block().visit(visitor);
+            visitor.endSubBlock(0);
+        }
+        visitor.afterStatement(this);
+    }
 }

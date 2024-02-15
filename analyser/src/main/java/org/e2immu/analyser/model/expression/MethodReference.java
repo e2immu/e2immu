@@ -62,6 +62,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            scope.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(scope, methodInfo);
     }

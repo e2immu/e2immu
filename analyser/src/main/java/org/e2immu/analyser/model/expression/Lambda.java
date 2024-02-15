@@ -195,6 +195,21 @@ public class Lambda extends BaseExpression implements Expression {
         }
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            Expression single = singleExpression();
+            if (single != null) {
+                single.visit(visitor);
+            } else {
+                visitor.startSubBlock(0);
+                block.visit(visitor);
+                visitor.endSubBlock(0);
+            }
+        }
+        visitor.afterExpression(this);
+    }
+
     // this is a functional interface
     @Override
     public ParameterizedType returnType() {

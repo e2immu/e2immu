@@ -216,4 +216,14 @@ public class SwitchExpression extends BaseExpression implements Expression, HasS
             expressions.stream().forEach(v -> v.visit(predicate));
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            selector.visit(visitor);
+            expressions.stream().forEach(e -> e.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
+
 }

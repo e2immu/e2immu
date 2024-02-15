@@ -76,6 +76,12 @@ public class TypeExpression extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        visitor.beforeExpression(this);
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public Precedence precedence() {
         return Precedence.TOP;
     }

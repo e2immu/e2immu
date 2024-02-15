@@ -119,4 +119,10 @@ public final class EmptyExpression extends BaseExpression implements Expression 
     public void visit(Predicate<Element> predicate) {
         predicate.test(this);
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.beforeExpression(this);
+        visitor.afterExpression(this);
+    }
 }

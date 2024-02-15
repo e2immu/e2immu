@@ -114,4 +114,9 @@ public final class UnevaluatedAnnotationParameterValue extends BaseExpression im
     public void visit(Predicate<Element> predicate) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        throw new UnsupportedOperationException();
+    }
 }

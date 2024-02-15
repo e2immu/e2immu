@@ -278,6 +278,15 @@ public class Assignment extends BaseExpression implements Expression {
         }
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            value.visit(visitor);
+            target.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
     public record E2(Expression resultOfExpression, Expression assignedToTarget) {
     }
 

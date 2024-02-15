@@ -149,4 +149,12 @@ public class MultiValue extends BaseExpression implements Expression {
             multiExpression.stream().forEach(v -> v.visit(predicate));
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            multiExpression.stream().forEach(e -> e.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
 }

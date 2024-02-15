@@ -103,4 +103,12 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
             structure.updaters().forEach(updater -> updater.visit(predicate));
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            structure.updaters().forEach(updater -> updater.visit(visitor));
+        }
+        visitor.afterStatement(this);
+    }
 }

@@ -157,6 +157,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            object.visit(visitor);
+            parameterExpressions.forEach(p -> p.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
 
     @Override
     public boolean equals(Object o) {

@@ -127,6 +127,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         predicate.test(this);
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            variable.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
     /*
     variable fields have different values according to statement time, but then, at this point we cannot know yet
     whether the field will be variable or not.

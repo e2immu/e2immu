@@ -66,7 +66,10 @@ public class TryStatement extends StatementWithStructure {
         this.resources = List.copyOf(resources);
         this.catchClauses = List.copyOf(catchClauses);
         this.finallyBlock = finallyBlock;
-        subElements = ListUtil.immutableConcat(List.of(tryBlock), catchClauses.stream().map(Pair::getV).collect(Collectors.toList()),
+        subElements = ListUtil.immutableConcat(
+                this.resources,
+                List.of(tryBlock),
+                catchClauses.stream().map(Pair::getV).collect(Collectors.toList()),
                 finallyBlock.isEmpty() ? List.of() : List.of(finallyBlock));
     }
 
@@ -210,7 +213,17 @@ public class TryStatement extends StatementWithStructure {
 
         @Override
         public void visit(Predicate<Element> predicate) {
-            throw new UnsupportedOperationException();
+            if (predicate.test(this)) {
+                localVariableCreation.visit(predicate);
+            }
+        }
+
+        @Override
+        public void visit(Visitor visitor) {
+            if (visitor.beforeExpression(this)) {
+                localVariableCreation.visit(visitor);
+            }
+            visitor.afterExpression(this);
         }
     }
 
@@ -254,5 +267,29 @@ public class TryStatement extends StatementWithStructure {
         if (predicate.test(this)) {
             subElements.forEach(e -> e.visit(predicate));
         }
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            resources.forEach(e -> e.visit(visitor));
+            visitor.startSubBlock(0);
+            structure.block().visit(visitor);
+            visitor.endSubBlock(0);
+            int i = 1;
+            for (Pair<CatchParameter, Block> pair : catchClauses) {
+                visitor.startSubBlock(i);
+                pair.k.visit(visitor);
+                pair.v.visit(visitor);
+                visitor.endSubBlock(i);
+                i++;
+            }
+            if (!finallyBlock.isEmpty()) {
+                visitor.startSubBlock(i);
+                finallyBlock.visit(visitor);
+                visitor.endSubBlock(i);
+            }
+        }
+        visitor.afterStatement(this);
     }
 }

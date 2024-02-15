@@ -206,6 +206,16 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if(visitor.beforeExpression(this)) {
+            condition.visit(visitor);
+            ifTrue.visit(visitor);
+            ifFalse.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return ListUtil.immutableConcat(condition.variables(descendIntoFieldReferences),
                 ifTrue.variables(descendIntoFieldReferences),

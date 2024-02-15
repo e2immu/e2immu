@@ -101,4 +101,15 @@ public class SynchronizedStatement extends StatementWithExpression {
             structure.block().visit(predicate);
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            expression.visit(visitor);
+            visitor.startSubBlock(0);
+            structure.block().visit(visitor);
+            visitor.endSubBlock(0);
+        }
+        visitor.afterStatement(this);
+    }
 }

@@ -61,6 +61,8 @@ public interface Element {
         });
     }
 
+    void visit(Visitor visitor);
+
     @NotNull(content = true)
     default <E extends Element> List<E> collect(Class<E> clazz) {
         List<E> result = new ArrayList<>();

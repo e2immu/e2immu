@@ -281,6 +281,12 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        visitor.beforeExpression(this);
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public boolean isNumeric() {
         return parameterizedType.isType() && parameterizedType.typeInfo.isNumeric();
     }

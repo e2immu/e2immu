@@ -312,6 +312,14 @@ public class AnnotationExpressionImpl extends BaseExpression implements Annotati
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            expressions.forEach(e -> e.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
                 parameterizedType.typesReferenced(true),

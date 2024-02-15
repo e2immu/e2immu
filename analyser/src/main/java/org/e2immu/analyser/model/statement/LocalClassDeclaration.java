@@ -77,4 +77,12 @@ public class LocalClassDeclaration extends StatementWithStructure {
             methodAndConstructorInspections.forEach(i -> i.getMethodBody().visit(predicate));
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            methodAndConstructorInspections.forEach(i -> i.getMethodBody().visit(visitor));
+        }
+        visitor.afterStatement(this);
+    }
 }

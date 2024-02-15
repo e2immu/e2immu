@@ -127,6 +127,15 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            lhs.visit(visitor);
+            rhs.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
     // NOTE: we're not visiting here!
 
     @Override

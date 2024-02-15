@@ -117,4 +117,10 @@ public interface ConstantExpression<T> extends Expression {
     default void visit(Predicate<Element> predicate) {
         predicate.test(this);
     }
+
+    @Override
+    default void visit(Visitor visitor) {
+        visitor.beforeExpression(this);
+        visitor.afterExpression(this);
+    }
 }

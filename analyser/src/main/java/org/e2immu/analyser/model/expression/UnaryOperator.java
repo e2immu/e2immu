@@ -196,6 +196,14 @@ public class UnaryOperator extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            expression.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public CausesOfDelay causesOfDelay() {
         return expression.causesOfDelay();
     }

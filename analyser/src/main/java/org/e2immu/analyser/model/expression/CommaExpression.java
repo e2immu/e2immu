@@ -60,6 +60,14 @@ public class CommaExpression extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            expressions.forEach(e -> e.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return expressions.get(expressions.size() - 1).returnType();
     }

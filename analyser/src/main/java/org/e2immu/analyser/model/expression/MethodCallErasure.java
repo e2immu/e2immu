@@ -113,4 +113,9 @@ public final class MethodCallErasure extends BaseExpression implements ErasureEx
     public void visit(Predicate<Element> predicate) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        throw new UnsupportedOperationException();
+    }
 }

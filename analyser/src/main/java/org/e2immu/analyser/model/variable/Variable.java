@@ -16,10 +16,7 @@ package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.model.Element;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Qualification;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.graph.analyser.PackedInt;
@@ -126,5 +123,10 @@ public interface Variable extends OneVariable, Comparable<Variable> {
     // descend
     default Stream<Variable> variableStream() {
         return Stream.of(this);
+    }
+
+    default void visit(Visitor visitor) {
+        visitor.beforeVariable(this);
+        visitor.afterVariable(this);
     }
 }

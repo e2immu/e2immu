@@ -280,6 +280,16 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeVariable(this)) {
+            if (scope != null) {
+                scope.visit(visitor);
+            }
+        }
+        visitor.afterVariable(this);
+    }
+
+    @Override
     public boolean hasScopeVariableCreatedAt(String index) {
         return scopeVariable != null && scopeVariable.hasScopeVariableCreatedAt(index);
     }

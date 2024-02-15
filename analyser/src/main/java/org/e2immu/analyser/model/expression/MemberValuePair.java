@@ -70,6 +70,11 @@ public final class MemberValuePair extends BaseExpression implements Expression 
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(name, value);
     }

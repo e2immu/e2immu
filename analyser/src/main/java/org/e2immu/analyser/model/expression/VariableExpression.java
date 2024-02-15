@@ -650,6 +650,14 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if(visitor.beforeExpression(this)) {
+            variable.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public Either<CausesOfDelay, Set<Variable>> loopSourceVariables(AnalyserContext analyserContext, ParameterizedType parameterizedType) {
         return loopSourceVariables(analyserContext, variable, variable.parameterizedType(), parameterizedType);
     }

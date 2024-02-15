@@ -144,6 +144,14 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            inner.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return context.evaluationContext().getProperty(inner, property, duringEvaluation, false);
     }
