@@ -176,7 +176,7 @@ public class Lambda extends BaseExpression implements Expression {
         throw new ExpressionComparator.InternalError();
     }
 
-    private Expression singleExpression() {
+    public Expression singleExpression() {
         if (block.structure.statements().size() != 1) return null;
         Statement statement = block.structure.statements().get(0);
         if (!(statement instanceof ReturnStatement returnStatement)) return null;
