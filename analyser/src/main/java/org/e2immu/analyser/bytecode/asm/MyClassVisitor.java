@@ -170,12 +170,12 @@ public class MyClassVisitor extends ClassVisitor {
                     pos = parseGenerics.parseTypeGenerics(signature) + 1;
                 }
                 {
+                    String substring = signature.substring(pos);
                     ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext,
-                            localTypeMap, LocalTypeMap.LoadMode.NOW, signature.substring(pos));
+                            localTypeMap, LocalTypeMap.LoadMode.NOW, substring);
                     if (res == null) {
-                        LOGGER.debug("Stop inspection of {}, parent type unknown",
-                                currentType.fullyQualifiedName);
-                        errorStateForType(parentFqName);
+                        LOGGER.error("Stop inspection of {}, parent type unknown", currentType);
+                        errorStateForType(substring);
                         return;
                     }
                     typeInspectionBuilder.setParentClass(res.parameterizedType);
@@ -183,12 +183,12 @@ public class MyClassVisitor extends ClassVisitor {
                 }
                 if (interfaces != null) {
                     for (int i = 0; i < interfaces.length; i++) {
+                        String interfaceSignature = signature.substring(pos);
                         ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(typeContext,
-                                localTypeMap, LocalTypeMap.LoadMode.NOW, signature.substring(pos));
+                                localTypeMap, LocalTypeMap.LoadMode.NOW, interfaceSignature);
                         if (interFaceRes == null) {
-                            LOGGER.debug("Stop inspection of {}, interface type unknown",
-                                    currentType.fullyQualifiedName);
-                            errorStateForType(parentFqName);
+                            LOGGER.error("Stop inspection of {}, interface type unknown", currentType);
+                            errorStateForType(interfaceSignature);
                             return;
                         }
                         if (typeContext.getPrimitives().objectTypeInfo() != interFaceRes.parameterizedType.typeInfo) {
@@ -465,6 +465,8 @@ public class MyClassVisitor extends ClassVisitor {
     }
 
     private void errorStateForType(String pathCausingFailure) {
+        LOGGER.error("Current source: {}", pathAndURI);
+        LOGGER.error("Current type: {}", currentType);
         if (currentType == null || currentType.typeInspection.isSet()) throw new UnsupportedOperationException();
         String message = "Unable to inspect " + currentType.fullyQualifiedName + ": Cannot load " + pathCausingFailure;
         throw new RuntimeException(message);
