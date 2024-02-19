@@ -105,9 +105,6 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             MethodCallExpr methodCallExpr,
                             ForwardReturnTypeInfo forwardReturnTypeInfo) {
         String methodName = methodCallExpr.getName().asString();
-        if ("setVehicleReservationView".equals(methodName) && "PENFODVehicleReservationImportUnitTest".equals(expressionContext.enclosingType().simpleName)) {
-            LOGGER.debug("debug point");
-        }
         int numArguments = methodCallExpr.getArguments().size();
         LOGGER.debug("Start parsing method call {}, method name {}, {} args, fwd {}", methodCallExpr,
                 methodName, numArguments, forwardReturnTypeInfo.toString(expressionContext.typeContext()));
@@ -141,7 +138,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             boolean scopeIsThis = scope.expression() instanceof VariableExpression ve && ve.variable() instanceof This;
             Expression newScope = scope.ensureExplicit(candidate.method.methodInspection,
                     Identifier.from(methodCallExpr), typeContext, scopeIsThis, expressionContext);
-            ParameterizedType returnType = candidate.returnType(typeContext, expressionContext.primaryType());
+            ParameterizedType returnType = candidate.returnType(typeContext, expressionContext.primaryType(), extra);
             LOGGER.debug("Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
 
             return new MethodCall(Identifier.from(methodCallExpr),
@@ -210,13 +207,16 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                      Map<NamedType, ParameterizedType> mapExpansion,
                      MethodTypeParameterMap method) {
 
-        ParameterizedType returnType(InspectionProvider inspectionProvider, TypeInfo primaryType) {
+        ParameterizedType returnType(InspectionProvider inspectionProvider,
+                                     TypeInfo primaryType,
+                                     TypeParameterMap extra) {
             Primitives primitives = inspectionProvider.getPrimitives();
             ParameterizedType pt = mapExpansion.isEmpty()
                     ? method.getConcreteReturnType(primitives)
                     : method.expand(inspectionProvider, primaryType, mapExpansion).getConcreteReturnType(primitives);
+            ParameterizedType withExtra = pt.applyTranslation(primitives, extra.map());
             // See TypeParameter_4
-            return pt.isUnboundWildcard() ? inspectionProvider.getPrimitives().objectParameterizedType() : pt;
+            return withExtra.isUnboundWildcard() ? inspectionProvider.getPrimitives().objectParameterizedType() : withExtra;
         }
     }
 

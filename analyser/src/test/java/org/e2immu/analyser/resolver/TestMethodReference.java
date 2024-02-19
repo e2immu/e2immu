@@ -74,6 +74,18 @@ public class TestMethodReference extends CommonTest {
         inspectAndResolve(MethodReference_3.class);
     }
 
+    // if type forwarding isn't necessary, then there is no problem
+    @Test
+    public void test_3B() throws IOException {
+        inspectAndResolve(MethodReference_3B.class);
+    }
+
+    // extra complication
+    @Test
+    public void test_3C() throws IOException {
+        inspectAndResolve(MethodReference_3C.class);
+    }
+
     @Test
     public void test_4() throws IOException {
         inspectAndResolve(MethodReference_4.class);

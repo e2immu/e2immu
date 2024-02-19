@@ -14,11 +14,9 @@ public class MethodReference_3 {
     // everything is fine when .parallel is excluded, or the 2nd part of the disjunction is left out
     // k must be a String (T of Stream = String; with parallel in between: = T)
     public Set<String> method(Set<String> keysWithPrefix, String[] pattern) {
-        Stream<String> parallel = keysWithPrefix
+        return keysWithPrefix
                 .stream()
-                .parallel();
-        // FIXME
-        return parallel
+                .parallel()
                 .filter(k -> isEmpty(pattern) || Arrays.stream(pattern).parallel().anyMatch(k::contains))
                 .collect(Collectors.toSet());
     }
