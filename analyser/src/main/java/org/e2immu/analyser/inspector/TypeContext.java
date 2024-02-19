@@ -90,7 +90,12 @@ public class TypeContext implements TypeAndInspectionProvider {
      */
     public NamedType get(@NotNull String name, boolean complain) {
         NamedType simple = getSimpleName(name);
-        if (simple != null) return simple;
+        if (simple != null) {
+            if(simple instanceof TypeInfo typeInfo) {
+                typeMap.getTypeInspection(typeInfo);
+            }
+            return simple;
+        }
 
         int dot = name.lastIndexOf('.');
         if (dot >= 0) {
@@ -174,13 +179,20 @@ public class TypeContext implements TypeAndInspectionProvider {
     }
 
     /**
-     * Look up a type by FQN. Actual loading using loadType takes place when a type is mentioned by FQN, bypassing
-     * the more common import system.
+     * Look up a type by FQN. Ensure that the type has been inspected.
      *
      * @param fullyQualifiedName the fully qualified name, such as java.lang.String
      * @return the type
      */
     public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {
+        TypeInfo typeInfo = internalGetFullyQualified(fullyQualifiedName, complain);
+        if (typeInfo != null) {
+            typeMap.getTypeInspection(typeInfo);
+        }
+        return typeInfo;
+    }
+
+    private TypeInfo internalGetFullyQualified(String fullyQualifiedName, boolean complain) {
         TypeInfo typeInfo = typeMap.get(fullyQualifiedName);
         if (typeInfo == null) {
             // see InspectionGaps_9: we don't have the type, but we do have an import of its enclosing type
