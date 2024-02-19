@@ -184,7 +184,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         TypeInfo typeInfo = typeMap.get(fullyQualifiedName);
         if (typeInfo == null) {
             // see InspectionGaps_9: we don't have the type, but we do have an import of its enclosing type
-            TypeInfo imported = importMap.isImported(fullyQualifiedName);
+            TypeInfo imported = importMap.isImported(this, fullyQualifiedName);
             if (imported != null) {
                 return imported;
             }

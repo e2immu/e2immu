@@ -1,6 +1,8 @@
 package org.e2immu.analyser.inspector;
 
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
 
@@ -43,12 +45,17 @@ public class ImportMap {
         }
     }
 
-    public TypeInfo isImported(String fullyQualifiedName) {
+    public TypeInfo isImported(InspectionProvider inspectionProvider, String fullyQualifiedName) {
         TypeInfo typeInfo = typeMap.get(fullyQualifiedName);
         if (typeInfo == null) {
             int dot = fullyQualifiedName.lastIndexOf('.');
             if (dot > 0) {
-                return isImported(fullyQualifiedName.substring(0, dot));
+                TypeInfo outer = isImported(inspectionProvider, fullyQualifiedName.substring(0, dot));
+                if (outer == null) return null;
+                String subTypeName = fullyQualifiedName.substring(dot + 1);
+                TypeInspection inspection = inspectionProvider.getTypeInspection(outer);
+                return inspection.subTypes().stream().filter(st -> st.simpleName.equals(subTypeName))
+                        .findFirst().orElse(null);
             }
         }
         return typeInfo;

@@ -25,6 +25,7 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.*;
 import org.e2immu.analyser.resolver.testexample.importhelper.SubType_2;
 import org.e2immu.analyser.resolver.testexample.importhelper.SubType_3Helper;
+import org.e2immu.analyser.resolver.testexample.importhelper.SubType_4Helper;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -123,5 +124,15 @@ public class TestSubType extends CommonTest {
         ParameterizedType st3cPpPt = st3cPp.asParameterizedType(typeMap);
         assertTrue(helperPpPt.isAssignableFrom(typeMap, st3cPpPt)); // parent <- child
         assertFalse(st3cPpPt.isAssignableFrom(typeMap, helperPpPt));
+    }
+
+    @Test
+    public void test4() throws IOException {
+        TypeMap typeMap =inspectAndResolve(TestImport.IMPORT_HELPER, SubType_4.class);
+        TypeInfo d = typeMap.get(SubType_4Helper.D.class);
+        ParameterizedType dPt = d.asParameterizedType(typeMap);
+        TypeInfo st4 = typeMap.get(SubType_4.class);
+        MethodInfo createD = st4.findUniqueMethod("createD", 1);
+        assertEquals(dPt, createD.returnType());
     }
 }
