@@ -641,6 +641,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 this, causes, shortCutMap);
     }
 
+    public ArrayInitializer arrayInitializer() {
+        return arrayInitializer;
+    }
+
     public MethodInfo constructor() {
         return constructor;
     }
