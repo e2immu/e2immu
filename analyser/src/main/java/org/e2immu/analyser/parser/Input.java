@@ -119,9 +119,16 @@ public record Input(Configuration configuration,
         return createNext(configuration, classPath, globalTypeContext, byteCodeInspector);
     }
 
+    /*
+    TODO at some point, we may want to parameterize this: which types do we present to the analyser?
+     */
     private static List<String> classPathAsList(InputConfiguration inputConfiguration) {
-        return Stream.concat(inputConfiguration.classPathParts().stream(),
-                inputConfiguration.testClassPathParts().stream()).distinct().toList();
+        Stream<String> compileCp = inputConfiguration.classPathParts().stream();
+        Stream<String> runtimeCp = inputConfiguration.runtimeClassPathParts().stream();
+        Stream<String> testCompileCp = inputConfiguration.testClassPathParts().stream();
+        Stream<String> testRuntimeCp = inputConfiguration.testClassPathParts().stream();
+        return Stream.concat(Stream.concat(compileCp, runtimeCp), Stream.concat(testCompileCp, testRuntimeCp))
+                .distinct().toList();
     }
 
     private static Map<TypeInfo, URI> computeSourceURLs(Resources sourcePath,
