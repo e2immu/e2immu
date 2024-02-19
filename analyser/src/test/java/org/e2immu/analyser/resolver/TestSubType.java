@@ -23,6 +23,8 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.SubType_0;
 import org.e2immu.analyser.resolver.testexample.SubType_1;
+import org.e2immu.analyser.resolver.testexample.SubType_3;
+import org.e2immu.analyser.resolver.testexample.SubType_3B;
 import org.e2immu.analyser.resolver.testexample.importhelper.SubType_2;
 import org.junit.jupiter.api.Test;
 
@@ -85,4 +87,14 @@ public class TestSubType extends CommonTest {
 
     }
 
+
+    @Test
+    public void test3() throws IOException {
+        inspectAndResolve(SubType_3.class);
+    }
+
+    @Test
+    public void test3B() throws IOException {
+        inspectAndResolve(TestImport.IMPORT_HELPER, SubType_3B.class);
+    }
 }
