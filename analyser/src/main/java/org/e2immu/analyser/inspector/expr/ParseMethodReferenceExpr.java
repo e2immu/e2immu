@@ -98,7 +98,12 @@ public class ParseMethodReferenceExpr {
 
         List<ParameterizedType> types = inputTypes(typeContext.getPrimitives(), formalMethodType, method, parametersPresented);
 
-        ParameterizedType concreteReturnType = method.getConcreteReturnType(typeContext.getPrimitives());
+        ParameterizedType concreteReturnType;
+        if (constructor) {
+            concreteReturnType = parameterizedType;
+        } else {
+            concreteReturnType = method.getConcreteReturnType(typeContext.getPrimitives());
+        }
         ParameterizedType connected;
         if (concreteReturnType.hasTypeParameters()) {
             ParameterizedType formalReturnType = method.methodInspection.getReturnType();
