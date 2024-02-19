@@ -132,15 +132,15 @@ public class Resources {
         while (roots.hasMoreElements()) {
             URL url = roots.nextElement();
             String urlString = url.toString();
-            boolean endWithSlash = urlString.endsWith("/") && !prefix.endsWith("/");
-            LOGGER.debug("Found classpath root {} for {}", url, prefix);
-            int totalPrefix = (endWithSlash ? 1 : 0) + prefix.length();
-            URL strippedURL = new URL(urlString.substring(0, urlString.length() - totalPrefix));
+            int bangSlash = urlString.indexOf("!/");
+            String strippedUrlString = urlString.substring(0, bangSlash + 2);
+            URL strippedURL = new URL(strippedUrlString);
             LOGGER.debug("Stripped URL is {}", strippedURL);
             if ("jar".equals(strippedURL.getProtocol())) {
                 entries += addJar(strippedURL);
-            } else
+            } else {
                 throw new MalformedURLException("Protocol not implemented in URL: " + strippedURL.getProtocol());
+            }
         }
         return entries;
     }

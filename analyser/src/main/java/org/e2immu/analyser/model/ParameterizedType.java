@@ -939,6 +939,15 @@ public class ParameterizedType {
      */
     public ParameterizedType applyTranslation(PrimitivesWithoutParameterizedType primitives,
                                               Map<NamedType, ParameterizedType> translate) {
+        return applyTranslation(primitives, translate, 0);
+    }
+
+    private ParameterizedType applyTranslation(PrimitivesWithoutParameterizedType primitives,
+                                               Map<NamedType, ParameterizedType> translate,
+                                               int recursionDepth) {
+        if (recursionDepth > 20) {
+            throw new IllegalArgumentException("Reached recursion depth");
+        }
         if (translate.isEmpty()) return this;
         ParameterizedType pt = this;
         if (pt.isTypeParameter()) {
@@ -958,7 +967,9 @@ public class ParameterizedType {
         final ParameterizedType stablePt = pt;
         if (stablePt.parameters.isEmpty()) return stablePt;
         List<ParameterizedType> recursivelyMappedParameters = stablePt.parameters.stream()
-                .map(x -> x == stablePt || x == this ? stablePt : x.applyTranslation(primitives, translate))
+                .map(x -> x == stablePt || x == this
+                        ? stablePt
+                        : x.applyTranslation(primitives, translate, recursionDepth + 1))
                 .map(x -> x.ensureBoxed(primitives))
                 .collect(Collectors.toList());
         if (stablePt.typeInfo == null) {
