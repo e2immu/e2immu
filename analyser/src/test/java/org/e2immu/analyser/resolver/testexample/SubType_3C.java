@@ -2,16 +2,16 @@ package org.e2immu.analyser.resolver.testexample;
 
 import org.e2immu.analyser.resolver.testexample.importhelper.SubType_3Helper;
 
-public class SubType_3B {
+public class SubType_3C {
 
-    private interface PP extends SubType_3Helper.PP {
+    private interface PP extends org.e2immu.analyser.resolver.testexample.importhelper.SubType_3Helper.PP {
         void oneMoreMethod();
     }
 
     private final PP pp = makePP();
 
     void method() {
-        new SubType_3Helper().someMethod(pp);
+      //  new SubType_3Helper().someMethod(pp);
     }
 
     private PP makePP() {

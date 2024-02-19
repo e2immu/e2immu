@@ -239,16 +239,17 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     }
 
     private int differentNonNullTypeInfo(Mode mode) {
-        if (from.isFunctionalInterface(inspectionProvider) && target.isFunctionalInterface(inspectionProvider)) {
-            // two functional interfaces, yet different TypeInfo objects
-            return functionalInterface(mode);
-        }
-        return switch (mode) {
+        int i = switch (mode) {
             case COVARIANT, COVARIANT_ERASURE -> hierarchy(target, from, mode);
             case CONTRAVARIANT -> hierarchy(from, target, Mode.COVARIANT);
             case INVARIANT -> NOT_ASSIGNABLE;
             case ANY -> throw new UnsupportedOperationException("?");
         };
+        if(i < 0 &&  from.isFunctionalInterface(inspectionProvider) && target.isFunctionalInterface(inspectionProvider)) {
+            // two functional interfaces, yet different TypeInfo objects
+            return functionalInterface(mode);
+        }
+        return i;
     }
 
     /*
