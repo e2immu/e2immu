@@ -198,6 +198,10 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             if (fromTypeBounds.isEmpty()) {
                 return TYPE_BOUND;
             }
+            if (mode == Mode.INVARIANT && (isSelfReference(from) || isSelfReference(target))) {
+                // see TestAssignableFromGenerics2
+                return TYPE_BOUND;
+            }
             // we both have type bounds; we go for the best combination
             int best = NOT_ASSIGNABLE;
             for (ParameterizedType myBound : targetTypeBounds) {
@@ -212,6 +216,15 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             return best == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : best + TYPE_BOUND;
         }
         return NOT_ASSIGNABLE;
+    }
+
+    private boolean isSelfReference(ParameterizedType pt) {
+        TypeParameter tp = pt.typeParameter;
+        if (tp == null) return false;
+        if (tp.getOwner().isRight()) return false;
+        TypeInspection ti = inspectionProvider.getTypeInspection(tp.getOwner().getLeft());
+        int i = tp.getIndex();
+        return ti.typeParameters().size() > i && ti.typeParameters().get(i).equals(tp);
     }
 
     private int sameNoNullTypeInfo(Mode mode) {
@@ -245,7 +258,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             case INVARIANT -> NOT_ASSIGNABLE;
             case ANY -> throw new UnsupportedOperationException("?");
         };
-        if(i < 0 &&  from.isFunctionalInterface(inspectionProvider) && target.isFunctionalInterface(inspectionProvider)) {
+        if (i < 0 && from.isFunctionalInterface(inspectionProvider) && target.isFunctionalInterface(inspectionProvider)) {
             // two functional interfaces, yet different TypeInfo objects
             return functionalInterface(mode);
         }
