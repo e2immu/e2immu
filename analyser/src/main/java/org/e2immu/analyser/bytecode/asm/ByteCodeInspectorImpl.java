@@ -190,7 +190,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
         public TypeInspection.Builder inspectFromPath(Source path, TypeContext parentTypeContext, LoadMode loadMode) {
             assert path != null && path.path().endsWith(".class");
 
-            String fqn = MyClassVisitor.pathToFqn(path.stripDotClass());
+            String fqn = Resources.pathToFqn(path.stripDotClass());
             TypeData typeDataInMap = localTypeMap.get(fqn);
             if (typeDataInMap != null && typeDataInMap.getInspectionState().ge(STARTING_BYTECODE)) {
                 return typeDataInMap.getTypeInspectionBuilder();

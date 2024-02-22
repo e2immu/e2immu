@@ -19,6 +19,7 @@ include("gradle-plugin")
 include("analyser-cli")
 include("analyser-store-uploader")
 include("annotatedAPIs")
+include("analyser-util")
 
 dependencyResolutionManagement {
     versionCatalogs {
@@ -41,3 +42,4 @@ dependencyResolutionManagement {
         }
     }
 }
+

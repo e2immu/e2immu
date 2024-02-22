@@ -1,4 +1,4 @@
-package org.e2immu.analyser.cli;
+package org.e2immu.analyser.util;
 
 /*
 Used by the gradle plugin, and some implementations of Action.

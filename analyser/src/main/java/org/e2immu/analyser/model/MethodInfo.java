@@ -28,7 +28,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.OutputMethodInfo;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.graph.analyser.PackedInt;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.SetOnce;

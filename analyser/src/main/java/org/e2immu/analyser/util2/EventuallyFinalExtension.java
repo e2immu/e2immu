@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.util;
+package org.e2immu.analyser.util2;
 
 
 import ch.qos.logback.classic.Level;

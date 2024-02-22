@@ -36,8 +36,25 @@ public class ExpressionFactory {
         if (value instanceof Character c) return new CharConstant(primitives, identifier, c);
         if (value instanceof Boolean b) return new BooleanConstant(primitives, identifier, b);
         if (value instanceof Type t) {
-            TypeInspection ti = localTypeMap.getOrCreate(t.getClassName(), LocalTypeMap.LoadMode.TRIGGER);
-            ParameterizedType parameterizedType = ti.typeInfo().asParameterizedType(localTypeMap);
+            ParameterizedType parameterizedType =
+                    switch (t.getClassName()) {
+                        case "boolean" -> primitives.booleanParameterizedType();
+                        case "byte" -> primitives.byteParameterizedType();
+                        case "char" -> primitives.charParameterizedType();
+                        case "double" -> primitives.doubleParameterizedType();
+                        case "float" -> primitives.floatParameterizedType();
+                        case "int" -> primitives.intParameterizedType();
+                        case "long" -> primitives.longParameterizedType();
+                        case "short" -> primitives.shortParameterizedType();
+                        case "void" -> primitives.voidParameterizedType();
+                        default -> {
+                            TypeInspection ti = localTypeMap.getOrCreate(t.getClassName(), LocalTypeMap.LoadMode.TRIGGER);
+                            if (ti == null) {
+                                throw new UnsupportedOperationException("Cannot load type " + t.getClassName());
+                            }
+                            yield ti.typeInfo().asParameterizedType(localTypeMap);
+                        }
+                    };
             return new TypeExpression(identifier, parameterizedType, Diamond.SHOW_ALL);
         }
         throw new UnsupportedOperationException("Value " + value + " is of " + value.getClass());

@@ -28,20 +28,17 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.graph.analyser.PackedInt;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.TreeMap;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Util_12_WeightedGraph extends CommonTestRunner {

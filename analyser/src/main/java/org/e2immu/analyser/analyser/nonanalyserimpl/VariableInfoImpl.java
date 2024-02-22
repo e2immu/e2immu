@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.IGNORE_STATEMENT_TIME;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
-import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
+import static org.e2immu.analyser.util2.EventuallyFinalExtension.setFinalAllowEquals;
 
 public class VariableInfoImpl implements VariableInfo {
     private static final Logger LOGGER = LoggerFactory.getLogger(VariableInfoImpl.class);

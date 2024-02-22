@@ -39,7 +39,7 @@ tasks.test {
 
 dependencies {
     implementation(project(":graph"))
-
+    implementation(project(":analyser-util"))
     implementation (libs.e2immuSupport)
     implementation (libs.logbackClassic)
     implementation (libs.javaParser)

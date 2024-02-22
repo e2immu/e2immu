@@ -14,7 +14,6 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.analyser.bytecode.TestByteCodeInspector;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,10 +78,21 @@ public class TestResources {
         assertTrue(20 < counter, "Found " + counter);
     }
 
+
+    public static String determineAnalyserJarName() {
+        File libs = new File("./build/libs");
+        assertTrue(libs.isDirectory());
+        File[] analysers = libs.listFiles(file -> file.canRead() && file.getName().endsWith(".jar") && file.getName().startsWith("analyser-"));
+        assertNotNull(analysers);
+        Arrays.sort(analysers);
+        assertTrue(analysers.length > 0);
+        return analysers[analysers.length - 1].getName();
+    }
+
     @Test
     public void testViaJar() throws IOException {
         Resources classPath = new Resources();
-        classPath.addJar(new URL("jar:file:build/libs/" + TestByteCodeInspector.determineAnalyserJarName() + "!/"));
+        classPath.addJar(new URL("jar:file:build/libs/" + determineAnalyserJarName() + "!/"));
         List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.model");
         AtomicInteger counter = new AtomicInteger();
         expansions.forEach(ss -> {

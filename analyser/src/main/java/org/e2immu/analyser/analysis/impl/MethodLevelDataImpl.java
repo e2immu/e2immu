@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
+import static org.e2immu.analyser.util2.EventuallyFinalExtension.setFinalAllowEquals;
 
 /**
  * IMPORTANT:

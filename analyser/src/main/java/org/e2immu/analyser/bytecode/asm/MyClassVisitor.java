@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMap;
+import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Source;
 import org.e2immu.analyser.util.StringUtil;
 import org.objectweb.asm.*;
@@ -66,25 +67,6 @@ public class MyClassVisitor extends ClassVisitor {
                 typeContext.typeMap.getE2ImmuAnnotationExpressions()) : null;
     }
 
-    public static String pathToFqn(String path) {
-        String stripDotClass = StringUtil.stripDotClass(path);
-        if (stripDotClass.endsWith("$")) {
-            // scala
-            return stripDotClass.substring(0, stripDotClass.length() - 1).replaceAll("[/$]", ".") + ".object";
-        }
-        if (stripDotClass.endsWith("$class")) {
-            // scala; keep it as is, ending in .class
-            return stripDotClass.replaceAll("[/$]", ".");
-        }
-        int anon;
-        if ((anon = stripDotClass.indexOf("$$anonfun")) > 0) {
-            // scala
-            String random = Integer.toString(Math.abs(stripDotClass.hashCode()));
-            return stripDotClass.substring(0, anon).replaceAll("[/$]", ".") + "." + random;
-        }
-        return stripDotClass.replaceAll("[/$]", ".");
-    }
-
     private static TypeNature typeNatureFromOpCode(int opCode) {
         if ((opCode & Opcodes.ACC_ANNOTATION) != 0) return TypeNature.ANNOTATION;
         if ((opCode & Opcodes.ACC_ENUM) != 0) return TypeNature.ENUM;
@@ -103,7 +85,7 @@ public class MyClassVisitor extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         LOGGER.debug("Visit {} {} {} {} {} {}", version, access, name, signature, superName, interfaces);
-        String fqName = pathToFqn(name);
+        String fqName = Resources.pathToFqn(name);
         assert Input.acceptFQN(fqName);
         TypeMap.InspectionAndState situation = localTypeMap.typeInspectionSituation(fqName);
         assert situation != null && situation.state() == STARTING_BYTECODE;
@@ -129,7 +111,7 @@ public class MyClassVisitor extends ClassVisitor {
         }
         typeInspectionBuilder.computeAccess(localTypeMap);
 
-        String parentFqName = superName == null ? null : pathToFqn(superName);
+        String parentFqName = superName == null ? null : Resources.pathToFqn(superName);
         if (parentFqName != null && !Input.acceptFQN(parentFqName)) {
             return;
         }
@@ -148,7 +130,7 @@ public class MyClassVisitor extends ClassVisitor {
             }
             if (interfaces != null) {
                 for (String interfaceName : interfaces) {
-                    String fqn = pathToFqn(interfaceName);
+                    String fqn = Resources.pathToFqn(interfaceName);
                     if (Input.acceptFQN(fqn)) {
                         TypeInfo typeInfo = mustFindTypeInfo(fqn, interfaceName);
                         if (typeInfo == null) {
@@ -367,7 +349,7 @@ public class MyClassVisitor extends ClassVisitor {
         if (name.equals(currentTypePath)) {
             checkTypeFlags(access, typeInspectionBuilder);
         } else if (innerName != null && outerName != null) {
-            String fqnOuter = pathToFqn(outerName);
+            String fqnOuter = Resources.pathToFqn(outerName);
             boolean stepDown = currentTypePath.equals(outerName);
             boolean stepSide = currentType.packageNameOrEnclosingType.isRight() &&
                     currentType.packageNameOrEnclosingType.getRight().fullyQualifiedName.equals(fqnOuter);

@@ -23,7 +23,7 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;

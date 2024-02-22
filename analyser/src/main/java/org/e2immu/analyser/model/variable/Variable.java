@@ -20,7 +20,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.OneVariable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.graph.analyser.PackedInt;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.NotNull;

@@ -14,17 +14,15 @@
 
 package org.e2immu.gradleplugin;
 
-import org.e2immu.analyser.cli.GradleConfiguration;
+import org.e2immu.analyser.util.GradleConfiguration;
 import org.e2immu.analyser.cli.Main;
 import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
-import org.e2immu.support.FlipSwitch;
-import org.e2immu.support.SetOnce;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.*;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
-import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
-import org.gradle.api.artifacts.result.ResolvedComponentResult;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -32,8 +30,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
-import org.gradle.internal.component.external.model.DefaultModuleComponentSelector;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.*;
@@ -43,15 +39,9 @@ import java.util.stream.Collectors;
  * Property names are identical to those of the CLI (.cli.Main). In the system properties,
  * they have to be prefixed by the PREFIX defined in this class.
  */
-public class AnalyserPropertyComputer {
-    private final Map<String, ActionBroadcast<AnalyserProperties>> actionBroadcastMap;
-    private final Project targetProject;
-
-    public AnalyserPropertyComputer(Map<String, ActionBroadcast<AnalyserProperties>> actionBroadcastMap,
-                                    Project targetProject) {
-        this.targetProject = targetProject;
-        this.actionBroadcastMap = actionBroadcastMap;
-    }
+public record AnalyserPropertyComputer(
+        Map<String, ActionBroadcast<AnalyserProperties>> actionBroadcastMap,
+        Project targetProject) {
 
     private static final Logger LOGGER = Logging.getLogger(AnalyserPropertyComputer.class);
     public static final String PREFIX = "e2immu-analyser.";
@@ -179,31 +169,6 @@ public class AnalyserPropertyComputer {
                     c -> c.gradle, c -> c.abbrev
             ));
 
-
-    record Dependent(String group, String module, String requestedVersion) implements Comparable<Dependent> {
-        @Override
-        public int compareTo(@NotNull AnalyserPropertyComputer.Dependent o) {
-            int c = group.compareTo(o.group);
-            return c == 0 ? module.compareTo(o.module) : c;
-        }
-    }
-
-    record Dependency(String group,
-                      String module,
-                      String requestedVersionOrNull,
-                      boolean transitiveNotInUnresolvableConfiguration,
-                      SetOnce<String> resolvedVersion,
-                      FlipSwitch resolvedByConstraint,
-                      String configuration,
-                      Map<String, Dependent> dependents,
-                      SetOnce<File> file) implements Comparable<Dependency> {
-        @Override
-        public int compareTo(@NotNull AnalyserPropertyComputer.Dependency o) {
-            int c = group.compareTo(o.group);
-            return c == 0 ? module.compareTo(o.module) : c;
-        }
-    }
-
     private static boolean detectSourceDirsAndJavaClasspath(Project project, Map<String, Object> properties, String jmods) {
         JavaPluginExtension javaPluginExtension = new DslObject(project).getExtensions().getByType(JavaPluginExtension.class);
 
@@ -236,13 +201,11 @@ public class AnalyserPropertyComputer {
         properties.put(Main.TESTS_RUNTIME_CLASSPATH, testRuntimeClassPathSeparated);
 
         List<String> dependencyList = new LinkedList<>();
-        Map<String, Dependency> dependencyMap = new HashMap<>();
-
         Set<String> seen = new HashSet<>();
         for (String configurationName : UNRESOLVABLE_CONFIGURATIONS) {
             Configuration configuration = project.getConfigurations().getByName(configurationName);
             String configShortHand = Objects.requireNonNull(CONFIG_SHORTHAND.get(configurationName));
-            for (org.gradle.api.artifacts.Dependency d : configuration.getDependencies()) {
+            for (Dependency d : configuration.getDependencies()) {
                 String description = d.getGroup() + ":" + d.getName() + ":" + d.getVersion();
                 seen.add(description);
                 String excludes;
@@ -254,130 +217,26 @@ public class AnalyserPropertyComputer {
                     excludes = "";
                 }
                 dependencyList.add(description + ":" + configShortHand + excludes);
-
-                String groupModule = d.getGroup() + ":" + d.getName();
-                Dependency dependency = dependencyMap.get(groupModule);
-                if (dependency == null) {
-                    Dependency newDependency = new Dependency(d.getGroup(), d.getName(), d.getVersion(),
-                            false,
-                            new SetOnce<>(), new FlipSwitch(), configurationName, new HashMap<>(),
-                            new SetOnce<>());
-                    dependencyMap.put(groupModule, newDependency);
-                }
             }
         }
         // now the resolved path
         for (String configurationName : RESOLVABLE_CONFIGURATIONS) {
             Configuration configuration = project.getConfigurations().getByName(configurationName);
             String configShortHand = Objects.requireNonNull(CONFIG_SHORTHAND.get(configurationName));
-
-            Set<ResolvedComponentResult> set = configuration.getIncoming().getResolutionResult().getAllComponents();
-            LOGGER.debug("CONFIGURATION: {}", configurationName);
-            // if ("implementation".equals(configurationName)) {
-            for (ResolvedComponentResult rcr : set) {
-                ModuleVersionIdentifier mvi = rcr.getModuleVersion();
-                if (mvi != null) {
-                    LOGGER.debug("RCR: {}:{}:{} -- {}", mvi.getGroup(), mvi.getName(), mvi.getVersion(),
-                            rcr.getSelectionReason());
-                    String groupModule = mvi.getGroup() + ":" + mvi.getName();
-                    Dependency inMap = dependencyMap.get(groupModule);
-                    Dependency dependency;
-                    if (inMap == null) {
-                        dependency = new Dependency(mvi.getGroup(), mvi.getName(), null,
-                                true,
-                                new SetOnce<>(), new FlipSwitch(), configurationName, new HashMap<>(),
-                                new SetOnce<>());
-                        dependencyMap.put(groupModule, dependency);
-                        LOGGER.debug("*** transitive dependency {}, not explicitly mentioned", groupModule);
-                    } else {
-                        dependency = inMap;
-                    }
-                    if ("constraint".equals(rcr.getSelectionReason().toString())
-                            && !dependency.resolvedByConstraint.isSet()) {
-                        dependency.resolvedByConstraint.set();
-                    }
-                    if (!dependency.resolvedVersion.isSet()) {
-                        dependency.resolvedVersion.set(mvi.getVersion());
-                    }
-                    for (DependencyResult dr : rcr.getDependents()) {
-                        ModuleVersionIdentifier moduleVersion = dr.getFrom().getModuleVersion();
-                        if (moduleVersion != null) {
-                            if (!"_java".equals(moduleVersion.getName())) {
-                                String requested;
-                                if (dr.getRequested() instanceof DefaultModuleComponentSelector cs) {
-                                    requested = moduleVersion.getVersion().equals(cs.getVersion()) ? ""
-                                            : " -- requested " + cs.getVersion();
-                                    Dependent dependent = new Dependent(moduleVersion.getGroup(), moduleVersion.getName(), cs.getVersion());
-                                    String dependentKey = moduleVersion.getGroup() + ":" + moduleVersion.getModule();
-                                    if (!dependentKey.equals(groupModule)) {
-                                        dependency.dependents.put(dependentKey, dependent);
-                                    }
-                                } else {
-                                    requested = "??";
-                                }
-                                LOGGER.debug("    {}:{}:{} {}", moduleVersion.getGroup(),
-                                        moduleVersion.getName(), moduleVersion.getVersion(), requested);
-                            }
-                        } else {
-                            LOGGER.debug("??? no module version: {}", dr);
-                        }
-                    }
-                }
-            }
-            //  }
             for (ResolvedArtifactResult rar : configuration.getIncoming().getArtifacts().getArtifacts()) {
                 if (rar.getVariant().getOwner() instanceof ModuleComponentIdentifier mci) {
                     String description = mci.getGroup() + ":" + mci.getModule() + ":" + mci.getVersion();
                     if (seen.add(description)) {
                         dependencyList.add(description + ":" + configShortHand);
                     }
-                    String groupModule = mci.getGroup() + ":" + mci.getModule();
-                    Dependency dependency = dependencyMap.get(groupModule);
-                    if (dependency != null && !dependency.file.isSet()) {
-                        dependency.file.set(rar.getFile());
-                    }
                 }
             }
         }
-        dependencyMap.remove(":_java");
 
-        LOGGER.info("Dependency map:");
-        dependencyMap.values().stream().sorted().forEach(dependency -> {
-            String resolved;
-            if (dependency.resolvedVersion.isSet() && dependency.resolvedVersion.get().equals(dependency.requestedVersionOrNull)) {
-                resolved = dependency.resolvedVersion.get();
-            } else if (dependency.resolvedVersion.isSet()) {
-                resolved = yellow(dependency.resolvedVersion.get());
-            } else {
-                resolved = yellow("??");
-            }
-            LOGGER.info("{}:{}  requested {} resolved {} {} {}", dependency.group, dependency.module,
-                    dependency.requestedVersionOrNull, resolved,
-                    dependency.transitiveNotInUnresolvableConfiguration ? blue(dependency.configuration) : dependency.configuration,
-                    dependency.file.isSet() ? "" : "<no file>");
-            String version = dependency.resolvedVersion.isSet() ? dependency.resolvedVersion.get() : dependency.requestedVersionOrNull;
-            dependency.dependents.values().stream().sorted().forEach(dependent -> {
-                String reqVer;
-                if (dependent.requestedVersion.equals(version)) {
-                    reqVer = dependent.requestedVersion;
-                } else {
-                    reqVer = yellow(dependent.requestedVersion);
-                }
-                LOGGER.info("      {}:{}  requested {}", dependent.group, dependent.module, reqVer);
-            });
-        });
         String dependencies = String.join(",", dependencyList);
         properties.put(Main.DEPENDENCIES, dependencies);
 
         return !sourceDirectoriesPathSeparated.isEmpty() || !testDirectoriesPathSeparated.isEmpty();
-    }
-
-    private static String yellow(String s) {
-        return "\033[33;1m" + s + "\033[0m";
-    }
-
-    private static String blue(String s) {
-        return "\033[36;1m" + s + "\033[0m";
     }
 
     private static String sourcePathFromSourceSet(SourceSet sourceSet) {
