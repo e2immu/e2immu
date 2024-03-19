@@ -24,6 +24,7 @@ import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.analyser.util.Source;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestByteCodeInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestByteCodeInspector.class);
 
-    private TypeMap parseFromJar(String path,Class<?>... classes) throws IOException, URISyntaxException {
+    private TypeMap parseFromJar(String path) throws IOException, URISyntaxException {
         String analyserJar = determineAnalyserJarName();
         Resources resources = new Resources();
         URL jarUrl = new URL("jar:file:build/libs/" + analyserJar + "!/");
@@ -99,8 +100,8 @@ public class TestByteCodeInspector {
 
     @Test
     public void testGenerics() throws IOException, URISyntaxException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/SMapList.class");
-        TypeInfo typeInfo = typeMap.get(SMapList.class);
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/util2/PackedIntMap.class");
+        TypeInfo typeInfo = typeMap.get(PackedIntMap.class);
 
         assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.output());

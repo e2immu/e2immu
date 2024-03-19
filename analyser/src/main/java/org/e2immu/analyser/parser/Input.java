@@ -167,7 +167,7 @@ public record Input(Configuration configuration,
         for (String packageString : restrictions) {
             if (packageString.endsWith(".")) {
                 if (packageName.startsWith(packageString) ||
-                        packageName.equals(packageString.substring(0, packageString.length() - 1))) return true;
+                    packageName.equals(packageString.substring(0, packageString.length() - 1))) return true;
             } else if (packageName.equals(packageString) || packageString.equals(packageName + "." + typeName))
                 return true;
         }
@@ -214,17 +214,22 @@ public record Input(Configuration configuration,
                                           List<String> parts) throws IOException {
         Resources resources = new Resources();
         if (isClassPath) {
-            int entriesAdded = resources.addJarFromClassPath("org/e2immu/annotation");
-            if (entriesAdded < 10) throw new RuntimeException("? expected at least 10 entries");
+            Map<String, Integer> entriesAdded = resources.addJarFromClassPath("org/e2immu/annotation");
+            if (entriesAdded.size() != 1 || entriesAdded.values().stream().findFirst().orElseThrow() < 10) {
+                throw new RuntimeException("? expected 1 jar, at least 10 entries");
+            }
         }
         for (String part : parts) {
             if (part.startsWith(JAR_WITH_PATH_PREFIX)) {
-                resources.addJarFromClassPath(part.substring(JAR_WITH_PATH_PREFIX.length()));
+                Map<String, Integer> entriesAdded = resources.addJarFromClassPath(part.substring(JAR_WITH_PATH_PREFIX.length()));
+                LOGGER.debug("Found {} jar(s) on classpath for {}", entriesAdded.size(), part);
+                entriesAdded.forEach((p, n) -> LOGGER.debug("  ... added {} entries for jar {}", n, p));
             } else if (part.endsWith(".jar")) {
                 try {
                     // "jar:file:build/libs/equivalent.jar!/"
                     URL url = new URL("jar:file:" + part + "!/");
-                    resources.addJar(url);
+                    int entries = resources.addJar(url);
+                    LOGGER.debug("Added {} entries for jar {}", entries, part);
                 } catch (IOException e) {
                     LOGGER.error("{} part '{}' ignored: IOException {}", msg, part, e.getMessage());
                 }

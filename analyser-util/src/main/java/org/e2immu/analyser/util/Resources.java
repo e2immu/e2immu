@@ -123,12 +123,12 @@ public class Resources {
 
     /**
      * @param prefix adds the jars that contain the package denoted by the prefix
-     * @return the number of entries added to the classpath
+     * @return a map containing the number of entries per jar
      * @throws IOException when the jar handling fails somehow
      */
-    public int addJarFromClassPath(String prefix) throws IOException {
+    public Map<String, Integer> addJarFromClassPath(String prefix) throws IOException {
         Enumeration<URL> roots = getClass().getClassLoader().getResources(prefix);
-        int entries = 0;
+        Map<String, Integer> result = new HashMap<>();
         while (roots.hasMoreElements()) {
             URL url = roots.nextElement();
             String urlString = url.toString();
@@ -137,12 +137,13 @@ public class Resources {
             URL strippedURL = new URL(strippedUrlString);
             LOGGER.debug("Stripped URL is {}", strippedURL);
             if ("jar".equals(strippedURL.getProtocol())) {
-                entries += addJar(strippedURL);
+                int entries = addJar(strippedURL);
+                result.put(strippedUrlString, entries);
             } else {
                 throw new MalformedURLException("Protocol not implemented in URL: " + strippedURL.getProtocol());
             }
         }
-        return entries;
+        return result;
     }
 
     private static final Pattern JAR_FILE = Pattern.compile("/([^/]+\\.jar)");

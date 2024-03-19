@@ -38,6 +38,15 @@ dependencies {
 
 
 publishing {
+    repositories {
+        maven {
+            url = uri(project.findProperty("publishUri") as String)
+            credentials {
+                username = project.findProperty("publishUsername") as String
+                password = project.findProperty("publishPassword") as String
+            }
+        }
+    }
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])

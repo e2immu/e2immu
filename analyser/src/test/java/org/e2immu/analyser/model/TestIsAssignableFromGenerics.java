@@ -233,18 +233,16 @@ public class TestIsAssignableFromGenerics {
 
     @Test
     public void testUnboundAndTypeParam() {
-        // ? <- T,                but T <- ? is not possible
-        // ? extends Object <- T, but T <- ? extends Object is not possible
+        // ? <- T, but T <- ? is not possible
+        // creating ? extends Object is not allowed
         TypeParameter tp = myList1.typeInspection.get().typeParameters().get(0);
         ParameterizedType t = new ParameterizedType(tp, 0, NONE);
         assertEquals("Type param T", t.toString());
-        ParameterizedType wildCardObject = new ParameterizedType(primitives.objectTypeInfo(), EXTENDS);
-        assertEquals("Type ? extends Object", wildCardObject.toString());
+        assertThrows(UnsupportedOperationException.class, () ->
+                new ParameterizedType(primitives.objectTypeInfo(), EXTENDS));
 
         assertTrue(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE.isAssignableFrom(InspectionProvider.DEFAULT, t));
-        assertTrue(wildCardObject.isAssignableFrom(InspectionProvider.DEFAULT, t));
         assertFalse(t.isAssignableFrom(InspectionProvider.DEFAULT, ParameterizedType.WILDCARD_PARAMETERIZED_TYPE));
-        assertFalse(t.isAssignableFrom(InspectionProvider.DEFAULT, wildCardObject));
     }
 
     @Test

@@ -24,7 +24,7 @@ include("analyser-util")
 dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
-            library("e2immuSupport", "org.e2immu:e2immu-support:0.6.2") // LGPL 3.0
+            library("e2immuSupport", "org.e2immu:e2immu-support:0.6.3") // LGPL 3.0
 
             library("asm", "org.ow2.asm:asm:9.5") // 3-clause BSD permissive license
             library("commonsCli", "commons-cli:commons-cli:1.4") // Apache License 2.0

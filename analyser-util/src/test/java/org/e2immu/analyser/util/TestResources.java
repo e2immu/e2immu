@@ -93,26 +93,27 @@ public class TestResources {
     public void testViaJar() throws IOException {
         Resources classPath = new Resources();
         classPath.addJar(new URL("jar:file:build/libs/" + determineAnalyserJarName() + "!/"));
-        List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.model");
+        List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.util");
         AtomicInteger counter = new AtomicInteger();
         expansions.forEach(ss -> {
             counter.getAndIncrement();
             LOGGER.info("expand to {}", Arrays.toString(ss));
         });
-        assertTrue(50 < counter.get());
+        assertTrue(15 <= counter.get());
     }
 
     @Test
     public void testViaPath() {
         Resources classPath = new Resources();
         classPath.addDirectoryFromFileSystem(new File("build/classes/java/main/"));
-        List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.model");
+        List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.util");
         AtomicInteger counter = new AtomicInteger();
         expansions.forEach(ss -> {
             counter.getAndIncrement();
             LOGGER.info("expand to {}", Arrays.toString(ss));
         });
-        assertTrue(50 < counter.get());
+        LOGGER.info("Have {}", counter.get());
+        assertTrue(15 <= counter.get());
     }
 
     @Test
