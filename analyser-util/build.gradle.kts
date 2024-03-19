@@ -1,6 +1,6 @@
 plugins {
-    java
-    id("maven-publish")
+    `java-library`
+    `maven-publish`
 }
 
 java {
@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-    implementation(libs.e2immuSupport)
+    api(libs.e2immuSupport)
     implementation(libs.slf4jApi)
 
     testImplementation(libs.junitJupiterApi)

@@ -13,8 +13,8 @@
  */
 
 plugins {
-    java
-    id("maven-publish")
+    `java-library`
+    `maven-publish`
 }
 
 
@@ -32,12 +32,12 @@ tasks.test {
 }
 
 dependencies {
-    implementation (libs.slf4jApi)
-    implementation (libs.jgraphtCore)
-    implementation (libs.jgraphtIO)
+    api(libs.jgraphtCore)
+    implementation(libs.slf4jApi)
+    implementation(libs.jgraphtIO)
 
-    testImplementation (libs.junitJupiterApi)
-    testRuntimeOnly (libs.junitJupiterEngine)
+    testImplementation(libs.junitJupiterApi)
+    testRuntimeOnly(libs.junitJupiterEngine)
     testImplementation(libs.logbackClassic)
 }
 

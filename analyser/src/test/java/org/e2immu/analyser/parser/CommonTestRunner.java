@@ -91,6 +91,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                         : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/classic")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser/ast");
         extraClassPath.forEach(inputConfigurationBuilder::addClassPath);
@@ -132,6 +133,7 @@ public abstract class CommonTestRunner extends VisitorTestSupport {
                 .addClassPath("../graph/build/classes/java/main")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/classic")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser/ast");
 
