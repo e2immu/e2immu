@@ -123,24 +123,27 @@ public class Resources {
 
     /**
      * @param prefix adds the jars that contain the package denoted by the prefix
-     * @return the number of entries added to the classpath
+     * @return a map containing the number of entries per jar
      * @throws IOException when the jar handling fails somehow
      */
-    public int addJarFromClassPath(String prefix) throws IOException {
+    public Map<String, Integer> addJarFromClassPath(String prefix) throws IOException {
         Enumeration<URL> roots = getClass().getClassLoader().getResources(prefix);
-        int entries = 0;
+        Map<String, Integer> result = new HashMap<>();
         while (roots.hasMoreElements()) {
             URL url = roots.nextElement();
             String urlString = url.toString();
-            LOGGER.debug("Found classpath root {} for {}", url, prefix);
-            URL strippedURL = new URL(urlString.substring(0, urlString.length() - prefix.length()));
+            int bangSlash = urlString.indexOf("!/");
+            String strippedUrlString = urlString.substring(0, bangSlash + 2);
+            URL strippedURL = new URL(strippedUrlString);
             LOGGER.debug("Stripped URL is {}", strippedURL);
             if ("jar".equals(strippedURL.getProtocol())) {
-                entries += addJar(strippedURL);
-            } else
+                int entries = addJar(strippedURL);
+                result.put(strippedUrlString, entries);
+            } else {
                 throw new MalformedURLException("Protocol not implemented in URL: " + strippedURL.getProtocol());
+            }
         }
-        return entries;
+        return result;
     }
 
     private static final Pattern JAR_FILE = Pattern.compile("/([^/]+\\.jar)");
@@ -184,6 +187,20 @@ public class Resources {
             throw new IOException("Got " + errors.get() + " errors while adding from jar to classpath");
         }
         return entries.get();
+    }
+
+    public static URL constructJModURL(String part, String altJREDirectory) throws MalformedURLException {
+        if (part.startsWith("/")) {
+            return new URL("jar:file:" + part + "!/");
+        }
+        String jre;
+        if (altJREDirectory == null) {
+            jre = System.getProperty("java.home");
+        } else {
+            jre = altJREDirectory;
+        }
+        if (!jre.endsWith("/")) jre = jre + "/";
+        return new URL("jar:file:" + jre + part + "!/");
     }
 
     /**
@@ -285,4 +302,24 @@ public class Resources {
         LOGGER.debug("Cannot find {} with extension {} in classpath", fqn, extension);
         return null;
     }
+
+    public static String pathToFqn(String path) {
+        String stripDotClass = StringUtil.stripDotClass(path);
+        if (stripDotClass.endsWith("$")) {
+            // scala
+            return stripDotClass.substring(0, stripDotClass.length() - 1).replaceAll("[/$]", ".") + ".object";
+        }
+        if (stripDotClass.endsWith("$class")) {
+            // scala; keep it as is, ending in .class
+            return stripDotClass.replaceAll("[/$]", ".");
+        }
+        int anon;
+        if ((anon = stripDotClass.indexOf("$$anonfun")) > 0) {
+            // scala
+            String random = Integer.toString(Math.abs(stripDotClass.hashCode()));
+            return stripDotClass.substring(0, anon).replaceAll("[/$]", ".") + "." + random;
+        }
+        return stripDotClass.replaceAll("[/$]", ".");
+    }
+
 }

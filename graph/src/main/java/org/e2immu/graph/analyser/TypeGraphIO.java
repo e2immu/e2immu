@@ -63,6 +63,10 @@ public class TypeGraphIO {
             this.weight = weight;
         }
 
+        public String getLabel() {
+            return label;
+        }
+
         @Override
         public String toString() {
             return label + " (" + weight + ")";

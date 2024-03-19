@@ -26,7 +26,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.EventuallyFinalExtension;
+import org.e2immu.analyser.util2.EventuallyFinalExtension;
 import org.e2immu.support.EventuallyFinal;
 import org.e2immu.support.FlipSwitch;
 import org.e2immu.support.SetOnceMap;
@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.EventuallyFinalExtension.setFinalAllowEquals;
+import static org.e2immu.analyser.util2.EventuallyFinalExtension.setFinalAllowEquals;
 
 public class StateDataImpl implements StateData {
     private static final Logger LOGGER = LoggerFactory.getLogger(StateDataImpl.class);

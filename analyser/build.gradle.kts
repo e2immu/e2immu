@@ -14,17 +14,17 @@
 
 plugins {
     java
-    id("maven-publish")
+    `maven-publish`
 }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-    withSourcesJar()
 }
 
 tasks.jar {
-    from(sourceSets.main.get().output)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.get().allSource)
 }
 
 tasks.test {
@@ -37,9 +37,21 @@ tasks.test {
     //systemProperties.put("junit.jupiter.conditions.deactivate","*")
 }
 
+repositories {
+    mavenLocal()
+    maven {
+        url = uri(project.findProperty("publishUri") as String)
+        credentials {
+            username = project.findProperty("publishUsername") as String
+            password = project.findProperty("publishPassword") as String
+        }
+    }
+    mavenCentral()
+}
+
 dependencies {
     implementation(project(":graph"))
-
+    implementation(project(":analyser-util"))
     implementation (libs.e2immuSupport)
     implementation (libs.logbackClassic)
     implementation (libs.javaParser)
@@ -55,9 +67,21 @@ dependencies {
 }
 
 publishing {
+    repositories {
+        maven {
+            url = uri(project.findProperty("publishUri") as String)
+            credentials {
+                username = project.findProperty("publishUsername") as String
+                password = project.findProperty("publishPassword") as String
+            }
+        }
+    }
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
+
+            artifactId = "analyser"
+            groupId = "org.e2immu"
 
             pom {
                 name = "e2immu analyser"

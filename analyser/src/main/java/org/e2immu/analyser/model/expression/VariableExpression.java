@@ -32,7 +32,7 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.graph.analyser.PackedInt;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.support.Either;
 
@@ -686,6 +686,14 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         if (predicate.test(this)) {
             variable.visit(predicate);
         }
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if(visitor.beforeExpression(this)) {
+            variable.visit(visitor);
+        }
+        visitor.afterExpression(this);
     }
 
     @Override

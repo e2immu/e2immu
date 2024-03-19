@@ -26,6 +26,7 @@ java {
 
 dependencies {
     implementation(libs.e2immuSupport)
+    implementation(project(":analyser-util"))
     implementation(project(":analyser"))
     implementation(libs.httpClient)
     implementation(libs.httpCore)
@@ -42,6 +43,15 @@ tasks.test {
 }
 
 publishing {
+    repositories {
+        maven {
+            url = uri(project.findProperty("publishUri") as String)
+            credentials {
+                username = project.findProperty("publishUsername") as String
+                password = project.findProperty("publishPassword") as String
+            }
+        }
+    }
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])

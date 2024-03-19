@@ -17,7 +17,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.graph.analyser.PackedInt;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
@@ -60,6 +60,8 @@ public interface Element {
             if (clazz.isAssignableFrom(element.getClass())) consumer.accept((T) element);
         });
     }
+
+    void visit(Visitor visitor);
 
     @NotNull(content = true)
     default <E extends Element> List<E> collect(Class<E> clazz) {

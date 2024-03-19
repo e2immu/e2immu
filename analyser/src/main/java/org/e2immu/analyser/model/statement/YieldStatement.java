@@ -88,6 +88,14 @@ public class YieldStatement extends StatementWithExpression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            structure.expression().visit(visitor);
+        }
+        visitor.afterStatement(this);
+    }
+
+    @Override
     public int getComplexity() {
         return 1 + expression.getComplexity();
     }

@@ -33,7 +33,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.support.Either;
@@ -156,6 +156,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            object.visit(visitor);
+            parameterExpressions.forEach(p -> p.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
 
     @Override
     public boolean equals(Object o) {

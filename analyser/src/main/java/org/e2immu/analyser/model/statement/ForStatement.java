@@ -27,6 +27,7 @@ import org.e2immu.analyser.util.ListUtil;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ForStatement extends LoopStatement {
@@ -135,5 +136,25 @@ public class ForStatement extends LoopStatement {
                 List.of(expression),
                 structure.updaters(),
                 List.of(structure.block()));
+    }
+
+    @Override
+    public void visit(Predicate<Element> predicate) {
+        if (predicate.test(this)) {
+            subElements().forEach(se -> se.visit(predicate));
+        }
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            structure.initialisers().forEach(e -> e.visit(visitor));
+            expression.visit(visitor);
+            structure.updaters().forEach(e -> e.visit(visitor));
+            visitor.startSubBlock(0);
+            structure.block().visit(visitor);
+            visitor.endSubBlock(0);
+        }
+        visitor.afterStatement(this);
     }
 }

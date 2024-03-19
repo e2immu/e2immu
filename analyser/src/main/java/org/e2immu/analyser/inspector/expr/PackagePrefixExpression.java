@@ -90,4 +90,9 @@ final class PackagePrefixExpression extends BaseExpression implements Expression
     public void visit(Predicate<Element> predicate) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        throw new UnsupportedOperationException();
+    }
 }

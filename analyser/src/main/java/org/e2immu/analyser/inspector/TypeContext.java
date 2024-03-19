@@ -90,7 +90,12 @@ public class TypeContext implements TypeAndInspectionProvider {
      */
     public NamedType get(@NotNull String name, boolean complain) {
         NamedType simple = getSimpleName(name);
-        if (simple != null) return simple;
+        if (simple != null) {
+            if(simple instanceof TypeInfo typeInfo) {
+                typeMap.getTypeInspection(typeInfo);
+            }
+            return simple;
+        }
 
         int dot = name.lastIndexOf('.');
         if (dot >= 0) {
@@ -131,7 +136,7 @@ public class TypeContext implements TypeAndInspectionProvider {
         // Same package, and * imports (in that order!)
         if (parentContext != null) {
             NamedType fromParent = parentContext.getSimpleName(name);
-            if(fromParent != null) {
+            if (fromParent != null) {
                 return fromParent;
             }
         }
@@ -174,17 +179,24 @@ public class TypeContext implements TypeAndInspectionProvider {
     }
 
     /**
-     * Look up a type by FQN. Actual loading using loadType takes place when a type is mentioned by FQN, bypassing
-     * the more common import system.
+     * Look up a type by FQN. Ensure that the type has been inspected.
      *
      * @param fullyQualifiedName the fully qualified name, such as java.lang.String
      * @return the type
      */
     public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {
+        TypeInfo typeInfo = internalGetFullyQualified(fullyQualifiedName, complain);
+        if (typeInfo != null) {
+            typeMap.getTypeInspection(typeInfo);
+        }
+        return typeInfo;
+    }
+
+    private TypeInfo internalGetFullyQualified(String fullyQualifiedName, boolean complain) {
         TypeInfo typeInfo = typeMap.get(fullyQualifiedName);
         if (typeInfo == null) {
             // see InspectionGaps_9: we don't have the type, but we do have an import of its enclosing type
-            TypeInfo imported = importMap.isImported(fullyQualifiedName);
+            TypeInfo imported = importMap.isImported(this, fullyQualifiedName);
             if (imported != null) {
                 return imported;
             }
@@ -407,7 +419,9 @@ public class TypeContext implements TypeAndInspectionProvider {
                     int score = distance
                             // add a penalty for shallowly analysed, non-public methods
                             // See the java.lang.StringBuilder AbstractStringBuilder CharSequence length() problem
-                            + (shallowAnalysis && !m.isPubliclyAccessible(this) ? 100 : 0);
+                            + (shallowAnalysis && !m.isPubliclyAccessible(this) ? 100 : 0)
+                            // see e.g. MethodCall_70, where we must choose between a static and instance method
+                            + (m.getMethodInfo().isStatic() && scopeNature == Scope.ScopeNature.INSTANCE ? 100 : 0);
                     result.merge(mt, score, Integer::min);
                 });
 

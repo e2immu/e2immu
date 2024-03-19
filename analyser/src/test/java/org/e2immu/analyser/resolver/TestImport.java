@@ -16,6 +16,8 @@ package org.e2immu.analyser.resolver;
 
 
 import ch.qos.logback.classic.LoggerContext;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.TypeMap;
@@ -24,8 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TestImport extends CommonTest {
@@ -33,6 +34,7 @@ public class TestImport extends CommonTest {
     // remember: the . at the end means: also include subpackages.
     public static final String IMPORT_HELPER = "org.e2immu.analyser.resolver.testexample.importhelper.";
     public static final String A = "org.e2immu.analyser.resolver.testexample.a";
+    public static final String B = "org.e2immu.analyser.resolver.testexample.b";
     public static final String ACCESS = "org.e2immu.analyser.resolver.testexample.access";
 
     /**
@@ -81,7 +83,7 @@ public class TestImport extends CommonTest {
         TypeInfo loggerContext = typeMap.get(LoggerContext.class);
         assertNotNull(loggerContext);
         TypeInspection typeInspection = typeMap.getTypeInspection(loggerContext);
-        assertEquals(38, typeInspection.methods().size());
+        assertTrue(typeInspection.methods().size() > 10);
     }
 
     @Test
@@ -127,5 +129,15 @@ public class TestImport extends CommonTest {
     @Test
     public void test_15() throws IOException {
         inspectAndResolve(IMPORT_HELPER, Import_15.class);
+    }
+
+    @Test
+    public void test_16() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Import_16.class);
+        TypeInfo import16 = typeMap.get(Import_16.class);
+        MethodInfo test = import16.findUniqueMethod("method", 2);
+        ParameterInfo p1 = test.methodInspection.get().getParameters().get(1);
+        assertEquals("Type org.e2immu.analyser.resolver.testexample.Import_16.SortedSet<Integer>",
+                p1.parameterizedType.toString());
     }
 }

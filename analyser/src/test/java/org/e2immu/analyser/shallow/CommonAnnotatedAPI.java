@@ -69,10 +69,12 @@ public abstract class CommonAnnotatedAPI {
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit/jupiter/api")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/classic")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/github/javaparser/ast");
         AnnotatedAPIConfiguration.Builder annotatedAPIConfiguration = new AnnotatedAPIConfiguration.Builder()
                 .addAnnotatedAPISourceDirs(DEFAULT_ANNOTATED_API_DIRS);
         Configuration configuration = new Configuration.Builder()
+                .addDebugLogTargets(LogTarget.PARSER, LogTarget.COMPUTING_ANALYSERS)
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .setAnnotatedAPIConfiguration(annotatedAPIConfiguration.build())
                 .build();

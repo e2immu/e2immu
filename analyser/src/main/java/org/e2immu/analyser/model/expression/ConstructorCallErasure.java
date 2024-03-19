@@ -43,6 +43,12 @@ public final class ConstructorCallErasure extends BaseExpression implements Eras
         throw new UnsupportedOperationException();
     }
 
+
+    @Override
+    public void visit(Visitor visitor) {
+       throw new UnsupportedOperationException();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

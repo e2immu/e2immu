@@ -101,4 +101,19 @@ public class SwitchStatementNewStyle extends StatementWithExpression implements 
             switchEntries.forEach(switchEntry -> switchEntry.visit(predicate));
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            expression.visit(visitor);
+            int i = 0;
+            for (SwitchEntry switchEntry : switchEntries) {
+                visitor.startSubBlock(i);
+                switchEntry.visit(visitor);
+                visitor.endSubBlock(i);
+                i++;
+            }
+        }
+        visitor.afterStatement(this);
+    }
 }

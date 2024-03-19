@@ -19,7 +19,6 @@ import org.e2immu.analyser.config.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -28,6 +27,8 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static final String PATH_SEPARATOR = System.getProperty("path.separator");
+    public static final String FILE_SEPARATOR = System.getProperty("file.separator");
+
     public static final String COMMA = ",";
     public static final String COMMA_ALLOW_SPACE = ",\\s*";
 
@@ -51,12 +52,16 @@ public class Main {
     public static final String WRITE_ANNOTATED_API_PACKAGES = "write-annotated-api-packages";
 
     public static final String SOURCE_PACKAGES = "source-packages";
+    public static final String TEST_SOURCE_PACKAGES = "test-source-packages";
     public static final String JRE = "jre";
-    public static final String CLASSPATH = "classpath";
-    public static final String TEST_CLASSPATH = "test-classpath"; // TODO available in Gradle plugin
+    public static final String CLASSPATH = "classpath"; // ~ compileClassPath in Gradle
+    public static final String RUNTIME_CLASSPATH = "runtime-classpath";
+    public static final String TEST_CLASSPATH = "test-classpath";
+    public static final String TESTS_RUNTIME_CLASSPATH = "test-runtime-classpath";
     public static final String SOURCE = "source";
-    public static final String TEST_SOURCE = "test-source"; // TODO available in Gradle plugin
+    public static final String TEST_SOURCE = "test-source";
     public static final String SOURCE_ENCODING = "source-encoding";
+    public static final String DEPENDENCIES = "dependencies";
 
     public static final String HELP = "help";
 
@@ -106,11 +111,11 @@ public class Main {
         Options options = createOptions();
         CommandLine cmd = commandLineParser.parse(options, args);
         String action = cmd.getOptionValue(ACTION);
+        Configuration configuration = parseConfiguration(cmd, options);
         if (action != null) {
             String[] actionParameters = cmd.getOptionValues(ACTION_PARAMETER);
-            return Action.execAction(action, actionParameters);
+            return ExecuteAction.run(action, actionParameters, configuration);
         }
-        Configuration configuration = parseConfiguration(cmd, options);
         configuration.initializeLoggers();
         // the following will be output if the CONFIGURATION logger is active!
         LOGGER.debug("Configuration:\n{}", configuration);
@@ -131,20 +136,9 @@ public class Main {
             System.exit(EXIT_OK);
         }
         Configuration.Builder builder = new Configuration.Builder();
-        InputConfiguration.Builder inputBuilder = new InputConfiguration.Builder();
-        String[] sources = cmd.getOptionValues(SOURCE);
-        splitAndAdd(sources, PATH_SEPARATOR, inputBuilder::addSources);
-        String[] classPaths = cmd.getOptionValues(CLASSPATH);
-        splitAndAdd(classPaths, PATH_SEPARATOR, inputBuilder::addClassPath);
 
-        String alternativeJREDirectory = cmd.getOptionValue(JRE);
-        inputBuilder.setAlternativeJREDirectory(alternativeJREDirectory);
-        String sourceEncoding = cmd.getOptionValue(SOURCE_ENCODING);
-        inputBuilder.setSourceEncoding(sourceEncoding);
-
-        String[] restrictSourceToPackages = cmd.getOptionValues(SOURCE_PACKAGES);
-        splitAndAdd(restrictSourceToPackages, COMMA_ALLOW_SPACE, inputBuilder::addRestrictSourceToPackages);
-        builder.setInputConfiguration(inputBuilder.build());
+        InputConfiguration inputConfiguration = parseInputConfiguration(cmd);
+        builder.setInputConfiguration(inputConfiguration);
 
         InspectorConfiguration.Builder inspectorBuilder = new InspectorConfiguration.Builder();
         String graphDirectory = cmd.getOptionValue(GRAPH_DIRECTORY);
@@ -201,6 +195,48 @@ public class Main {
 
     }
 
+    private static InputConfiguration parseInputConfiguration(CommandLine cmd) {
+        InputConfiguration.Builder inputBuilder = new InputConfiguration.Builder();
+
+        String[] sources = cmd.getOptionValues(SOURCE);
+        splitAndAdd(sources, PATH_SEPARATOR, inputBuilder::addSources);
+
+        String[] testSources = cmd.getOptionValues(TEST_SOURCE);
+        splitAndAdd(testSources, PATH_SEPARATOR, inputBuilder::addTestSources);
+
+        String[] classPaths = cmd.getOptionValues(CLASSPATH);
+        splitAndAdd(classPaths, PATH_SEPARATOR, inputBuilder::addClassPath);
+
+        /* currently not available on cmd line, but only read via the Gradle plugin.
+        If you activate them, also make new options in createOptions()
+
+        String[] runtimeClassPaths = cmd.getOptionValues(RUNTIME_CLASSPATH);
+        splitAndAdd(runtimeClassPaths, PATH_SEPARATOR, inputBuilder::addRuntimeClassPath);
+
+        String[] testClassPaths = cmd.getOptionValues(TEST_CLASSPATH);
+        splitAndAdd(testClassPaths, PATH_SEPARATOR, inputBuilder::addTestClassPath);
+
+        String[] testRuntimeClassPaths = cmd.getOptionValues(TESTS_RUNTIME_CLASSPATH);
+        splitAndAdd(testRuntimeClassPaths, PATH_SEPARATOR, inputBuilder::addTestRuntimeClassPath);
+
+        String[] dependencies = cmd.getOptionValues(DEPENDENCIES);
+        splitAndAdd(dependencies, COMMA, inputBuilder::addDependencies);
+        */
+
+        String alternativeJREDirectory = cmd.getOptionValue(JRE);
+        inputBuilder.setAlternativeJREDirectory(alternativeJREDirectory);
+
+        String sourceEncoding = cmd.getOptionValue(SOURCE_ENCODING);
+        inputBuilder.setSourceEncoding(sourceEncoding);
+
+        String[] restrictSourceToPackages = cmd.getOptionValues(SOURCE_PACKAGES);
+        splitAndAdd(restrictSourceToPackages, COMMA_ALLOW_SPACE, inputBuilder::addRestrictSourceToPackages);
+
+        String[] restrictTestSourceToPackages = cmd.getOptionValues(TEST_SOURCE_PACKAGES);
+        splitAndAdd(restrictTestSourceToPackages, COMMA_ALLOW_SPACE, inputBuilder::addRestrictTestSourceToPackages);
+        return inputBuilder.build();
+    }
+
     private static void splitAndAdd(String[] strings, String separator, Consumer<String> adder) {
         if (strings != null) {
             for (String string : strings) {
@@ -225,6 +261,11 @@ public class Main {
                         PATH_SEPARATOR + "' to separate directories, " +
                         "or use this options multiple times. Default, when this option is absent, is '"
                         + InputConfiguration.DEFAULT_SOURCE_DIRS + "'.").build());
+        options.addOption(Option.builder().longOpt(TEST_SOURCE).hasArg().argName("DIRS")
+                .desc("Add a directory where the test source files can be found. Use the Java path separator '" +
+                        PATH_SEPARATOR + "' to separate directories, " +
+                        "or use this options multiple times. Default, when this option is absent, is '"
+                        + InputConfiguration.DEFAULT_SOURCE_DIRS + "'.").build());
         options.addOption(Option.builder("aas").longOpt(ANNOTATED_API_SOURCE).hasArg().argName("DIRS")
                 .desc("Add a directory where the Annotated API source files can be found. Use the Java path separator '" +
                         PATH_SEPARATOR + "' to separate directories, " +
@@ -233,7 +274,9 @@ public class Main {
                 .desc("Add classpath components, separated by the Java path separator '" + PATH_SEPARATOR +
                         "'. Default, when this option is absent, is '"
                         + Arrays.toString(InputConfiguration.DEFAULT_CLASSPATH) + "'.").build());
-
+        options.addOption(Option.builder("cp").longOpt(TEST_CLASSPATH).hasArg().argName("CLASSPATH")
+                .desc("Add test classpath components, separated by the Java path separator '" + PATH_SEPARATOR +
+                        "'. All classpath components are already available. Default empty.").build());
         options.addOption(Option.builder().longOpt(JRE).hasArg().argName("DIR")
                 .desc("Provide an alternative location for the Java Runtime Environment (JRE). " +
                         "If absent, the JRE from the analyser is used: '" + System.getProperty("java.home") + "'.").build());
@@ -241,6 +284,12 @@ public class Main {
                 .longOpt(SOURCE_PACKAGES)
                 .hasArg().argName("PATH")
                 .desc("Restrict the sources parsed to the paths" +
+                        " specified in the argument. Use ',' to separate paths, or use this option multiple times." +
+                        " Use a dot at the end of a package name to accept sub-packages.").build());
+        options.addOption(Option.builder()
+                .longOpt(TEST_SOURCE_PACKAGES)
+                .hasArg().argName("PATH")
+                .desc("Restrict the test sources parsed to the paths" +
                         " specified in the argument. Use ',' to separate paths, or use this option multiple times." +
                         " Use a dot at the end of a package name to accept sub-packages.").build());
 
@@ -381,8 +430,14 @@ public class Main {
         setStringProperty(analyserProperties, JRE, builder::setAlternativeJREDirectory);
         setStringProperty(analyserProperties, SOURCE_ENCODING, builder::setSourceEncoding);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, SOURCE, builder::addSources);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, TEST_SOURCE, builder::addTestSources);
         setSplitStringProperty(analyserProperties, PATH_SEPARATOR, CLASSPATH, builder::addClassPath);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, RUNTIME_CLASSPATH, builder::addRuntimeClassPath);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, TEST_CLASSPATH, builder::addTestClassPath);
+        setSplitStringProperty(analyserProperties, PATH_SEPARATOR, TESTS_RUNTIME_CLASSPATH, builder::addTestRuntimeClassPath);
+        setSplitStringProperty(analyserProperties, COMMA, DEPENDENCIES, builder::addDependencies);
         setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, SOURCE_PACKAGES, builder::addRestrictSourceToPackages);
+        setSplitStringProperty(analyserProperties, COMMA_ALLOW_SPACE, TEST_SOURCE_PACKAGES, builder::addRestrictTestSourceToPackages);
         return builder.build();
     }
 

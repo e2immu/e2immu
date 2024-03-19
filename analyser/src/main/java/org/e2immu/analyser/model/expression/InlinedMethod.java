@@ -223,6 +223,14 @@ public class InlinedMethod extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            expression.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public List<? extends Element> subElements() {
         return List.of(expression);
     }

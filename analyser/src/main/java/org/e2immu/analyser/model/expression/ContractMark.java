@@ -46,6 +46,11 @@ public final class ContractMark extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return fields.stream().findFirst().orElseThrow().type;
     }

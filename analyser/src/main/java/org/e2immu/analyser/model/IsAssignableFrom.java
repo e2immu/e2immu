@@ -56,6 +56,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     public static final int TYPE_BOUND = 5;
     public static final int IN_HIERARCHY = 10;
     private static final int UNBOUND_WILDCARD = 100;
+    private static final int ARRAY_PENALTY = 100;
 
     public enum Mode {
         INVARIANT, // everything has to be identical, there is no leeway with respect to hierarchy
@@ -86,7 +87,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
                 return IN_HIERARCHY * pathToJLO(from);
             }
         } else if (target.isJavaLangObject()) {
-            return IN_HIERARCHY * pathToJLO(from);
+            return IN_HIERARCHY * pathToJLO(from.copyWithoutArrays()) + (from.arrays * ARRAY_PENALTY);
         }
 
 
@@ -168,7 +169,7 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             return NOT_ASSIGNABLE;
         }
         if (target.arrays > 0 && from.arrays < target.arrays) {
-            return NOT_ASSIGNABLE;
+            return ARRAY_PENALTY * (target.arrays - from.arrays);
         }
 
         List<ParameterizedType> targetTypeBounds = target.typeParameter.getTypeBounds();
@@ -197,6 +198,10 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             if (fromTypeBounds.isEmpty()) {
                 return TYPE_BOUND;
             }
+            if (mode == Mode.INVARIANT && (isSelfReference(from) || isSelfReference(target))) {
+                // see TestAssignableFromGenerics2
+                return TYPE_BOUND;
+            }
             // we both have type bounds; we go for the best combination
             int best = NOT_ASSIGNABLE;
             for (ParameterizedType myBound : targetTypeBounds) {
@@ -211,6 +216,15 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
             return best == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : best + TYPE_BOUND;
         }
         return NOT_ASSIGNABLE;
+    }
+
+    private boolean isSelfReference(ParameterizedType pt) {
+        TypeParameter tp = pt.typeParameter;
+        if (tp == null) return false;
+        if (tp.getOwner().isRight()) return false;
+        TypeInspection ti = inspectionProvider.getTypeInspection(tp.getOwner().getLeft());
+        int i = tp.getIndex();
+        return ti.typeParameters().size() > i && ti.typeParameters().get(i).equals(tp);
     }
 
     private int sameNoNullTypeInfo(Mode mode) {
@@ -238,16 +252,17 @@ public record IsAssignableFrom(InspectionProvider inspectionProvider,
     }
 
     private int differentNonNullTypeInfo(Mode mode) {
-        if (from.isFunctionalInterface(inspectionProvider) && target.isFunctionalInterface(inspectionProvider)) {
-            // two functional interfaces, yet different TypeInfo objects
-            return functionalInterface(mode);
-        }
-        return switch (mode) {
+        int i = switch (mode) {
             case COVARIANT, COVARIANT_ERASURE -> hierarchy(target, from, mode);
             case CONTRAVARIANT -> hierarchy(from, target, Mode.COVARIANT);
             case INVARIANT -> NOT_ASSIGNABLE;
             case ANY -> throw new UnsupportedOperationException("?");
         };
+        if (i < 0 && from.isFunctionalInterface(inspectionProvider) && target.isFunctionalInterface(inspectionProvider)) {
+            // two functional interfaces, yet different TypeInfo objects
+            return functionalInterface(mode);
+        }
+        return i;
     }
 
     /*

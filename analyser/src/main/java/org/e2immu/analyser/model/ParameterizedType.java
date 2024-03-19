@@ -22,7 +22,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.PrimitivesWithoutParameterizedType;
 import org.e2immu.graph.analyser.PackedInt;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
@@ -95,6 +95,9 @@ public class ParameterizedType {
         this.arrays = 0;
         this.wildCard = wildCard;
         if (wildCard != WildCard.EXTENDS && wildCard != WildCard.SUPER) throw new UnsupportedOperationException();
+        if (WildCard.EXTENDS == wildCard && typeInfo.isJavaLangObject()) {
+            throw new UnsupportedOperationException("'?' rather than '? extends Object'");
+        }
     }
 
     // String, Function<R, ? super T>
@@ -340,8 +343,13 @@ public class ParameterizedType {
                 ParameterizedType pt = parameters.get(i);
                 if (pt != null && pt.isUnboundWildcard() && !parameter.typeParameter.getTypeBounds().isEmpty()) {
                     // replace '?' by '? extends X', with 'X' the first type bound, see TypeParameter_3
-                    recursive = new ParameterizedType(parameter.typeParameter.getTypeBounds().get(0).typeInfo,
-                            WildCard.EXTENDS);
+                    // but never do this for JLO (see e.g. issues described in MethodCall_73)
+                    TypeInfo bound = parameter.typeParameter.getTypeBounds().get(0).typeInfo;
+                    if (bound.isJavaLangObject()) {
+                        recursive = ParameterizedType.WILDCARD_PARAMETERIZED_TYPE;
+                    } else {
+                        recursive = new ParameterizedType(bound, WildCard.EXTENDS);
+                    }
                 } else {
                     recursive = pt;
                 }
@@ -931,6 +939,15 @@ public class ParameterizedType {
      */
     public ParameterizedType applyTranslation(PrimitivesWithoutParameterizedType primitives,
                                               Map<NamedType, ParameterizedType> translate) {
+        return applyTranslation(primitives, translate, 0);
+    }
+
+    private ParameterizedType applyTranslation(PrimitivesWithoutParameterizedType primitives,
+                                               Map<NamedType, ParameterizedType> translate,
+                                               int recursionDepth) {
+        if (recursionDepth > 20) {
+            throw new IllegalArgumentException("Reached recursion depth");
+        }
         if (translate.isEmpty()) return this;
         ParameterizedType pt = this;
         if (pt.isTypeParameter()) {
@@ -950,7 +967,9 @@ public class ParameterizedType {
         final ParameterizedType stablePt = pt;
         if (stablePt.parameters.isEmpty()) return stablePt;
         List<ParameterizedType> recursivelyMappedParameters = stablePt.parameters.stream()
-                .map(x -> x == stablePt || x == this ? stablePt : x.applyTranslation(primitives, translate))
+                .map(x -> x == stablePt || x == this
+                        ? stablePt
+                        : x.applyTranslation(primitives, translate, recursionDepth + 1))
                 .map(x -> x.ensureBoxed(primitives))
                 .collect(Collectors.toList());
         if (stablePt.typeInfo == null) {

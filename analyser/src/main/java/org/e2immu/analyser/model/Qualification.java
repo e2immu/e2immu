@@ -51,6 +51,10 @@ public interface Qualification {
     used to generate names of parameterized types
     */
     Qualification FULLY_QUALIFIED_NAME = typeInfo -> TypeName.Required.FQN;
+    /*
+    used for translation to OpenRewrite, com.foo.Bar$Bar2 instead of com.foo.Bar.Bar2
+     */
+    Qualification DOLLARIZED_FQN = typeInfo -> TypeName.Required.DOLLARIZED_FQN;
 
     default boolean useNumericTypeParameters() {
         return false;

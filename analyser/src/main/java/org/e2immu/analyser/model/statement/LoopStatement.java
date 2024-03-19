@@ -16,6 +16,7 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.Visitor;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -37,6 +38,17 @@ public abstract class LoopStatement extends StatementWithExpression {
             expression.visit(predicate);
             structure.block().visit(predicate);
         }
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            expression.visit(visitor);
+            visitor.startSubBlock(0);
+            structure.block().visit(visitor);
+            visitor.endSubBlock(0);
+        }
+        visitor.afterStatement(this);
     }
 
     /**

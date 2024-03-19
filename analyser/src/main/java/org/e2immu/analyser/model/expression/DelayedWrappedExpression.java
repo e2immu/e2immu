@@ -92,6 +92,12 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        visitor.beforeExpression(this);
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public String toString() {
         return msg();
     }

@@ -75,6 +75,14 @@ public class InstanceOf extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            expression.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         return getPropertyForPrimitiveResults(property);
     }

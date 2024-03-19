@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.model.Comment;
 import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Identifier;
+import org.e2immu.analyser.model.Visitor;
 
 import java.util.function.Predicate;
 
@@ -35,5 +36,11 @@ public abstract class BreakOrContinueStatement extends StatementWithStructure {
     @Override
     public void visit(Predicate<Element> predicate) {
         predicate.test(this);
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        visitor.beforeStatement(this);
+        visitor.afterStatement(this);
     }
 }

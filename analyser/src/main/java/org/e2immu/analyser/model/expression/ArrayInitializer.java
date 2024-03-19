@@ -207,6 +207,14 @@ public class ArrayInitializer extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+           multiExpression.stream().forEach(v -> v.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public boolean isConstant() {
         return multiExpression.stream().allMatch(Expression::isConstant);
     }

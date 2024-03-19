@@ -226,8 +226,23 @@ public class TestIsAssignableFromGenerics {
         assertNotNull(t.typeParameter);
         assertEquals("[org.e2immu.MyList2|null]", t.typeParameter.getOwner().toString());
 
-        assertFalse(tArray.isAssignableFrom(InspectionProvider.DEFAULT, t));
+        // possible, but with high penalty
+        assertTrue(tArray.isAssignableFrom(InspectionProvider.DEFAULT, t));
         assertTrue(t.isAssignableFrom(InspectionProvider.DEFAULT, tArray));
+    }
+
+    @Test
+    public void testUnboundAndTypeParam() {
+        // ? <- T, but T <- ? is not possible
+        // creating ? extends Object is not allowed
+        TypeParameter tp = myList1.typeInspection.get().typeParameters().get(0);
+        ParameterizedType t = new ParameterizedType(tp, 0, NONE);
+        assertEquals("Type param T", t.toString());
+        assertThrows(UnsupportedOperationException.class, () ->
+                new ParameterizedType(primitives.objectTypeInfo(), EXTENDS));
+
+        assertTrue(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE.isAssignableFrom(InspectionProvider.DEFAULT, t));
+        assertFalse(t.isAssignableFrom(InspectionProvider.DEFAULT, ParameterizedType.WILDCARD_PARAMETERIZED_TYPE));
     }
 
     @Test

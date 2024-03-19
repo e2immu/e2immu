@@ -274,9 +274,17 @@ public class Block extends StatementWithStructure {
         }
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            structure.statements().forEach(statement -> statement.visit(visitor));
+        }
+        visitor.afterStatement(this);
+    }
+
     /*
-    IMPORTANT: blocks must translate into blocks
-     */
+        IMPORTANT: blocks must translate into blocks
+         */
     @Override
     public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);

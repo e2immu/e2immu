@@ -19,6 +19,7 @@ import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.bytecode.asm.ByteCodeInspectorImpl;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
@@ -32,12 +33,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.InspectionState.INIT_JAVA_PARSER;
 
@@ -65,8 +64,9 @@ public record Input(Configuration configuration,
     public static final String JAR_WITH_PATH_PREFIX = "jar-on-classpath:";
 
     public static Input create(Configuration configuration) throws IOException {
-        Resources classPath = assemblePath(configuration, true, "Classpath",
-                configuration.inputConfiguration().classPathParts());
+        List<String> classPathAsList = classPathAsList(configuration.inputConfiguration());
+        LOGGER.info("Combined classpath and test classpath has {} entries", classPathAsList.size());
+        Resources classPath = assemblePath(configuration, true, "Classpath", classPathAsList);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder(classPath, configuration.parallel()));
@@ -86,9 +86,15 @@ public record Input(Configuration configuration,
                                    ByteCodeInspector byteCodeInspector) throws IOException {
         Resources sourcePath = assemblePath(configuration, false, "Source path",
                 configuration.inputConfiguration().sources());
+        Resources testSourcePath = assemblePath(configuration, false, "Test source path",
+                configuration.inputConfiguration().testSources());
         Trie<TypeInfo> sourceTypes = new Trie<>();
         Map<TypeInfo, URI> sourceURLs = computeSourceURLs(sourcePath, globalTypeContext,
                 configuration.inputConfiguration().restrictSourceToPackages(), sourceTypes, "source path");
+        Map<TypeInfo, URI> testSourceURLs = computeSourceURLs(testSourcePath, globalTypeContext,
+                configuration.inputConfiguration().restrictTestSourceToPackages(), sourceTypes, "test source path");
+        sourceURLs.putAll(testSourceURLs);
+        sourceTypes.freeze();
 
         Resources annotatedAPIsPath = assemblePath(configuration, false, "Annotated APIs path",
                 configuration.annotatedAPIConfiguration().annotatedAPISourceDirs());
@@ -96,20 +102,33 @@ public record Input(Configuration configuration,
         Map<TypeInfo, URI> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext,
                 configuration.annotatedAPIConfiguration().readAnnotatedAPIPackages(),
                 annotatedAPITypes, "annotated API path");
+        annotatedAPITypes.freeze();
 
-        return new Input(configuration, globalTypeContext, byteCodeInspector, annotatedAPIs, sourceURLs, sourceTypes,
-                annotatedAPITypes, classPath);
+        return new Input(configuration, globalTypeContext, byteCodeInspector, Map.copyOf(annotatedAPIs),
+                Map.copyOf(sourceURLs), sourceTypes, annotatedAPITypes, classPath);
     }
 
     /*
     Almost the same as create + createNext, but we keep the current global type context, the current primitives.
      */
     public Input copy(Configuration configuration) throws IOException {
-        Resources classPath = assemblePath(configuration, true, "Classpath",
-                configuration.inputConfiguration().classPathParts());
+        List<String> classPathAsList = classPathAsList(configuration.inputConfiguration());
+        Resources classPath = assemblePath(configuration, true, "Classpath", classPathAsList);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
         ByteCodeInspector byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationStore, globalTypeContext);
         return createNext(configuration, classPath, globalTypeContext, byteCodeInspector);
+    }
+
+    /*
+    TODO at some point, we may want to parameterize this: which types do we present to the analyser?
+     */
+    private static List<String> classPathAsList(InputConfiguration inputConfiguration) {
+        Stream<String> compileCp = inputConfiguration.classPathParts().stream();
+        Stream<String> runtimeCp = inputConfiguration.runtimeClassPathParts().stream();
+        Stream<String> testCompileCp = inputConfiguration.testClassPathParts().stream();
+        Stream<String> testRuntimeCp = inputConfiguration.testClassPathParts().stream();
+        return Stream.concat(Stream.concat(compileCp, runtimeCp), Stream.concat(testCompileCp, testRuntimeCp))
+                .distinct().toList();
     }
 
     private static Map<TypeInfo, URI> computeSourceURLs(Resources sourcePath,
@@ -140,7 +159,6 @@ public record Input(Configuration configuration,
             }
         });
         LOGGER.info("Found {} .java files in {}, skipped {}", sourceURLs.size(), what, ignored);
-        trie.freeze();
         return sourceURLs;
     }
 
@@ -149,7 +167,7 @@ public record Input(Configuration configuration,
         for (String packageString : restrictions) {
             if (packageString.endsWith(".")) {
                 if (packageName.startsWith(packageString) ||
-                        packageName.equals(packageString.substring(0, packageString.length() - 1))) return true;
+                    packageName.equals(packageString.substring(0, packageString.length() - 1))) return true;
             } else if (packageName.equals(packageString) || packageString.equals(packageName + "." + typeName))
                 return true;
         }
@@ -196,35 +214,28 @@ public record Input(Configuration configuration,
                                           List<String> parts) throws IOException {
         Resources resources = new Resources();
         if (isClassPath) {
-            int entriesAdded = resources.addJarFromClassPath("org/e2immu/annotation");
-            if (entriesAdded < 10) throw new RuntimeException("? expected at least 10 entries");
+            Map<String, Integer> entriesAdded = resources.addJarFromClassPath("org/e2immu/annotation");
+            if (entriesAdded.size() != 1 || entriesAdded.values().stream().findFirst().orElseThrow() < 10) {
+                throw new RuntimeException("? expected 1 jar, at least 10 entries");
+            }
         }
         for (String part : parts) {
             if (part.startsWith(JAR_WITH_PATH_PREFIX)) {
-                resources.addJarFromClassPath(part.substring(JAR_WITH_PATH_PREFIX.length()));
+                Map<String, Integer> entriesAdded = resources.addJarFromClassPath(part.substring(JAR_WITH_PATH_PREFIX.length()));
+                LOGGER.debug("Found {} jar(s) on classpath for {}", entriesAdded.size(), part);
+                entriesAdded.forEach((p, n) -> LOGGER.debug("  ... added {} entries for jar {}", n, p));
             } else if (part.endsWith(".jar")) {
                 try {
                     // "jar:file:build/libs/equivalent.jar!/"
                     URL url = new URL("jar:file:" + part + "!/");
-                    resources.addJar(url);
+                    int entries = resources.addJar(url);
+                    LOGGER.debug("Added {} entries for jar {}", entries, part);
                 } catch (IOException e) {
                     LOGGER.error("{} part '{}' ignored: IOException {}", msg, part, e.getMessage());
                 }
             } else if (part.endsWith(".jmod")) {
                 try {
-                    URL url;
-                    if (part.startsWith("/")) {
-                        url = new URL("jar:file:" + part + "!/");
-                    } else {
-                        String jre;
-                        if (configuration.inputConfiguration().alternativeJREDirectory() == null) {
-                            jre = System.getProperty("java.home");
-                        } else {
-                            jre = configuration.inputConfiguration().alternativeJREDirectory();
-                        }
-                        if (!jre.endsWith("/")) jre = jre + "/";
-                        url = new URL("jar:file:" + jre + part + "!/");
-                    }
+                    URL url = Resources.constructJModURL(part, configuration.inputConfiguration().alternativeJREDirectory());
                     int entries = resources.addJmod(url);
                     LOGGER.debug("Added {} entries for jmod {}", entries, part);
                 } catch (IOException e) {

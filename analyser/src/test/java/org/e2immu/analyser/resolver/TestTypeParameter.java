@@ -146,4 +146,9 @@ public class TestTypeParameter extends CommonTest {
     public void test_4() throws IOException {
         inspectAndResolve(TypeParameter_4.class);
     }
+
+    @Test
+    public void test_5() throws IOException {
+        inspectAndResolve(TypeParameter_5.class);
+    }
 }

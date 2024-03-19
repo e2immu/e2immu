@@ -109,6 +109,14 @@ public class ArrayLength extends BaseExpression implements Expression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            scope.visit(visitor);
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return primitives.intParameterizedType();
     }

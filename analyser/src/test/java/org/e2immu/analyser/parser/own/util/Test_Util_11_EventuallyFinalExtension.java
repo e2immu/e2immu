@@ -19,7 +19,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.util.EventuallyFinalExtension;
+import org.e2immu.analyser.util2.EventuallyFinalExtension;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.junit.jupiter.api.Test;
 

@@ -314,6 +314,12 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        visitor.beforeExpression(this);
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return parameterizedType;
     }

@@ -17,17 +17,16 @@ import java.util.stream.Collectors
 plugins {
     java
     application
-    id("maven-publish")
+    `maven-publish`
 }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-    withSourcesJar()
 }
 
 tasks.jar {
-    from(sourceSets.main.get().output)
+    from(sourceSets.main.get().allSource)
 }
 
 dependencies {

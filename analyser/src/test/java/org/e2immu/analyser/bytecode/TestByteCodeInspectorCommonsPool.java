@@ -41,7 +41,7 @@ public class TestByteCodeInspectorCommonsPool {
 
     private TypeMap parseFromJar(String path, Class<?>... classes) throws IOException, URISyntaxException {
         Resources resources = new Resources();
-        int entries = resources.addJarFromClassPath("org/apache/commons/pool");
+        int entries = resources.addJarFromClassPath("org/apache/commons/pool").values().stream().findFirst().orElseThrow();
         assertTrue(entries > 0);
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();

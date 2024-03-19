@@ -143,4 +143,22 @@ public class IfElseStatement extends StatementWithExpression {
             }
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            expression.visit(visitor);
+
+            visitor.startSubBlock(0);
+            structure.block().visit(visitor);
+            visitor.endSubBlock(0);
+
+            if (!elseBlock.isEmpty()) {
+                visitor.startSubBlock(1);
+                elseBlock.visit(visitor);
+                visitor.endSubBlock(1);
+            }
+        }
+        visitor.afterStatement(this);
+    }
 }

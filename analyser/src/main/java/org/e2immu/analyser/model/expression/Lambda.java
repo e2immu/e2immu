@@ -33,7 +33,7 @@ import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 
 import java.util.List;
 import java.util.Map;
@@ -177,7 +177,7 @@ public class Lambda extends BaseExpression implements Expression {
         throw new ExpressionComparator.InternalError();
     }
 
-    private Expression singleExpression() {
+    public Expression singleExpression() {
         if (block.structure.statements().size() != 1) return null;
         Statement statement = block.structure.statements().get(0);
         if (!(statement instanceof ReturnStatement returnStatement)) return null;
@@ -188,8 +188,27 @@ public class Lambda extends BaseExpression implements Expression {
     public void visit(Predicate<Element> predicate) {
         if (predicate.test(this)) {
             Expression single = singleExpression();
-            if (single != null) single.visit(predicate);
+            if (single != null) {
+                single.visit(predicate);
+            } else {
+                block.visit(predicate);
+            }
         }
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            Expression single = singleExpression();
+            if (single != null) {
+                single.visit(visitor);
+            } else {
+                visitor.startSubBlock(0);
+                block.visit(visitor);
+                visitor.endSubBlock(0);
+            }
+        }
+        visitor.afterExpression(this);
     }
 
     // this is a functional interface

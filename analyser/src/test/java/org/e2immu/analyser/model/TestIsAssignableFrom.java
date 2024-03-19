@@ -203,6 +203,20 @@ public class TestIsAssignableFrom {
         assertFalse(stringArray2Pt.isAssignableFrom(typeContext, objectArrayPt));
     }
 
+    @Test
+    public void testArray3() {
+        // both possible, but
+        // Object <- String[]   should be higher
+        // Object[] <- String[] should be lower
+        ParameterizedType stringArrayPt = new ParameterizedType(typeContext.typeMap.get(JAVA_LANG_STRING), 1);
+        ParameterizedType objectArrayPt = new ParameterizedType(typeContext.typeMap.get(JAVA_LANG_OBJECT), 1);
+        int oFromString1 = new IsAssignableFrom(typeContext, primitives.objectParameterizedType(), stringArrayPt).execute(false, IsAssignableFrom.Mode.COVARIANT);
+        assertTrue(oFromString1 > 0);
+        int o1FromString1 = new IsAssignableFrom(typeContext, objectArrayPt, stringArrayPt).execute(false, IsAssignableFrom.Mode.COVARIANT);
+        assertTrue(o1FromString1 > 0);
+        assertTrue(o1FromString1 < oFromString1, "Have " + o1FromString1 + " and " + oFromString1);
+    }
+
     // String <- null should be allowed, but int <- null should fail
     @Test
     public void testNull() {

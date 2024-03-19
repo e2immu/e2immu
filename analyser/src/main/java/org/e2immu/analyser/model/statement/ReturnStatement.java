@@ -94,4 +94,12 @@ public class ReturnStatement extends StatementWithExpression {
             expression.visit(predicate);
         }
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            structure.expression().visit(visitor);
+        }
+        visitor.afterStatement(this);
+    }
 }

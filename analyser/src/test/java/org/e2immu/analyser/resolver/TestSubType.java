@@ -16,17 +16,20 @@ package org.e2immu.analyser.resolver;
 
 
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.resolver.testexample.SubType_0;
-import org.e2immu.analyser.resolver.testexample.SubType_1;
+import org.e2immu.analyser.resolver.testexample.*;
 import org.e2immu.analyser.resolver.testexample.importhelper.SubType_2;
+import org.e2immu.analyser.resolver.testexample.importhelper.SubType_3Helper;
+import org.e2immu.analyser.resolver.testexample.importhelper.SubType_4Helper;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -85,4 +88,51 @@ public class TestSubType extends CommonTest {
 
     }
 
+    // everything in one source file
+    @Test
+    public void test3() throws IOException {
+        inspectAndResolve(SubType_3.class);
+    }
+
+    // with an import
+    @Test
+    public void test3B() throws IOException {
+        inspectAndResolve(TestImport.IMPORT_HELPER, SubType_3B.class);
+    }
+
+    // with a fully qualified name
+    @Test
+    public void test3C() throws IOException {
+        TypeMap typeMap = inspectAndResolve(TestImport.IMPORT_HELPER, SubType_3C.class);
+        TypeInfo st3c = typeMap.get(SubType_3C.class);
+        TypeInfo st3cPp = st3c.typeInspection.get().subTypes().stream()
+                .filter(st -> "PP".equals(st.simpleName)).findFirst().orElseThrow();
+        List<ParameterizedType> interfaces = st3cPp.typeInspection.get().interfacesImplemented();
+        assertEquals("[Type org.e2immu.analyser.resolver.testexample.importhelper.SubType_3Helper.PP]",
+                interfaces.toString());
+        ParameterizedType theInterface = interfaces.get(0);
+        assertNotNull(theInterface.typeInfo);
+        // PP in SubType_3Helper is a subtype
+        assertTrue(theInterface.typeInfo.packageNameOrEnclosingType.isRight());
+        assertEquals("SubType_3Helper", theInterface.typeInfo.packageNameOrEnclosingType.getRight().simpleName);
+
+        TypeInfo helper = typeMap.get(SubType_3Helper.class);
+        TypeInfo helperPp = helper.typeInspection.get().subTypes().stream().filter(st -> "PP".equals(st.simpleName))
+                .findFirst().orElseThrow();
+        assertSame(theInterface.typeInfo, helperPp);
+        ParameterizedType helperPpPt = helperPp.asParameterizedType(typeMap);
+        ParameterizedType st3cPpPt = st3cPp.asParameterizedType(typeMap);
+        assertTrue(helperPpPt.isAssignableFrom(typeMap, st3cPpPt)); // parent <- child
+        assertFalse(st3cPpPt.isAssignableFrom(typeMap, helperPpPt));
+    }
+
+    @Test
+    public void test4() throws IOException {
+        TypeMap typeMap =inspectAndResolve(TestImport.IMPORT_HELPER, SubType_4.class);
+        TypeInfo d = typeMap.get(SubType_4Helper.D.class);
+        ParameterizedType dPt = d.asParameterizedType(typeMap);
+        TypeInfo st4 = typeMap.get(SubType_4.class);
+        MethodInfo createD = st4.findUniqueMethod("createD", 1);
+        assertEquals(dPt, createD.returnType());
+    }
 }

@@ -166,6 +166,15 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         indexExpression.visit(predicate);
     }
 
+    @Override
+    public void visit(Visitor visitor) {
+        if(visitor.beforeVariable(this)) {
+            arrayExpression.visit(visitor);
+            indexExpression.visit(visitor);
+        }
+        visitor.afterVariable(this);
+    }
+
     public Variable arrayBaseVariable() {
         if (arrayVariable instanceof DependentVariable dv) return dv.arrayBaseVariable();
         return arrayVariable;

@@ -87,7 +87,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
         TypeInfo methodType = mc.methodInspection.getMethodInfo().typeInfo;
         TypeInfo scopeType = scope.type().bestTypeInfo(typeContext);
         TypeParameterMap merged;
-        if (scopeType != null && !methodType.equals(scope.type().typeInfo)) {
+        if (scopeType != null && !methodType.equals(scopeType)) {
             // method is defined in a super-type, so we need an additional translation
             ParameterizedType superType = methodType.asParameterizedType(typeContext);
             Map<NamedType, ParameterizedType> sm = scopeType.mapInTermsOfParametersOfSuperType(typeContext, superType);
@@ -138,7 +138,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
             boolean scopeIsThis = scope.expression() instanceof VariableExpression ve && ve.variable() instanceof This;
             Expression newScope = scope.ensureExplicit(candidate.method.methodInspection,
                     Identifier.from(methodCallExpr), typeContext, scopeIsThis, expressionContext);
-            ParameterizedType returnType = candidate.returnType(typeContext, expressionContext.primaryType());
+            ParameterizedType returnType = candidate.returnType(typeContext, expressionContext.primaryType(), extra);
             LOGGER.debug("Concrete return type of {} is {}", errorInfo.methodName, returnType.detailedString(typeContext));
 
             return new MethodCall(Identifier.from(methodCallExpr),
@@ -207,13 +207,16 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                      Map<NamedType, ParameterizedType> mapExpansion,
                      MethodTypeParameterMap method) {
 
-        ParameterizedType returnType(InspectionProvider inspectionProvider, TypeInfo primaryType) {
+        ParameterizedType returnType(InspectionProvider inspectionProvider,
+                                     TypeInfo primaryType,
+                                     TypeParameterMap extra) {
             Primitives primitives = inspectionProvider.getPrimitives();
             ParameterizedType pt = mapExpansion.isEmpty()
                     ? method.getConcreteReturnType(primitives)
                     : method.expand(inspectionProvider, primaryType, mapExpansion).getConcreteReturnType(primitives);
+            ParameterizedType withExtra = pt.applyTranslation(primitives, extra.map());
             // See TypeParameter_4
-            return pt.isUnboundWildcard() ? inspectionProvider.getPrimitives().objectParameterizedType() : pt;
+            return withExtra.isUnboundWildcard() ? inspectionProvider.getPrimitives().objectParameterizedType() : withExtra;
         }
     }
 
@@ -494,6 +497,7 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                 ParameterizedType bestAcceptedType = null;
                 int bestCompatible = Integer.MIN_VALUE;
 
+                int varargsPenalty;
                 ParameterizedType formalType;
                 if (parameterInfo.parameterInspection.get().isVarArgs()) {
                     if (acceptedErased == null) {
@@ -526,11 +530,16 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             thisAcceptedErasedTypesCombination.put(pos, bestAcceptedType);
                             break;
                         } // else: we have another one to try!
+                        // see Constructor_18 for example where varargsPenalty is important
+                        varargsPenalty = 50;
+                    } else {
+                        varargsPenalty = 0;
                     }
                     formalType = parameterInfo.parameterizedType.copyWithOneFewerArrays();
                 } else {
                     assert acceptedErased != null;
                     formalType = parameterInfo.parameterizedType;
+                    varargsPenalty = 0;
                 }
 
 
@@ -544,7 +553,16 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                             if (actualTypeReplaced == ParameterizedType.NULL_CONSTANT) {
                                 // compute the distance to Object, so that the nearest one loses. See MethodCall_66
                                 // IMPROVE why 100?
-                                compatible = 100 - callIsAssignableFrom(formalTypeReplaced, typeContext.getPrimitives().objectParameterizedType(), explain);
+                                if (formalTypeReplaced.isPrimitiveExcludingVoid()) {
+                                    compatible = -1; // MethodCall_69
+                                } else {
+                                    // note: always assignable! array penalties easily go into the 100's so 1000 seems safe
+                                    ParameterizedType objectPt = typeContext.getPrimitives().objectParameterizedType();
+                                    int c = callIsAssignableFrom(formalTypeReplaced, objectPt, explain);
+                                    assert c >= 0;
+                                    // See MethodCall_66, resp. _74 for the '-' and the '1000'
+                                    compatible = varargsPenalty + 1000 - c;
+                                }
                             } else if (paramIsErasure && actualTypeReplaced != actualType) {
                                 /*
                                  See 'method' call in MethodCall_32; this feels like a hack.
@@ -554,7 +572,8 @@ public record ParseMethodCallExpr(TypeContext typeContext) {
                                 compatible = Math.max(callIsAssignableFrom(formalTypeReplaced, actualTypeReplaced, explain),
                                         callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced, explain));
                             } else {
-                                compatible = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced, explain);
+                                int c = callIsAssignableFrom(actualTypeReplaced, formalTypeReplaced, explain);
+                                compatible = c < 0 ? c : varargsPenalty + c;
                             }
 
                             if (compatible >= 0 && (bestCompatible == Integer.MIN_VALUE

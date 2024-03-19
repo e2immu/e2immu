@@ -22,7 +22,10 @@ public record TypeName(String simpleName,
                        Required required) implements Qualifier {
 
     public enum Required {
-        FQN, QUALIFIED_FROM_PRIMARY_TYPE, SIMPLE
+        DOLLARIZED_FQN, // com.foo.Bar$Bar2
+        FQN, // com.foo.Bar.Bar2
+        QUALIFIED_FROM_PRIMARY_TYPE, // Bar.Bar2
+        SIMPLE // Bar2
     }
 
     // for tests
@@ -43,6 +46,9 @@ public record TypeName(String simpleName,
             case SIMPLE -> simpleName;
             case FQN -> fullyQualifiedName;
             case QUALIFIED_FROM_PRIMARY_TYPE -> fromPrimaryTypeDownwards;
+            case DOLLARIZED_FQN ->
+                    fullyQualifiedName.substring(0, fullyQualifiedName.length() - fromPrimaryTypeDownwards.length())
+                            + fromPrimaryTypeDownwards.replace(".", "$");
         };
     }
 

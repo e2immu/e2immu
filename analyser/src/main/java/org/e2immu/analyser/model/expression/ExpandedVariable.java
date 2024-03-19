@@ -131,6 +131,12 @@ public class ExpandedVariable extends BaseExpression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        visitor.beforeExpression(this);
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public String minimalOutput() {
         // the back quotes signal the expansion: this is not a variable!
         return "`" + variable.minimalOutput() + "`";

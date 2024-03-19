@@ -23,7 +23,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.graph.analyser.PackedInt;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -130,9 +130,17 @@ public class Cast extends BaseExpression implements Expression {
 
     @Override
     public void visit(Predicate<Element> predicate) {
-        if (predicate.test(expression)) {
+        if (predicate.test(this)) {
             expression.visit(predicate);
         }
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            expression.visit(visitor);
+        }
+        visitor.afterExpression(this);
     }
 
     @Override

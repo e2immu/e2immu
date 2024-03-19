@@ -113,6 +113,14 @@ public class ExpressionAsStatement extends StatementWithExpression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            expression.visit(visitor);
+        }
+        visitor.afterStatement(this);
+    }
+
+    @Override
     public String toString() {
         return "ExpressionAsStatement{" + expression.getClass() + ": " + expression + "}";
     }

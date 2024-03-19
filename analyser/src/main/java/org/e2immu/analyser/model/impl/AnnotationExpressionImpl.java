@@ -26,7 +26,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.graph.analyser.PackedInt;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.ImmutableContainer;
 import org.e2immu.annotation.rare.Finalizer;
@@ -309,6 +309,14 @@ public class AnnotationExpressionImpl extends BaseExpression implements Annotati
                 e.visit(predicate);
             }
         }
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            expressions.forEach(e -> e.visit(visitor));
+        }
+        visitor.afterExpression(this);
     }
 
     @Override

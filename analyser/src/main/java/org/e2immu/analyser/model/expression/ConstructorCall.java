@@ -31,6 +31,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.graph.analyser.PackedInt;
 
@@ -356,6 +357,14 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            parameterExpressions.forEach(p -> p.visit(visitor));
+        }
+        visitor.afterExpression(this);
+    }
+
+    @Override
     public boolean isNumeric() {
         return parameterizedType.isType() && parameterizedType.typeInfo.isNumeric();
     }
@@ -657,6 +666,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
         return DelayedExpression.forNewObject(identifier, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV,
                 this, causes, shortCutMap);
+    }
+
+    public ArrayInitializer arrayInitializer() {
+        return arrayInitializer;
     }
 
     public MethodInfo constructor() {

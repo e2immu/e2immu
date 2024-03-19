@@ -190,7 +190,7 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
         public TypeInspection.Builder inspectFromPath(Source path, TypeContext parentTypeContext, LoadMode loadMode) {
             assert path != null && path.path().endsWith(".class");
 
-            String fqn = MyClassVisitor.pathToFqn(path.stripDotClass());
+            String fqn = Resources.pathToFqn(path.stripDotClass());
             TypeData typeDataInMap = localTypeMap.get(fqn);
             if (typeDataInMap != null && typeDataInMap.getInspectionState().ge(STARTING_BYTECODE)) {
                 return typeDataInMap.getTypeInspectionBuilder();
@@ -257,20 +257,26 @@ public class ByteCodeInspectorImpl implements ByteCodeInspector {
                                                                        TypeData typeData) {
             assert typeData.getInspectionState() == TRIGGER_BYTECODE_INSPECTION;
             typeData.setInspectionState(InspectionState.STARTING_BYTECODE);
-            byte[] classBytes = classPath.loadBytes(path.path());
-            if (classBytes == null) {
-                return null;
+            try {
+                byte[] classBytes = classPath.loadBytes(path.path());
+                if (classBytes == null) {
+                    return null;
+                }
+
+                ClassReader classReader = new ClassReader(classBytes);
+                LOGGER.debug("Constructed class reader with {} bytes", classBytes.length);
+
+                MyClassVisitor myClassVisitor = new MyClassVisitor(this, annotationStore,
+                        new TypeContext(parentTypeContext), path);
+                classReader.accept(myClassVisitor, 0);
+                typeData.setInspectionState(InspectionState.FINISHED_BYTECODE);
+                LOGGER.debug("Finished bytecode inspection of {}", fqn);
+                return typeData.getTypeInspectionBuilder();
+            } catch (RuntimeException re) {
+                LOGGER.error("Path = {}", path);
+                LOGGER.error("FQN  = {}", fqn);
+                throw re;
             }
-
-            ClassReader classReader = new ClassReader(classBytes);
-            LOGGER.debug("Constructed class reader with {} bytes", classBytes.length);
-
-            MyClassVisitor myClassVisitor = new MyClassVisitor(this, annotationStore,
-                    new TypeContext(parentTypeContext), path);
-            classReader.accept(myClassVisitor, 0);
-            typeData.setInspectionState(InspectionState.FINISHED_BYTECODE);
-            LOGGER.debug("Finished bytecode inspection of {}", fqn);
-            return typeData.getTypeInspectionBuilder();
         }
 
         @Override

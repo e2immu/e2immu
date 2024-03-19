@@ -28,6 +28,7 @@ public class AnalyserExtension {
     public String jmods; // part of the class path
     public String jre;
     public String sourcePackages;
+    public String testSourcePackages;
 
     /* from InspectorConfiguration */
     public String graphDirectory;

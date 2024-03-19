@@ -30,7 +30,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
-import org.e2immu.analyser.util.ParameterParallelGroup;
+import org.e2immu.analyser.util2.ParameterParallelGroup;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.support.EventuallyFinal;

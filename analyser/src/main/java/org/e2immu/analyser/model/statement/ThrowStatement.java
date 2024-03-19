@@ -67,6 +67,14 @@ public class ThrowStatement extends StatementWithExpression {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeStatement(this)) {
+            structure.expression().visit(visitor);
+        }
+        visitor.afterStatement(this);
+    }
+
+    @Override
     public List<Statement> translate(InspectionProvider inspectionProvider, TranslationMap translationMap) {
         List<Statement> direct = translationMap.translateStatement(inspectionProvider, this);
         if (haveDirectTranslation(direct, this)) return direct;

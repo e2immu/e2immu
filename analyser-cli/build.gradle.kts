@@ -54,9 +54,21 @@ tasks.jar {
 }
 
 publishing {
+    repositories {
+        maven {
+            url = uri(project.findProperty("publishUri") as String)
+            credentials {
+                username = project.findProperty("publishUsername") as String
+                password = project.findProperty("publishPassword") as String
+            }
+        }
+    }
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
+
+            artifactId = "analyser-cli"
+            groupId = "org.e2immu"
 
             pom {
                 name = "CLI for e2immu analyser"

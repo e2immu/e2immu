@@ -571,18 +571,23 @@ public class TypeMapImpl implements TypeMap {
 
         // return false in case of cyclic dependencies
         private TypeInspection inspectWithByteCodeInspector(TypeInfo typeInfo) {
-            Source source = classPath.fqnToPath(typeInfo.fullyQualifiedName, ".class");
-            List<TypeData> data = byteCodeInspector.inspectFromPath(source);
-            if (data.isEmpty()) {
-                // was already present
-                tiReadLock.lock();
-                try {
-                    return typeInspections.get(typeInfo.fullyQualifiedName).getTypeInspectionBuilder();
-                } finally {
-                    tiReadLock.unlock();
+            try {
+                Source source = classPath.fqnToPath(typeInfo.fullyQualifiedName, ".class");
+                List<TypeData> data = byteCodeInspector.inspectFromPath(source);
+                if (data.isEmpty()) {
+                    // was already present
+                    tiReadLock.lock();
+                    try {
+                        return typeInspections.get(typeInfo.fullyQualifiedName).getTypeInspectionBuilder();
+                    } finally {
+                        tiReadLock.unlock();
+                    }
                 }
+                return copyIntoTypeMap(typeInfo, data);
+            } catch (RuntimeException re) {
+                LOGGER.error("TypeInfo = {}", typeInfo);
+                throw re;
             }
-            return copyIntoTypeMap(typeInfo, data);
         }
 
         @Override

@@ -29,7 +29,7 @@ import org.e2immu.analyser.output.ThisName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
@@ -277,6 +277,16 @@ public class FieldReferenceImpl extends VariableWithConcreteReturnType implement
     @Override
     public void visit(Predicate<Element> predicate) {
         if (scope != null) scope.visit(predicate);
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeVariable(this)) {
+            if (scope != null) {
+                scope.visit(visitor);
+            }
+        }
+        visitor.afterVariable(this);
     }
 
     @Override

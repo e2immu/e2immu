@@ -28,7 +28,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.analyser.util.PackedIntMap;
+import org.e2immu.analyser.util2.PackedIntMap;
 
 import java.util.List;
 import java.util.Map;
@@ -331,5 +331,16 @@ public class LocalVariableCreation extends BaseExpression implements Expression 
                 declaration.localVariableReference.assignmentExpression.visit(predicate);
             }
         }
+    }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeExpression(this)) {
+            localVariableReference.visit(visitor);
+            for (Declaration declaration : moreDeclarations) {
+                declaration.localVariableReference.visit(visitor);
+            }
+        }
+        visitor.afterExpression(this);
     }
 }

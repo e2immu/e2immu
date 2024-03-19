@@ -60,6 +60,11 @@ public class EmptyStatement extends StatementWithStructure {
     }
 
     @Override
+    public void visit(Visitor visitor) {
+        // do nothing
+    }
+
+    @Override
     public int getComplexity() {
         return 1;
     }

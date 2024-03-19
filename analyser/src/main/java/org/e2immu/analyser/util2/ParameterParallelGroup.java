@@ -1,6 +1,7 @@
-package org.e2immu.analyser.util;
+package org.e2immu.analyser.util2;
 
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.util.ParSeq;
 
 import java.util.Comparator;
 import java.util.List;

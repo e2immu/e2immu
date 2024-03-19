@@ -12,7 +12,7 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.util;
+package org.e2immu.analyser.parser.own.util;
 
 import org.e2immu.analyser.parser.own.util.testexample.DependencyGraph;
 import org.junit.jupiter.api.Test;

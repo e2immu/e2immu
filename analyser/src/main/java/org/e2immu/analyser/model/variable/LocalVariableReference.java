@@ -107,4 +107,12 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     public void visit(Predicate<Element> predicate) {
         // do nothing here! The assignedExpression is only visited in LocalVariableCreation
     }
+
+    @Override
+    public void visit(Visitor visitor) {
+        if (visitor.beforeVariable(this)) {
+            assignmentExpression.visit(visitor);
+        }
+        visitor.afterVariable(this);
+    }
 }
