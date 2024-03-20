@@ -186,7 +186,7 @@ public class ParseLambdaExpr {
 
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, evaluation.inferredReturnType);
-        continueCreationOfAnonymousType(expressionContext.typeContext().typeMap(),
+        continueCreationOfAnonymousType(expressionContext.typeContext().typeMapBuilder(),
                 applyMethodInspectionBuilder, functionalType, evaluation.block,
                 evaluation.inferredReturnType,
                 expressionContext.enclosingMethod());

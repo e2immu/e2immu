@@ -58,7 +58,7 @@ public class ConvertMethodReference {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeContext);
         int index = expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType());
         TypeInfo typeInfo = new TypeInfo(enclosingType, index);
-        TypeInspection.Builder builder = typeContext.typeMap().add(typeInfo, InspectionState.BY_HAND);
+        TypeInspection.Builder builder = typeContext.typeMapBuilder().add(typeInfo, InspectionState.BY_HAND);
 
         builder.setTypeNature(TypeNature.CLASS);
         builder.addTypeModifier(TypeModifier.PRIVATE);
@@ -68,7 +68,7 @@ public class ConvertMethodReference {
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
         MethodInspection.Builder methodBuilder = method.buildCopy(methodReference.identifier, typeContext, typeInfo);
-        typeContext.typeMap().registerMethodInspection(methodBuilder);
+        typeContext.typeMapBuilder().registerMethodInspection(methodBuilder);
 
         Block block = methodContent(methodBuilder, methodReference, expressionContext);
         methodBuilder.setInspectedBlock(block);

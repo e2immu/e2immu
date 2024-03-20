@@ -21,6 +21,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.Parser;
+import org.e2immu.analyser.parser.TypeMap;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -49,14 +50,15 @@ public class TestPreloadJavaBase {
         assertNotNull(list);
         TypeInfo classLoader = typeContext.typeMap().get("java.lang.ClassLoader");
         assertNotNull(classLoader);
-        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap().getInspectionState(classLoader));
+        TypeMap.Builder typeMapBuilder = typeContext.typeMapBuilder();
+        assertEquals(InspectionState.FINISHED_BYTECODE, typeMapBuilder.getInspectionState(classLoader));
 
-        TypeInfo list2 = typeContext.typeMap().getOrCreate("java.util.List", true);
+        TypeInfo list2 = typeMapBuilder.getOrCreate("java.util.List", true);
         assertNotNull(list2);
-        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMap().getInspectionState(list2));
+        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeMapBuilder.getInspectionState(list2));
         // the next call will trigger the byte code inspection of "list":
         TypeInspection listInspection = typeContext.getTypeInspection(list2);
         assertNotNull(listInspection);
-        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap().getInspectionState(list2));
+        assertEquals(InspectionState.FINISHED_BYTECODE, typeMapBuilder.getInspectionState(list2));
     }
 }

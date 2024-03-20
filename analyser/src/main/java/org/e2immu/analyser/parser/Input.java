@@ -151,7 +151,7 @@ public record Input(Configuration configuration,
                     if (acceptSource(packageName, typeName, restrictions)) {
                         URI uri = list.get(0);
                         TypeInfo typeInfo = new TypeInfo(Identifier.from(uri), packageName, typeName);
-                        globalTypeContext.typeMap().add(typeInfo, INIT_JAVA_PARSER);
+                        globalTypeContext.typeMapBuilder().add(typeInfo, INIT_JAVA_PARSER);
                         sourceURLs.put(typeInfo, uri);
                         parts[n] = typeName;
                         trie.add(parts, typeInfo);

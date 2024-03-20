@@ -21,6 +21,7 @@ import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.parser.TypeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,12 +38,13 @@ public class ConvertExpressionWithTypeCreations {
                                                            ExpressionContext expressionContext,
                                                            Identifier identifier) {
         TypeContext typeContext = expressionContext.typeContext();
-        TypeInfo supplier = typeContext.typeMap().syntheticFunction(0, false);
+        TypeMap.Builder typeMapBuilder = typeContext.typeMapBuilder();
+        TypeInfo supplier = typeMapBuilder.syntheticFunction(0, false);
         ParameterizedType supplierType = new ParameterizedType(supplier, List.of(supplierReturnType));
 
         int index = expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType());
         TypeInfo typeInfo = new TypeInfo(enclosingType, index);
-        TypeInspection.Builder builder = typeContext.typeMap().add(typeInfo, InspectionState.BY_HAND);
+        TypeInspection.Builder builder = typeMapBuilder.add(typeInfo, InspectionState.BY_HAND);
 
         builder.setSynthetic(true);
         builder.setTypeNature(TypeNature.CLASS);
@@ -57,7 +59,7 @@ public class ConvertExpressionWithTypeCreations {
         methodBuilder.setSynthetic(true);
         methodBuilder.setAccess(Inspection.Access.PUBLIC); // implements supplier
         methodBuilder.readyToComputeFQN(typeContext);
-        typeContext.typeMap().registerMethodInspection(methodBuilder);
+        typeMapBuilder.registerMethodInspection(methodBuilder);
 
         Block block = methodContent(parsedExpression, identifier);
         methodBuilder.setInspectedBlock(block);

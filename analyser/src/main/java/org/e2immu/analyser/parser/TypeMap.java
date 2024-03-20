@@ -30,15 +30,25 @@ import java.util.stream.Stream;
 
 public interface TypeMap extends InspectionProvider {
 
-    TypeInfo get(Class<?> clazz);
+    default TypeInfo get(Class<?> clazz) {
+        return get(clazz.getCanonicalName());
+    }
 
-    TypeInfo get(String fullyQualifiedName);
+    default TypeInfo get(String fullyQualifiedName) {
+        throw new UnsupportedOperationException();
+    }
 
-    boolean isPackagePrefix(PackagePrefix packagePrefix);
+    default boolean isPackagePrefix(PackagePrefix packagePrefix) {
+        throw new UnsupportedOperationException();
+    }
 
-    void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
+    default void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
+        throw new UnsupportedOperationException();
+    }
 
-    E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
+    default E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
+        throw new UnsupportedOperationException();
+    }
 
     record InspectionAndState(TypeInspection typeInspection, InspectionState state) {
     }

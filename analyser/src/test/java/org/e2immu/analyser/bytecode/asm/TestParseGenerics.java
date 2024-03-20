@@ -164,7 +164,7 @@ public class TestParseGenerics {
         newTypeContext.addToContext(new TypeParameterImpl("CLV", 1).noTypeBounds());
         ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(classPath, null, newTypeContext);
         TypeInfo typeInfo = new TypeInfo("jdk.internal.loader", "AbstractClassLoaderValue");
-        TypeInspection.Builder typeInspectionBuilder = typeContext.typeMap().add(typeInfo, STARTING_BYTECODE);
+        TypeInspection.Builder typeInspectionBuilder = typeContext.typeMapBuilder().add(typeInfo, STARTING_BYTECODE);
 
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
                 byteCodeInspector.localTypeMap(), LocalTypeMap.LoadMode.NOW);

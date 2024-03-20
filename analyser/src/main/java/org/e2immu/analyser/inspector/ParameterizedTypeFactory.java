@@ -157,7 +157,7 @@ public class ParameterizedTypeFactory {
             return null;
         }
         // we're going to assume that we're creating a subtype
-        TypeInfo subType = typeContext.typeMap().getOrCreateByteCode(scopePt.typeInfo.fullyQualifiedName, name);
+        TypeInfo subType = typeContext.typeMapBuilder().getOrCreateByteCode(scopePt.typeInfo.fullyQualifiedName, name);
         return new ParameterizedType(subType, parameters, arrays);
     }
 }

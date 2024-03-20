@@ -79,11 +79,6 @@ public class TypeMapImpl implements TypeMap {
     }
 
     @Override
-    public TypeInfo get(Class<?> clazz) {
-        return get(clazz.getCanonicalName());
-    }
-
-    @Override
     public TypeInfo get(String fullyQualifiedName) {
         return get(trie, fullyQualifiedName);
     }

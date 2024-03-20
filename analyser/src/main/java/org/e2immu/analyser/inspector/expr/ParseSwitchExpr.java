@@ -142,10 +142,10 @@ public class ParseSwitchExpr {
         ParameterInfo parameterInfo = applyMethodInspectionBuilder.getParameters().get(0);
         Block methodBody = constructMethodBody(newExpressionContext, newForward, switchExpr, selector, parameterInfo);
 
-        TypeInfo function = expressionContext.typeContext().typeMap().syntheticFunction(1, false);
+        TypeInfo function = expressionContext.typeContext().typeMapBuilder().syntheticFunction(1, false);
         ParameterizedType functionalType = new ParameterizedType(function, List.of(selectorType, returnType));
 
-        ParseLambdaExpr.continueCreationOfAnonymousType(expressionContext.typeContext().typeMap(),
+        ParseLambdaExpr.continueCreationOfAnonymousType(expressionContext.typeContext().typeMapBuilder(),
                 applyMethodInspectionBuilder, functionalType, methodBody, returnType, expressionContext.enclosingMethod());
         TypeContext typeContext = expressionContext.typeContext();
 

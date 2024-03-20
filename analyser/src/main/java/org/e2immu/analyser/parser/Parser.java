@@ -133,7 +133,7 @@ public class Parser {
             ImportantClassesImpl importantClasses = new ImportantClassesImpl(input.globalTypeContext());
 
             // creating the typeMap ensures that all inspections and resolutions are set.
-            typeMap = input.globalTypeContext().typeMap().build();
+            typeMap = input.globalTypeContext().typeMapBuilder().build();
             LOGGER.info("Type map has been built");
 
             globalAnalyserContext = new GlobalAnalyserContext(input.globalTypeContext(),
@@ -169,7 +169,7 @@ public class Parser {
     public TypeMap.Builder inspectOnlyForTesting() {
         inspectAndResolve(input.annotatedAPIs(),
                 configuration.annotatedAPIConfiguration().reportWarnings(), true);
-        return input.globalTypeContext().typeMap();
+        return input.globalTypeContext().typeMapBuilder();
     }
 
     public SortedTypes inspectAndResolve(Map<TypeInfo, URI> urls,
@@ -182,7 +182,7 @@ public class Parser {
                 configuration.inspectorConfiguration().storeComments(),
                 input.configuration().parallel());
 
-        TypeMap.Builder typeMapBuilder = input.globalTypeContext().typeMap();
+        TypeMap.Builder typeMapBuilder = input.globalTypeContext().typeMapBuilder();
         InspectAll inspectAll = new InspectAll(configuration, input.globalTypeContext(), input.classPath(), urls,
                 typeMapBuilder, configuration.annotatedAPIConfiguration().disabled(), anonymousTypeCounters, resolver);
 
@@ -274,7 +274,7 @@ public class Parser {
             Input.preload(input.globalTypeContext(), input.classPath(), packagePrefix);
         }
         LOGGER.info("Building TypeMap, fixing inspections");
-        TypeMap typeMap = input.globalTypeContext().typeMap().build();
+        TypeMap typeMap = input.globalTypeContext().typeMapBuilder().build();
 
         Set<TypeInfo> typesToWrite = new HashSet<>();
         // ensure that all types in the packages to write have been byte code inspected

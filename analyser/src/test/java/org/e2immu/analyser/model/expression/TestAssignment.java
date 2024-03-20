@@ -52,6 +52,40 @@ public class TestAssignment {
         }
     };
 
+    private final TypeMap typeMap = new TypeMap() {
+        @Override
+        public Primitives getPrimitives() {
+            return primitives;
+        }
+
+        @Override
+        public FieldInspection getFieldInspection(FieldInfo fieldInfo) {
+            return inspectionProvider.getFieldInspection(fieldInfo);
+        }
+
+        @Override
+        public MethodInspection getMethodInspection(MethodInfo methodInfo) {
+            return inspectionProvider.getMethodInspection(methodInfo);
+        }
+
+        @Override
+        public TypeInspection getTypeInspection(TypeInfo typeInfo) {
+            return inspectionProvider.getTypeInspection(typeInfo);
+        }
+    };
+
+    private final TypeContext typeContext = new TypeContext() {
+        @Override
+        public Primitives getPrimitives() {
+            return primitives;
+        }
+
+        @Override
+        public TypeMap typeMap() {
+            return typeMap;
+        }
+    };
+
     private EvaluationContext evaluationContext(Map<String, Expression> variableValues) {
         return new AbstractEvaluationContextImpl() {
             @Override
@@ -251,7 +285,7 @@ public class TestAssignment {
         Instance instance = Instance.forTesting(primitives.intParameterizedType());
         VariableExpression vj = makeLVAsExpression("j", instance);
         ParameterizedType intArray = new ParameterizedType(primitives.intTypeInfo(), 1);
-        MethodInfo constructor = ParseArrayCreationExpr.createArrayCreationConstructor(null, intArray);
+        MethodInfo constructor = ParseArrayCreationExpr.createArrayCreationConstructor(typeContext, intArray);
         Expression newIntArray = new ConstructorCall(newId(), null, constructor, intArray,
                 Diamond.NO, List.of(new IntConstant(primitives, 10)), null, null);
         LocalVariable aLv = new LocalVariable.Builder()
@@ -267,6 +301,6 @@ public class TestAssignment {
                 intArray, "0");
         VariableExpression ai = new VariableExpression(newId(), aiDv);
         Assignment assignment = new Assignment(primitives, ai, vj);
-        assertEquals("", assignment.minimalOutput());
+        assertEquals("a[i]=j", assignment.minimalOutput());
     }
 }

@@ -509,9 +509,10 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                                                                       Identifier identifier,
                                                                       Comment comment) {
         String localName = statement.getClassDeclaration().getNameAsString();
-        String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$" + anonymousTypeCounters.newIndex(primaryType);
+        String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$"
+                          + anonymousTypeCounters.newIndex(primaryType);
         TypeInfo typeInfo = new TypeInfo(enclosingType, typeName);
-        TypeInspector typeInspector = typeContext.typeMap().newTypeInspector(typeInfo, true, true);
+        TypeInspector typeInspector = typeContext.typeMapBuilder().newTypeInspector(typeInfo, true, true);
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
 
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);

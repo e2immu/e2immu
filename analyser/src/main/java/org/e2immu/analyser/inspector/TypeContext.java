@@ -34,7 +34,11 @@ import java.util.stream.Collectors;
  */
 public interface TypeContext extends TypeAndInspectionProvider {
 
-    default TypeMap.Builder typeMap() {
+    default TypeMap typeMap() {
+        throw new UnsupportedOperationException();
+    }
+
+    default TypeMap.Builder typeMapBuilder() {
         throw new UnsupportedOperationException();
     }
 

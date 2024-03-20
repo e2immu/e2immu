@@ -55,7 +55,7 @@ public class TypeContextImpl implements TypeContext {
     public TypeContextImpl(String packageName, @NotNull TypeContext parentContext, boolean copyImportMap) {
         this.parentContext = Objects.requireNonNull(parentContext);
         this.packageName = packageName;
-        typeMap = parentContext.typeMap();
+        typeMap = parentContext.typeMapBuilder();
         importMap = copyImportMap ? parentContext.importMap() : new ImportMap();
     }
 
@@ -72,9 +72,14 @@ public class TypeContextImpl implements TypeContext {
         return typeMap;
     }
 
+    @Override
+    public TypeMap.Builder typeMapBuilder() {
+        return typeMap;
+    }
+
     /*
-    must be called AFTER the typeMapBuilder has the ByteCodeInspector set.
-     */
+        must be called AFTER the typeMapBuilder has the ByteCodeInspector set.
+         */
     public void loadPrimitives() {
         for (TypeInfo typeInfo : getPrimitives().getTypeByName().values()) {
             addToContext(typeInfo);

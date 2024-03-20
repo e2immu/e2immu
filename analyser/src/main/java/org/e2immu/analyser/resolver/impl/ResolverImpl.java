@@ -426,7 +426,7 @@ public class ResolverImpl implements Resolver {
                                   G.Builder<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
             TypeInspection typeInspection = expressionContextOfType.typeContext()
-                    .typeMap().getTypeInspectionToStartResolving(typeInfo);
+                    .typeMapBuilder().getTypeInspectionToStartResolving(typeInfo);
             if (typeInspection == null) {
                 // no need to resolve this type, we'll never use it (state is still TRIGGER_BYTECODE_INSPECTION)
                 return List.of(typeInfo);

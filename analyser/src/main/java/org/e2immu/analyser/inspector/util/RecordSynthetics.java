@@ -63,7 +63,7 @@ public class RecordSynthetics {
                 .addAnnotation(notModifiedContract);
         accessor.readyToComputeFQN(expressionContext.typeContext());
         var distinguishingName = accessor.getDistinguishingName();
-        var typeMapBuilder = expressionContext.typeContext().typeMap();
+        var typeMapBuilder = expressionContext.typeContext().typeMapBuilder();
         var methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(typeInfo, distinguishingName);
         if (methodInspection != null) {
             // method is already there, we can skip this!

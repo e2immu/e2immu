@@ -60,7 +60,7 @@ public class TestIsAssignableFrom {
         URI jar = new URI(TestParseGenerics.SOME_JAR);
         Source source = new Source("java/util/LinkedList.class", jar);
         List<TypeData> data = parser.getByteCodeInspector().inspectFromPath(source);
-        parser.getTypeContext().typeMap().copyIntoTypeMap(data.get(0).getTypeInspectionBuilder().typeInfo(), data);
+        parser.getTypeContext().typeMapBuilder().copyIntoTypeMap(data.get(0).getTypeInspectionBuilder().typeInfo(), data);
     }
 
     // int <- String should fail, int <- Integer should not
