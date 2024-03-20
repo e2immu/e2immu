@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -377,7 +378,8 @@ public class TestAssignment {
     @DisplayName("hack for loop delayed")
     public void test11() {
         IntConstant three = new IntConstant(primitives, 3);
-        CausesOfDelay causes = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.CONSTANT));
+        CausesOfDelay causes = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET,
+                CauseOfDelay.Cause.CONSTANT));
         Expression delayed = DelayedExpression.forTest(newId(), three, causes);
         VariableExpression vi = makeLVAsExpression("i", delayed);
         MethodInfo plusEquals = primitives.assignPlusOperatorInt();
@@ -395,6 +397,9 @@ public class TestAssignment {
         assertEquals("1+<test>", er.value().toString());
         ChangeData cd = er.changeData().get(vi.variable());
         assertEquals("1+<test>", cd.value().toString());
+
+        assertEquals("constant@NOT_YET_SET", cd.value().causesOfDelay().toString());
+        assertEquals("", er.linkedVariables(vi.variable()).toString());
 
         EvaluationResult er2 = hack.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         assertEquals("1+<test>", er2.value().toString());
@@ -420,4 +425,49 @@ public class TestAssignment {
         assertEquals("5", eval.value().toString());
     }
 
+    //  v = mockFormal linked to a (evaluated as mockEval linked to b)
+    @Test
+    @DisplayName("linked variables")
+    public void test13() {
+        Expression zero = IntConstant.zero(primitives);
+        VariableExpression va = makeLVAsExpression("a", zero);
+        VariableExpression vb = makeLVAsExpression("b", zero);
+        VariableExpression vc = makeLVAsExpression("c", zero);
+        VariableExpression vd = makeLVAsExpression("d", zero);
+        VariableExpression ve = makeLVAsExpression("e", zero);
+        VariableExpression vv = makeLVAsExpression("v", zero);
+        ExpressionMock mockFormal = new ExpressionMock() {
+            @Override
+            public LinkedVariables linkedVariables(EvaluationResult context) {
+                return LinkedVariables.of(Map.of(va.variable(), LinkedVariables.LINK_DEPENDENT,
+                        vc.variable(), LinkedVariables.LINK_ASSIGNED,
+                        vd.variable(), LinkedVariables.LINK_STATICALLY_ASSIGNED));
+            }
+
+            @Override
+            public Set<Variable> directAssignmentVariables() {
+                return Set.of(ve.variable());
+            }
+        };
+        ExpressionMock mockEval = new ExpressionMock() {
+            @Override
+            public LinkedVariables linkedVariables(EvaluationResult context) {
+                return LinkedVariables.of(Map.of(vb.variable(), LinkedVariables.LINK_COMMON_HC,
+                        vc.variable(), LinkedVariables.LINK_COMMON_HC));
+            }
+        };
+        Instance instance = Instance.forTesting(primitives.intParameterizedType());
+        EvaluationContext ec = evaluationContext(Map.of("v", instance));
+        EvaluationResult context = new EvaluationResultImpl.Builder(ec).build();
+        EvaluationResult mockEvalResult = new EvaluationResultImpl.Builder(context)
+                .setExpression(mockEval)
+                .build();
+        Assignment assignment = new Assignment(primitives, vv, mockFormal, mockEvalResult);
+        assertTrue(assignment.linkedVariables(context).isEmpty()); // default implementation
+        EvaluationResult result = assignment.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        LinkedVariables lv = result.linkedVariables(vv.variable());
+
+        // we take values from both, minimize; 0->1; static assignment variables
+        assertEquals("a:2,b:4,c:1,d:1,e:0", lv.toString());
+    }
 }
