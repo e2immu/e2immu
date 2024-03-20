@@ -15,6 +15,8 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
@@ -36,8 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestAssignment {
 
@@ -100,11 +101,17 @@ public class TestAssignment {
             }
 
             @Override
+            public Expression currentValue(Variable variable) {
+                return Objects.requireNonNull(variableValues.get(variable.simpleName()),
+                        "Have no value for " + variable.simpleName());
+            }
+
+            @Override
             public Expression currentValue(Variable variable,
                                            Expression scopeValue,
                                            Expression indexValue,
                                            Identifier identifier, ForwardEvaluationInfo forwardEvaluationInfo) {
-                return Objects.requireNonNull(variableValues.get(variable.simpleName()));
+                return currentValue(variable);
             }
 
             @Override
@@ -258,7 +265,7 @@ public class TestAssignment {
     }
 
     @Test
-    @DisplayName("evaluationOfValue")
+    @DisplayName("evaluationOfValue, += ")
     public void test7() {
         IntConstant three = new IntConstant(primitives, 3);
         VariableExpression ve = makeLVAsExpression("i", three);
@@ -278,10 +285,10 @@ public class TestAssignment {
     }
 
     @Test
-    @DisplayName("assign to array: int[] a = new int[10]; a[i]=j")
+    @DisplayName("assign to array: int[] a = new int[10]; int i=03; a[i]=j")
     public void test8() {
         IntConstant three = new IntConstant(primitives, 3);
-        VariableExpression ve = makeLVAsExpression("i", three);
+        VariableExpression vi = makeLVAsExpression("i", three);
         Instance instance = Instance.forTesting(primitives.intParameterizedType());
         VariableExpression vj = makeLVAsExpression("j", instance);
         ParameterizedType intArray = new ParameterizedType(primitives.intTypeInfo(), 1);
@@ -297,10 +304,120 @@ public class TestAssignment {
                 new LocalVariableReference(aLv, newIntArray));
         assertEquals("int[] a=new int[10]", a.minimalOutput());
         VariableExpression va = new VariableExpression(newId(), a.localVariableReference);
-        DependentVariable aiDv = new DependentVariable(newId(), va, va.variable(), ve, ve.variable(),
+        DependentVariable aiDv = new DependentVariable(newId(), va, va.variable(), vi, vi.variable(),
                 intArray, "0");
         VariableExpression ai = new VariableExpression(newId(), aiDv);
+
+        DependentVariable a3Dv = new DependentVariable(newId(), va, va.variable(), three, null,
+                intArray, "0");
+        VariableExpression a3 = new VariableExpression(newId(), a3Dv);
+
+        EvaluationResult context = context(evaluationContext(Map.of("i", three,
+                "j", instance, "a", newIntArray, "a[i]", a3)));
+        EvaluationResult aiResult = ai.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        assertEquals("a[3]", aiResult.value().toString());
+
         Assignment assignment = new Assignment(primitives, ai, vj);
         assertEquals("a[i]=j", assignment.minimalOutput());
+        EvaluationResult eval = assignment.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        assertEquals("instance 0 type int", eval.value().minimalOutput());
+        assertTrue(eval.messages().isEmpty());
+        assertTrue(eval.linkedVariables(a.localVariableReference).isEmpty());
+
+        ChangeData cdAi = eval.changeData().get(aiDv);
+        assertNotNull(cdAi);
+        assertNull(cdAi.value()); // only a[3] has received a value
+        ChangeData cdA3 = eval.changeData().get(a3Dv);
+        assertNotNull(cdA3);
+        assertSame(eval.value(), cdA3.value());
     }
+
+
+    @Test
+    @DisplayName("assignment to same value")
+    public void test9() {
+        IntConstant three = new IntConstant(primitives, 3);
+        VariableExpression ve = makeLVAsExpression("i", three);
+        Assignment toSameValue = new Assignment(newId(), primitives, ve, three);
+        assertEquals("i=3", toSameValue.minimalOutput());
+        EvaluationResult context = context(evaluationContext(Map.of("i", three)));
+        EvaluationResult er = toSameValue.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        assertEquals(1, er.messages().size());
+    }
+
+    @Test
+    @DisplayName("hack for loop")
+    public void test10() {
+        IntConstant three = new IntConstant(primitives, 3);
+        VariableExpression vi = makeLVAsExpression("i", three);
+        MethodInfo plusEquals = primitives.assignPlusOperatorInt();
+        Assignment iPlusEquals1 = new Assignment(newId(), primitives, vi, IntConstant.one(primitives),
+                plusEquals, null, false,
+                false, null);
+        assertEquals("i+=1", iPlusEquals1.minimalOutput());
+        Assignment hack = (Assignment) iPlusEquals1.cloneWithHackForLoop();
+        assertEquals("i+=1", hack.minimalOutput());
+        assertTrue(hack.hackForUpdatersInForLoop);
+
+        EvaluationResult context = context(evaluationContext(Map.of("i", three)));
+
+        EvaluationResult er = iPlusEquals1.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        assertEquals("4", er.value().toString());
+        ChangeData cd = er.changeData().get(vi.variable());
+        assertEquals("4", cd.value().toString());
+
+        EvaluationResult er2 = hack.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        assertEquals("4", er2.value().toString());
+        ChangeData cd2 = er2.changeData().get(vi.variable());
+        assertEquals("instance type int", cd2.value().toString());
+    }
+
+
+    @Test
+    @DisplayName("hack for loop delayed")
+    public void test11() {
+        IntConstant three = new IntConstant(primitives, 3);
+        CausesOfDelay causes = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.CONSTANT));
+        Expression delayed = DelayedExpression.forTest(newId(), three, causes);
+        VariableExpression vi = makeLVAsExpression("i", delayed);
+        MethodInfo plusEquals = primitives.assignPlusOperatorInt();
+        Assignment iPlusEquals1 = new Assignment(newId(), primitives, vi, IntConstant.one(primitives),
+                plusEquals, null, false,
+                false, null);
+        assertEquals("i+=1", iPlusEquals1.minimalOutput());
+        Assignment hack = (Assignment) iPlusEquals1.cloneWithHackForLoop();
+        assertEquals("i+=1", hack.minimalOutput());
+        assertTrue(hack.hackForUpdatersInForLoop);
+
+        EvaluationResult context = context(evaluationContext(Map.of("i", delayed)));
+
+        EvaluationResult er = iPlusEquals1.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        assertEquals("1+<test>", er.value().toString());
+        ChangeData cd = er.changeData().get(vi.variable());
+        assertEquals("1+<test>", cd.value().toString());
+
+        EvaluationResult er2 = hack.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        assertEquals("1+<test>", er2.value().toString());
+        ChangeData cd2 = er2.changeData().get(vi.variable());
+        assertEquals("<v:i>", cd2.value().toString());
+    }
+
+
+    @Test
+    @DisplayName("evaluationOfValue, =")
+    public void test12() {
+        IntConstant three = new IntConstant(primitives, 3);
+        VariableExpression ve = makeLVAsExpression("i", three);
+        IntConstant five = new IntConstant(primitives, 5);
+        EvaluationResult context = context(evaluationContext(Map.of("i", three)));
+        EvaluationResult evalFour = five.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+
+        IntConstant one = IntConstant.one(primitives);
+        Assignment assignment = new Assignment(primitives, ve, one, evalFour);
+        EvaluationResult onlySortResult = assignment.evaluate(context, onlySort);
+        assertEquals("i=1", onlySortResult.value().toString());
+        EvaluationResult eval = assignment.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        assertEquals("5", eval.value().toString());
+    }
+
 }
