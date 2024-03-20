@@ -19,12 +19,14 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.ConstructorCall;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.Array_0;
 import org.e2immu.analyser.resolver.testexample.Array_1;
+import org.e2immu.analyser.resolver.testexample.Array_2;
 import org.e2immu.analyser.resolver.testexample.Varargs_0;
 import org.junit.jupiter.api.Test;
 
@@ -54,5 +56,22 @@ public class TestArray extends CommonTest {
     @Test
     public void test_1() throws IOException {
         inspectAndResolve(Array_1.class);
+    }
+
+
+    @Test
+    public void test_2() throws IOException {
+        TypeMap typeMap = inspectAndResolve(Array_2.class);
+        TypeInfo typeInfo = typeMap.get(Array_2.class);
+        assertNotNull(typeInfo);
+        MethodInfo method = typeInfo.findUniqueMethod("method", 0);
+        Block block = method.methodInspection.get().getMethodBody();
+        Statement s1 = block.structure.statements().get(0);
+        if (s1 instanceof ExpressionAsStatement eas && eas.expression instanceof LocalVariableCreation lvc) {
+            assertEquals("a", lvc.localVariableReference.simpleName());
+            if (lvc.localVariableReference.assignmentExpression instanceof ConstructorCall cc) {
+                assertEquals("int.int(int)", cc.constructor().fullyQualifiedName());
+            } else fail();
+        } else fail();
     }
 }

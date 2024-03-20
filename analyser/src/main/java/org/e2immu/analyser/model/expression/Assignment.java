@@ -329,7 +329,7 @@ public class Assignment extends BaseExpression implements Expression {
 
         E2 e2;
         if (binaryOperator != null) {
-            e2 = handleBinaryOperator(context, forwardEvaluationInfo, newVariableTarget, builder);
+            e2 = handleBinaryOperator(context, forwardEvaluationInfo, newVariableTarget, valueResult, builder);
         } else {
             /*
             we compare to value and not resultOfExpression here, to catch a literal j = j assignment
@@ -425,11 +425,13 @@ public class Assignment extends BaseExpression implements Expression {
     public E2 handleBinaryOperator(EvaluationResult context,
                                    ForwardEvaluationInfo forwardEvaluationInfo,
                                    Variable newVariableTarget,
+                                   EvaluationResult valueResult,
                                    EvaluationResultImpl.Builder builder) {
 
         Expression resultOfExpression;
         BinaryOperator operation = new BinaryOperator(identifier,
-                primitives, new VariableExpression(identifier, newVariableTarget), binaryOperator, value,
+                primitives, new VariableExpression(identifier, newVariableTarget), binaryOperator,
+                valueResult.value(),
                 BinaryOperator.precedence(context.getPrimitives(), binaryOperator));
         EvaluationResult operationResult = operation.evaluate(context, forwardEvaluationInfo);
         builder.compose(operationResult);
