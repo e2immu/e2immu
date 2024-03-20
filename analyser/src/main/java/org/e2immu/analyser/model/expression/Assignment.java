@@ -149,9 +149,9 @@ public class Assignment extends BaseExpression implements Expression {
         if (o == null || getClass() != o.getClass()) return false;
         Assignment that = (Assignment) o;
         return target.equals(that.target) &&
-                value.equals(that.value) &&
-                Objects.equals(assignmentOperator, that.assignmentOperator) &&
-                Objects.equals(prefixPrimitiveOperator, that.prefixPrimitiveOperator);
+               value.equals(that.value) &&
+               Objects.equals(assignmentOperator, that.assignmentOperator) &&
+               Objects.equals(prefixPrimitiveOperator, that.prefixPrimitiveOperator);
     }
 
     @Override
@@ -339,7 +339,7 @@ public class Assignment extends BaseExpression implements Expression {
              */
             IsVariableExpression ive;
             if ((ive = value.asInstanceOf(IsVariableExpression.class)) != null
-                    && ive.variable().equals(newVariableTarget) && value.isDone()) {
+                && ive.variable().equals(newVariableTarget) && value.isDone()) {
                 return builder.assignmentToSelfIgnored(newVariableTarget).build();
             }
             e2 = checkForAssignmentToSameValue(context, valueResult.value(), newVariableTarget, targetResult.value(), builder);
@@ -390,8 +390,8 @@ public class Assignment extends BaseExpression implements Expression {
     private Variable handleArrayAccess(Expression evaluatedTarget) {
         IsVariableExpression ive;
         if (variableTarget instanceof DependentVariable &&
-                (ive = evaluatedTarget.asInstanceOf(IsVariableExpression.class)) != null &&
-                ive.variable() instanceof DependentVariable) {
+            (ive = evaluatedTarget.asInstanceOf(IsVariableExpression.class)) != null &&
+            ive.variable() instanceof DependentVariable) {
             return ive.variable();
         }
         return variableTarget;
@@ -404,13 +404,13 @@ public class Assignment extends BaseExpression implements Expression {
                                              EvaluationResultImpl.Builder builder) {
         IsVariableExpression ive2;
         if (currentValueOfTarget != null && (currentValueOfTarget.equals(valueResultValue) ||
-                ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
-                        && newVariableTarget.equals(ive2.variable()))
-                // no problem to return the same value in different conditions
-                && !(newVariableTarget instanceof ReturnVariable)
-                // scope variables are being re-assigned the same value all the time (External_8ABC)
-                && !(newVariableTarget instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.ScopeVariable)
-                && !context.evaluationContext().firstAssignmentOfFieldInConstructor(newVariableTarget)) {
+                                             ((ive2 = valueResultValue.asInstanceOf(IsVariableExpression.class)) != null)
+                                             && newVariableTarget.equals(ive2.variable()))
+            // no problem to return the same value in different conditions
+            && !(newVariableTarget instanceof ReturnVariable)
+            // scope variables are being re-assigned the same value all the time (External_8ABC)
+            && !(newVariableTarget instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.ScopeVariable)
+            && !context.evaluationContext().firstAssignmentOfFieldInConstructor(newVariableTarget)) {
             LOGGER.debug("Assigning identical value {} to {}", currentValueOfTarget, newVariableTarget);
             builder.assignmentToCurrentValue(newVariableTarget);
             // do continue! we do not want to ignore the assignment; however, due to warnings for self-assignment
@@ -456,8 +456,8 @@ public class Assignment extends BaseExpression implements Expression {
 
             // check illegal assignment into nested type
             if (complainAboutAssignmentOutsideType &&
-                    checkIllAdvisedAssignment(fieldReference, context.getCurrentType(),
-                            context.getAnalyserContext().getFieldInspection(fieldReference.fieldInfo()).isStatic())) {
+                checkIllAdvisedAssignment(fieldReference, context.getCurrentType(),
+                        context.getAnalyserContext().getFieldInspection(fieldReference.fieldInfo()).isStatic())) {
                 builder.addErrorAssigningToFieldOutsideType(fieldReference.fieldInfo());
             }
 
@@ -518,25 +518,13 @@ public class Assignment extends BaseExpression implements Expression {
         LinkedVariables linkedVariables;
         if (allowStaticallyAssigned) {
             Set<Variable> directAssignment = value.directAssignmentVariables();
-            LinkedVariables lv2;
             if (!directAssignment.isEmpty()) {
                 Map<Variable, DV> map = directAssignment.stream()
                         .collect(Collectors.toMap(v -> v, v -> LinkedVariables.LINK_STATICALLY_ASSIGNED));
-                lv2 = lvExpression.merge(LinkedVariables.of(map));
+                linkedVariables = lvExpression.merge(LinkedVariables.of(map));
             } else {
-                lv2 = lvExpression;
+                linkedVariables = lvExpression;
             }
-            /*
-            additional rule: if we're directly assigned to a field, then the field's scope becomes LINK_IS_HC_OF:3.
-             */
-           /*
-            TODO:IS_HC
-            Set<Variable> scopesOfStatically = lv2.scopesOfStaticallyAssigned();
-            if (!scopesOfStatically.isEmpty()) {
-                linkedVariables = lv2.ensureDependent(scopesOfStatically);
-            } else {*/
-            linkedVariables = lv2;
-            //}
         } else {
             linkedVariables = lvExpression;
         }

@@ -22,15 +22,20 @@ import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImp
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.expr.ParseArrayCreationExpr;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -134,7 +139,23 @@ public class TestAssignment {
             public Location getLocation(Stage level) {
                 return Location.NOT_YET_SET;
             }
+
+            @Override
+            public Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression) {
+                if(parameterizedType == primitives.stringParameterizedType()) {
+                    return PRIMITIVE_VALUE_PROPERTIES;
+                }
+                return super.defaultValueProperties(parameterizedType, valueForNotNullExpression);
+            }
         };
+    }
+
+
+    @BeforeEach
+    public void beforeEach() {
+        TypeInfo string = primitives.stringTypeInfo();
+        string.typeInspection.set(new TypeInspectionImpl.Builder(string, Inspector.BY_HAND)
+                .setAccess(Inspection.Access.PUBLIC));
     }
 
     private EvaluationResult context(EvaluationContext evaluationContext) {
@@ -145,6 +166,14 @@ public class TestAssignment {
         return new LocalVariable.Builder()
                 .setName(name)
                 .setParameterizedType(primitives.intParameterizedType())
+                .setOwningType(primitives.stringTypeInfo())
+                .build();
+    }
+
+    private LocalVariable makeLocalVariableString(String name) {
+        return new LocalVariable.Builder()
+                .setName(name)
+                .setParameterizedType(primitives.stringParameterizedType())
                 .setOwningType(primitives.stringTypeInfo())
                 .build();
     }
@@ -436,6 +465,13 @@ public class TestAssignment {
         VariableExpression vd = makeLVAsExpression("d", zero);
         VariableExpression ve = makeLVAsExpression("e", zero);
         VariableExpression vv = makeLVAsExpression("v", zero);
+
+        FieldInfo fieldInfo = new FieldInfo(newId(), primitives.intParameterizedType(), "f",
+                primitives.stringTypeInfo());
+        fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder(fieldInfo).build(inspectionProvider));
+        FieldReference f = new FieldReferenceImpl(inspectionProvider, fieldInfo);
+        VariableExpression vf = new VariableExpression(newId(), f);
+
         ExpressionMock mockFormal = new ExpressionMock() {
             @Override
             public LinkedVariables linkedVariables(EvaluationResult context) {
@@ -453,7 +489,8 @@ public class TestAssignment {
             @Override
             public LinkedVariables linkedVariables(EvaluationResult context) {
                 return LinkedVariables.of(Map.of(vb.variable(), LinkedVariables.LINK_COMMON_HC,
-                        vc.variable(), LinkedVariables.LINK_COMMON_HC));
+                        vc.variable(), LinkedVariables.LINK_COMMON_HC,
+                        vf.variable(), LinkedVariables.LINK_STATICALLY_ASSIGNED));
             }
         };
         Instance instance = Instance.forTesting(primitives.intParameterizedType());
@@ -468,6 +505,32 @@ public class TestAssignment {
         LinkedVariables lv = result.linkedVariables(vv.variable());
 
         // we take values from both, minimize; 0->1; static assignment variables
-        assertEquals("a:2,b:4,c:1,d:1,e:0", lv.toString());
+        assertEquals("a:2,b:4,c:1,d:1,e:0,this.f:1", lv.toString());
+    }
+
+    @Test @DisplayName("mark modified")
+    public void test14() {
+        LocalVariable lvs = makeLocalVariableString("s");
+        StringConstant abc = new StringConstant(primitives, "abc");
+        LocalVariableCreation s = new LocalVariableCreation(newId(), newId(),
+                new LocalVariableReference(lvs, abc));
+        VariableExpression vs = new VariableExpression(newId(), s.localVariableReference);
+
+        FieldInfo fieldInfo = new FieldInfo(newId(), primitives.intParameterizedType(), "f",
+                primitives.stringTypeInfo());
+        fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder(fieldInfo).build(inspectionProvider));
+        FieldReference f = new FieldReferenceImpl(inspectionProvider, fieldInfo, vs, null,
+                primitives.stringTypeInfo());
+        VariableExpression vf = new VariableExpression(newId(), f);
+        assertEquals("s.f", vf.toString());
+
+        StringConstant x = new StringConstant(primitives, "x");
+        Assignment a  = new Assignment(primitives, vf, x);
+        assertEquals("s.f=\"x\"", a.minimalOutput());
+
+        EvaluationResult context = context(evaluationContext(Map.of("s", abc, "f", NullConstant.NULL_CONSTANT)));
+        EvaluationResult result = a.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+
+        assertEquals(1, result.messages().size());
     }
 }
