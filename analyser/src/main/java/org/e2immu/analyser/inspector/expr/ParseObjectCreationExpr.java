@@ -93,13 +93,13 @@ public class ParseObjectCreationExpr {
             assert parameterizedType != null;
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType(),
                     expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
-            TypeInspector typeInspector = typeContext.typeMap.newTypeInspector(anonymousType, true, true);
+            TypeInspector typeInspector = typeContext.typeMap().newTypeInspector(anonymousType, true, true);
             typeInspector.inspectAnonymousType(parameterizedType,
                     expressionContext.newAnonymousClassBody(parameterizedType.typeInfo),
                     objectCreationExpr.getAnonymousClassBody().get());
 
             expressionContext.resolver().resolve(typeContext,
-                    typeContext.typeMap.getE2ImmuAnnotationExpressions(), false,
+                    typeContext.typeMap().getE2ImmuAnnotationExpressions(), false,
                     expressionContext.resolver().storeComments(),
                     Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
 

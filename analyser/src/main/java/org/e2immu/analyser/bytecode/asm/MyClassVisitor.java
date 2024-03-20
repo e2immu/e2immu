@@ -23,6 +23,7 @@ import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.impl.TypeContextImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -64,7 +65,7 @@ public class MyClassVisitor extends ClassVisitor {
         this.annotationStore = annotationStore;
         jetBrainsAnnotationTranslator = annotationStore != null
                 ? new JetBrainsAnnotationTranslator(typeContext.getPrimitives(),
-                typeContext.typeMap.getE2ImmuAnnotationExpressions()) : null;
+                typeContext.typeMap().getE2ImmuAnnotationExpressions()) : null;
     }
 
     private static TypeNature typeNatureFromOpCode(int opCode) {
@@ -287,7 +288,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         boolean lastParameterIsVarargs = (access & Opcodes.ACC_VARARGS) != 0;
 
-        TypeContext methodContext = new TypeContext(typeContext);
+        TypeContext methodContext = new TypeContextImpl(typeContext);
         ParseGenerics parseGenerics = new ParseGenerics(methodContext, currentType, typeInspectionBuilder, localTypeMap,
                 LocalTypeMap.LoadMode.QUEUE);
 

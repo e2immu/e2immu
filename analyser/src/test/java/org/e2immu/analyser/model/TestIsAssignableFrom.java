@@ -60,7 +60,7 @@ public class TestIsAssignableFrom {
         URI jar = new URI(TestParseGenerics.SOME_JAR);
         Source source = new Source("java/util/LinkedList.class", jar);
         List<TypeData> data = parser.getByteCodeInspector().inspectFromPath(source);
-        parser.getTypeContext().typeMap.copyIntoTypeMap(data.get(0).getTypeInspectionBuilder().typeInfo(), data);
+        parser.getTypeContext().typeMap().copyIntoTypeMap(data.get(0).getTypeInspectionBuilder().typeInfo(), data);
     }
 
     // int <- String should fail, int <- Integer should not
@@ -174,9 +174,9 @@ public class TestIsAssignableFrom {
         assertFalse(stringPt.isAssignableFrom(typeContext, objectPt));
         assertFalse(charSeqPt.isAssignableFrom(typeContext, objectPt));
 
-        ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap.get(JAVA_LANG_STRING)), 1);
-        ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap.get(JAVA_LANG_CHAR_SEQUENCE)), 1);
-        ParameterizedType objectArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap.get(JAVA_LANG_OBJECT)), 1);
+        ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap().get(JAVA_LANG_STRING)), 1);
+        ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap().get(JAVA_LANG_CHAR_SEQUENCE)), 1);
+        ParameterizedType objectArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMap().get(JAVA_LANG_OBJECT)), 1);
 
         CharSequence[] sequences = new String[]{"a", "b"};
         for (CharSequence sequence : sequences) {
@@ -197,8 +197,8 @@ public class TestIsAssignableFrom {
     @Test
     public void testArray2() {
         // String[][] --> Object[]
-        ParameterizedType stringArray2Pt = new ParameterizedType(typeContext.typeMap.get(JAVA_LANG_STRING), 2);
-        ParameterizedType objectArrayPt = new ParameterizedType(typeContext.typeMap.get(JAVA_LANG_OBJECT), 1);
+        ParameterizedType stringArray2Pt = new ParameterizedType(typeContext.typeMap().get(JAVA_LANG_STRING), 2);
+        ParameterizedType objectArrayPt = new ParameterizedType(typeContext.typeMap().get(JAVA_LANG_OBJECT), 1);
         assertTrue(objectArrayPt.isAssignableFrom(typeContext, stringArray2Pt));
         assertFalse(stringArray2Pt.isAssignableFrom(typeContext, objectArrayPt));
     }
@@ -208,8 +208,8 @@ public class TestIsAssignableFrom {
         // both possible, but
         // Object <- String[]   should be higher
         // Object[] <- String[] should be lower
-        ParameterizedType stringArrayPt = new ParameterizedType(typeContext.typeMap.get(JAVA_LANG_STRING), 1);
-        ParameterizedType objectArrayPt = new ParameterizedType(typeContext.typeMap.get(JAVA_LANG_OBJECT), 1);
+        ParameterizedType stringArrayPt = new ParameterizedType(typeContext.typeMap().get(JAVA_LANG_STRING), 1);
+        ParameterizedType objectArrayPt = new ParameterizedType(typeContext.typeMap().get(JAVA_LANG_OBJECT), 1);
         int oFromString1 = new IsAssignableFrom(typeContext, primitives.objectParameterizedType(), stringArrayPt).execute(false, IsAssignableFrom.Mode.COVARIANT);
         assertTrue(oFromString1 > 0);
         int o1FromString1 = new IsAssignableFrom(typeContext, objectArrayPt, stringArrayPt).execute(false, IsAssignableFrom.Mode.COVARIANT);
@@ -233,8 +233,8 @@ public class TestIsAssignableFrom {
     @Test
     public void testTypeParameters1() {
         ParameterizedType stringPt = type(JAVA_LANG_STRING);
-        ParameterizedType listString = new ParameterizedType(typeContext.typeMap.get(List.class), List.of(stringPt));
-        ParameterizedType linkedListString = new ParameterizedType(typeContext.typeMap.get(LinkedList.class), List.of(stringPt));
+        ParameterizedType listString = new ParameterizedType(typeContext.typeMap().get(List.class), List.of(stringPt));
+        ParameterizedType linkedListString = new ParameterizedType(typeContext.typeMap().get(LinkedList.class), List.of(stringPt));
 
         assertTrue(listString.isAssignableFrom(typeContext, linkedListString));
         assertFalse(linkedListString.isAssignableFrom(typeContext, listString));
@@ -263,7 +263,7 @@ public class TestIsAssignableFrom {
     }
 
     private ParameterizedType type(String name) {
-        TypeInfo typeInfo = Objects.requireNonNull(typeContext.typeMap.get(name), "Cannot find " + name);
+        TypeInfo typeInfo = Objects.requireNonNull(typeContext.typeMap().get(name), "Cannot find " + name);
         return Objects.requireNonNull(typeInfo.asParameterizedType(typeContext));
     }
 }

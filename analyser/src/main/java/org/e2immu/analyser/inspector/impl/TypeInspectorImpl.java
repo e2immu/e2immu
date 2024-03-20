@@ -223,7 +223,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 dollarResolver = name -> {
                     if (name.endsWith("$") && dollarPackageName != null) {
                         String substring = name.substring(0, name.length() - 1);
-                        return typeContext.typeMap.getOrCreateByteCode(dollarPackageName, substring);
+                        return typeContext.typeMap().getOrCreateByteCode(dollarPackageName, substring);
                     }
                     return null;
                 };
@@ -258,7 +258,7 @@ public class TypeInspectorImpl implements TypeInspector {
             for (AnnotationExpr annotationExpr : parameter.getAnnotations()) {
                 fieldBuilder.addAnnotation(AnnotationInspector.inspect(expressionContext, annotationExpr));
             }
-            expressionContext.typeContext().typeMap.registerFieldInspection(fieldInfo, fieldBuilder);
+            expressionContext.typeContext().typeMap().registerFieldInspection(fieldInfo, fieldBuilder);
             builder.addField(fieldInfo);
 
             return new RecordField(fieldInfo, varargs);
@@ -291,7 +291,7 @@ public class TypeInspectorImpl implements TypeInspector {
             objectCreationExpr.setType(typeInfo.simpleName);
             objectCreationExpr.setRange(enumConstantDeclaration.getRange().orElseThrow());
             fieldBuilder.setInitialiserExpression(objectCreationExpr); // = new EnumType(...)
-            expressionContext.typeContext().typeMap.registerFieldInspection(fieldInfo, fieldBuilder);
+            expressionContext.typeContext().typeMap().registerFieldInspection(fieldInfo, fieldBuilder);
             builder.addField(fieldInfo);
             enumFields.add(fieldInfo);
         });
@@ -317,7 +317,7 @@ public class TypeInspectorImpl implements TypeInspector {
         return typeParameter.getAnnotations().stream()
                 .map(ae -> AnnotationInspector.inspect(expressionContext, ae))
                 .anyMatch(ae -> ae.equals(
-                        expressionContext.typeContext().typeMap.getE2ImmuAnnotationExpressions().independent));
+                        expressionContext.typeContext().typeMap().getE2ImmuAnnotationExpressions().independent));
     }
 
     private void doImplementedTypes(ExpressionContext expressionContext,
@@ -360,7 +360,7 @@ public class TypeInspectorImpl implements TypeInspector {
     private void ensureLoaded(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
         assert parameterizedType.typeInfo != null;
 
-        InspectionProvider inspectionProvider = expressionContext.typeContext().typeMap;
+        InspectionProvider inspectionProvider = expressionContext.typeContext().typeMap();
         // getting the type inspection should trigger either byte-code or java inspection
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
         if (typeInspection == null) {
@@ -496,7 +496,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                   ExpressionContext subContext,
                                   AnnotationMemberDeclaration amd) {
         LOGGER.debug("Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
-        TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
+        TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap();
         MethodInspector methodInspector = new MethodInspectorImpl(typeMapBuilder, typeInfo, fullInspection,
                 storeComments);
         methodInspector.inspect(amd, subContext);
@@ -507,7 +507,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                         AtomicInteger countStaticBlocks,
                                         InitializerDeclaration id) {
         if (fullInspection) {
-            MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap,
+            MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap(),
                     typeInfo, true, storeComments);
             methodInspector.inspect(id, expressionContext, countStaticBlocks.getAndIncrement());
             builder.ensureMethod(methodInspector.getBuilder().getMethodInfo());
@@ -519,7 +519,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                                ExpressionContext subContext,
                                                Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                                CompactConstructorDeclaration ccd) {
-        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
+        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap(), typeInfo,
                 fullInspection, storeComments);
         assert recordFields != null;
         methodInspector.inspect(ccd, subContext, companionMethodsWaiting, recordFields);
@@ -532,7 +532,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                         ExpressionContext subContext,
                                         Map<CompanionMethodName, MethodInspection.Builder> companionMethodsWaiting,
                                         ConstructorDeclaration cd) {
-        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
+        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap(), typeInfo,
                 fullInspection, storeComments);
         boolean isEnumConstructorMustBePrivate = builder.typeNature() == TypeNature.ENUM;
         methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver, isEnumConstructorMustBePrivate);
@@ -572,7 +572,7 @@ public class TypeInspectorImpl implements TypeInspector {
         FieldInspection.Builder fieldInspectionBuilder;
         if (inMap == null) {
             fieldInspectionBuilder = new FieldInspectionImpl.Builder(fieldInfo);
-            typeContext.typeMap.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
+            typeContext.typeMap().registerFieldInspection(fieldInfo, fieldInspectionBuilder);
         } else if (inMap instanceof FieldInspectionImpl.Builder fib) fieldInspectionBuilder = fib;
         else throw new UnsupportedOperationException();
 
@@ -607,7 +607,7 @@ public class TypeInspectorImpl implements TypeInspector {
         CompanionMethodName companionMethodName = CompanionMethodName.extract(methodName);
         boolean methodFullInspection = fullInspection || companionMethodName != null;
 
-        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap, typeInfo,
+        MethodInspector methodInspector = new MethodInspectorImpl(expressionContext.typeContext().typeMap(), typeInfo,
                 methodFullInspection, storeComments);
         methodInspector.inspect(isInterface, methodName, md, subContext,
                 companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
@@ -625,7 +625,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                           TypeContext typeContext,
                                           ExpressionContext subContext) {
         assert recordFields != null;
-        MethodInspector methodInspector = new MethodInspectorImpl(typeContext.typeMap, typeInfo,
+        MethodInspector methodInspector = new MethodInspectorImpl(typeContext.typeMap(), typeInfo,
                 fullInspection, storeComments);
         boolean created = methodInspector.inspect(null, subContext, Map.of(), recordFields);
         if (created) {
@@ -653,7 +653,7 @@ public class TypeInspectorImpl implements TypeInspector {
                 .setSynthetic(true)
                 .addModifier(makePrivate ? MethodModifier.PRIVATE : MethodModifier.PUBLIC)
                 .readyToComputeFQN(typeContext);
-        typeContext.typeMap.registerMethodInspection(builder);
+        typeContext.typeMap().registerMethodInspection(builder);
         return builder.getMethodInfo();
     }
 
@@ -675,7 +675,7 @@ public class TypeInspectorImpl implements TypeInspector {
                                 boolean isInterface,
                                 String nameAsString,
                                 TypeDeclaration<?> asTypeDeclaration) {
-        TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap;
+        TypeMap.Builder typeMapBuilder = expressionContext.typeContext().typeMap();
         DollarResolverResult res = subType(typeMapBuilder, dollarResolver, nameAsString);
         TypeInfo subType = res.subType();
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);

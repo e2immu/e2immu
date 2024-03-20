@@ -76,7 +76,7 @@ public class Test_47_CollectUsage extends CommonTestRunner {
                     .forEach(File::delete);
         }
 
-        Composer composer = new Composer(typeContext.typeMap, "test47",
+        Composer composer = new Composer(typeContext.typeMap(), "test47",
                 set::contains);
         Collection<TypeInfo> apiTypes = composer.compose(typesInSet);
         composer.write(apiTypes, testDir.toString());

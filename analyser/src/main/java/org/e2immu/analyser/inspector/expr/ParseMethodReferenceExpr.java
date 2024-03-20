@@ -16,6 +16,7 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import org.e2immu.analyser.inspector.*;
+import org.e2immu.analyser.inspector.impl.TypeContextImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.LambdaExpressionErasures;
 import org.e2immu.analyser.model.expression.MethodReference;
@@ -229,11 +230,11 @@ public class ParseMethodReferenceExpr {
                 return arrayConstruction(typeContext, Identifier.from(methodReferenceExpr), parameterizedType);
             }
             methodCandidates = typeContext.resolveConstructor(parameterizedType, parameterizedType,
-                    TypeContext.IGNORE_PARAMETER_NUMBERS, parameterizedType.initialTypeParameterMap(typeContext));
+                    TypeContextImpl.IGNORE_PARAMETER_NUMBERS, parameterizedType.initialTypeParameterMap(typeContext));
         } else {
             methodCandidates = new HashMap<>();
             typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, TypeContext.IGNORE_PARAMETER_NUMBERS, false,
+                    methodName, TypeContextImpl.IGNORE_PARAMETER_NUMBERS, false,
                     parameterizedType.initialTypeParameterMap(typeContext), methodCandidates,
                     Scope.ScopeNature.INSTANCE);
         }
@@ -260,7 +261,7 @@ public class ParseMethodReferenceExpr {
                                                      Identifier identifier,
                                                      ParameterizedType parameterizedType) {
         MethodInfo arrayConstructor = ParseArrayCreationExpr.createArrayCreationConstructor(typeContext, parameterizedType);
-        TypeInfo intFunction = typeContext.typeMap.get("java.util.function.IntFunction");
+        TypeInfo intFunction = typeContext.typeMap().get("java.util.function.IntFunction");
         if (intFunction == null) throw new UnsupportedOperationException("? need IntFunction");
         ParameterizedType intFunctionPt = new ParameterizedType(intFunction, List.of(parameterizedType));
         return new MethodReference(Identifier.generate("method reference in array construction"),

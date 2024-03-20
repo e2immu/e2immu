@@ -61,7 +61,7 @@ public class EnumMethods {
                               TypeInspectionImpl.Builder builder, List<FieldInfo> enumFields) {
         var typeContext = expressionContext.typeContext();
         var primitives = typeContext.getPrimitives();
-        var e2 = typeContext.typeMap.getE2ImmuAnnotationExpressions();
+        var e2 = typeContext.typeMap().getE2ImmuAnnotationExpressions();
 
         var notNullContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notNull);
         var notModifiedContract = E2ImmuAnnotationExpressions.createContract(primitives, e2.notModified);
@@ -77,7 +77,7 @@ public class EnumMethods {
                 .addAnnotation(immContainer)
                 .addAnnotation(notModifiedContract);
         nameBuilder.readyToComputeFQN(typeContext);
-        typeContext.typeMap.registerMethodInspection(nameBuilder);
+        typeContext.typeMap().registerMethodInspection(nameBuilder);
         builder.addMethod(nameBuilder.getMethodInfo());
 
         // values() returns E[]
@@ -99,7 +99,7 @@ public class EnumMethods {
                 .setAccess(Inspection.Access.PUBLIC)
                 .setInspectedBlock(valuesBlock);
         valuesBuilder.readyToComputeFQN(typeContext);
-        typeContext.typeMap.registerMethodInspection(valuesBuilder);
+        typeContext.typeMap().registerMethodInspection(valuesBuilder);
         builder.addMethod(valuesBuilder.getMethodInfo());
 
         // valueOf() returns E
@@ -125,7 +125,7 @@ public class EnumMethods {
             valueOfBuilder.setInspectedBlock(codeBlock);
         }
 
-        typeContext.typeMap.registerMethodInspection(valueOfBuilder);
+        typeContext.typeMap().registerMethodInspection(valueOfBuilder);
         builder.addMethod(valueOfBuilder.getMethodInfo());
     }
 
@@ -213,7 +213,7 @@ public class EnumMethods {
 
         var lambdaType = new TypeInfo(enumType,
                 expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType()));
-        var typeBuilder = typeContext.typeMap.add(lambdaType, BY_HAND);
+        var typeBuilder = typeContext.typeMap().add(lambdaType, BY_HAND);
         typeBuilder.setTypeNature(TypeNature.CLASS)
                 .setSynthetic(true)
                 .setAccess(Inspection.Access.PRIVATE)
@@ -235,7 +235,7 @@ public class EnumMethods {
         var codeBlock = returnEquals(typeContext, nameMethod, nameParameter, predicate0);
         predicate.setInspectedBlock(codeBlock);
 
-        typeContext.typeMap.registerMethodInspection(predicate);
+        typeContext.typeMap().registerMethodInspection(predicate);
         typeBuilder.addMethod(predicate.getMethodInfo());
 
         var lambdaTypeResolution = new TypeResolution.Builder()

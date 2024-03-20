@@ -45,18 +45,18 @@ public class TestPreloadJavaBase {
         // interestingly, java.util.List has been referred to, but it has not been loaded
         // because it has not yet appeared in a type hierarchy (but it has appeared as a field type
         // in some private field of java.lang.Throwable)
-        TypeInfo list = typeContext.typeMap.get("java.util.List");
+        TypeInfo list = typeContext.typeMap().get("java.util.List");
         assertNotNull(list);
-        TypeInfo classLoader = typeContext.typeMap.get("java.lang.ClassLoader");
+        TypeInfo classLoader = typeContext.typeMap().get("java.lang.ClassLoader");
         assertNotNull(classLoader);
-        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap.getInspectionState(classLoader));
+        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap().getInspectionState(classLoader));
 
-        TypeInfo list2 = typeContext.typeMap.getOrCreate("java.util.List", true);
+        TypeInfo list2 = typeContext.typeMap().getOrCreate("java.util.List", true);
         assertNotNull(list2);
-        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMap.getInspectionState(list2));
+        assertEquals(InspectionState.TRIGGER_BYTECODE_INSPECTION, typeContext.typeMap().getInspectionState(list2));
         // the next call will trigger the byte code inspection of "list":
         TypeInspection listInspection = typeContext.getTypeInspection(list2);
         assertNotNull(listInspection);
-        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap.getInspectionState(list2));
+        assertEquals(InspectionState.FINISHED_BYTECODE, typeContext.typeMap().getInspectionState(list2));
     }
 }

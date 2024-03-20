@@ -100,7 +100,7 @@ public final class LambdaExpressionErasures extends BaseExpression implements Er
 
     @Override
     public Set<ParameterizedType> erasureTypes(TypeContext typeContext) {
-        return counts.stream().map(count -> typeContext.typeMap
+        return counts.stream().map(count -> typeContext.typeMap()
                         .syntheticFunction(count.parameters, count.isVoid).asParameterizedType(typeContext))
                 .collect(Collectors.toUnmodifiableSet());
     }

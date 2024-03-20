@@ -131,7 +131,7 @@ public class TestLinkingExpression {
 
         // new ArrayList<>()
         ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.constant("cc"), null,
-                arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMap),
+                arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMap()),
                 Diamond.YES, List.of());
         LinkedVariables linkedVariables = newObject.linkedVariables(context);
         assertTrue(linkedVariables.isEmpty());
@@ -150,7 +150,7 @@ public class TestLinkingExpression {
         // new ArrayList<>(v), with v a local collection variable
         // because no AnnotatedAPI, v is @Dependent
         ConstructorCall newObject = ConstructorCall.objectCreation(Identifier.constant("cc"), null,
-                arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMap),
+                arrayListConstructor, arrayList.asParameterizedType(typeContext.typeMap()),
                 Diamond.YES, List.of(ve));
         LinkedVariables linkedVariables = newObject.linkedVariables(context);
         assertEquals("v:2", linkedVariables.toString());

@@ -17,6 +17,7 @@ package org.e2immu.analyser.bytecode.asm;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.impl.TypeContextImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.log.LogTarget;
 import org.e2immu.analyser.model.*;
@@ -54,10 +55,11 @@ public class TestParseGenerics {
         classPath.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        typeContext = new TypeContext(new TypeMapImpl.Builder(classPath, false));
+        TypeContextImpl tci = new TypeContextImpl(new TypeMapImpl.Builder(classPath, false));
         byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationParser, typeContext);
-        typeContext.typeMap.setByteCodeInspector(byteCodeInspector);
-        typeContext.loadPrimitives();
+        tci.typeMap().setByteCodeInspector(byteCodeInspector);
+        tci.loadPrimitives();
+        typeContext = tci;
         Input.preload(typeContext, classPath, "java.util");
     }
 
@@ -96,7 +98,7 @@ public class TestParseGenerics {
         TypeInfo typeInfo = typeContext.getFullyQualified(EnumMap.class);
         TypeInspectionImpl.Builder typeInspectionBuilder = (TypeInspectionImpl.Builder)
                 typeContext.getTypeInspection(typeInfo);
-        TypeContext newTypeContext = new TypeContext(typeContext);
+        TypeContext newTypeContext = new TypeContextImpl(typeContext);
 
 
         String signature = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>Ljava/util/AbstractMap<TK;TV;>;Ljava/io/Serializable;Ljava/lang/Cloneable;";
@@ -156,13 +158,13 @@ public class TestParseGenerics {
     }
 
     @Test
-    public void testGenericsAbstractClassLoaderValue() throws URISyntaxException {
-        TypeContext newTypeContext = new TypeContext(typeContext);
+    public void testGenericsAbstractClassLoaderValue() {
+        TypeContext newTypeContext = new TypeContextImpl(typeContext);
         newTypeContext.addToContext(new TypeParameterImpl("V", 0).noTypeBounds());
         newTypeContext.addToContext(new TypeParameterImpl("CLV", 1).noTypeBounds());
         ByteCodeInspectorImpl byteCodeInspector = new ByteCodeInspectorImpl(classPath, null, newTypeContext);
         TypeInfo typeInfo = new TypeInfo("jdk.internal.loader", "AbstractClassLoaderValue");
-        TypeInspection.Builder typeInspectionBuilder = typeContext.typeMap.add(typeInfo, STARTING_BYTECODE);
+        TypeInspection.Builder typeInspectionBuilder = typeContext.typeMap().add(typeInfo, STARTING_BYTECODE);
 
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
                 byteCodeInspector.localTypeMap(), LocalTypeMap.LoadMode.NOW);

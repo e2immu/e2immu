@@ -11,6 +11,7 @@ import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
+import org.e2immu.analyser.inspector.impl.TypeContextImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectorImpl;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
@@ -61,7 +62,7 @@ public class InspectAll implements InspectWithJavaParser {
     record CompilationUnitData(URI sourceFile,
                                CompilationUnit compilationUnit,
                                String packageName,
-                               TypeContext typeContextOfFile,
+                               TypeContextImpl typeContextOfFile,
                                Map<TypeInfo, TypeData> typeData) {
     }
 
@@ -200,20 +201,20 @@ public class InspectAll implements InspectWithJavaParser {
         }
 
         String packageName = compilationUnit.getPackageDeclaration().map(NodeWithName::getNameAsString).orElse("");
-        TypeContext typeContextOfFile = new TypeContext(packageName, globalTypeContext, false);
+        TypeContextImpl typeContextOfFile = new TypeContextImpl(packageName, globalTypeContext, false);
 
         Map<TypeInfo, TypeData> typesInUnit = new HashMap<>();
         for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
             String name = td.getNameAsString();
             Identifier id = Identifier.from(compilationUnit);
-            TypeInspection.Builder typeInspection = typeContextOfFile.typeMap.getOrCreate(packageName, name, id,
+            TypeInspection.Builder typeInspection = typeContextOfFile.typeMap().getOrCreate(packageName, name, id,
                     INIT_JAVA_PARSER);
             TypeInfo typeInfo = typeInspection.typeInfo();
             typeContextOfFile.addToContext(typeInfo);
             TypeInspector typeInspector = new TypeInspectorImpl(typeInspection, true,
                     dollarTypesAreNormalTypes, storeComments());
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td, dollarTypesAreNormalTypes);
-            TypeContext typeContextOfType = new TypeContext(packageName, typeContextOfFile, true);
+            TypeContext typeContextOfType = new TypeContextImpl(packageName, typeContextOfFile, true);
             TypeData typeData = new TypeData(td, typeInspector, typeContextOfType, new ArrayList<>());
             typesInUnit.put(typeInfo, typeData);
         }
@@ -253,7 +254,7 @@ public class InspectAll implements InspectWithJavaParser {
 
 
     private void processImports(CompilationUnit compilationUnit,
-                                @Modified TypeContext typeContextOfFile,
+                                @Modified TypeContextImpl typeContextOfFile,
                                 Trie<TypeInfo> trie,
                                 String packageName) {
         for (ImportDeclaration importDeclaration : compilationUnit.getImports()) {
@@ -285,7 +286,9 @@ public class InspectAll implements InspectWithJavaParser {
         }
     }
 
-    private void importAsterisk(TypeContext typeContextOfFile, String packageName, String fullyQualified,
+    private void importAsterisk(TypeContextImpl typeContextOfFile,
+                                String packageName,
+                                String fullyQualified,
                                 Trie<TypeInfo> trie) {
         LOGGER.debug("Need to parse package {}", fullyQualified);
         if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
@@ -311,7 +314,7 @@ public class InspectAll implements InspectWithJavaParser {
                     // primary type
                     String simpleName = StringUtil.stripDotClass(leaf);
                     Identifier id = Identifier.from(urls.get(0));
-                    TypeInfo newTypeInfo = typeContextOfFile.typeMap
+                    TypeInfo newTypeInfo = typeContextOfFile.typeMap()
                             .getOrCreate(fullyQualified, simpleName, id, TRIGGER_BYTECODE_INSPECTION)
                             .typeInfo();
                     LOGGER.debug("Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);

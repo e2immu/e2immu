@@ -70,7 +70,7 @@ public class ParseForEachStmt {
         This method needs to return the concrete value for the type parameter of Iterable.
          */
         TypeContext typeContext = expressionContext.typeContext();
-        TypeInfo iterable = typeContext.typeMap.get(Iterable.class);
+        TypeInfo iterable = typeContext.typeMap().get(Iterable.class);
         ParameterizedType iterablePt = iterable.asParameterizedType(typeContext);
         ParameterizedType concreteSuperType = type.concreteSuperType(typeContext, iterablePt);
         assert concreteSuperType != null : """

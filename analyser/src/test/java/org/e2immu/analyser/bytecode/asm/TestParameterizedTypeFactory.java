@@ -15,6 +15,7 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.impl.TypeContextImpl;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
@@ -36,7 +37,7 @@ public class TestParameterizedTypeFactory {
     public void beforeAll() throws IOException {
         Resources classPath = new Resources();
         classPath.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
-        typeContext = new TypeContext(new TypeMapImpl.Builder(classPath, false));
+        typeContext = new TypeContextImpl(new TypeMapImpl.Builder(classPath, false));
         byteCodeInspector = new ByteCodeInspectorImpl(classPath, null, typeContext);
     }
 

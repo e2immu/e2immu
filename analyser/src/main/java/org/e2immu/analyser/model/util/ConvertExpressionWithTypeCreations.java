@@ -37,12 +37,12 @@ public class ConvertExpressionWithTypeCreations {
                                                            ExpressionContext expressionContext,
                                                            Identifier identifier) {
         TypeContext typeContext = expressionContext.typeContext();
-        TypeInfo supplier = typeContext.typeMap.syntheticFunction(0, false);
+        TypeInfo supplier = typeContext.typeMap().syntheticFunction(0, false);
         ParameterizedType supplierType = new ParameterizedType(supplier, List.of(supplierReturnType));
 
         int index = expressionContext.anonymousTypeCounters().newIndex(expressionContext.primaryType());
         TypeInfo typeInfo = new TypeInfo(enclosingType, index);
-        TypeInspection.Builder builder = typeContext.typeMap.add(typeInfo, InspectionState.BY_HAND);
+        TypeInspection.Builder builder = typeContext.typeMap().add(typeInfo, InspectionState.BY_HAND);
 
         builder.setSynthetic(true);
         builder.setTypeNature(TypeNature.CLASS);
@@ -57,7 +57,7 @@ public class ConvertExpressionWithTypeCreations {
         methodBuilder.setSynthetic(true);
         methodBuilder.setAccess(Inspection.Access.PUBLIC); // implements supplier
         methodBuilder.readyToComputeFQN(typeContext);
-        typeContext.typeMap.registerMethodInspection(methodBuilder);
+        typeContext.typeMap().registerMethodInspection(methodBuilder);
 
         Block block = methodContent(parsedExpression, identifier);
         methodBuilder.setInspectedBlock(block);

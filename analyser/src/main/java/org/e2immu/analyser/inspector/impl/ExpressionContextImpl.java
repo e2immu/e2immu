@@ -144,7 +144,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         LOGGER.debug("Creating a new type context for subtype {}", subType.simpleName);
         return new ExpressionContextImpl(resolver, subType, null,
                 null, null, null, primaryType,
-                new TypeContext(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
+                new TypeContextImpl(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
     @Override
@@ -152,7 +152,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         LOGGER.debug("Creating a new type context for {}", reason);
         return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType, enclosingMethod,
                 enclosingField, typeOfEnclosingSwitchExpression, primaryType,
-                new TypeContext(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
+                new TypeContextImpl(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
     @Override
@@ -160,13 +160,13 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         LOGGER.debug("Creating a new type context for initialiser of field {}", fieldInfo.fullyQualifiedName());
         return new ExpressionContextImpl(resolver, enclosingType, null, null,
                 fieldInfo, null, primaryType,
-                new TypeContext(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
+                new TypeContextImpl(typeContext), variableContext, anonymousTypeCounters, fieldAccessStore);
     }
 
     @Override
     public ExpressionContext newAnonymousClassBody(TypeInfo baseType) {
         LOGGER.debug("Creating a new type and variable context for an anonymous class body extending {}", baseType);
-        TypeContext extendedTypeContext = new TypeContext(typeContext);
+        TypeContextImpl extendedTypeContext = new TypeContextImpl(typeContext);
         extendedTypeContext.recursivelyAddVisibleSubTypes(baseType);
         VariableContext newVariableContext = VariableContext.dependentVariableContext(variableContext);
         return new ExpressionContextImpl(resolver, enclosingType, uninspectedEnclosingType,
@@ -271,7 +271,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 newStatement = tryStatement(statement.asTryStmt(), identifier, labelOfStatement, comment);
             } else if (statement.isContinueStmt()) {
                 String goTo = statement.asContinueStmt().getLabel().map(SimpleName::asString).orElse(null);
-                newStatement = new ContinueStatement(identifier,labelOfStatement, goTo, comment);
+                newStatement = new ContinueStatement(identifier, labelOfStatement, goTo, comment);
             } else if (statement.isBreakStmt()) {
                 String goTo = statement.asBreakStmt().getLabel().map(SimpleName::asString).orElse(null);
                 newStatement = new BreakStatement(identifier, labelOfStatement, goTo, comment);
@@ -457,7 +457,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 unionOfTypes = unionType.getElements()
                         .stream()
                         .map(rt -> ParameterizedTypeFactory.from(typeContext, rt)).collect(Collectors.toList());
-                typeOfVariable = typeContext.typeMap.get("java.lang.Exception").asParameterizedType(typeContext);
+                typeOfVariable = typeContext.typeMap().get("java.lang.Exception").asParameterizedType(typeContext);
             } else {
                 typeOfVariable = ParameterizedTypeFactory.from(typeContext, parameter.getType());
                 unionOfTypes = List.of(typeOfVariable);
@@ -511,17 +511,17 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
         String localName = statement.getClassDeclaration().getNameAsString();
         String typeName = StringUtil.capitalise(enclosingMethod.name) + "$" + localName + "$" + anonymousTypeCounters.newIndex(primaryType);
         TypeInfo typeInfo = new TypeInfo(enclosingType, typeName);
-        TypeInspector typeInspector = typeContext.typeMap.newTypeInspector(typeInfo, true, true);
+        TypeInspector typeInspector = typeContext.typeMap().newTypeInspector(typeInfo, true, true);
         typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
 
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
         List<MethodInspection> methodAndConstructorInspections = typeInspection.methodsAndConstructors()
                 .stream().map(typeContext::getMethodInspection).toList();
 
-        resolver.resolve(typeContext, typeContext.typeMap.getE2ImmuAnnotationExpressions(),
+        resolver.resolve(typeContext, typeContext.typeMap().getE2ImmuAnnotationExpressions(),
                 false, resolver.storeComments(), Map.of(typeInfo, this));
 
-        typeContext.addToContext(localName, typeInfo, true);
+       typeContext.addToContext(localName, typeInfo, true);
         return new LocalClassDeclaration(identifier, typeInfo, methodAndConstructorInspections, comment);
     }
 
@@ -708,7 +708,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 Expression value = parseExpression(assignExpr.getValue(),
                         new ForwardReturnTypeInfo(target.returnType()));
                 if (value.returnType().isType() && value.returnType().isPrimitiveExcludingVoid() &&
-                        target.returnType().isType() && target.returnType().isPrimitiveExcludingVoid()) {
+                    target.returnType().isType() && target.returnType().isPrimitiveExcludingVoid()) {
                     MethodInfo primitiveOperator = Assignment.operator(primitives, assignExpr.getOperator());
                     return new Assignment(identifier, primitives, target, value, primitiveOperator,
                             null, true, true,
@@ -820,7 +820,7 @@ public record ExpressionContextImpl(ExpressionContext.ResolverRecursion resolver
                 return ParseNormalAnnotation.parse(this, normalAnnotationExpr);
             }
             throw new UnsupportedOperationException("Unknown expression type " + expression +
-                    " class " + expression.getClass() + " at " + expression.getBegin());
+                                                    " class " + expression.getClass() + " at " + expression.getBegin());
         } catch (RuntimeException rte) {
             LOGGER.error("Caught exception parsing expression of {} from {} to {}",
                     expression.getClass(),

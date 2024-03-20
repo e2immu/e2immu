@@ -21,6 +21,7 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.impl.TypeContextImpl;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
@@ -68,10 +69,12 @@ public record Input(Configuration configuration,
         LOGGER.info("Combined classpath and test classpath has {} entries", classPathAsList.size());
         Resources classPath = assemblePath(configuration, true, "Classpath", classPathAsList);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath, configuration.annotationXmlConfiguration());
-        LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
-        TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder(classPath, configuration.parallel()));
+        LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath",
+                annotationStore.getNumberOfAnnotations());
+        TypeMapImpl.Builder typeMap = new TypeMapImpl.Builder(classPath, configuration.parallel());
+        TypeContextImpl globalTypeContext = new TypeContextImpl(typeMap);
         ByteCodeInspector byteCodeInspector = new ByteCodeInspectorImpl(classPath, annotationStore, globalTypeContext);
-        globalTypeContext.typeMap.setByteCodeInspector(byteCodeInspector);
+        globalTypeContext.typeMap().setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();
         for (String packageName : new String[]{"org.e2immu.annotation", "java.lang", "java.util.function"}) {
             preload(globalTypeContext, classPath, packageName); // needed for our own stuff
@@ -148,7 +151,7 @@ public record Input(Configuration configuration,
                     if (acceptSource(packageName, typeName, restrictions)) {
                         URI uri = list.get(0);
                         TypeInfo typeInfo = new TypeInfo(Identifier.from(uri), packageName, typeName);
-                        globalTypeContext.typeMap.add(typeInfo, INIT_JAVA_PARSER);
+                        globalTypeContext.typeMap().add(typeInfo, INIT_JAVA_PARSER);
                         sourceURLs.put(typeInfo, uri);
                         parts[n] = typeName;
                         trie.add(parts, typeInfo);
@@ -192,7 +195,7 @@ public record Input(Configuration configuration,
                 // test against hard-coded types
                 TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, true);
                 if (!typeInfo.typeInspection.isSet()) {
-                    globalTypeContext.typeMap.getTypeInspection(typeInfo);
+                    globalTypeContext.typeMap().getTypeInspection(typeInfo);
                     inspected.incrementAndGet();
                 }
             }
