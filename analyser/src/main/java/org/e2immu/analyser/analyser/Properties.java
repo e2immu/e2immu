@@ -208,13 +208,13 @@ public class Properties implements Comparable<Properties> {
         return compareMaps(map, o.map);
     }
 
-    public static <T extends Comparable<? super T>> int compareMaps(Map<T, DV> map1, Map<T, DV> map2) {
+    public static <T extends Comparable<? super T>, D extends Comparable<? super D>> int compareMaps(Map<T, D> map1, Map<T, D> map2) {
         int c = map1.size() - map2.size();
         if (c != 0) return c;
         // same size
         int differentValue = 0;
-        for (Map.Entry<T, DV> e : map1.entrySet()) {
-            DV dv = map2.get(e.getKey());
+        for (Map.Entry<T, D> e : map1.entrySet()) {
+            D dv = map2.get(e.getKey());
             if (dv != null && differentValue == 0) {
                 // are there different values?
                 differentValue = e.getValue().compareTo(dv);
@@ -243,7 +243,7 @@ public class Properties implements Comparable<Properties> {
     public String sortedToString() {
         return stream().map(Object::toString).sorted().collect(Collectors.joining(", "));
     }
-    
+
     public Properties delay(Predicate<Property> toDelay, Predicate<Property> toFalse, CausesOfDelay causesOfDelay) {
         Map<Property, DV> newMap = new HashMap<>();
         for (Map.Entry<Property, DV> entry : map.entrySet()) {

@@ -799,7 +799,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             valueChanges.put(assignmentTarget, newEcd);
 
             // TODO not too efficient, but for now... we want to get the symmetry right
-            for (Map.Entry<Variable, DV> entry : linkedVariables) {
+            for (Map.Entry<Variable, LV> entry : linkedVariables) {
                 link(assignmentTarget, entry.getKey(), entry.getValue(), true);
             }
             return this;
@@ -847,7 +847,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         }
 
         private void removeFromLinkedVariables(Variable variable, Variable assignmentTarget) {
-            LinkedVariables removeLv = LinkedVariables.of(assignmentTarget, LinkedVariables.LINK_ASSIGNED);
+            LinkedVariables removeLv = LinkedVariables.of(assignmentTarget, LV.LINK_ASSIGNED);
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
@@ -897,8 +897,8 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         delayed links must be symmetrical, until we know whether the direction is LINK_IS_HC_OF or not.
         you can never link to the return variable.
          */
-        public void link(Variable from, Variable to, DV level, boolean bidirectional) {
-            assert !LinkedVariables.LINK_INDEPENDENT.equals(level);
+        public void link(Variable from, Variable to, LV level, boolean bidirectional) {
+            assert !LV.LINK_INDEPENDENT.equals(level);
 
             internalLink(from, to, level);
             // TODO:IS_HC
@@ -910,7 +910,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         /*
       we use a null value for inScope to indicate a delay
        */
-        public void internalLink(Variable from, Variable to, DV level) {
+        public void internalLink(Variable from, Variable to, LV level) {
             assert !(to instanceof ReturnVariable) : "Cannot link to return variable";
 
             ChangeData newEcd;

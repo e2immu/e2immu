@@ -534,7 +534,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             linked.variables()
                     .entrySet()
                     .stream()
-                    .filter(e -> e.getValue().le(LinkedVariables.LINK_DEPENDENT))
+                    .filter(e -> e.getValue().le(LV.LINK_DEPENDENT))
                     .map(Map.Entry::getKey)
                     .forEach(v -> raiseErrorForFinalizer(context, builder, v));
         }
@@ -659,12 +659,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             LinkedVariables linkedVariables = object.linkedVariables(context);
             LinkedVariables linkedVariablesValue = objectValue.linkedVariables(context);
             LinkedVariables linkedVariablesCombined = linkedVariables.merge(linkedVariablesValue);
-            for (Map.Entry<Variable, DV> e : linkedVariablesCombined.variables().entrySet()) {
-                DV dv = e.getValue();
+            for (Map.Entry<Variable, LV> e : linkedVariablesCombined.variables().entrySet()) {
+                LV lv = e.getValue();
                 Variable variable = e.getKey();
                 if (ive == null || !variable.equals(ive.variable())) {
-                    if (dv.isDone()) {
-                        if (dv.le(LinkedVariables.LINK_DEPENDENT)) {
+                    if (lv.isDone()) {
+                        if (lv.le(LV.LINK_DEPENDENT)) {
                             ConstructorCall cc;
                             Expression i;
                             Expression varVal = context.currentValue(variable);

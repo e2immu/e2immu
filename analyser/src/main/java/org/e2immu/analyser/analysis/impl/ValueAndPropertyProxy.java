@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analysis.impl;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.Properties;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -92,10 +89,10 @@ public interface ValueAndPropertyProxy {
         }
     }
 
-    default boolean isLinkedToParameter(DV maxLinkLevel) {
+    default boolean isLinkedToParameter(LV maxLinkLevel) {
         return getLinkedVariables().variables().entrySet().stream().anyMatch(e ->
                 e.getKey() instanceof ParameterInfo
-                        && e.getValue().ge(LinkedVariables.LINK_STATICALLY_ASSIGNED)
+                        && e.getValue().ge(LV.LINK_STATICALLY_ASSIGNED)
                         && e.getValue().le(maxLinkLevel));
     }
 }

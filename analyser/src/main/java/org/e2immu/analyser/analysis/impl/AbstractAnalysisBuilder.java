@@ -203,7 +203,6 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         DV notNull = null;
         boolean container = false;
         DV independent = DelayFactory.initialDelay();
-        DV linkLevel = null;
         int[] linkHcParameters = null;
 
         // immutable values
@@ -378,7 +377,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             writeEventual(markValue, false, null, test);
         }
         if (linkHcParameters != null) {
-            writeLinkParameters(LinkedVariables.LINK_COMMON_HC, linkHcParameters);
+            writeHiddenContentLink(linkHcParameters);
         }
         return messages;
     }
@@ -398,7 +397,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         throw new UnsupportedOperationException();
     }
 
-    protected void writeLinkParameters(DV linkLevel, int[] linkParameters) {
+    protected void writeHiddenContentLink(int[] linkParameters) {
         throw new UnsupportedOperationException();
     }
 

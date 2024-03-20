@@ -76,7 +76,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
      * @param b               one of the two types, can be equal to <code>a</code>
      * @return the value for the INDEPENDENT property
      */
-    public DV typesAtLinkLevel(DV linkLevel, ParameterizedType a, DV immutableAInput, ParameterizedType b) {
+    public DV typesAtLinkLevel(LV linkLevel, ParameterizedType a, DV immutableAInput, ParameterizedType b) {
         if (linkLevel.isDelayed()) {
             return linkLevel;
         }

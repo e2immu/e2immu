@@ -99,7 +99,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         super(new LocalAnalyserContext(nonExpandableAnalyserContext), ownerTypeAnalysis, fieldInfo);
         this.acrossAllMethods = analyserContext.getConfiguration().analyserConfiguration().computeFieldAnalyserAcrossAllMethods();
         fieldCanBeWrittenFromOutsideThisPrimaryType = !fieldInfo.fieldInspection.get().isPrivate() &&
-                !fieldInfo.isExplicitlyFinal();
+                                                      !fieldInfo.isExplicitlyFinal();
         haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
         AnalysisStatus.AnalysisResultSupplier<SharedState> anonymousTypeAnalyser = (sharedState) -> {
@@ -229,7 +229,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .filter(ma -> !ma.getMethodInfo().isStaticBlock())
                 .filter(ma -> enclosedIn == null || ma.getMethodInfo().typeInfo.isEnclosedIn(enclosedIn))
                 .filter(ma -> alsoMyOwnConstructors ||
-                        !(ma.getMethodInfo().typeInfo == fieldInfo.owner && ma.getMethodInfo().isConstructor()))
+                              !(ma.getMethodInfo().typeInfo == fieldInfo.owner && ma.getMethodInfo().isConstructor()))
                 .flatMap(ma -> Stream.concat(Stream.of(ma),
                         ma.getLocallyCreatedPrimaryTypeAnalysers()
                                 .flatMap(pta -> pta.methodAnalyserStream(primaryType))));
@@ -335,7 +335,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 builder.addVariableRead(variable);
             }
             if (variable instanceof FieldReference fr && fr.fieldInfo().owner !=
-                    fieldInfo.owner && fr.fieldInfo().owner.primaryType().equals(primaryType)) {
+                                                         fieldInfo.owner && fr.fieldInfo().owner.primaryType().equals(primaryType)) {
                 builder.addVariableRead(fr);
             }
         }
@@ -484,8 +484,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         // we can trust that its value is safe
         ConstructorCall cc;
         if ((cc = value.asInstanceOf(ConstructorCall.class)) != null
-                && cc.anonymousClass() == null
-                && cc.returnType().typeInfo.typeInspection.get().typeNature() == TypeNature.CLASS) {
+            && cc.anonymousClass() == null
+            && cc.returnType().typeInfo.typeInspection.get().typeNature() == TypeNature.CLASS) {
             // we're creating an object, so we don't need the
             return analyserContext.typeContainer(cc.returnType());
         }
@@ -590,7 +590,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
         // if one of the values is the constant null value (and we're not trying to boost @NotNull) then return NULLABLE immediately
         if (!computeContextPropertiesOverAllMethods &&
-                fieldAnalysis.getValues().stream().anyMatch(proxy -> proxy.getValue().isNullConstant())) {
+            fieldAnalysis.getValues().stream().anyMatch(proxy -> proxy.getValue().isNullConstant())) {
             LOGGER.debug("Field {} cannot be @NotNull: one of its values is the null constant", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_NOT_NULL, MultiLevel.NULLABLE_DV);
             return DONE;
@@ -611,12 +611,14 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                     // are the delays on CNN directly linked to the variables that we are linked to?
                     // see Project_0bis
                     boolean breakDelay = sharedState.breakDelayLevel().acceptField() &&
-                            causes.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> {
-                                if (c instanceof VariableCause vc) return filter.contains(vc.variable());
-                                if (c.location().getInfo() instanceof ParameterInfo pi) return filter.contains(pi);
-                                if (c.location().getInfo() instanceof FieldInfo fi) return fieldInfo.equals(fi);
-                                return false;
-                            });
+                                         causes.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> {
+                                             if (c instanceof VariableCause vc) return filter.contains(vc.variable());
+                                             if (c.location().getInfo() instanceof ParameterInfo pi)
+                                                 return filter.contains(pi);
+                                             if (c.location().getInfo() instanceof FieldInfo fi)
+                                                 return fieldInfo.equals(fi);
+                                             return false;
+                                         });
                     if (breakDelay) {
                         LOGGER.debug("Breaking not-null delay on variable {}", vi.variable());
                     }
@@ -653,8 +655,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
         DV worstOverValues;
         if (computeContextPropertiesOverAllMethods) {
-            DV maxLinkLevel = bestOverContext.le(MultiLevel.EFFECTIVELY_NOT_NULL_DV)
-                    ? LinkedVariables.LINK_ASSIGNED : LinkedVariables.LINK_COMMON_HC;
+            LV maxLinkLevel = bestOverContext.le(MultiLevel.EFFECTIVELY_NOT_NULL_DV)
+                    ? LV.LINK_ASSIGNED : LV.LINK_COMMON_HC;
             worstOverValues = worstOverValuesFiltered(bestOverContext, worstOverValuesUnfiltered, maxLinkLevel);
         } else {
             // no filtering, there must be at least one value
@@ -673,11 +675,11 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         return nne;
     }
 
-    private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered, DV maxLinkLevel) {
+    private DV worstOverValuesFiltered(DV bestOverContext, DV worstOverValuesUnfiltered, LV maxLinkLevel) {
         DV worstOverValues;
         DV worst = fieldAnalysis.getValues().stream()
                 .filter(proxy -> proxy.getOrigin() != ValueAndPropertyProxy.Origin.CONSTRUCTION ||
-                        !proxy.isLinkedToParameter(maxLinkLevel))
+                                 !proxy.isLinkedToParameter(maxLinkLevel))
                 .map(proxy -> proxy.getProperty(Property.NOT_NULL_EXPRESSION))
                 .reduce(DV.MAX_INT_DV, DV::min);
         if (worst != DV.MAX_INT_DV) {
@@ -785,7 +787,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 fieldInfo.owner, true);
         DV independent = fieldAnalysis.linkedVariables.get().stream()
                 .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()
-                        || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())
+                             || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())
                 .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), fieldInfo.type, immutable,
                         e.getKey().parameterizedType()))
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
@@ -807,7 +809,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         assert isFinal.isDone();
         if (isFinal.valueIsFalse() && fieldCanBeWrittenFromOutsideThisPrimaryType) {
             LOGGER.debug("Field {} cannot be immutable: it is not @Final," +
-                    " and it can be assigned to from outside this primary type", fqn);
+                         " and it can be assigned to from outside this primary type", fqn);
             fieldAnalysis.setProperty(Property.EXTERNAL_IMMUTABLE, MultiLevel.MUTABLE_DV);
             return DONE;
         }
@@ -858,7 +860,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         }
 
         if (MultiLevel.MUTABLE_DV.equals(worstOverValues)
-                && fieldInfo.owner.isMyself(fieldInfo.type, analyserContext).toFalse(IMMUTABLE)) {
+            && fieldInfo.owner.isMyself(fieldInfo.type, analyserContext).toFalse(IMMUTABLE)) {
             if (staticallyImmutable.isDelayed()) {
                 LOGGER.debug("Delaying @Immutable on {}, self-type, waiting for immutable of type", fieldInfo);
             } else {
@@ -944,8 +946,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .anyMatch(ma -> {
                     if (ma.getMethodInfo().hasReturnValue()) {
                         LinkedVariables linkedVariables = ((ComputingMethodAnalyser) ma).getReturnAsVariable().getLinkedVariables();
-                        DV link = linkedVariables.value(me);
-                        if (link != null && link.le(LinkedVariables.LINK_DEPENDENT)) return true;
+                        LV link = linkedVariables.value(me);
+                        if (link != null && link.le(LV.LINK_DEPENDENT)) return true;
                     }
                     return ma.getMethodAnalysis().getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof ParameterInfo)
@@ -976,7 +978,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             assert finalizer.isDone();
             MethodInfo methodInfo = methodAnalyser.getMethodInfo();
             if (finalizer.valueIsFalse() && (!methodAnalyser.getMethodInspection().isPrivate() ||
-                    methodInfo.isConstructor() && !ignorePrivateConstructors)) {
+                                             methodInfo.isConstructor() && !ignorePrivateConstructors)) {
                 boolean added = false;
                 List<VariableInfo> assigned = methodAnalyser.getMethodAnalysis().getFieldAsVariableAssigned(fieldInfo);
                 for (VariableInfo vii : assigned) {
@@ -1004,7 +1006,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
 
                     boolean viIsDelayed;
                     if (expressionWithoutLocalVars instanceof DelayedVariableExpression dve && dve.variable instanceof FieldReference fr &&
-                            methodInfo.isConstructor() && fr.fieldInfo().owner == methodInfo.typeInfo && !fr.isDefaultScope() && !fr.isStatic()) {
+                        methodInfo.isConstructor() && fr.fieldInfo().owner == methodInfo.typeInfo && !fr.isDefaultScope() && !fr.isStatic()) {
                         // ExplicitConstructorInvocation_5, but be careful with the restrictions, e.g. ExternalNotNull_1 for the scope,
                         // as well as ExplicitConstructorInvocation_4
                         // captures: this.field = someParameterOfMySelf.field;
@@ -1058,9 +1060,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                     Expression expression = vi.getValue();
                     VariableExpression ve;
                     if ((ve = expression.asInstanceOf(VariableExpression.class)) != null
-                            && ve.variable() instanceof LocalVariableReference) {
+                        && ve.variable() instanceof LocalVariableReference) {
                         throw new UnsupportedOperationException("Method " + methodAnalyser.getMethodInfo().fullyQualifiedName + ": " +
-                                fieldInfo.fullyQualifiedName() + " is local variable " + expression);
+                                                                fieldInfo.fullyQualifiedName() + " is local variable " + expression);
                     }
                     latestBlock = new ValueAndPropertyProxy.ProxyData
                             (vi.getValue(), vi.properties(), vi.getLinkedVariables(), ValueAndPropertyProxy.Origin.STATIC_BLOCK);
@@ -1211,8 +1213,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
     private boolean properlyDefinedAnonymousType(Expression expression) {
         ConstructorCall cc;
         return expression.isInstanceOf(InlinedMethod.class) || expression.isInstanceOf(Lambda.class)
-                || (cc = expression.asInstanceOf(ConstructorCall.class)) != null && cc.anonymousClass() != null
-                || expression.isInstanceOf(MethodReference.class);
+               || (cc = expression.asInstanceOf(ConstructorCall.class)) != null && cc.anonymousClass() != null
+               || expression.isInstanceOf(MethodReference.class);
     }
 
     private AnalysisStatus analyseIgnoreModifications(SharedState sharedState) {
@@ -1313,8 +1315,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 // too strong -- it may in fact never change its state. But what's the point in that?
                 // NOTE: analyseImmutable reflects this decision!
                 boolean downgradeFromNewInstanceWithConstructor = !fieldOfOwnType &&
-                        (MultiLevel.level(immutable) == 0
-                                || MultiLevel.effective(immutable) != MultiLevel.Effective.EFFECTIVE);
+                                                                  (MultiLevel.level(immutable) == 0
+                                                                   || MultiLevel.effective(immutable) != MultiLevel.Effective.EFFECTIVE);
                 if (downgradeFromNewInstanceWithConstructor) {
                     Properties valueProperties = Properties.of(Map.of(
                             Property.NOT_NULL_EXPRESSION, proxy.getProperty(Property.NOT_NULL_EXPRESSION),
@@ -1429,8 +1431,8 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         if (causesOfDelay.isDelayed()) {
             if (causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.LINKING,
                     c -> c instanceof SimpleCause sc && sc.location().getInfo() == fieldInfo)
-                    || ignoreContextModified
-                    && causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
+                || ignoreContextModified
+                   && causesOfDelay.containsCauseOfDelay(CauseOfDelay.Cause.INITIAL_VALUE,
                     c -> c.variableIsField(fieldInfo))) {
                 /* NotNull_AAPI_3, iteration 1, field 'map'
                    Modification_11_2, iteration 30, field 's2'
@@ -1448,25 +1450,26 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                         .flatMap(vi -> vi.getLinkedVariables().variables().keySet().stream())
                         .filter(v -> !(v instanceof This))
                         .collect(Collectors.toUnmodifiableSet());
-                LinkedVariables lv = LinkedVariables.of(vars.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> linkDelay)));
+                LinkedVariables lv = LinkedVariables.of(vars.stream()
+                        .collect(Collectors.toUnmodifiableMap(v -> v, v -> LV.delay(linkDelay))));
                 if (lv.isEmpty()) lv = LinkedVariables.NOT_YET_SET;
                 fieldAnalysis.setLinkedVariables(lv);
                 return causesOfDelay.causesOfDelay(); //DELAY EXIT POINT--REDUCE WITH CANCEL
             }
         }
 
-        Map<Variable, DV> map = allMethodsAndConstructors(true)
+        Map<Variable, LV> map = allMethodsAndConstructors(true)
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .filter(VariableInfo::linkedVariablesIsSet)
                 .flatMap(vi -> vi.getLinkedVariables().variables().entrySet().stream())
                 .filter(e -> !(e.getKey() instanceof LocalVariableReference)
-                        && !(e.getKey() instanceof ReturnVariable)
-                        && !(e.getKey() instanceof This)
-                        && !(e.getKey() instanceof FieldReference fr && fr.fieldInfo() == fieldInfo)) // especially local variable copies of the field itself
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, DV::max));
+                             && !(e.getKey() instanceof ReturnVariable)
+                             && !(e.getKey() instanceof This)
+                             && !(e.getKey() instanceof FieldReference fr && fr.fieldInfo() == fieldInfo)) // especially local variable copies of the field itself
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, LV::max));
 
         FieldReference me = new FieldReferenceImpl(analyserContext, fieldInfo);
-        Map<Variable, DV> reversePointingToMe = new HashMap<>();
+        Map<Variable, LV> reversePointingToMe = new HashMap<>();
         allMethodsAndConstructors(true)
                 .map(m -> m.getMethodAnalysis().getLastStatement())
                 .filter(Objects::nonNull)
@@ -1474,9 +1477,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .filter(VariableInfo::linkedVariablesIsSet)
                 .filter(vi -> vi.getLinkedVariables().value(me) != null)
                 .filter(vi -> !(vi.variable() instanceof LocalVariableReference)
-                        && !(vi.variable() instanceof ReturnVariable)
-                        && !(vi.variable() instanceof This))
-                .forEach(vi -> reversePointingToMe.merge(vi.variable(), vi.getLinkedVariables().value(me), DV::min));
+                              && !(vi.variable() instanceof ReturnVariable)
+                              && !(vi.variable() instanceof This))
+                .forEach(vi -> reversePointingToMe.merge(vi.variable(), vi.getLinkedVariables().value(me), LV::min));
 
         LinkedVariables linkedVariables;
         if (!reversePointingToMe.isEmpty()) {
@@ -1507,7 +1510,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             // for static fields, we'll take ALL methods and constructors (only the static blocks are allowed)
             Stream<MethodAnalyser> stream = methodsForFinal();
             isFinal = stream.filter(m -> fieldInspection.isStatic() ||
-                            m.getMethodInfo().methodResolution.get().callStatus().accessibleFromTheOutside())
+                                         m.getMethodInfo().methodResolution.get().callStatus().accessibleFromTheOutside())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                     .noneMatch(VariableInfo::isAssigned);
         }
@@ -1574,9 +1577,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         }
         Stream<MethodAnalyser> stream = methodsForModification();
         boolean modified = fieldCanBeWrittenFromOutsideThisPrimaryType ||
-                stream.flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
-                        .filter(VariableInfo::isRead)
-                        .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue());
+                           stream.flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
+                                   .filter(VariableInfo::isRead)
+                                   .anyMatch(vi -> vi.getProperty(Property.CONTEXT_MODIFIED).valueIsTrue());
 
         if (modified) {
             fieldAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.TRUE_DV);

@@ -45,7 +45,8 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
-import static org.e2immu.analyser.analyser.LinkedVariables.LINK_ASSIGNED;
+import static org.e2immu.analyser.analyser.LV.LINK_ASSIGNED;
+import static org.e2immu.analyser.analyser.LV.LINK_INDEPENDENT;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
@@ -97,7 +98,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
 
         if (parameterInfo.parameterizedType.isPrimitiveExcludingVoid() &&
-                !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
+            !parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD)) {
             parameterAnalysis.setProperty(Property.MODIFIED_OUTSIDE_METHOD, DV.FALSE_DV);
         }
 
@@ -108,7 +109,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         DV contractBefore = parameterAnalysis.getProperty(IMMUTABLE_BEFORE_CONTRACTED);
         DV contractImmutable = parameterAnalysis.getProperty(IMMUTABLE);
         if ((contractImmutable.isDone() || contractBefore.isDone()) && formallyImmutable.isDone()
-                && !parameterAnalysis.properties.isDone(IMMUTABLE)) {
+            && !parameterAnalysis.properties.isDone(IMMUTABLE)) {
             DV combined = combineImmutable(formallyImmutable, contractImmutable, contractBefore.valueIsTrue());
             assert combined.isDone();
             parameterAnalysis.setProperty(IMMUTABLE, combined);
@@ -151,7 +152,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         // ShallowMethodAnalyzer.computeParameterIgnoreModification
         if (parameterAnalysis.getPropertyFromMapDelayWhenAbsent(IGNORE_MODIFICATIONS).isDelayed()) {
             boolean ignore = parameterInfo.parameterizedType.isAbstractInJavaUtilFunction(analyserContext)
-                    && !parameterInfo.getMethod().methodInspection.get().isPrivate();
+                             && !parameterInfo.getMethod().methodInspection.get().isPrivate();
             parameterAnalysis.setProperty(IGNORE_MODIFICATIONS, ignore ? IGNORE_MODS_DV : NOT_IGNORE_MODS_DV);
         }
 
@@ -252,7 +253,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING));
                 } else {
-                    Map<Variable, DV> fields = viParam.getLinkedVariables().variables().entrySet().stream()
+                    Map<Variable, LV> fields = viParam.getLinkedVariables().variables().entrySet().stream()
                             .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis() || e.getKey() instanceof This)
                             .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
                     if (!fields.isEmpty()) {
@@ -290,7 +291,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     delay = delay.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING)));
                 } else {
-                    DV linkToParameter = vi.getLinkedVariables().value(parameterInfo);
+                    LV linkToParameter = vi.getLinkedVariables().value(parameterInfo);
                     if (linkToParameter != null) {
                         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
                         if (typeAnalysis.hiddenContentDelays().isDelayed()) {
@@ -317,7 +318,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return AnalysisStatus.of(independent);
     }
 
-    private DV independentFromFields(DV immutable, Map<Variable, DV> fields) {
+    private DV independentFromFields(DV immutable, Map<Variable, LV> fields) {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
         if (typeAnalysis.hiddenContentDelays().isDelayed()) {
             return typeAnalysis.hiddenContentDelays().causesOfDelay();
@@ -364,13 +365,13 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             VariableInfo pi = lastStatement.getLatestVariableInfo(parameterInfo.fullyQualifiedName);
             delay = delay.merge(pi.getLinkedVariables().causesOfDelay());
             if (delay.isDone()) {
-                DV min = DV.MAX_INT_DV;
-                for (Map.Entry<Variable, DV> e : pi.getLinkedVariables()) {
+                LV min = LINK_INDEPENDENT;
+                for (Map.Entry<Variable, LV> e : pi.getLinkedVariables()) {
                     if (assigned.contains(e.getKey())) {
                         min = min.min(e.getValue());
                     }
                 }
-                if (min != DV.MAX_INT_DV) {
+                if (min != LINK_INDEPENDENT) {
                     DV dv = independentFromFields(immutable, Map.of(rv.variable(), min));
                     if (dv.isDelayed()) {
                         delay = dv.causesOfDelay();
@@ -500,8 +501,8 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
 
         if (!parameterAnalysis.properties.isDone(INDEPENDENT)
-                && !map.isEmpty()
-                && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
+            && !map.isEmpty()
+            && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
             DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
             Map<Variable, DV> map2 = map.entrySet().stream().collect(Collectors
                     .toUnmodifiableMap(e -> new FieldReferenceImpl(analyserContext, e.getKey()), Map.Entry::getValue));
@@ -536,9 +537,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
 
         assert delays.isDelayed() || parameterAnalysis.properties.isDone(Property.MODIFIED_OUTSIDE_METHOD) &&
-                parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL) &&
-                //   parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
-                parameterAnalysis.properties.isDone(CONTAINER_RESTRICTION);
+                                     parameterAnalysis.properties.isDone(Property.EXTERNAL_NOT_NULL) &&
+                                     //   parameterAnalysis.properties.isDone(EXTERNAL_IMMUTABLE) &&
+                                     parameterAnalysis.properties.isDone(CONTAINER_RESTRICTION);
 
         if (delays.isDelayed()) {
             parameterAnalysis.setCausesOfAssignedToFieldDelays(delays);
@@ -568,7 +569,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private boolean findModifiedOutsideMethod(CausesOfDelay causes) {
         return causes.containsCauseOfDelay(CauseOfDelay.Cause.MODIFIED_OUTSIDE_METHOD,
                 c -> c instanceof VariableCause v && v.variable() == parameterInfo ||
-                        c instanceof SimpleCause sc && sc.location().getInfo() == parameterInfo);
+                     c instanceof SimpleCause sc && sc.location().getInfo() == parameterInfo);
     }
 
     // if contractImmutable is delayed, then @BeforeMark is present
@@ -601,7 +602,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         if (contractEffective == EFFECTIVE) {
             if (formalEffective != EVENTUAL && formalEffective != EFFECTIVE ||
-                    contractLevel != formalLevel) {
+                contractLevel != formalLevel) {
                 analyserResultBuilder.add(Message.newMessage(parameterAnalysis.location,
                         Message.Label.INCOMPATIBLE_IMMUTABILITY_CONTRACT_AFTER));
                 return formallyImmutable;
@@ -638,15 +639,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return vi != null && vi.isAssigned();
     }
 
-    private DV determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {
+    private LV determineAssignedOrLinked(FieldAnalysis fieldAnalysis) {
         DV effFinal = fieldAnalysis.getProperty(Property.FINAL);
         if (effFinal.isDelayed()) {
-            return effFinal;
+            return LV.delay(effFinal.causesOfDelay());
         }
         if (effFinal.valueIsTrue()) {
             Expression effectivelyFinal = fieldAnalysis.getValue();
             if (effectivelyFinal.isDelayed()) {
-                return effectivelyFinal.causesOfDelay();
+                return LV.delay(effectivelyFinal.causesOfDelay());
             }
             VariableExpression ve;
 
@@ -656,19 +657,19 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             }
             // the case of multiple constructors
             if (effectivelyFinal instanceof MultiValue multiValue &&
-                    Arrays.stream(multiValue.multiExpression.expressions())
-                            .anyMatch(e -> {
-                                VariableExpression ve2;
-                                return (ve2 = e.asInstanceOf(VariableExpression.class)) != null
-                                        && ve2.variable() == parameterInfo;
-                            })) {
+                Arrays.stream(multiValue.multiExpression.expressions())
+                        .anyMatch(e -> {
+                            VariableExpression ve2;
+                            return (ve2 = e.asInstanceOf(VariableExpression.class)) != null
+                                   && ve2.variable() == parameterInfo;
+                        })) {
                 return LINK_ASSIGNED;
             }
             // the case of this(...) or super(...)
             StatementAnalysis firstStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getFirstStatement();
             if (ve != null && ve.variable() instanceof ParameterInfo pi &&
-                    firstStatement != null && firstStatement.statement() instanceof ExplicitConstructorInvocation eci &&
-                    eci.methodInfo == pi.owner) {
+                firstStatement != null && firstStatement.statement() instanceof ExplicitConstructorInvocation eci &&
+                eci.methodInfo == pi.owner) {
                 Expression param = eci.structure.updaters().get(pi.index);
                 VariableExpression ve2;
                 if ((ve2 = param.asInstanceOf(VariableExpression.class)) != null && ve2.variable() == parameterInfo) {
@@ -679,7 +680,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
         // variable field, no direct assignment to parameter
         LinkedVariables linked = fieldAnalysis.getLinkedVariables();
-        return linked.variables().getOrDefault(parameterInfo, LinkedVariables.LINK_INDEPENDENT);
+        return linked.variables().getOrDefault(parameterInfo, LINK_INDEPENDENT);
     }
 
     public static final Property[] CONTEXT_PROPERTIES = {Property.CONTEXT_NOT_NULL,
@@ -729,7 +730,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         if (vi == null || !vi.isRead()) {
             boolean takeValueFromOverride;
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()
-                    && !parameterInfo.owner.isCompanionMethod()) {
+                && !parameterInfo.owner.isCompanionMethod()) {
                 analyserResultBuilder.add(Message.newMessage(parameterInfo.owner.newLocation(),
                         Message.Label.UNUSED_PARAMETER, parameterInfo.simpleName()));
                 takeValueFromOverride = false;

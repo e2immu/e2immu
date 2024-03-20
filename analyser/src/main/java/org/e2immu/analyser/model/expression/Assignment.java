@@ -514,13 +514,13 @@ public class Assignment extends BaseExpression implements Expression {
         LinkedVariables lvOfResult = resultOfExpression.linkedVariables(context);
         LinkedVariables lvOfValue = value.linkedVariables(context);
         LinkedVariables lvMerged = lvOfResult.merge(lvOfValue);
-        LinkedVariables lvExpression = lvMerged.maximum(LinkedVariables.LINK_ASSIGNED);
+        LinkedVariables lvExpression = lvMerged.maximum(LV.LINK_ASSIGNED);
         LinkedVariables linkedVariables;
         if (allowStaticallyAssigned) {
             Set<Variable> directAssignment = value.directAssignmentVariables();
             if (!directAssignment.isEmpty()) {
-                Map<Variable, DV> map = directAssignment.stream()
-                        .collect(Collectors.toMap(v -> v, v -> LinkedVariables.LINK_STATICALLY_ASSIGNED));
+                Map<Variable, LV> map = directAssignment.stream()
+                        .collect(Collectors.toMap(v -> v, v -> LV.LINK_STATICALLY_ASSIGNED));
                 linkedVariables = lvExpression.merge(LinkedVariables.of(map));
             } else {
                 linkedVariables = lvExpression;
@@ -530,8 +530,8 @@ public class Assignment extends BaseExpression implements Expression {
         }
         if (resultOfExpression.isDelayed()) {
             Set<Variable> vars = new HashSet<>(value.variables());
-            Map<Variable, DV> map = vars.stream()
-                    .collect(Collectors.toUnmodifiableMap(v -> v, v -> resultOfExpression.causesOfDelay()));
+            Map<Variable, LV> map = vars.stream()
+                    .collect(Collectors.toUnmodifiableMap(v -> v, v -> LV.delay(resultOfExpression.causesOfDelay())));
             return linkedVariables.merge(LinkedVariables.of(map));
         }
         return linkedVariables;

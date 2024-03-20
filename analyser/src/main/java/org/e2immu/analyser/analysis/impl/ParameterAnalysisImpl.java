@@ -157,9 +157,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        protected void writeLinkParameters(DV linkLevel, int[] linkParameters) {
-            assert linkLevel.isDone();
-            Map<Variable, DV> map = new HashMap<>();
+        protected void writeHiddenContentLink(int[] linkParameters) {
+            Map<Variable, LV> map = new HashMap<>();
             List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
             for (int parameterIndex : linkParameters) {
                 if (parameterIndex < 0 || parameterIndex >= parameters.size()) {
@@ -168,7 +167,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    // TODO:IS_HC
+                    // TODO: here we need to compute the HC
                     map.put(pi, linkLevel);
                 }
             }
@@ -195,7 +194,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             DV modified = getProperty(Property.MODIFIED_VARIABLE);
             DV ignoreModifications = getProperty(Property.IGNORE_MODIFICATIONS);
             if (!analysisProvider.cannotBeModifiedInThisClass(parameterInfo.parameterizedType).valueIsTrue() &&
-                    !ignoreModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
+                !ignoreModifications.equals(MultiLevel.IGNORE_MODS_DV)) {
                 // the explicit annotation
                 AnnotationExpression ae = modified.valueIsFalse() ? e2.notModified :
                         e2.modified;

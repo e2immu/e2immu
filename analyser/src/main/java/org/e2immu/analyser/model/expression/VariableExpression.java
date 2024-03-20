@@ -150,7 +150,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         this.variable = variable;
         this.suffix = Objects.requireNonNull(suffix);
         if (variable instanceof FieldReference fieldReference && !fieldReference.isStatic() ||
-                variable instanceof DependentVariable) {
+            variable instanceof DependentVariable) {
             this.scopeValue = Objects.requireNonNull(scopeValue);
         } else {
             this.scopeValue = null;
@@ -213,7 +213,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         int hc = variable instanceof FieldReference fr ? fr.fieldInfo().hashCode() :
                 variable instanceof DependentVariable ? 0 : variable.hashCode();
         return hc + (scopeValue == null ? 0 : 37 * scopeValue.hashCode()) + 37 * suffix.hashCode()
-                - 89 * (indexValue == null ? 0 : indexValue.hashCode());
+               - 89 * (indexValue == null ? 0 : indexValue.hashCode());
     }
 
     @Override
@@ -345,9 +345,9 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             }
 
             if (dv.arrayVariable() instanceof LocalVariableReference lvr
-                    && lvr.variableNature() instanceof VariableNature.ScopeVariable
-                    && !(computedScope.isInstanceOf(IsVariableExpression.class))
-                    && !forwardEvaluationInfo.isAssignmentTarget()) {
+                && lvr.variableNature() instanceof VariableNature.ScopeVariable
+                && !(computedScope.isInstanceOf(IsVariableExpression.class))
+                && !forwardEvaluationInfo.isAssignmentTarget()) {
                 // methodCall()[index] as a value rather than the target of an assignment
                 Properties properties = context.evaluationContext().defaultValueProperties(dv.parameterizedType);
                 CausesOfDelay delays = properties.delays();
@@ -363,7 +363,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                     if (lv.isEmpty() || MultiLevel.INDEPENDENT_DV.equals(link)) {
                         replacement = instance;
                     } else {
-                        replacement = PropertyWrapper.propertyWrapper(instance, lv.maximum(link));
+                        LV lvOfLink = LinkedVariables.fromIndependentToLinkedVariableLevel(link);
+                        replacement = PropertyWrapper.propertyWrapper(instance, lv.maximum(lvOfLink));
                     }
                 }
                 return builder.setExpression(replacement).build();
@@ -472,7 +473,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 return new EvaluationResultImpl.Builder(context).setExpression(fr.scope()).build();
             }
             assert fr.scopeVariable() instanceof LocalVariableReference lvr
-                    && lvr.variableNature() instanceof VariableNature.ScopeVariable;
+                   && lvr.variableNature() instanceof VariableNature.ScopeVariable;
             assert fr.scope() != null;
             ForwardEvaluationInfo forward = builder.ensureModificationSetNotNull().build();
             VariableExpression scopeVE = new VariableExpression(fr.scope().getIdentifier(), fr.scopeVariable());
@@ -510,7 +511,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             return ve.evaluate(context, forwardEvaluationInfo.copy().notNullNotAssignment(higher).build());
         }
         assert variable instanceof LocalVariableReference lvr
-                && lvr.variableNature() instanceof VariableNature.ScopeVariable;
+               && lvr.variableNature() instanceof VariableNature.ScopeVariable;
         ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSet().build();
         VariableExpression scopeVE = new VariableExpression(expression.getIdentifier(), variable);
         Assignment assignment = new Assignment(context.getPrimitives(), scopeVE, expression);
@@ -524,10 +525,10 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
         ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
-        return internalLinkedVariables(computeIndependent, variable, LinkedVariables.LINK_STATICALLY_ASSIGNED);
+        return internalLinkedVariables(computeIndependent, variable, LV.LINK_STATICALLY_ASSIGNED);
     }
 
-    static LinkedVariables internalLinkedVariables(ComputeIndependent computeIndependent, Variable variable, DV linkLevel) {
+    static LinkedVariables internalLinkedVariables(ComputeIndependent computeIndependent, Variable variable, LV linkLevel) {
         if (variable instanceof DependentVariable dv) {
             DV immutableOfScope = computeIndependent.typeImmutable(dv.arrayExpression().returnType());
             DV link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
@@ -651,9 +652,9 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             if (!parameterAnalysis.isAssignedToFieldDelaysResolved()) {
                 causes = causes.merge(parameterAnalysis.assignedToFieldDelays());
             } else {
-                Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
+                Map<FieldInfo, LV> assigned = parameterAnalysis.getAssignedToField();
                 if (assigned != null) {
-                    DV assignedOrLinked = assigned.get(fieldInfo);
+                    LV assignedOrLinked = assigned.get(fieldInfo);
                     if (assignedOrLinked != null && LinkedVariables.isAssigned(assignedOrLinked)) {
                         return constructorCall.getParameterExpressions().get(i);
                     }
@@ -690,7 +691,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public void visit(Visitor visitor) {
-        if(visitor.beforeExpression(this)) {
+        if (visitor.beforeExpression(this)) {
             variable.visit(visitor);
         }
         visitor.afterExpression(this);
