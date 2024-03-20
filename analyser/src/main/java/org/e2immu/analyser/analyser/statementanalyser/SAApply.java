@@ -139,7 +139,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 cumulativeDelay = cumulativeDelay.merge(vi.getValue().causesOfDelay());
             } else {
                 if (changeData.value() != null && (changeData.value().isDone()
-                        || !(vi1.getValue() instanceof DelayedWrappedExpression)) && !vi1.isDelayed()) {
+                                                   || !(vi1.getValue() instanceof DelayedWrappedExpression)) && !vi1.isDelayed()) {
                     progress |= changeValueWithoutAssignment(sharedState, groupPropertyValues, variable, changeData, vic, vi1);
                     cumulativeDelay = cumulativeDelay.merge(vi.getValue().causesOfDelay());
                 } else {
@@ -173,7 +173,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // or where the eval was created in contextProperties() in an earlier iteration (e.g. InstanceOf_9)
         for (Map.Entry<Variable, VariableInfoContainer> e : existingVariablesNotVisited.entrySet()) {
             if (!(statement() instanceof ExplicitConstructorInvocation
-                    && e.getKey() instanceof FieldReference fr && fr.scopeIsThis())) {
+                  && e.getKey() instanceof FieldReference fr && fr.scopeIsThis())) {
                 AnalysisStatus status = e.getValue().copyFromPreviousOrInitialIntoEvaluation();
                 cumulativeDelay = cumulativeDelay.merge(status.causesOfDelay());
                 progress |= status.isProgress();
@@ -212,9 +212,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             if (vi.getLinkedVariables() == LinkedVariables.NOT_YET_SET) {
                 for (Variable v : variablesWithoutEvaluation) {
                     if (!setEvalValueToDelayed.containsKey(v)) {
-                        Map<Variable, DV> map = variablesWithoutEvaluation.stream()
+                        LV delayedLv = LV.delay(vi.getValue().causesOfDelay());
+                        Map<Variable, LV> map = variablesWithoutEvaluation.stream()
                                 .filter(vv -> !v.equals(vv)) // no self-references!
-                                .collect(Collectors.toUnmodifiableMap(x -> x, x -> vi.getValue().causesOfDelay()));
+                                .collect(Collectors.toUnmodifiableMap(x -> x, x -> delayedLv));
                         LinkedVariables lv = map.isEmpty() ? LinkedVariables.NOT_YET_SET : LinkedVariables.of(map);
                         DelayAndLinked dal = new DelayAndLinked(vi.getValue().causesOfDelay(), lv);
                         setEvalValueToDelayed.put(v, dal);
@@ -269,7 +270,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 sharedState.context());
 
         if (statementAnalysis.statement() instanceof ExpressionAsStatement
-                || statementAnalysis.statement() instanceof AssertStatement) {
+            || statementAnalysis.statement() instanceof AssertStatement) {
             return SAHelper.scopeVariablesForPatternVariables(evaluationResult1, index());
         }
         if (statementAnalysis.statement() instanceof ForEachStatement) {
@@ -300,9 +301,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         boolean progress;
         if (!loopResult.wroteValue) {
             if (variable instanceof This
-                    || !delayIn.isDelayed()
-                    || optBreakInitDelay != null
-                    || vi1.getValue() instanceof DelayedWrappedExpression) {
+                || !delayIn.isDelayed()
+                || optBreakInitDelay != null
+                || vi1.getValue() instanceof DelayedWrappedExpression) {
                 // we're not assigning (and there is no change in instance because of a modifying method)
                 // only then we copy from INIT to EVAL
                 // if the existing value is not delayed, the value properties must not be delayed either!
@@ -311,8 +312,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                         variable, vi1.getProperties(),
                         changeData.properties(), groupPropertyValues, true);
                 assert vi1.getValue().isDelayed()
-                        || vi1.getValue().isNotYetAssigned()
-                        || EvaluationContext.VALUE_PROPERTIES.stream().noneMatch(p -> merged.get(p) == null || merged.get(p).isDelayed()) :
+                       || vi1.getValue().isNotYetAssigned()
+                       || EvaluationContext.VALUE_PROPERTIES.stream().noneMatch(p -> merged.get(p) == null || merged.get(p).isDelayed()) :
                         "While writing to variable " + variable;
                 Expression value;
                 if (optBreakInitDelay != null && vi1.isDelayed()) {
@@ -434,7 +435,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                                               ChangeData changeData,
                                                                               GroupPropertyValues groupPropertyValues) {
         if (vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop outside
-                && outside.statementIndex().equals(index())) {
+            && outside.statementIndex().equals(index())) {
             // we're at the start of the loop for this variable
             if (sharedState.evaluationContext().getIteration() == 0) {
                 // we cannot yet know whether the variable will be assigned in this loop, or not
@@ -718,8 +719,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     private Set<CauseOfDelay> extractBreakInitCause(CausesOfDelay valueToWritePossiblyDelayed, FieldReference target) {
         return valueToWritePossiblyDelayed.causesStream()
                 .filter(c -> c instanceof VariableCause vc
-                        && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
-                        && vc.variable() instanceof FieldReference fr && fr.fieldInfo() == target.fieldInfo())
+                             && vc.cause() == CauseOfDelay.Cause.BREAK_INIT_DELAY
+                             && vc.variable() instanceof FieldReference fr && fr.fieldInfo() == target.fieldInfo())
                 .collect(Collectors.toUnmodifiableSet());
     }
 
@@ -751,7 +752,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         if (!statementAnalysis.variableIsSet(variable.fullyQualifiedName())) return true;
         IsVariableExpression ive;
         if (variable instanceof FieldReference fr
-                && ((ive = fr.scope().asInstanceOf(IsVariableExpression.class)) != null)) {
+            && ((ive = fr.scope().asInstanceOf(IsVariableExpression.class)) != null)) {
             return variableUnknown(ive.variable());
         }
         return false;
@@ -917,7 +918,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
     // see e.g. SwitchExpression_4, at the "throws" statement at the end of the method
     private boolean acceptMessage(Message m) {
         return m.message() != Message.Label.INLINE_CONDITION_EVALUATES_TO_CONSTANT
-                || !(statement() instanceof ThrowStatement);
+               || !(statement() instanceof ThrowStatement);
     }
 
     boolean conditionsForOverwritingPreviousAssignment(
@@ -928,7 +929,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             ConditionManager conditionManager,
             EvaluationResult context) {
         if (vi1.isAssigned() && !vi1.isRead() && changeData.markAssignment() &&
-                changeData.readAtStatementTime().isEmpty() && !(vi1.variable() instanceof ReturnVariable)) {
+            changeData.readAtStatementTime().isEmpty() && !(vi1.variable() instanceof ReturnVariable)) {
             String index = vi1.getAssignmentIds().getLatestAssignmentIndex();
             StatementAnalysis sa = methodAnalyser.findStatementAnalyser(index).getStatementAnalysis();
             if (sa.stateData().conditionManagerForNextStatementStatus().isDelayed()) {
@@ -948,8 +949,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             VariableInfoContainer initialVic = sa.getVariable(fqn);
             // do raise an error when the assignment is in the loop condition
             return initialVic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop ||
-                    !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop loop) ||
-                    statementAnalysis.index().equals(loop.statementIndex());
+                   !(vic.variableNature() instanceof VariableNature.VariableDefinedOutsideLoop loop) ||
+                   statementAnalysis.index().equals(loop.statementIndex());
         }
         return false;
     }

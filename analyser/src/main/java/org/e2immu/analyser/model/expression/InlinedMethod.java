@@ -481,8 +481,8 @@ public class InlinedMethod extends BaseExpression implements Expression {
             if (!parameterAnalysis.assignedToFieldIsFrozen()) {
                 return -2; // delays
             }
-            Map<FieldInfo, DV> assigned = parameterAnalysis.getAssignedToField();
-            DV assignedOrLinked = assigned.get(fieldInfo);
+            Map<FieldInfo, LV> assigned = parameterAnalysis.getAssignedToField();
+            LV assignedOrLinked = assigned.get(fieldInfo);
             if (assignedOrLinked != null && LinkedVariables.isAssigned(assignedOrLinked)) {
                 return i;
             }

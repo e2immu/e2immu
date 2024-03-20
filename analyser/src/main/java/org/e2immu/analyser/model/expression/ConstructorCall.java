@@ -643,7 +643,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                                 fieldAnalysis.getLinkedVariables().variables().forEach((v, lv) -> {
                                     if (v instanceof ParameterInfo pi
                                             && pi.owner == constructor
-                                            && lv.equals(LinkedVariables.LINK_STATICALLY_ASSIGNED)) {
+                                            && lv.equals(LV.LINK_STATICALLY_ASSIGNED)) {
                                         // the field has been statically assigned to pi
                                         Expression original = parameterExpressions.get(pi.index);
                                         Expression de = DelayedExpression.forConstructorCallExpansion(identifier, delayName,

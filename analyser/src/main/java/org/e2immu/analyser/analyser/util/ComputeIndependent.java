@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.e2immu.analyser.analyser.LV.*;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
 public record ComputeIndependent(AnalyserContext analyserContext,

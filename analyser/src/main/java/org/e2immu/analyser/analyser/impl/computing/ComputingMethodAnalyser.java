@@ -1217,7 +1217,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         // TODO:IS_HC removed links to 'this', see Basics_14
                         .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis())
                         .map(e -> {
-                            if (e.getKey() instanceof This && e.getValue().le(LinkedVariables.LINK_ASSIGNED)) {
+                            if (e.getKey() instanceof This && e.getValue().le(LV.LINK_ASSIGNED)) {
                                 // return this
                                 return MultiLevel.INDEPENDENT_DV;
                             }
@@ -1385,7 +1385,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return linkedVariables.stream()
                 .filter(e -> e.getKey() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo()))
                 // TODO:IS_HC
-                .anyMatch(e -> e.getValue().le(LinkedVariables.LINK_DEPENDENT));
+                .anyMatch(e -> e.getValue().le(LV.LINK_DEPENDENT));
     }
 
     private class EvaluationContextImpl extends CommonEvaluationContext implements EvaluationContext {

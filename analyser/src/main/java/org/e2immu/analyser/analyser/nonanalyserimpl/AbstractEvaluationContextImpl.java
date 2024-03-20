@@ -9,12 +9,10 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Instance;
-import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Either;
 
@@ -428,18 +426,18 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         return 0;
     }
 
-    public EvaluationContext.HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
-        if (hiddenContentTypes == null) return new EvaluationContext.HiddenContent(List.of(),
+    public HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
+        if (hiddenContentTypes == null) return new HiddenContent(List.of(),
                 DelayFactory.createDelay(new SimpleCause(getLocation(Stage.EVALUATION), CauseOfDelay.Cause.HIDDEN_CONTENT)));
         if (hiddenContentTypes.contains(concreteType)) {
-            return new EvaluationContext.HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
+            return new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
         }
         TypeInfo bestType = concreteType.bestTypeInfo(getAnalyserContext());
         if (bestType == null) return NO_HIDDEN_CONTENT; // method type parameter, but not involved in fields of type
         DV immutable = getAnalyserContext().typeImmutable(concreteType);
         if (immutable.equals(MultiLevel.INDEPENDENT_DV)) return NO_HIDDEN_CONTENT;
         if (immutable.isDelayed()) {
-            new EvaluationContext.HiddenContent(List.of(),
+            new HiddenContent(List.of(),
                     DelayFactory.createDelay(new SimpleCause(bestType.newLocation(), CauseOfDelay.Cause.HIDDEN_CONTENT))
                             .merge(immutable.causesOfDelay()));
         }
@@ -449,7 +447,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         if (!bestInspection.typeParameters().isEmpty()) {
             return concreteType.parameters.stream()
                     .reduce(NO_HIDDEN_CONTENT, (hc, pt) -> extractHiddenContentTypes(pt, hiddenContentTypes),
-                            EvaluationContext.HiddenContent::merge);
+                            HiddenContent::merge);
         }
         return NO_HIDDEN_CONTENT;
     }

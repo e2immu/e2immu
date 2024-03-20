@@ -21,7 +21,6 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.support.Either;
 
@@ -244,17 +243,6 @@ public interface EvaluationContext {
     We then return a list of the concrete type parameters, as TypeExpression.
     This again allows us to compute immutability values better than formal.
      */
-
-    record HiddenContent(List<ParameterizedType> hiddenTypes, CausesOfDelay causesOfDelay) {
-        public HiddenContent {
-            assert hiddenTypes != null;
-        }
-
-        public HiddenContent merge(HiddenContent other) {
-            return new HiddenContent(ListUtil.concatImmutable(hiddenTypes, other.hiddenTypes),
-                    causesOfDelay.merge(other.causesOfDelay));
-        }
-    }
 
     HiddenContent NO_HIDDEN_CONTENT = new HiddenContent(List.of(), CausesOfDelay.EMPTY);
 

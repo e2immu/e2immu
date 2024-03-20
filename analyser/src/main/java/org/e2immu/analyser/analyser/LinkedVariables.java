@@ -73,7 +73,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     }
 
     public static boolean isAssigned(LV level) {
-        return level== LINK_STATICALLY_ASSIGNED|| level == LINK_ASSIGNED;
+        return level == LINK_STATICALLY_ASSIGNED || level == LINK_ASSIGNED;
     }
 
     @Override
@@ -201,13 +201,14 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         return of(map);
     }
 
-    public LinkedVariables changeNonStaticallyAssignedToDelay(LV delay) {
+    public LinkedVariables changeNonStaticallyAssignedToDelay(CausesOfDelay delay) {
         if (isEmpty() || this == NOT_YET_SET) return this;
         assert delay.isDelayed();
+        LV delayedLV = LV.delay(delay);
         Map<Variable, LV> map = variables.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> {
                     LV lv = e.getValue();
-                    return LINK_STATICALLY_ASSIGNED.equals(lv) ? LINK_STATICALLY_ASSIGNED : delay.max(lv);
+                    return LINK_STATICALLY_ASSIGNED.equals(lv) ? LINK_STATICALLY_ASSIGNED : delayedLV;
                 }));
         return of(map);
     }

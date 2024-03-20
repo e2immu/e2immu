@@ -190,10 +190,10 @@ class MergeLinkingAndGroupProperties {
                     LinkedVariables linkedVariables = statementAnalysis.stateData().valueOfExpressionGet()
                             .linkedVariables(context);
 
-                    for (Map.Entry<Variable, DV> lve : linkedVariables) {
+                    for (Map.Entry<Variable, LV> lve : linkedVariables) {
                         Variable iterableVar = lve.getKey();
 
-                        for (Map.Entry<Variable, DV> e : linkedOfLoopVar) {
+                        for (Map.Entry<Variable, LV> e : linkedOfLoopVar) {
                             Variable targetOfLoopVar = e.getKey();
                             if (!targetOfLoopVar.equals(iterableVar)) {
                                 if (!linkedVariablesMap.containsKey(targetOfLoopVar)) {
@@ -221,7 +221,7 @@ class MergeLinkingAndGroupProperties {
         return new BackLinkForEachResult(Set.copyOf(newToLinkedVariablesMap), causes);
     }
 
-    private void link(Map<Variable, LinkedVariables> linkedVariablesMap, Variable from, Variable to, DV linkLevel) {
+    private void link(Map<Variable, LinkedVariables> linkedVariablesMap, Variable from, Variable to, LV linkLevel) {
         LinkedVariables lv = linkedVariablesMap.get(from);
         if (lv == null) {
             linkedVariablesMap.put(from, LinkedVariables.of(to, linkLevel));

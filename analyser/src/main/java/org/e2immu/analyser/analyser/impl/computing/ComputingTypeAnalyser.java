@@ -649,7 +649,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 causes = causes.merge(linkedVariables.causesOfDelay());
             } else {
                 boolean linked = linkedVariables.variables().entrySet().stream()
-                        .filter(e -> e.getValue().le(LinkedVariables.LINK_DEPENDENT))
+                        .filter(e -> e.getValue().le(LV.LINK_DEPENDENT))
                         .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
                                 && !analyserContext.getMethodInspection(pi.getMethod()).isPrivate());
                 if (linked) {
@@ -694,7 +694,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             } else {
                 boolean linked = linkedVariables.variables().entrySet().stream()
                         // TODO:IS_HC see also CMA.linkedToAnyOfTheFields, CTA.analyseFieldsGuardedForContainerProperty
-                        .filter(e -> e.getValue().le(LinkedVariables.LINK_DEPENDENT))
+                        .filter(e -> e.getValue().le(LV.LINK_DEPENDENT))
                         .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
                                 && !Collections.disjoint(methodsToLinkToFields,
                                 pi.getMethodInfo().methodResolution.get().overrides()));
@@ -801,7 +801,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 DV cm = lv.stream()
                                         .filter(e -> e.getKey() instanceof FieldReference fr
                                                 && fr.scopeIsRecursivelyThis() && fields.contains(fr.fieldInfo())
-                                                && e.getValue().le(LinkedVariables.LINK_DEPENDENT))
+                                                && e.getValue().le(LV.LINK_DEPENDENT))
                                         .map(e -> vi.getProperty(CONTEXT_MODIFIED))
                                         .reduce(DelayFactory.initialDelay(), DV::max);
                                 return cm.valueIsTrue();

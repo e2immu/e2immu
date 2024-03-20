@@ -246,15 +246,15 @@ public class EvaluateParameters {
         IsVariableExpression ive;
         Variable theVariable = (ive = parameterExpression.asInstanceOf(IsVariableExpression.class)) != null ? ive.variable() : null;
         boolean changed = false;
-        for (Map.Entry<Variable, DV> e : linkedVariables.variables().entrySet()) {
-            DV dv = e.getValue();
+        for (Map.Entry<Variable, LV> e : linkedVariables.variables().entrySet()) {
+            LV lv = e.getValue();
             Variable variable = e.getKey();
             changed |= potentiallyChangeOneVariable(context, parameterExpression, parameterValue, contextModified,
-                    builder, lvExpression, theVariable, dv, variable);
+                    builder, lvExpression, theVariable, lv, variable);
             if (!contextModified.valueIsFalse()) {
                 /* modifyingMethod(map.keySet) -> must also mark map as context modified; see Modification_29 */
-                if (dv.isDelayed() || dv.ge(LinkedVariables.LINK_STATICALLY_ASSIGNED) && dv.le(LinkedVariables.LINK_DEPENDENT)) {
-                    DV value = dv.isDone() ? contextModified : dv;
+                if (lv.isDelayed() || lv.ge(LV.LINK_STATICALLY_ASSIGNED) && lv.le(LV.LINK_DEPENDENT)) {
+                    DV value = lv.isDone() ? contextModified : lv.causesOfDelay();
                     builder.markContextModified(variable, value);
                     changed = true;
                 }
@@ -273,7 +273,7 @@ public class EvaluateParameters {
                                                        EvaluationResultImpl.Builder builder,
                                                        LinkedVariables lvExpression,
                                                        Variable theVariable,
-                                                       DV dvLink,
+                                                       LV dvLink,
                                                        Variable variable) {
         if (variable instanceof This
                 || variable instanceof ParameterInfo // because they are always an instance anyway
@@ -286,7 +286,7 @@ public class EvaluateParameters {
                 .merge(contextModified.causesOfDelay());
 
         if (delays.isDone()) {
-            if (dvLink.le(LinkedVariables.LINK_DEPENDENT) && contextModified.valueIsTrue()) {
+            if (dvLink.le(LV.LINK_DEPENDENT) && contextModified.valueIsTrue()) {
                 Expression varVal = context.currentValue(variable);
                 ConstructorCall cc;
                 Expression newInstance;

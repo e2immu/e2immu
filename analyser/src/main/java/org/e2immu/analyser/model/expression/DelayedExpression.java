@@ -408,7 +408,8 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     public LinkedVariables linkedVariables(EvaluationResult context) {
         // we descend into "this", see e.g. Loops_17
         Set<Variable> set = new HashSet<>(variables(DescendMode.YES_INCLUDE_THIS));
-        return LinkedVariables.of(set.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> causesOfDelay)));
+        LV delayedLv = LV.delay(causesOfDelay);
+        return LinkedVariables.of(set.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> delayedLv)));
     }
 
     public CausesOfDelay causesOfDelay() {

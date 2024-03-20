@@ -283,7 +283,8 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        Map<Variable, DV> map = variable.variableStream().distinct().collect(Collectors.toMap(v -> v, v -> causesOfDelay));
+        LV delayedLv = LV.delay(causesOfDelay);
+        Map<Variable, LV> map = variable.variableStream().distinct().collect(Collectors.toMap(v -> v, v -> delayedLv));
         return LinkedVariables.of(map);
     }
 

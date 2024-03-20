@@ -95,11 +95,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     .map(VariableInfoContainer::current)
                     .forEach(vi -> {
                         assert vi.valueIsSet() : "Variable " + vi.variable().fullyQualifiedName() + " has value: "
-                                + vi.getValue() + " in statement " + index + ", "
-                                + methodAnalysis.getMethodInfo().fullyQualifiedName;
+                                                 + vi.getValue() + " in statement " + index + ", "
+                                                 + methodAnalysis.getMethodInfo().fullyQualifiedName;
                         assert vi.linkedVariablesIsSet() : "Variable " + vi.variable().fullyQualifiedName()
-                                + " has unfrozen linked variables in statement " + index + ", "
-                                + methodAnalysis.getMethodInfo().fullyQualifiedName;
+                                                           + " has unfrozen linked variables in statement " + index + ", "
+                                                           + methodAnalysis.getMethodInfo().fullyQualifiedName;
                     });
         }
         stateData.internalAllDoneCheck();
@@ -182,7 +182,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 List<Statement> listOfSubStatements = structure.getStatements();
                 assert listOfSubStatements != null :
                         "Statement " + statementAnalysis.index() + " of class " + statement.getClass().getSimpleName()
-                                + " has statements, but the statements() call returns null";
+                        + " has statements, but the statements() call returns null";
                 StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
                         listOfSubStatements, indexWithBlock, true, newInSyncBlock);
                 analysisBlocks.add(Optional.of(subStatementAnalysis));
@@ -196,8 +196,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                     List<Statement> listOfSubStatements = subStatements.getStatements();
                     assert listOfSubStatements != null :
                             "Sub-block " + blockIndex + " of statement " + statementAnalysis.index()
-                                    + " of class " + statement.getClass().getSimpleName()
-                                    + " has statements, but the subStatements.statements() call returns null";
+                            + " of class " + statement.getClass().getSimpleName()
+                            + " has statements, but the subStatements.statements() call returns null";
                     StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
                             listOfSubStatements, indexWithBlock, true, newInSyncBlock);
                     analysisBlocks.add(Optional.of(subStatementAnalysis));
@@ -343,7 +343,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (replaced.navigationData().next.get().isPresent()) {
             StatementAnalysis statementAnalysis = replaced.navigationData().next.get().get();
             if (statementAnalysis.flowData().isUnreachable() ||
-                    excludeThrows && statementAnalysis.statement() instanceof ThrowStatement) {
+                excludeThrows && statementAnalysis.statement() instanceof ThrowStatement) {
                 return replaced;
             }
             // recursion
@@ -417,7 +417,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return rawVariableStream()
                 .map(e -> e.getValue().current())
                 .filter(v -> v.variable() instanceof FieldReference fieldReference
-                        && fieldReference.fieldInfo() == fieldInfo);
+                             && fieldReference.fieldInfo() == fieldInfo);
     }
 
     @Override
@@ -444,7 +444,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public boolean containsMessage(Message.Label messageLabel) {
         return localMessageStream().anyMatch(message -> message.message() == messageLabel &&
-                message.location().equalsIgnoreStage(location(INITIAL)));
+                                                        message.location().equalsIgnoreStage(location(INITIAL)));
     }
 
     @Override
@@ -801,7 +801,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // we don't have an initial value yet; the initial field value is only visible in constructors
             // and then only to direct references (this.field)
             if (methodAnalysis.getMethodInfo().isConstructor()
-                    && fieldReference.scopeIsThis(evaluationContext.getCurrentType())) {
+                && fieldReference.scopeIsThis(evaluationContext.getCurrentType())) {
                 initialValue = fieldAnalysis.getInitializerValue();
             } else {
                 initialValue = fieldAnalysis.getValueForStatementAnalyser(evaluationContext.getAnalyserContext(),
@@ -883,7 +883,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     @Override
     public boolean noIncompatiblePrecondition() {
         return !(methodLevelData.combinedPreconditionIsFinal()
-                && methodLevelData.combinedPreconditionGet().expression().isBoolValueFalse());
+                 && methodLevelData.combinedPreconditionGet().expression().isBoolValueFalse());
     }
 
     public boolean haveLocalMessages() {
@@ -892,7 +892,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     public Stream<Message> localMessageStream() {
         return messages.stream().filter(m -> m.location().getInfo().getMethodInfo()
-                == methodAnalysis.getMethodInfo());
+                                             == methodAnalysis.getMethodInfo());
     }
 
     @Override
@@ -903,7 +903,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
     // return progress
     public boolean ensureLocalVariableAssignedInThisLoop(String name) {
         if (!(localVariablesAssignedInThisLoop.isFrozen()) &&
-                !localVariablesAssignedInThisLoop.contains(name)) {
+            !localVariablesAssignedInThisLoop.contains(name)) {
             localVariablesAssignedInThisLoop.add(name);
             return true;
         }
@@ -962,7 +962,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 : "Cannot make new variables in iteration " + evaluationContext.getIteration() + ": " + fqn;
         if (variables.isSet(fqn)) {
             throw new UnsupportedOperationException("Already exists: " +
-                    fqn + " in " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName);
+                                                    fqn + " in " + index + ", " + methodAnalysis.getMethodInfo().fullyQualifiedName);
         }
 
         VariableInfoContainer vic = VariableInfoContainerImpl.newVariable(location(INITIAL), variable,
@@ -986,7 +986,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             // forEach() goes through a different system than for(), see code in SAApply.potentiallyModifyEvaluationResult and
             // ParameterizedType_0 test
             if (variableNature instanceof VariableNature.LoopVariable && !(statement instanceof ForEachStatement)
-                    || variableNature instanceof VariableNature.ScopeVariable) {
+                || variableNature instanceof VariableNature.ScopeVariable) {
                 Identifier identifier = evaluationContext.getLocation(INITIAL).identifier();
                 initializeLoopVariable(identifier, vic, variable, evaluationContext);
             } else {
@@ -1048,8 +1048,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 arrayValue = Instance.genericArrayAccess(Identifier.generate("dep var"), context, arrayBase, dv);
             }
             Properties valueProperties = context.evaluationContext().getValueProperties(arrayValue);
-            DV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
-            if (lvIndependent.equals(LinkedVariables.LINK_INDEPENDENT)) {
+            LV lvIndependent = LinkedVariables.fromIndependentToLinkedVariableLevel(independent);
+            if (lvIndependent.equals(LV.LINK_INDEPENDENT)) {
                 linkedVariables = vic.initialLinkedVariables();
                 initialValue = arrayValue;
             } else {
@@ -1233,8 +1233,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         DV ignoreModifications = parameterAnalysis.getProperty(IGNORE_MODIFICATIONS)
                 .maxIgnoreDelay(IGNORE_MODIFICATIONS.falseDv);
         if (ignoreModifications.equals(IGNORE_MODS_DV)
-                && type.isFunctionalInterface()
-                && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
+            && type.isFunctionalInterface()
+            && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
             properties.put(IMMUTABLE, immutable.max(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV));
             properties.put(INDEPENDENT, independent.max(MultiLevel.INDEPENDENT_HC_DV));
         } else {
@@ -1318,7 +1318,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         int cnt = 0;
         while (sa != null) {
             boolean isSwitch = sa.statement() instanceof SwitchStatementOldStyle
-                    || sa.statement() instanceof SwitchStatementNewStyle;
+                               || sa.statement() instanceof SwitchStatementNewStyle;
             boolean isLoop = sa.statement() instanceof LoopStatement;
             if (isLoop || isSwitch) {
                 if (noLabel || statement.label() != null && statement.label().equals(breakOrContinue.goToLabel())) {
@@ -1437,8 +1437,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
         return And.and(context, variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference
-                        && vi.isAssigned()
-                        && index().equals(vi.getAssignmentIds().getLatestAssignmentIndex()))
+                              && vi.isAssigned()
+                              && index().equals(vi.getAssignmentIds().getLatestAssignmentIndex()))
                 .map(vi -> {
                     if (vi.variable() instanceof FieldReference fieldReference) {
                         if (vi.getValue().isNullConstant()) {
@@ -1541,28 +1541,47 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), index, loopVar, valueProperties);
         }
         LinkedVariables linkedOfIterable = evaluatedIterable.linkedVariables(EvaluationResultImpl.from(evaluationContext))
-                .maximum(LinkedVariables.LINK_ASSIGNED);
+                .maximum(LV.LINK_ASSIGNED);
         DV linkOfLoopVarInIterable = linkOfLoopVarInIterable(evaluationContext, parameterizedType,
                 evaluatedIterable.returnType());
         LinkedVariables linked;
         if (linkOfLoopVarInIterable == null) {
             linked = linkedOfIterable;
         } else {
-            linked = linkedOfIterable.maximum(linkOfLoopVarInIterable);
+            LV lv = LinkedVariables.fromIndependentToLinkedVariableLevel(linkOfLoopVarInIterable);
+            linked = linkedOfIterable.maximum(lv);
         }
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationResult);
         builder.assignment(loopVar, value, linked);
         return builder.compose(evaluationResult).build();
     }
 
-    private DV linkOfLoopVarInIterable(EvaluationContext evaluationContext, ParameterizedType concreteType,
+    private DV linkOfLoopVarInIterable(EvaluationContext evaluationContext,
+                                       ParameterizedType concreteType,
                                        ParameterizedType iterableType) {
-        ComputeIndependent computeIndependent = new ComputeIndependent(evaluationContext.getAnalyserContext(),
+        AnalyserContext ac = evaluationContext.getAnalyserContext();
+        ComputeIndependent computeIndependent = new ComputeIndependent(ac,
                 evaluationContext.getCurrentType());
         DV immutable = computeIndependent.typeImmutable(concreteType);
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return null; // no linking!
-        DV linkLevel = MultiLevel.isAtLeastImmutableHC(immutable)
-                ? LinkedVariables.LINK_COMMON_HC : LinkedVariables.LINK_DEPENDENT;
+        LV linkLevel;
+        if (MultiLevel.isAtLeastImmutableHC(immutable)) {
+            // interface Iterable<E> { Iterator<E> iterator(); } -> E
+            // the iterableType must implement Iterable, so it should have an iterator() method
+            TypeInfo iterable = ac.importantClasses().iterable().typeInfo;
+            MethodInfo iterator = iterable.findUniqueMethod(ac, "iterator", 0);
+            TypeInfo bestType = iterableType.bestTypeInfo(ac);
+            assert bestType != null : "How come? this type should implement Iterable";
+            MethodInfo methodInfo = bestType.findMethodImplementing(iterator);
+            assert methodInfo != null : "How come? this type should have an overloaded iterable() method";
+            MethodInspection methodInspection = ac.getMethodInspection(methodInfo);
+            ParameterizedType typeReturnedByIterableMethod = methodInspection.getReturnType();
+            HiddenContent theirs = new HiddenContent(List.of(typeReturnedByIterableMethod), CausesOfDelay.EMPTY);
+            HiddenContent mine = new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
+            linkLevel = LV.createHC(mine, theirs);
+        } else {
+            linkLevel = LV.LINK_DEPENDENT;
+        }
         return computeIndependent.typesAtLinkLevel(linkLevel, concreteType, immutable, iterableType);
     }
 
@@ -1960,7 +1979,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                                                                     Variable v,
                                                                                     boolean cnnTravelsToFields) {
         if (v instanceof ParameterInfo
-                || cnnTravelsToFields && v instanceof FieldReference) return Either.right(Set.of(v));
+            || cnnTravelsToFields && v instanceof FieldReference) return Either.right(Set.of(v));
         VariableInfoContainer vic = findOrNull(v);
         if (vic == null) {
             return Either.right(Set.of());

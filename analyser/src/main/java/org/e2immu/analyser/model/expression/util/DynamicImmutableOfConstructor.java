@@ -50,7 +50,7 @@ public class DynamicImmutableOfConstructor {
         CausesOfDelay linkDelays = delaysOfFieldsLinkedToConstructor();
         if (linkDelays.isDelayed()) return linkDelays;
         TypeInspection typeInspection = context.getAnalyserContext().getTypeInspection(methodInfo.typeInfo);
-        Map<FieldInfo, DV> fieldsLinkedToConstructor = fieldsLinkedToConstructor();
+        Map<FieldInfo, LV> fieldsLinkedToConstructor = fieldsLinkedToConstructor();
         return typeInspection.fields().stream()
                 .filter(f -> !fieldsLinkedToConstructor.containsKey(f))
                 .map(this::immutableOfField)
@@ -65,12 +65,12 @@ public class DynamicImmutableOfConstructor {
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
 
-    private Map<FieldInfo, DV> fieldsLinkedToConstructor() {
+    private Map<FieldInfo, LV> fieldsLinkedToConstructor() {
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodInfo);
-        Map<FieldInfo, DV> result = new HashMap<>();
+        Map<FieldInfo, LV> result = new HashMap<>();
         for (ParameterAnalysis pa : methodAnalysis.getParameterAnalyses()) {
-            for (Map.Entry<FieldInfo, DV> entry : pa.getAssignedToField().entrySet()) {
-                result.merge(entry.getKey(), entry.getValue(), DV::min);
+            for (Map.Entry<FieldInfo, LV> entry : pa.getAssignedToField().entrySet()) {
+                result.merge(entry.getKey(), entry.getValue(), LV::min);
             }
         }
         return result;

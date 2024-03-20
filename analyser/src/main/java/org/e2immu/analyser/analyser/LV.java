@@ -1,9 +1,6 @@
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.ParameterizedType;
-
 import java.util.Objects;
-import java.util.Set;
 
 public class LV implements Comparable<LV> {
     private static final int HC = 4;
@@ -13,41 +10,6 @@ public class LV implements Comparable<LV> {
     public static final LV LINK_DEPENDENT = new LV(2, null, null, "dependent", CausesOfDelay.EMPTY);
     public static final LV LINK_COMMON_HC = new LV(HC, null, null, "common_hc", CausesOfDelay.EMPTY);
     public static final LV LINK_INDEPENDENT = new LV(5, null, null, "independent", CausesOfDelay.EMPTY);
-
-    public interface HiddenContent extends Comparable<HiddenContent> {
-        Set<ParameterizedType> obtain(ParameterizedType in);
-
-        String label();
-
-        @Override
-        default int compareTo(HiddenContent o) {
-            return label().compareTo(o.label());
-        }
-    }
-
-    public static final HiddenContent WHOLE_TYPE = new HiddenContent() {
-        @Override
-        public Set<ParameterizedType> obtain(ParameterizedType in) {
-            return Set.of(in);
-        }
-
-        @Override
-        public String label() {
-            return "-";
-        }
-    };
-    public static final HiddenContent TYPE_PARAM_0 = new HiddenContent() {
-        @Override
-        public Set<ParameterizedType> obtain(ParameterizedType in) {
-            return Set.of(in.parameters.get(0));
-        }
-
-        @Override
-        public String label() {
-            return "0";
-        }
-    };
-
 
     private final int value;
     private final HiddenContent mine;
@@ -84,6 +46,7 @@ public class LV implements Comparable<LV> {
     }
 
     public static LV delay(CausesOfDelay causes) {
+        assert causes.isDelayed();
         return new LV(0, null, null, causes.label(), causes);
     }
 
@@ -125,8 +88,6 @@ public class LV implements Comparable<LV> {
 
     @Override
     public int compareTo(LV o) {
-        int c = value - o.value;
-        if (c != 0 || value != HC) return c;
-        return mine.compareTo(theirs);
+        return value - o.value;
     }
 }
