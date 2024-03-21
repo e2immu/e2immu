@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.*;
 
@@ -23,7 +23,6 @@ import java.util.Map;
 
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 
@@ -58,11 +57,11 @@ public interface WeightedGraph {
     ShortestPath shortestPath();
 
     @NotModified
-    void visit(@NotNull @Independent(hc = true) BiConsumer<Variable, Map<Variable, DV>> consumer);
+    void visit(@NotNull @Independent(hc = true) BiConsumer<Variable, Map<Variable, LV>> consumer);
 
     @Modified
     void addNode(@NotNull @Independent(hc = true) Variable v,
-                 @NotNull @Independent(hc = true) Map<Variable, DV> dependsOn);
+                 @NotNull @Independent(hc = true) Map<Variable, LV> dependsOn);
 
-    DV edgeValueOrNull(Variable v1, Variable v2);
+    LV edgeValueOrNull(Variable v1, Variable v2);
 }

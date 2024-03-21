@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.e2immu.analyser.analyser.LV.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestAssignment extends CommonTest {
@@ -333,9 +334,9 @@ public class TestAssignment extends CommonTest {
         ExpressionMock mockFormal = new ExpressionMock() {
             @Override
             public LinkedVariables linkedVariables(EvaluationResult context) {
-                return LinkedVariables.of(Map.of(va.variable(), LinkedVariables.LINK_DEPENDENT,
-                        vc.variable(), LinkedVariables.LINK_ASSIGNED,
-                        vd.variable(), LinkedVariables.LINK_STATICALLY_ASSIGNED));
+                return LinkedVariables.of(Map.of(va.variable(), LINK_DEPENDENT,
+                        vc.variable(), LINK_ASSIGNED,
+                        vd.variable(), LINK_STATICALLY_ASSIGNED));
             }
 
             @Override
@@ -346,9 +347,9 @@ public class TestAssignment extends CommonTest {
         ExpressionMock mockEval = new ExpressionMock() {
             @Override
             public LinkedVariables linkedVariables(EvaluationResult context) {
-                return LinkedVariables.of(Map.of(vb.variable(), LinkedVariables.LINK_COMMON_HC,
-                        vc.variable(), LinkedVariables.LINK_COMMON_HC,
-                        vf.variable(), LinkedVariables.LINK_STATICALLY_ASSIGNED));
+                return LinkedVariables.of(Map.of(vb.variable(), LINK_COMMON_HC,
+                        vc.variable(), LINK_COMMON_HC,
+                        vf.variable(), LINK_STATICALLY_ASSIGNED));
             }
         };
         Instance instance = Instance.forTesting(primitives.intParameterizedType());

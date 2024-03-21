@@ -41,13 +41,13 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterAnalysisImpl.class);
 
     private final ParameterInfo parameterInfo;
-    public final Map<FieldInfo, DV> assignedToField;
+    public final Map<FieldInfo, LV> assignedToField;
     private final LinkedVariables linksToOtherParameters;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<Property, DV> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
-                                  Map<FieldInfo, DV> assignedToField,
+                                  Map<FieldInfo, LV> assignedToField,
                                   LinkedVariables linksToOtherParameters) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
@@ -81,13 +81,13 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
-    public Map<FieldInfo, DV> getAssignedToField() {
+    public Map<FieldInfo, LV> getAssignedToField() {
         return assignedToField;
     }
 
     public static class Builder extends AbstractAnalysisBuilder implements ParameterAnalysis {
         private final ParameterInfo parameterInfo;
-        private final SetOnceMap<FieldInfo, DV> assignedToField = new SetOnceMap<>();
+        private final SetOnceMap<FieldInfo, LV> assignedToField = new SetOnceMap<>();
         private final EventuallyFinal<CausesOfDelay> causesOfAssignedToFieldDelays = new EventuallyFinal<>();
         public final Location location;
         private final AnalysisProvider analysisProvider;
@@ -152,7 +152,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public Map<FieldInfo, DV> getAssignedToField() {
+        public Map<FieldInfo, LV> getAssignedToField() {
             return assignedToField.toImmutableMap();
         }
 
@@ -167,8 +167,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    // TODO: here we need to compute the HC
-                    map.put(pi, linkLevel);
+                    map.put(pi, LV.createHC(null, null)); // FIXME LV
                 }
             }
             LinkedVariables lv = LinkedVariables.of(map);
@@ -229,7 +228,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             doIndependent(e2, independent, independentType, dynamicallyImmutable);
         }
 
-        public boolean addAssignedToField(FieldInfo fieldInfo, DV assignedOrLinked) {
+        public boolean addAssignedToField(FieldInfo fieldInfo, LV assignedOrLinked) {
             if (!assignedToField.isSet(fieldInfo)) {
                 assignedToField.put(fieldInfo, assignedOrLinked);
                 return true;

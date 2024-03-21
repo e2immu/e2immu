@@ -79,7 +79,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
      */
     public DV typesAtLinkLevel(LV linkLevel, ParameterizedType a, DV immutableAInput, ParameterizedType b) {
         if (linkLevel.isDelayed()) {
-            return linkLevel;
+            return linkLevel.toIndependent();
         }
         if (LINK_INDEPENDENT.equals(linkLevel)) return MultiLevel.INDEPENDENT_DV;
         DV immutableA = immutableAInput == null ? typeImmutable(a) : immutableAInput;

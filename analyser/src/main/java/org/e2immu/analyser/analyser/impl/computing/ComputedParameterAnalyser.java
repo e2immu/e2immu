@@ -412,9 +412,9 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     private static final List<Property> PROPERTY_LIST = List.of(EXTERNAL_NOT_NULL, MODIFIED_OUTSIDE_METHOD,
             EXTERNAL_IMMUTABLE, CONTAINER_RESTRICTION); // For now, NOT going with EXTERNAL_IGNORE_MODS
 
-    private static List<Property> propertiesToCopy(DV assignedOrLinked) {
+    private static List<Property> propertiesToCopy(LV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTY_LIST;
-        if (assignedOrLinked.equals(LinkedVariables.LINK_DEPENDENT)) return List.of(MODIFIED_OUTSIDE_METHOD);
+        if (assignedOrLinked.equals(LV.LINK_DEPENDENT)) return List.of(MODIFIED_OUTSIDE_METHOD);
         return List.of();
     }
 
@@ -441,7 +441,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             CausesOfDelay delays = CausesOfDelay.EMPTY;
             for (FieldInfo fieldInfo : fieldsAssignedInThisMethod) {
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-                DV assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
+                LV assignedOrLinked = determineAssignedOrLinked(fieldAnalysis);
                 if (assignedOrLinked.isDelayed()) {
                     delays = delays.merge(assignedOrLinked.causesOfDelay());
                 } else if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
@@ -455,13 +455,13 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             parameterAnalysis.freezeAssignedToField();
         }
 
-        Map<FieldInfo, DV> map = parameterAnalysis.getAssignedToField();
+        Map<FieldInfo, LV> map = parameterAnalysis.getAssignedToField();
         CausesOfDelay delays = CausesOfDelay.EMPTY;
 
         Set<Property> propertiesDelayed = new HashSet<>();
-        for (Map.Entry<FieldInfo, DV> e : map.entrySet()) {
+        for (Map.Entry<FieldInfo, LV> e : map.entrySet()) {
             FieldInfo fieldInfo = e.getKey();
-            DV assignedOrLinked = e.getValue();
+            LV assignedOrLinked = e.getValue();
             List<Property> propertiesToCopy = propertiesToCopy(assignedOrLinked);
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
 
@@ -504,7 +504,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             && !map.isEmpty()
             && map.values().stream().allMatch(LinkedVariables::isAssigned)) {
             DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
-            Map<Variable, DV> map2 = map.entrySet().stream().collect(Collectors
+            Map<Variable, LV> map2 = map.entrySet().stream().collect(Collectors
                     .toUnmodifiableMap(e -> new FieldReferenceImpl(analyserContext, e.getKey()), Map.Entry::getValue));
             DV independent = independentFromFields(immutable, map2);
             parameterAnalysis.setProperty(INDEPENDENT, independent);

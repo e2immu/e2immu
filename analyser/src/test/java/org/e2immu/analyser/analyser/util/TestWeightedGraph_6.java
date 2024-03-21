@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.model.LocalVariable;
@@ -105,7 +106,7 @@ public class TestWeightedGraph_6 extends CommonWG {
         int cnt = 0;
         for (ShortestPath shortestPath : sps) {
             LOGGER.info("WeightedGraph {}", cnt);
-            Map<Variable, DV> startAtX1 = shortestPath.links(x, null);
+            Map<Variable, LV> startAtX1 = shortestPath.links(x, null);
             assertEquals(4, startAtX1.size());
             assertEquals(v2, startAtX1.get(s));
             assertEquals(v0, startAtX1.get(x));

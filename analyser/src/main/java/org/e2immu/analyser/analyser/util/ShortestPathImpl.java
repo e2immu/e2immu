@@ -2,6 +2,7 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.variable.Variable;
@@ -10,6 +11,8 @@ import org.e2immu.graph.op.DijkstraShortestPath;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import static org.e2immu.analyser.analyser.LV.*;
 
 /*
 Note: the comparator and the sum work according to different order of the values.
@@ -44,32 +47,29 @@ public class ShortestPathImpl implements ShortestPath {
     private static final long DEPENDENT = 1L << (3 * BITS);
     private static final long INDEPENDENT_HC = 1L << (4 * BITS);
 
-    public static long toDistanceComponent(DV dv) {
-        if (LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(dv)) return 1;
+    public static long toDistanceComponent(LV dv) {
+        if (LINK_STATICALLY_ASSIGNED.equals(dv)) return 1;
         if (dv.isDelayed()) return DELAYED;
-        if (LinkedVariables.LINK_ASSIGNED.equals(dv)) return ASSIGNED;
-        if (LinkedVariables.LINK_DEPENDENT.equals(dv)) return DEPENDENT;
-        assert LinkedVariables.LINK_COMMON_HC.equals(dv);
+        if (LINK_ASSIGNED.equals(dv)) return ASSIGNED;
+        if (LINK_DEPENDENT.equals(dv)) return DEPENDENT;
+        assert LINK_COMMON_HC.equals(dv);
         return INDEPENDENT_HC;
     }
 
-    public static DV fromDistanceSum(long l, CausesOfDelay someDelay) {
-        if (l < DELAYED) return LinkedVariables.LINK_STATICALLY_ASSIGNED;
+    public static LV fromDistanceSum(long l, CausesOfDelay someDelay) {
+        if (l < DELAYED) return LINK_STATICALLY_ASSIGNED;
         if (((l >> BITS) & (DELAYED - 1)) > 0) {
             assert someDelay != null && someDelay.isDelayed();
-            return someDelay;
+            return LV.delay(someDelay);
         }
-        if (l < DEPENDENT) return LinkedVariables.LINK_ASSIGNED;
-        if (l < INDEPENDENT_HC) return LinkedVariables.LINK_DEPENDENT;
-        return LinkedVariables.LINK_COMMON_HC;
+        if (l < DEPENDENT) return LINK_ASSIGNED;
+        if (l < INDEPENDENT_HC) return LINK_DEPENDENT;
+        return LINK_COMMON_HC;
     }
 
-    public static char code(DV dv) {
+    public static char code(LV dv) {
         if (dv.isDelayed()) return 'D';
-        if (dv instanceof NoDelay noDelay) {
-            return (char) ((int) '0' + noDelay.value());
-        }
-        throw new UnsupportedOperationException();
+        return (char) ((int) '0' + dv.value());
     }
 
     record Key(int start, long maxWeight) {
@@ -84,7 +84,7 @@ public class ShortestPathImpl implements ShortestPath {
 
 
     @Override
-    public Map<Variable, DV> links(Variable v, DV maxWeight) {
+    public Map<Variable, LV> links(Variable v, LV maxWeight) {
         int startVertex = variableIndex.get(v);
         long maxWeightLong = maxWeight == null ? 0L : toDistanceComponent(maxWeight);
         Key key = new Key(startVertex, maxWeightLong);
@@ -104,11 +104,11 @@ public class ShortestPathImpl implements ShortestPath {
             linkMap.map.put(key, shortest);
             linkMap.savingsCount.decrementAndGet();
         }
-        Map<Variable, DV> result = new HashMap<>();
+        Map<Variable, LV> result = new HashMap<>();
         for (int j = 0; j < shortest.length; j++) {
             long d = shortest[j];
             if (d != Long.MAX_VALUE) {
-                DV dv = fromDistanceSum(d, someDelay);
+                LV dv = fromDistanceSum(d, someDelay);
                 result.put(variables[j], dv);
             }
         }

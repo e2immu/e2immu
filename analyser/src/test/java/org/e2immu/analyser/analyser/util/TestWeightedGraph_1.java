@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.model.Location;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static org.e2immu.analyser.analyser.LV.*;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -70,7 +72,7 @@ public class TestWeightedGraph_1 extends CommonWG {
 
     @Test
     public void test1b() {
-        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, LINK_DEPENDENT);
+        Map<Variable, LV> startAtToDo = shortestPath.links(toDo, LINK_DEPENDENT);
         assertEquals(1, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
         assertNull(startAtToDo.get(cycle));
@@ -80,7 +82,7 @@ public class TestWeightedGraph_1 extends CommonWG {
 
     @Test
     public void test3() {
-        Map<Variable, DV> startAtToDo = shortestPath.links(toDo, null);
+        Map<Variable, LV> startAtToDo = shortestPath.links(toDo, null);
         assertEquals(6, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
         assertEquals(LINK_COMMON_HC, startAtToDo.get(cycle));
@@ -93,7 +95,7 @@ public class TestWeightedGraph_1 extends CommonWG {
 
     @Test
     public void test4() {
-        Map<Variable, DV> startAtRemoved = shortestPath.links(removed, null);
+        Map<Variable, LV> startAtRemoved = shortestPath.links(removed, null);
         assertEquals(6, startAtRemoved.size());
         assertEquals(delay, startAtRemoved.get(thisVar));
         assertEquals(LINK_STATICALLY_ASSIGNED, startAtRemoved.get(removed));
@@ -105,7 +107,7 @@ public class TestWeightedGraph_1 extends CommonWG {
 
     @Test
     public void test4b() {
-        Map<Variable, DV> startAtRemoved = shortestPath.links(removed, LINK_DEPENDENT);
+        Map<Variable, LV> startAtRemoved = shortestPath.links(removed, LINK_DEPENDENT);
         assertEquals(2, startAtRemoved.size());
         assertNull(startAtRemoved.get(cycle));
         assertNull(startAtRemoved.get(smallerCycle));

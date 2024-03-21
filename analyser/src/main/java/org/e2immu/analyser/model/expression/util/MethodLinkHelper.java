@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.e2immu.analyser.analyser.LV.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 
 public class MethodLinkHelper {
@@ -71,7 +72,7 @@ public class MethodLinkHelper {
             } else {
                 lv = value.linkedVariables(context);
             }
-            result.add(lv.maximum(LinkedVariables.LINK_DEPENDENT));
+            result.add(lv.maximum(LINK_DEPENDENT));
             i++;
         }
         return result;
@@ -111,7 +112,7 @@ public class MethodLinkHelper {
             methodInfo = lambda.methodInfo;
             nestedType = lambda.methodInfo.typeInfo;
         } else if ((cc = parameterExpression.asInstanceOf(ConstructorCall.class)) != null
-                && cc.anonymousClass() != null) {
+                   && cc.anonymousClass() != null) {
             TypeInspection anonymousClassInspection = context.getAnalyserContext().getTypeInspection(cc.anonymousClass());
             assert parameterExpression.returnType().isFunctionalInterface();
             methodInfo = anonymousClassInspection.findMethodOverridingSAMOf(parameterExpression.returnType().typeInfo);
@@ -134,7 +135,7 @@ public class MethodLinkHelper {
                     }
                     IsVariableExpression ive = mr.scope.asInstanceOf(IsVariableExpression.class);
                     if (!(ive != null && ive.variable() instanceof This thisVar
-                            && thisVar.typeInfo == context.getCurrentType())) {
+                          && thisVar.typeInfo == context.getCurrentType())) {
                         This innerThis = new This(context.getAnalyserContext(), methodInfo.typeInfo);
                         if (ive != null) {
                             TranslationMap tm = new TranslationMapImpl.Builder().put(innerThis, ive.variable()).build();
@@ -193,7 +194,7 @@ public class MethodLinkHelper {
             if (DEPENDENT_DV.equals(independent)) result.add(linkedVariablesOfScope);
             else if (INDEPENDENT_HC_DV.equals(independent)) {
                 // modify to :4
-                LinkedVariables lv = linkedVariablesOfScope.maximum(LinkedVariables.LINK_COMMON_HC);
+                LinkedVariables lv = linkedVariablesOfScope.maximum(LINK_COMMON_HC);
                 result.add(lv);
             }
         }
@@ -257,19 +258,19 @@ public class MethodLinkHelper {
                     Expression parameterValue = parameterValues.get(index);
                     Expression parameterExpression = parameterExpressions.get(index);
                     ParameterizedType concreteParameterType = parameterValue.returnType();
-                    DV linkLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(formalParameterIndependent);
+                    LV linkLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(formalParameterIndependent);
                     DV parameterIndependent = computeIndependent.typesAtLinkLevel(linkLevel, objectPt, scopeImmutable, concreteParameterType);
-                    DV parameterIndependentLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(parameterIndependent);
+                    LV parameterIndependentLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(parameterIndependent);
 
                     if (!INDEPENDENT_DV.equals(parameterIndependent)) {
                         assert parameterIndependentLevel.isDelayed()
-                                || LinkedVariables.LINK_DEPENDENT.equals(parameterIndependentLevel)
-                                || LinkedVariables.LINK_COMMON_HC.equals(parameterIndependentLevel);
+                               || LINK_DEPENDENT.equals(parameterIndependentLevel)
+                               || LINK_COMMON_HC.equals(parameterIndependentLevel);
                         LinkedVariables linkedVariablesOfParameter = formalAndValueLinkedVariables(parameterExpression, parameterValue);
 
-                        for (Map.Entry<Variable, DV> eFrom : linkedVariablesOfObject) {
-                            for (Map.Entry<Variable, DV> eTo : linkedVariablesOfParameter) {
-                                DV level = eFrom.getValue().max(eTo.getValue()).max(parameterIndependentLevel);
+                        for (Map.Entry<Variable, LV> eFrom : linkedVariablesOfObject) {
+                            for (Map.Entry<Variable, LV> eTo : linkedVariablesOfParameter) {
+                                LV level = eFrom.getValue().max(eTo.getValue()).max(parameterIndependentLevel);
                                 builder.link(eFrom.getKey(), eTo.getKey(), level, true);
                             }
                         }
@@ -308,7 +309,7 @@ public class MethodLinkHelper {
         crossLinks.forEach((pi, lv) -> lv.stream().forEach(e -> {
             ParameterInfo target = (ParameterInfo) e.getKey();
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
-            DV level = e.getValue();
+            LV level = e.getValue();
             Expression targetExpression = parameterExpressions.get(target.index);
             Expression targetValue = parameterValues.get(target.index);
             Variable targetVariable = bestTargetVariable(targetExpression, targetValue);
@@ -356,7 +357,7 @@ public class MethodLinkHelper {
                                           Variable target,
                                           int targetIndex,
                                           boolean targetIsVarArgs,
-                                          DV level,
+                                          LV level,
                                           Expression source,
                                           List<Expression> parameterExpressions,
                                           List<Expression> parameterValues,
@@ -388,7 +389,7 @@ public class MethodLinkHelper {
                 List<Variable> vars = srv.variables();
                 for (Variable v : vars) {
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != inlinedMethod.methodInfo()) {
-                        DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
+                        LV l = srv.isDelayed() ? LV.delay(srv.causesOfDelay()) : level;
                         linksBetweenParametersVarArgs(builder, targetIndex, targetIsVarArgs, l,
                                 new VariableExpression(piLambda.identifier, v),
                                 parameterExpressions, parameterValues, linkedVariables);
@@ -407,7 +408,7 @@ public class MethodLinkHelper {
                 List<Variable> vars = srv.variables();
                 for (Variable v : vars) {
                     if (v instanceof ParameterInfo piLambda && piLambda.owner != lambda.methodInfo) {
-                        DV l = srv.isDelayed() ? srv.causesOfDelay() : level;
+                        LV l = srv.isDelayed() ? LV.delay(srv.causesOfDelay()) : level;
                         linksBetweenParametersVarArgs(builder, targetIndex, targetIsVarArgs, l,
                                 new VariableExpression(piLambda.identifier, v), parameterExpressions, parameterValues,
                                 linkedVariables);
@@ -420,12 +421,12 @@ public class MethodLinkHelper {
     private void linksBetweenParametersVarArgs(EvaluationResultImpl.Builder builder,
                                                int targetIndex,
                                                boolean targetIsVarArgs,
-                                               DV level,
+                                               LV level,
                                                IsVariableExpression vSource,
                                                List<Expression> parameterExpressions,
                                                List<Expression> parameterValues,
                                                List<LinkedVariables> linkedVariables) {
-        if (!LinkedVariables.LINK_INDEPENDENT.equals(level)) {
+        if (!LINK_INDEPENDENT.equals(level)) {
             linksBetweenParameters(builder, vSource, targetIndex, level, parameterValues, linkedVariables);
             if (targetIsVarArgs) {
                 for (int i = targetIndex + 1; i < parameterExpressions.size(); i++) {
@@ -438,14 +439,14 @@ public class MethodLinkHelper {
     private void linksBetweenParameters(EvaluationResultImpl.Builder builder,
                                         IsVariableExpression source,
                                         int targetIndex,
-                                        DV level,
+                                        LV level,
                                         List<Expression> parameterValues,
                                         List<LinkedVariables> linkedVariables) {
         LinkedVariables targetLinks = linkedVariables.get(targetIndex);
         Expression parameterValue = parameterValues.get(targetIndex);
         CausesOfDelay delays = parameterValue.causesOfDelay().merge(source.causesOfDelay());
         targetLinks.variables().forEach((v, l) ->
-                builder.link(source.variable(), v, delays.isDelayed() ? delays : level.max(l), true));
+                builder.link(source.variable(), v, delays.isDelayed() ? LV.delay(delays) : level.max(l), true));
     }
 
     /*
@@ -483,16 +484,16 @@ public class MethodLinkHelper {
         // RULE 2: @Identity links to the 1st parameter
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.valueIsTrue()) {
-            return parameterExpressions.get(0).linkedVariables(context).maximum(LinkedVariables.LINK_ASSIGNED);
+            return parameterExpressions.get(0).linkedVariables(context).maximum(LINK_ASSIGNED);
         }
         LinkedVariables linkedVariablesOfObject = object.linkedVariables(context)
-                .maximum(LinkedVariables.LINK_ASSIGNED); // should be delay-able!
+                .maximum(LINK_ASSIGNED); // should be delay-able!
 
         if (identity.isDelayed() && !parameterExpressions.isEmpty()) {
             // temporarily link to both the object and the parameter, in a delayed way
             return linkedVariablesOfObject
                     .merge(parameterExpressions.get(0).linkedVariables(context))
-                    .changeNonStaticallyAssignedToDelay(identity);
+                    .changeNonStaticallyAssignedToDelay(identity.causesOfDelay());
         }
 
         // RULE 3: otherwise, we link to the object, even if the object is 'this'
@@ -504,8 +505,8 @@ public class MethodLinkHelper {
         ParameterizedType returnTypeOfObject = object.returnType();
         DV immutableOfObject = context.getAnalyserContext().typeImmutable(returnTypeOfObject);
         if (!context.evaluationContext().isMyself(returnTypeOfObject).toFalse(Property.IMMUTABLE)
-                && immutableOfObject.isDelayed()) {
-            return linkedVariablesOfObject.changeToDelay(immutableOfObject);
+            && immutableOfObject.isDelayed()) {
+            return linkedVariablesOfObject.changeToDelay(LV.delay(immutableOfObject.causesOfDelay()));
         }
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfObject)) {
             /*
@@ -518,34 +519,34 @@ public class MethodLinkHelper {
         DV methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
         if (methodIndependent.isDelayed()) {
             // delay in method independent
-            return linkedVariablesOfObject.changeToDelay(methodIndependent);
+            return linkedVariablesOfObject.changeToDelay(LV.delay(methodIndependent.causesOfDelay()));
         }
         if (methodIndependent.equals(MultiLevel.INDEPENDENT_DV)) {
             // we know the result is independent of the object
             return LinkedVariables.EMPTY;
         }
         if (methodIndependent.equals(MultiLevel.DEPENDENT_DV)) {
-            Map<Variable, DV> newLinked = new HashMap<>();
+            Map<Variable, LV> newLinked = new HashMap<>();
             CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
-            for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
+            for (Map.Entry<Variable, LV> e : linkedVariablesOfObject) {
                 DV immutable = context.getAnalyserContext().typeImmutable(e.getKey().parameterizedType());
-                assert e.getValue().lt(LinkedVariables.LINK_INDEPENDENT);
+                assert e.getValue().lt(LINK_INDEPENDENT);
 
                 if (e.getKey() instanceof This) {
                     /*
                      without this line, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
                      */
-                    newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT.max(e.getValue()));
+                    newLinked.put(e.getKey(), LINK_DEPENDENT.max(e.getValue()));
                 } else if (immutable.isDelayed()) {
                     causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
                 } else if (MultiLevel.isMutable(immutable)) {
-                    newLinked.put(e.getKey(), LinkedVariables.LINK_DEPENDENT.max(e.getValue()));
+                    newLinked.put(e.getKey(), LINK_DEPENDENT.max(e.getValue()));
                 } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-                    newLinked.put(e.getKey(), LinkedVariables.LINK_COMMON_HC);
+                    newLinked.put(e.getKey(), LINK_COMMON_HC);
                 }
             }
             if (causesOfDelay.isDelayed()) {
-                return linkedVariablesOfObject.changeToDelay(causesOfDelay);
+                return linkedVariablesOfObject.changeToDelay(LV.delay(causesOfDelay));
             }
             return LinkedVariables.of(newLinked);
         }
@@ -553,8 +554,8 @@ public class MethodLinkHelper {
         ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
                 context.getCurrentType());
         DV immutable = computeIndependent.typeImmutable(concreteReturnType);
-        Map<Variable, DV> newLinked = new HashMap<>();
-        for (Map.Entry<Variable, DV> e : linkedVariablesOfObject) {
+        Map<Variable, LV> newLinked = new HashMap<>();
+        for (Map.Entry<Variable, LV> e : linkedVariablesOfObject) {
             ParameterizedType pt1 = e.getKey().parameterizedType();
             // how does the return type fit in the object (or at least, the variable linked to the object)
             DV independent = computeIndependent.typesAtLinkLevel(e.getValue(), concreteReturnType, immutable, pt1);

@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.CauseOfDelay;
-import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.model.LocalVariable;
@@ -32,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -56,7 +54,7 @@ public class TestWeightedGraph_2 extends CommonWG {
 
     @Test
     public void test1() {
-        Map<Variable, DV> startAtFirst = wg.shortestPath().links(first, LINK_DEPENDENT);
+        Map<Variable, LV> startAtFirst = wg.shortestPath().links(first, LINK_DEPENDENT);
         assertEquals(4, startAtFirst.size());
         assertEquals(v0, startAtFirst.get(first));
         assertEquals(v0, startAtFirst.get(sa));

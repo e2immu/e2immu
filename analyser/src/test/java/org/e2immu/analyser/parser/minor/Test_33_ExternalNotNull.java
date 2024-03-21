@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.LV.LINK_ASSIGNED;
 import static org.e2immu.analyser.analyser.Property.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -128,7 +129,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 if (d.iteration() > 0) {
-                    assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
+                    assertFalse(fai.valuesAreLinkedToParameters(LINK_ASSIGNED));
                 }
             }
             if ("p".equals(d.fieldInfo().name)) {
@@ -138,7 +139,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals(expected, d.fieldAnalysis().getValue().toString());
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 if (d.iteration() > 0) {
-                    assertTrue(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
+                    assertTrue(fai.valuesAreLinkedToParameters(LINK_ASSIGNED));
                 }
             }
             if ("q".equals(d.fieldInfo().name)) {
@@ -147,7 +148,7 @@ public class Test_33_ExternalNotNull extends CommonTestRunner {
                 assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
                 // also value null
                 if (d.iteration() > 0) {
-                    assertFalse(fai.valuesAreLinkedToParameters(LinkedVariables.LINK_ASSIGNED));
+                    assertFalse(fai.valuesAreLinkedToParameters(LINK_ASSIGNED));
                 }
             }
             if ("r".equals(d.fieldInfo().name)) {

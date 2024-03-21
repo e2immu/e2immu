@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
+import static org.e2immu.analyser.analyser.LV.LINK_STATICALLY_ASSIGNED;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -77,7 +79,7 @@ public class TestWeightedGraph_4 extends CommonWG {
     @Test
     public void test1() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtX = wg.shortestPath().links(x, LINK_STATICALLY_ASSIGNED);
+            Map<Variable, LV> startAtX = wg.shortestPath().links(x, LINK_STATICALLY_ASSIGNED);
             assertEquals(1, startAtX.size());
             assertEquals(v0, startAtX.get(x));
             assertNull(startAtX.get(a));
@@ -88,7 +90,7 @@ public class TestWeightedGraph_4 extends CommonWG {
     @Test
     public void test2() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtX = wg.shortestPath().links(x, null);
+            Map<Variable, LV> startAtX = wg.shortestPath().links(x, null);
             assertEquals(5, startAtX.size());
             assertEquals(v0, startAtX.get(x));
             assertNull(startAtX.get(y));
@@ -102,7 +104,7 @@ public class TestWeightedGraph_4 extends CommonWG {
     @Test
     public void test3() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, DV> startAtToDo = wg.shortestPath().links(a, null);
+            Map<Variable, LV> startAtToDo = wg.shortestPath().links(a, null);
             assertEquals(4, startAtToDo.size());
             assertNull(startAtToDo.get(x));
             assertNull(startAtToDo.get(y));

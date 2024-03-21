@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.*;
 
+import static org.e2immu.analyser.analyser.LV.LINK_ASSIGNED;
 import static org.e2immu.analyser.analyser.util.ConditionManagerImpl.commonGetProperty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -240,9 +241,9 @@ public class TestLinkingExpression {
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, addAll);
         methodLinkHelper.linksBetweenParameters(builder, addAll, parameterValues, parameterValues,
                 // no prior additional links, not that any would be possible
-                List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
-                        LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
-                        LinkedVariables.of(Map.of(j, LinkedVariables.LINK_ASSIGNED))));
+                List.of(LinkedVariables.of(Map.of(v, LINK_ASSIGNED)),
+                        LinkedVariables.of(Map.of(i, LINK_ASSIGNED)),
+                        LinkedVariables.of(Map.of(j, LINK_ASSIGNED))));
         assertEquals("i:4,j:4", builder.build().changeData().get(v).linkedVariables().toString());
     }
 
@@ -274,9 +275,9 @@ public class TestLinkingExpression {
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, addAll);
         methodLinkHelper.linksBetweenParameters(builder, addAll, parameterValues, parameterValues,
                 // no prior additional links
-                List.of(LinkedVariables.of(Map.of(v, LinkedVariables.LINK_ASSIGNED)),
-                        LinkedVariables.of(Map.of(i, LinkedVariables.LINK_ASSIGNED)),
-                        LinkedVariables.of(Map.of(j, LinkedVariables.LINK_ASSIGNED))));
+                List.of(LinkedVariables.of(Map.of(v, LINK_ASSIGNED)),
+                        LinkedVariables.of(Map.of(i, LINK_ASSIGNED)),
+                        LinkedVariables.of(Map.of(j, LINK_ASSIGNED))));
 
         assertEquals("v:4", builder.build().changeData().get(i).linkedVariables().toString());
         assertEquals("v:4", builder.build().changeData().get(j).linkedVariables().toString());

@@ -37,6 +37,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
+import static org.e2immu.analyser.analyser.LV.LINK_STATICALLY_ASSIGNED;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.e2immu.analyser.analyser.Stage.EVALUATION;
 
@@ -119,7 +121,7 @@ public class ComputeLinkedVariables {
                     VariableInfo viE = vic.best(EVALUATION);
                     LinkedVariables linkedVariables = add(statementAnalysis, ignore, reassigned, externalLinkedVariables,
                             weightedGraph, vi1, viE, variable);
-                    for (Map.Entry<Variable, DV> e : linkedVariables) {
+                    for (Map.Entry<Variable, LV> e : linkedVariables) {
                         Variable v = e.getKey();
                         if (!done.contains(v)) {
                             VariableInfoContainer linkedVic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
@@ -180,8 +182,8 @@ public class ComputeLinkedVariables {
         Set<Variable> variables = fr.scope().variablesWithoutCondition().stream()
                 .filter(v -> !(v instanceof This))
                 .collect(Collectors.toUnmodifiableSet());
-        DV link = fr.scope().isDelayed() ? fr.scope().causesOfDelay() : LinkedVariables.LINK_DEPENDENT;
-        Map<Variable, DV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
+        LV link = fr.scope().isDelayed() ? LV.delay(fr.scope().causesOfDelay()) : LINK_DEPENDENT;
+        Map<Variable, LV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
         return LinkedVariables.of(map);
     }
 
@@ -418,7 +420,7 @@ public class ComputeLinkedVariables {
         for (Variable variable : variablesInClusters) {
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
-            Map<Variable, DV> map = shortestPath.links(variable, null);
+            Map<Variable, LV> map = shortestPath.links(variable, null);
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
                     variable, map);
 
@@ -430,7 +432,7 @@ public class ComputeLinkedVariables {
 
         if (returnVariable != null) {
             VariableInfoContainer vicRv = statementAnalysis.getVariable(returnVariable.fullyQualifiedName());
-            Map<Variable, DV> map = shortestPath.links(returnVariable, null);
+            Map<Variable, LV> map = shortestPath.links(returnVariable, null);
             LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
                     returnVariable, map);
 
@@ -463,17 +465,18 @@ public class ComputeLinkedVariables {
 
     private LinkedVariables applyStaticallyAssignedAndRemoveSelfReference(Map<Variable, Set<Variable>> staticallyAssignedVariables,
                                                                           Variable variable,
-                                                                          Map<Variable, DV> map) {
+                                                                          Map<Variable, LV> map) {
         if (linkingNotYetSet.contains(variable)) {
             return NOT_YET_SET;
         }
         CausesOfDelay allDelays = map.values().stream()
-                .map(DV::causesOfDelay)
+                .map(LV::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
         if (allDelays.isDelayed()) {
-            for (Map.Entry<Variable, DV> entry : map.entrySet()) {
-                entry.setValue(allDelays);
+            LV allDelaysLv = LV.delay(allDelays);
+            for (Map.Entry<Variable, LV> entry : map.entrySet()) {
+                entry.setValue(allDelaysLv);
             }
         }
         Set<Variable> staticallyAssigned = staticallyAssignedVariables.get(variable);
@@ -507,7 +510,7 @@ public class ComputeLinkedVariables {
                     if (touched.contains(variable)) {
                         LinkedVariables linkedVariables;
                         if (haveLinkedVariables.contains(variable)) {
-                            Map<Variable, DV> map = shortestPath.links(variable, null);
+                            Map<Variable, LV> map = shortestPath.links(variable, null);
                             map.keySet().removeIf(toRemove::contains);
                             linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
                                     variable, map);
@@ -657,9 +660,9 @@ public class ComputeLinkedVariables {
             finalModified = new HashMap<>();
             for (Variable variable : variablesInClusters) {
                 DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
-                Map<Variable, DV> map = shortestPath.links(variable, LINK_DEPENDENT);
+                Map<Variable, LV> map = shortestPath.links(variable, LINK_DEPENDENT);
 
-                DV max = map.values().stream().reduce(DelayFactory.initialDelay(), DV::max);
+                LV max = map.values().stream().reduce(LV.initialDelay(), LV::max);
                 CausesOfDelay clusterDelay = max.isInitialDelay() ? CausesOfDelay.EMPTY : max.causesOfDelay();
                 CausesOfDelay notYetSet = this.linkingNotYetSet.contains(variable) ? LinkedVariables.NOT_YET_SET_DELAY
                         : CausesOfDelay.EMPTY;
@@ -709,7 +712,7 @@ public class ComputeLinkedVariables {
                     VariableInfo vi = vic.best(stage);
                     DV modified = vi.getProperty(Property.CONTEXT_MODIFIED);
                     int finalValue;
-                    Map<Variable, DV> map = shortestPath.links(variable, LINK_DEPENDENT);
+                    Map<Variable, LV> map = shortestPath.links(variable, LINK_DEPENDENT);
                     if (modified.isDelayed() || modificationDelayIn(map.keySet())) {
                         finalValue = -1;
                     } else {

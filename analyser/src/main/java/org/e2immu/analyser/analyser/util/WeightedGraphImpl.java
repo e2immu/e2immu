@@ -14,7 +14,8 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.LV;
+import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -25,6 +26,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.analyser.LV.*;
 
 
 public class WeightedGraphImpl extends Freezable implements WeightedGraph {
@@ -37,14 +40,13 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         this(new GraphCacheImpl(10));
     }
 
-    @SuppressWarnings("unchecked")
     public WeightedGraphImpl(Cache cache) {
         nodeMap = new LinkedHashMap<>();
         this.cache = cache;
     }
 
     private static class Node {
-        Map<Variable, DV> dependsOn;
+        Map<Variable, LV> dependsOn;
         final Variable variable;
 
         private Node(Variable v) {
@@ -59,7 +61,6 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
 
     The return-value cluster is a special case, it overlaps with the other ones.
      */
-    @SuppressWarnings("unchecked")
     @Override
     public ClusterResult staticClusters() {
         super.freeze();
@@ -73,10 +74,10 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                 rv = variable;
                 dependsOnRv = new HashSet<>();
             }
-            Map<Variable, DV> dependsOn = entry.getValue().dependsOn;
+            Map<Variable, LV> dependsOn = entry.getValue().dependsOn;
             if (dependsOn != null) {
-                for (Map.Entry<Variable, DV> e2 : dependsOn.entrySet()) {
-                    if (LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(e2.getValue())) {
+                for (Map.Entry<Variable, LV> e2 : dependsOn.entrySet()) {
+                    if (LINK_STATICALLY_ASSIGNED.equals(e2.getValue())) {
                         if (isRv) {
                             dependsOnRv.add(e2.getKey());
                         } else {
@@ -119,7 +120,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         return nodeMap.isEmpty();
     }
 
-    public void visit(BiConsumer<Variable, Map<Variable, DV>> consumer) {
+    public void visit(BiConsumer<Variable, Map<Variable, LV>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.variable, n.dependsOn));
     }
 
@@ -136,30 +137,29 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
 
 
     @SuppressWarnings("unchecked")
-    public void addNode(Variable v, Map<Variable, DV> dependsOn) {
+    public void addNode(Variable v, Map<Variable, LV> dependsOn) {
         ensureNotFrozen();
         Node node = getOrCreate(v);
-        for (Map.Entry<Variable, DV> e : dependsOn.entrySet()) {
+        for (Map.Entry<Variable, LV> e : dependsOn.entrySet()) {
             if (node.dependsOn == null) {
                 node.dependsOn = new LinkedHashMap<>();
             }
-            DV linkLevel = e.getValue();
-            assert !LinkedVariables.LINK_INDEPENDENT.equals(linkLevel);
+            LV linkLevel = e.getValue();
+            assert !LINK_INDEPENDENT.equals(linkLevel);
 
             /*
             ASSIGNED links are symmetrical, except for links involving the return variable.
             All other links can be asymmetrical.
              */
-            DV min = node.dependsOn.merge(e.getKey(), linkLevel, DV::min);
-            if ((LinkedVariables.LINK_STATICALLY_ASSIGNED.equals(min)
-                    || LinkedVariables.LINK_ASSIGNED.equals(min))
-                    && !(e.getKey() instanceof ReturnVariable)
-                    && !(v instanceof ReturnVariable)) {
+            LV min = node.dependsOn.merge(e.getKey(), linkLevel, LV::min);
+            if ((LINK_STATICALLY_ASSIGNED.equals(min) || LINK_ASSIGNED.equals(min))
+                && !(e.getKey() instanceof ReturnVariable)
+                && !(v instanceof ReturnVariable)) {
                 Node n = getOrCreate(e.getKey());
                 if (n.dependsOn == null) {
                     n.dependsOn = new LinkedHashMap<>();
                 }
-                n.dependsOn.merge(v, min, DV::min);
+                n.dependsOn.merge(v, min, LV::min);
             }
         }
     }
@@ -206,17 +206,17 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         CausesOfDelay delay = null;
         for (int d1 = 0; d1 < n; d1++) {
             Node node = nodeMap.get(variables[d1]);
-            Map<Variable, DV> dependsOn = node.dependsOn;
+            Map<Variable, LV> dependsOn = node.dependsOn;
             sb.append(d1);
             if (dependsOn != null && !dependsOn.isEmpty()) {
 
                 Map<Integer, Long> edgesOfD1 = new LinkedHashMap<>();
                 edges.put(d1, edgesOfD1);
                 List<String> unsorted = new ArrayList<>(dependsOn.size());
-                for (Map.Entry<Variable, DV> e2 : dependsOn.entrySet()) {
+                for (Map.Entry<Variable, LV> e2 : dependsOn.entrySet()) {
                     int d2 = variableIndex.get(e2.getKey());
 
-                    DV dv = e2.getValue();
+                    LV dv = e2.getValue();
                     if (dv.isDelayed() && delay == null) {
                         delay = dv.causesOfDelay();
                     }
@@ -238,7 +238,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
     }
 
     @Override
-    public DV edgeValueOrNull(Variable v1, Variable v2) {
+    public LV edgeValueOrNull(Variable v1, Variable v2) {
         Node n = nodeMap.get(v1);
         if (n != null && n.dependsOn != null) {
             return n.dependsOn.get(v2);

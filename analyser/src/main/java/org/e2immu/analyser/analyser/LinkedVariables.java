@@ -97,12 +97,12 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     (leaving the hidden content hidden?) to x  max(1,0)=1
     if INDEPENDENT_1, then x is hidden content linked to b is hidden content linked to c, max(1,1)=1
      */
-    public LinkedVariables merge(LinkedVariables other, DV minimum) {
+    public LinkedVariables merge(LinkedVariables other, LV minimum) {
         if (this == NOT_YET_SET || other == NOT_YET_SET) return NOT_YET_SET;
 
         HashMap<Variable, LV> map = new HashMap<>(variables);
         other.variables.forEach((v, i) -> {
-            LV newValue = minimum.isInitialDelay() ? i : i.max(minimum);
+            LV newValue = minimum.causesOfDelay().isInitialDelay() ? i : i.max(minimum);
             LV inMap = map.get(v);
             if (inMap == null) {
                 map.put(v, newValue);
@@ -117,7 +117,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     }
 
     public LinkedVariables merge(LinkedVariables other) {
-        return merge(other, DelayFactory.initialDelay()); // no effect
+        return merge(other, LV.delay(DelayFactory.initialDelay())); // no effect
     }
 
     public boolean isEmpty() {

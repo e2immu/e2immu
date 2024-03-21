@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static org.e2immu.analyser.analyser.LV.LINK_ASSIGNED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,7 +38,7 @@ public class TestWrapped extends CommonAbstractValue {
         assertTrue(eq(stringA, stringB).isBoolValueFalse());
         assertTrue(eq(stringA, stringA).isBoolValueTrue());
 
-        Expression bWrapped = PropertyWrapper.propertyWrapper(stringB, LinkedVariables.of(Map.of(va, LinkedVariables.LINK_ASSIGNED)));
+        Expression bWrapped = PropertyWrapper.propertyWrapper(stringB, LinkedVariables.of(Map.of(va, LINK_ASSIGNED)));
         assertEquals("\"b\"/*{L a:1}*/", bWrapped.toString());
 
         assertTrue(eq(bWrapped, stringB).isBoolValueTrue());
@@ -47,7 +48,7 @@ public class TestWrapped extends CommonAbstractValue {
     @Test
     public void testGe() {
         Expression ten = new IntConstant(PRIMITIVES, 10);
-        Expression tenWrapped = PropertyWrapper.propertyWrapper(ten, LinkedVariables.of(Map.of(va, LinkedVariables.LINK_ASSIGNED)));
+        Expression tenWrapped = PropertyWrapper.propertyWrapper(ten, LinkedVariables.of(Map.of(va, LINK_ASSIGNED)));
         Expression gt = GreaterThanZero.greater(context, ten, tenWrapped, true);
         assertTrue(gt.isBoolValueTrue());
     }
