@@ -38,12 +38,8 @@ public class LV implements Comparable<LV> {
     }
 
     public interface HiddenContent extends DijkstraShortestPath.ConnectInfo {
-        /*
-        return null when the link cannot be found
-         */
-        HiddenContent intersect(HiddenContent theirs);
 
-        boolean isHiddenContentOf(HiddenContent theirs); // level 3 link
+        Set<Integer> apply(HiddenContent mineOrTheirs);
 
         boolean isWholeType();
     }
@@ -169,9 +165,14 @@ public class LV implements Comparable<LV> {
     }
 
     public record IndexedType(ParameterizedType parameterizedType, List<Integer> index) {
+        private static int realIndex(int i) {
+            return i >= 0 ? i : -i - 1;
+        }
+
         @Override
         public String toString() {
-            return index.stream().map(i -> i == -1 ? "*" : "" + i).collect(Collectors.joining("-"));
+            return index.stream().map(i -> i < 0 ? "*" + realIndex(i) : "" + i)
+                    .collect(Collectors.joining("-"));
         }
     }
 
@@ -211,14 +212,32 @@ public class LV implements Comparable<LV> {
             return sequence.size() == 1 && sequence.get(0).index.isEmpty();
         }
 
+        /*
+        starting from a "node" HC (see TestLV.test2()), apply 'mine' or 'theirs'.
+        The former are recursive descent structures, with the numbers indicating distinct type parameters
+        which we are to collect. The latter are indices into this structure.
+         */
         @Override
-        public HiddenContent intersect(HiddenContent theirs) {
-            throw new UnsupportedOperationException();
+        public Set<Integer> apply(HiddenContent mineOrTheirs) {
+            return ((HiddenContentImpl) mineOrTheirs).sequence.stream()
+                    .flatMap(it -> findSequence(it.index).stream())
+                    .collect(Collectors.toUnmodifiableSet());
         }
 
-        @Override
-        public boolean isHiddenContentOf(HiddenContent theirs) {
-            return sequence.isEmpty() && !theirs.isWholeType();
+        public Set<Integer> findSequence(List<Integer> restriction) {
+            List<IndexedType> result = new ArrayList<>(sequence);
+            int i = 0;
+            for (int restrictionI : restriction) {
+                int finalI = i;
+                result.removeIf(it -> it.index.size() <= finalI
+                                      || IndexedType.realIndex(it.index.get(finalI)) != restrictionI);
+                if (result.isEmpty()) break;
+                i++;
+            }
+            return result.stream()
+                    .filter(it -> !it.index.isEmpty())
+                    .map(it -> it.index.get(it.index.size() - 1))
+                    .filter(j -> j >= 0).collect(Collectors.toUnmodifiableSet());
         }
 
         @Override
@@ -238,6 +257,7 @@ public class LV implements Comparable<LV> {
                                       Map<ParameterizedType, Integer> typeParameterIndex,
                                       AtomicInteger counter) {
         List<IndexedType> sequence = new ArrayList<>(pt.parameters.size());
+        int countParameter = 1;
         for (ParameterizedType tp : pt.parameters) {
             if (tp.isTypeParameter()) {
                 Integer index = typeParameterIndex.get(tp);
@@ -250,13 +270,16 @@ public class LV implements Comparable<LV> {
             } else if (!tp.parameters.isEmpty()) {
                 HiddenContentImpl recursively = (HiddenContentImpl) from(tp, typeParameterIndex, counter);
                 for (IndexedType it : recursively.sequence) {
-                    List<Integer> indices = Stream.concat(Stream.of(-1), it.index.stream()).toList();
+                    List<Integer> indices = Stream.concat(Stream.of(-countParameter),
+                            it.index.stream()).toList();
                     sequence.add(new IndexedType(it.parameterizedType, indices));
                 }
             } else {
-                sequence.add(new IndexedType(tp, List.of(-1)));
+                sequence.add(new IndexedType(tp, List.of(-countParameter)));
             }
+            countParameter++;
         }
         return new HiddenContentImpl(List.copyOf(sequence));
     }
+
 }

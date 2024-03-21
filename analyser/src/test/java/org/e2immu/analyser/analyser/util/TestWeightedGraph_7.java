@@ -10,9 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.LV.LINK_COMMON_HC;
-import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class TestWeightedGraph_7 extends CommonWG {
 
@@ -86,15 +84,15 @@ public class TestWeightedGraph_7 extends CommonWG {
         shortestPath = wg.shortestPath();
     }
 
-    // fully connected
+    // fully connected starting from 'this' up to 'entry'; not so for l and t
     @Test
     public void test() {
         Variable[] variables = new Variable[]{thisVar, map, entries, entry, l, t};
-        for (int i = 0; i < variables.length; i++) {
+        for (int i = 0; i < 4; i++) {
             Map<Variable, LV> start = shortestPath.links(variables[i], LINK_COMMON_HC);
             for (int j = 0; j < variables.length; j++) {
                 LV expect = i == j ? v0 : v4;
-                assertEquals(expect, start.get(variables[j]), "Goes wrong: "+i+", "+j);
+                assertEquals(expect, start.get(variables[j]), "Goes wrong: " + i + ", " + j);
             }
         }
     }

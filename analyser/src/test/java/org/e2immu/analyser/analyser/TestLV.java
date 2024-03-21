@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -65,10 +67,9 @@ public class TestLV {
         assertEquals("<>-4-<0>", lva.toString());
         // going from T -> List<T>, we move from <> to <0>
 
-
         // <1> as in V of Map<K, V>
         LV.HiddenContent hc1 = LV.typeParameter(null, 1);
-        assertEquals("<1>", hc0.toString());
+        assertEquals("<1>", hc1.toString());
 
         // <0,1> as in Map<K,V>
         LV.HiddenContent hc0_1 = LV.typeParameters(null, List.of(0), null, List.of(1));
@@ -80,11 +81,16 @@ public class TestLV {
         assertEquals("<0-0,0-1>", hc00_01.toString());
     }
 
+    private static String sorted(Set<Integer> set) {
+        return set.stream().sorted().map(Object::toString).collect(Collectors.joining(", "));
+    }
+
     @Test
     public void test2() {
         // String
         LV.HiddenContent hcString = LV.from(typeContext.getPrimitives().stringParameterizedType());
         assertEquals("<>", hcString.toString());
+        assertEquals("[]", hcString.apply(hcString).toString());
 
         // List<E>
         TypeInfo list = typeContext.getFullyQualified(List.class);
@@ -92,16 +98,20 @@ public class TestLV {
         LV.HiddenContent hcList = LV.from(listE);
         assertEquals("<0>", hcList.toString());
 
+        assertEquals("[0]", hcList.apply(hcList).toString());
+
         // List<String>
         ParameterizedType listString = new ParameterizedType(list,
                 List.of(typeContext.getPrimitives().stringParameterizedType()));
         LV.HiddenContent hcListString = LV.from(listString);
-        assertEquals("<*>", hcListString.toString());
+        assertEquals("<*0>", hcListString.toString());
+        assertEquals("[]", hcListString.apply(hcList).toString());
 
         // Map<K,V>
         TypeInfo map = typeContext.getFullyQualified(Map.class);
         LV.HiddenContent hcMap = LV.from(map.asParameterizedType(typeContext));
         assertEquals("<0,1>", hcMap.toString());
+        assertEquals("0, 1", sorted(hcMap.apply(hcMap)));
 
         // Map<K,K>
         TypeParameter tp0 = typeContext.getTypeInspection(map).typeParameters().get(0);
@@ -110,6 +120,9 @@ public class TestLV {
         LV.HiddenContent hcMapKK = LV.from(mapKK);
         assertEquals("<0,0>", hcMapKK.toString());
 
+        assertEquals("[0]", hcMapKK.apply(hcList).toString());
+        assertEquals("[0]", hcMapKK.apply(hcMap).toString());
+
         // K
         LV.HiddenContent hcK = LV.from(pt0);
         assertEquals("<>", hcK.toString());
@@ -117,17 +130,28 @@ public class TestLV {
         // Map<K, List<E>>
         ParameterizedType mapKListE = new ParameterizedType(map, List.of(pt0, listE));
         LV.HiddenContent hcMapKListE = LV.from(mapKListE);
-        assertEquals("<0,*-1>", hcMapKListE.toString());
+        assertEquals("<0,*1-1>", hcMapKListE.toString());
+
+        LV.HiddenContent one = LV.typeParameter(null, 1);
+        assertEquals("1", sorted(hcMapKListE.apply(one)));
 
         // Map<K, List<K>>
         ParameterizedType listK = new ParameterizedType(list, List.of(pt0));
         ParameterizedType mapKListK = new ParameterizedType(map, List.of(pt0, listK));
         LV.HiddenContent hcMapKListK = LV.from(mapKListK);
-        assertEquals("<0,*-0>", hcMapKListK.toString());
+        assertEquals("<0,*1-0>", hcMapKListK.toString());
 
+        // be careful, using 2x the formal asParameterizedType() re-uses E, which may be counterintuitive.
         // Map<List<E>, List<E>>
         ParameterizedType mapListEListE = new ParameterizedType(map, List.of(listE, listE));
         LV.HiddenContent hcMapListEListE = LV.from(mapListEListE);
-        assertEquals("<*-0,*-0>", hcMapListEListE.toString());
+        assertEquals("<*0-0,*1-0>", hcMapListEListE.toString());
+        assertEquals("0", sorted(hcMapListEListE.apply(hcMap)));
+
+        // Map<List<E>, List<E>>
+        ParameterizedType mapListStringListString = new ParameterizedType(map, List.of(listString, listString));
+        LV.HiddenContent hcMapListStringListString = LV.from(mapListStringListString);
+        assertEquals("<*0-*0,*1-*0>", hcMapListStringListString.toString());
+        assertEquals("", sorted(hcMapListStringListString.apply(one)));
     }
 }
