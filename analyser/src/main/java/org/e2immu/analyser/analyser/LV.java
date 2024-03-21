@@ -5,9 +5,10 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.graph.op.DijkstraShortestPath;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class LV implements Comparable<LV> {
     private static final int HC = 4;
@@ -170,7 +171,7 @@ public class LV implements Comparable<LV> {
     public record IndexedType(ParameterizedType parameterizedType, List<Integer> index) {
         @Override
         public String toString() {
-            return index.stream().map(Object::toString).collect(Collectors.joining("-"));
+            return index.stream().map(i -> i == -1 ? "*" : "" + i).collect(Collectors.joining("-"));
         }
     }
 
@@ -207,7 +208,7 @@ public class LV implements Comparable<LV> {
 
         @Override
         public boolean isWholeType() {
-            return sequence.isEmpty();
+            return sequence.size() == 1 && sequence.get(0).index.isEmpty();
         }
 
         @Override
@@ -225,5 +226,37 @@ public class LV implements Comparable<LV> {
             return sequence.stream().map(IndexedType::toString).collect(Collectors.joining(",",
                     "<", ">"));
         }
+    }
+
+    public static HiddenContent from(ParameterizedType pt) {
+        AtomicInteger counter = new AtomicInteger();
+        Map<ParameterizedType, Integer> typeParameterIndex = new HashMap<>();
+        return from(pt, typeParameterIndex, counter);
+    }
+
+    private static HiddenContent from(ParameterizedType pt,
+                                      Map<ParameterizedType, Integer> typeParameterIndex,
+                                      AtomicInteger counter) {
+        List<IndexedType> sequence = new ArrayList<>(pt.parameters.size());
+        for (ParameterizedType tp : pt.parameters) {
+            if (tp.isTypeParameter()) {
+                Integer index = typeParameterIndex.get(tp);
+                if (index == null) {
+                    int count = counter.getAndIncrement();
+                    typeParameterIndex.put(tp, count);
+                    index = count;
+                }
+                sequence.add(new IndexedType(tp, List.of(index)));
+            } else if (!tp.parameters.isEmpty()) {
+                HiddenContentImpl recursively = (HiddenContentImpl) from(tp, typeParameterIndex, counter);
+                for (IndexedType it : recursively.sequence) {
+                    List<Integer> indices = Stream.concat(Stream.of(-1), it.index.stream()).toList();
+                    sequence.add(new IndexedType(it.parameterizedType, indices));
+                }
+            } else {
+                sequence.add(new IndexedType(tp, List.of(-1)));
+            }
+        }
+        return new HiddenContentImpl(List.copyOf(sequence));
     }
 }

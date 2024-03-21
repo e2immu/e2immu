@@ -42,7 +42,6 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
 
         assertEquals("E", typeAnalysis.getHiddenContentTypes().toString());
-        assertEquals("E", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test

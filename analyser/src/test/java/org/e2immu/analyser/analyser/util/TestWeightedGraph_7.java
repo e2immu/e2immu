@@ -94,7 +94,7 @@ public class TestWeightedGraph_7 extends CommonWG {
             Map<Variable, LV> start = shortestPath.links(variables[i], LINK_COMMON_HC);
             for (int j = 0; j < variables.length; j++) {
                 LV expect = i == j ? v0 : v4;
-                assertEquals(expect, start.get(variables[j]));
+                assertEquals(expect, start.get(variables[j]), "Goes wrong: "+i+", "+j);
             }
         }
     }
