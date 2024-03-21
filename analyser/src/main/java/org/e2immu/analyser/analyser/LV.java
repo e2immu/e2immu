@@ -4,7 +4,9 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class LV implements Comparable<LV> {
     private static final int HC = 4;
@@ -15,6 +17,8 @@ public class LV implements Comparable<LV> {
             "assigned", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
     public static final LV LINK_DEPENDENT = new LV(2, null, null,
             "dependent", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
+
+    // do not use for equality!
     public static final LV LINK_COMMON_HC = new LV(HC, null, null,
             "common_hc", CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
     public static final LV LINK_INDEPENDENT = new LV(5, null, null,
@@ -26,6 +30,10 @@ public class LV implements Comparable<LV> {
     private final String label;
     private final CausesOfDelay causesOfDelay;
     private final DV correspondingIndependent;
+
+    public boolean isCommonHC() {
+        return HC == value;
+    }
 
     public interface HiddenContent {
         /*
@@ -76,7 +84,12 @@ public class LV implements Comparable<LV> {
     }
 
     public static LV createHC(HiddenContent mine, HiddenContent theirs) {
-        return new LV(HC, mine, theirs, "common_hc", CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
+        return new LV(HC, mine, theirs, mine + "-4-" + theirs, CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
+    }
+
+    public LV reverse() {
+        assert value == HC;
+        return createHC(theirs, mine);
     }
 
     public boolean isDelayed() {
@@ -128,39 +141,6 @@ public class LV implements Comparable<LV> {
         return causesOfDelay().isInitialDelay();
     }
 
-    public record TypeParameter(ParameterizedType parameterizedType, int index) implements HiddenContent {
-
-        @Override
-        public HiddenContent intersect(HiddenContent theirs) {
-            if (theirs instanceof TypeParameter tp && parameterizedType.equals(tp.parameterizedType)) {
-                return theirs;
-            }
-            return null;
-        }
-
-        @Override
-        public boolean isHiddenContentOf(HiddenContent theirs) {
-            return false;
-        }
-    }
-
-    public record WholeType(ParameterizedType parameterizedType) implements HiddenContent {
-
-        @Override
-        public HiddenContent intersect(HiddenContent theirs) {
-            if (theirs instanceof TypeParameter tp && parameterizedType.equals(tp.parameterizedType)) {
-                return theirs;
-            }
-            return null;
-        }
-
-        @Override
-        public boolean isHiddenContentOf(HiddenContent theirs) {
-            if (theirs instanceof TypeParameter tp) return tp.parameterizedType.equals(parameterizedType);
-            return false;
-        }
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -181,5 +161,54 @@ public class LV implements Comparable<LV> {
     @Override
     public String toString() {
         return label;
+    }
+
+    public record IndexedType(ParameterizedType parameterizedType, List<Integer> index) {
+        @Override
+        public String toString() {
+            return index.stream().map(Object::toString).collect(Collectors.joining("-"));
+        }
+    }
+
+    public static HiddenContent wholeType(ParameterizedType parameterizedType) {
+        return new HiddenContentImpl(List.of(new IndexedType(parameterizedType, List.of())));
+    }
+
+    public static HiddenContent typeParameter(ParameterizedType parameterizedType, int index) {
+        return new HiddenContentImpl(List.of(new IndexedType(parameterizedType, List.of(index))));
+    }
+
+    public static HiddenContent typeParameters(ParameterizedType pt1, List<Integer> indices1) {
+        return new HiddenContentImpl(List.of(new IndexedType(pt1, List.copyOf(indices1))));
+    }
+
+    public static HiddenContent typeParameters(ParameterizedType pt1, List<Integer> indices1,
+                                               ParameterizedType pt2, List<Integer> indices2) {
+        return new HiddenContentImpl(List.of(new IndexedType(pt1, List.copyOf(indices1)),
+                new IndexedType(pt2, indices2)));
+    }
+
+    public static class HiddenContentImpl implements HiddenContent {
+        private final List<IndexedType> sequence;
+
+        private HiddenContentImpl(List<IndexedType> sequence) {
+            this.sequence = sequence;
+        }
+
+        @Override
+        public HiddenContent intersect(HiddenContent theirs) {
+            return null;
+        }
+
+        @Override
+        public boolean isHiddenContentOf(HiddenContent theirs) {
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return sequence.stream().map(IndexedType::toString).collect(Collectors.joining(",",
+                    "<", ">"));
+        }
     }
 }

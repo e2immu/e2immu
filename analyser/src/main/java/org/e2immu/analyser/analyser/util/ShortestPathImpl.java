@@ -42,20 +42,22 @@ public class ShortestPathImpl implements ShortestPath {
 
     private static final int BITS = 12;
 
+    private static final long STATICALLY_ASSIGNED = 1L;
     private static final long DELAYED = 1L << BITS;
     private static final long ASSIGNED = 1L << (2 * BITS);
     private static final long DEPENDENT = 1L << (3 * BITS);
     private static final long INDEPENDENT_HC = 1L << (4 * BITS);
 
     public static long toDistanceComponent(LV dv) {
-        if (LINK_STATICALLY_ASSIGNED.equals(dv)) return 1;
+        if (LINK_STATICALLY_ASSIGNED.equals(dv)) return STATICALLY_ASSIGNED;
         if (dv.isDelayed()) return DELAYED;
         if (LINK_ASSIGNED.equals(dv)) return ASSIGNED;
         if (LINK_DEPENDENT.equals(dv)) return DEPENDENT;
-        assert LINK_COMMON_HC.equals(dv);
+        assert dv.isCommonHC();
         return INDEPENDENT_HC;
     }
 
+    // used to produce the result.
     public static LV fromDistanceSum(long l, CausesOfDelay someDelay) {
         if (l < DELAYED) return LINK_STATICALLY_ASSIGNED;
         if (((l >> BITS) & (DELAYED - 1)) > 0) {
