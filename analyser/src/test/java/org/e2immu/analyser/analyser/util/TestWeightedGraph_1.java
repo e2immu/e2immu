@@ -23,8 +23,10 @@ import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.e2immu.analyser.analyser.LV.*;
@@ -61,17 +63,26 @@ public class TestWeightedGraph_1 extends CommonWG {
         removed = makeVariable("removed");
 
         wg = new WeightedGraphImpl();
-        wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, v4, smallerCycle, v4));
+
+        LV this_4_cycle = LV.createHC(LV.typeParameter(null, 0),
+                LV.typeParameters(null, List.of(0), null, List.of(1, 0)));
+        assertEquals("<0>-4-<0,1-0>", this_4_cycle.toString());
+
+        LV map_4_map = LV.createHC(  LV.typeParameters(null, List.of(0), null, List.of(1, 0)),
+                LV.typeParameters(null, List.of(0), null, List.of(1, 0)));
+        assertEquals("<0,1-0>-4-<0,1-0>", map_4_map.toString());
+
+        wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, this_4_cycle, smallerCycle, this_4_cycle));
         wg.addNode(removed, Map.of(removed, v0, thisVar, delay));
-        wg.addNode(smallerCycle, Map.of(smallerCycle, v0, thisVar, v4));
-        wg.addNode(cycle, Map.of(cycle, v0, nodeMap, v4, toDo, v4, thisVar, v4));
-        wg.addNode(nodeMap, Map.of(nodeMap, v0, toDo, v4, cycle, v4));
-        wg.addNode(toDo, Map.of(toDo, v0, nodeMap, v4, cycle, v4));
+        wg.addNode(smallerCycle, Map.of(smallerCycle, v0, thisVar, this_4_cycle.reverse()));
+        wg.addNode(cycle, Map.of(cycle, v0, nodeMap, map_4_map, toDo, map_4_map, thisVar, this_4_cycle.reverse()));
+        wg.addNode(nodeMap, Map.of(nodeMap, v0, toDo, map_4_map, cycle, map_4_map));
+        wg.addNode(toDo, Map.of(toDo, v0, nodeMap, map_4_map, cycle, map_4_map));
         shortestPath = wg.shortestPath();
     }
 
-    @Test
-    public void test1b() {
+    @Test @DisplayName("start at 'toDo', limit dependent")
+    public void test1() {
         Map<Variable, LV> startAtToDo = shortestPath.links(toDo, LINK_DEPENDENT);
         assertEquals(1, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
@@ -80,8 +91,8 @@ public class TestWeightedGraph_1 extends CommonWG {
     }
 
 
-    @Test
-    public void test3() {
+    @Test @DisplayName("start at 'toDo', no limit")
+    public void test2() {
         Map<Variable, LV> startAtToDo = shortestPath.links(toDo, null);
         assertEquals(6, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
@@ -93,8 +104,8 @@ public class TestWeightedGraph_1 extends CommonWG {
     }
 
 
-    @Test
-    public void test4() {
+    @Test @DisplayName("start at 'removed', no limit")
+    public void test3() {
         Map<Variable, LV> startAtRemoved = shortestPath.links(removed, null);
         assertEquals(6, startAtRemoved.size());
         assertEquals(delay, startAtRemoved.get(thisVar));
@@ -105,8 +116,8 @@ public class TestWeightedGraph_1 extends CommonWG {
         assertEquals(delay, startAtRemoved.get(nodeMap));
     }
 
-    @Test
-    public void test4b() {
+    @Test @DisplayName("start at 'removed', limit dependent")
+    public void test4() {
         Map<Variable, LV> startAtRemoved = shortestPath.links(removed, LINK_DEPENDENT);
         assertEquals(2, startAtRemoved.size());
         assertNull(startAtRemoved.get(cycle));

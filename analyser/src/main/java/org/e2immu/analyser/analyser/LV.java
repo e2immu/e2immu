@@ -50,6 +50,7 @@ public class LV implements Comparable<LV> {
         this.mine = mine;
         this.theirs = theirs;
         this.label = Objects.requireNonNull(label);
+        assert !label.isBlank();
         this.causesOfDelay = Objects.requireNonNull(causesOfDelay);
         this.correspondingIndependent = correspondingIndependent;
     }
@@ -80,7 +81,7 @@ public class LV implements Comparable<LV> {
 
     public static LV delay(CausesOfDelay causes) {
         assert causes.isDelayed();
-        return new LV(0, null, null, causes.label(), causes, causes);
+        return new LV(-1, null, null, causes.label(), causes, causes);
     }
 
     public static LV createHC(HiddenContent mine, HiddenContent theirs) {

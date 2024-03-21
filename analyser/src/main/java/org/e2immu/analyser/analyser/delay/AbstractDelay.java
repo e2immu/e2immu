@@ -67,7 +67,7 @@ public abstract class AbstractDelay implements CausesOfDelay {
 
     @Override
     public String label() {
-        return "";
+        return toString();
     }
 
     @Override

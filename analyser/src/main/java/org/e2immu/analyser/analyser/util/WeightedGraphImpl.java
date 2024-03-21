@@ -203,6 +203,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         }
         StringBuilder sb = new StringBuilder(n * n * 5);
         Map<Integer, Map<Integer, Long>> edges = new LinkedHashMap<>();
+        Map<Integer, Map<Integer, Long>> edgesHigh = new LinkedHashMap<>();
         CausesOfDelay delay = null;
         for (int d1 = 0; d1 < n; d1++) {
             Node node = nodeMap.get(variables[d1]);
@@ -212,6 +213,8 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
 
                 Map<Integer, Long> edgesOfD1 = new LinkedHashMap<>();
                 edges.put(d1, edgesOfD1);
+                Map<Integer, Long> edgesOfD1High = new LinkedHashMap<>();
+                edgesHigh.put(d1, edgesOfD1High);
                 List<String> unsorted = new ArrayList<>(dependsOn.size());
                 for (Map.Entry<Variable, LV> e2 : dependsOn.entrySet()) {
                     int d2 = variableIndex.get(e2.getKey());
@@ -222,6 +225,9 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                     }
                     long d = ShortestPathImpl.toDistanceComponent(dv);
                     edgesOfD1.put(d2, d);
+                    long dHigh = ShortestPathImpl.toDistanceComponentHigh(dv);
+                    edgesOfD1High.put(d2, dHigh);
+
                     unsorted.add(d2 + ":" + ShortestPathImpl.code(dv));
                 }
                 sb.append("(");
@@ -234,7 +240,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         Cache.Hash hash = cache.createHash(sb.toString());
         ShortestPathImpl.LinkMap linkMap = (ShortestPathImpl.LinkMap)
                 cache.computeIfAbsent(hash, h -> new ShortestPathImpl.LinkMap(new LinkedHashMap<>(), new AtomicInteger()));
-        return new ShortestPathImpl(variableIndex, variables, edges, delay, linkMap);
+        return new ShortestPathImpl(variableIndex, variables, edges, edgesHigh, delay, linkMap);
     }
 
     @Override

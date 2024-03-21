@@ -9,7 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.e2immu.analyser.analyser.LV.LINK_COMMON_HC;
+import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class TestWeightedGraph_7 extends CommonWG {
 
@@ -58,19 +61,41 @@ public class TestWeightedGraph_7 extends CommonWG {
                 LV.typeParameter(null, 1));
         assertEquals("<0>-4-<1>", thisVar_4_map.toString());
         assertEquals("<1>-4-<0>", thisVar_4_map.reverse().toString());
-        
+
         wg.addNode(thisVar, Map.of(map, thisVar_4_map));
 
         LV map_4_entries = LV.createHC(LV.typeParameters(null, List.of(0), null, List.of(1)),
                 LV.typeParameters(null, List.of(0, 0), null, List.of(0, 1)));
         assertEquals("<0,1>-4-<0-0,0-1>", map_4_entries.toString());
         wg.addNode(map, Map.of(thisVar, thisVar_4_map.reverse(), entries, map_4_entries));
-        //wg.addNode(sa, Map.of(next, v4, first, v0, rv, v0));
-      //  wg.addNode(rv, Map.of(sa, v0, next, v4));
+
+        LV entries_4_entry = LV.createHC(LV.typeParameters(null, List.of(0, 0), null, List.of(0, 1)),
+                LV.typeParameters(null, List.of(0), null, List.of(1)));
+        assertEquals("<0-0,0-1>-4-<0,1>", entries_4_entry.toString());
+        wg.addNode(entries, Map.of(map, map_4_entries.reverse(), entry, entries_4_entry));
+
+        LV entry_4_l = LV.createHC(LV.typeParameter(null, 0), LV.wholeType(null));
+        LV entry_4_t = LV.createHC(LV.typeParameter(null, 1), LV.wholeType(null));
+        assertEquals("<0>-4-<>", entry_4_l.toString());
+        assertEquals("<1>-4-<>", entry_4_t.toString());
+        wg.addNode(entry, Map.of(entries, entries_4_entry.reverse(), l, entry_4_l, t, entry_4_t));
+
+        wg.addNode(l, Map.of(entry, entry_4_l.reverse()));
+        wg.addNode(t, Map.of(entry, entry_4_t.reverse()));
+
+        shortestPath = wg.shortestPath();
     }
 
+    // fully connected
     @Test
     public void test() {
-
+        Variable[] variables = new Variable[]{thisVar, map, entries, entry, l, t};
+        for (int i = 0; i < variables.length; i++) {
+            Map<Variable, LV> start = shortestPath.links(variables[i], LINK_COMMON_HC);
+            for (int j = 0; j < variables.length; j++) {
+                LV expect = i == j ? v0 : v4;
+                assertEquals(expect, start.get(variables[j]));
+            }
+        }
     }
 }
