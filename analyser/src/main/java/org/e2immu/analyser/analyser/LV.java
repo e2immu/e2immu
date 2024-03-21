@@ -2,6 +2,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
 
 import java.util.Objects;
 
@@ -25,6 +26,15 @@ public class LV implements Comparable<LV> {
     private final String label;
     private final CausesOfDelay causesOfDelay;
     private final DV correspondingIndependent;
+
+    public interface HiddenContent {
+        /*
+        return null when the link cannot be found
+         */
+        HiddenContent intersect(HiddenContent theirs);
+
+        boolean isHiddenContentOf(HiddenContent theirs); // level 3 link
+    }
 
     private LV(int value, HiddenContent mine, HiddenContent theirs, String label, CausesOfDelay causesOfDelay,
                DV correspondingIndependent) {
@@ -116,5 +126,60 @@ public class LV implements Comparable<LV> {
 
     public boolean isInitialDelay() {
         return causesOfDelay().isInitialDelay();
+    }
+
+    public record TypeParameter(ParameterizedType parameterizedType, int index) implements HiddenContent {
+
+        @Override
+        public HiddenContent intersect(HiddenContent theirs) {
+            if (theirs instanceof TypeParameter tp && parameterizedType.equals(tp.parameterizedType)) {
+                return theirs;
+            }
+            return null;
+        }
+
+        @Override
+        public boolean isHiddenContentOf(HiddenContent theirs) {
+            return false;
+        }
+    }
+
+    public record WholeType(ParameterizedType parameterizedType) implements HiddenContent {
+
+        @Override
+        public HiddenContent intersect(HiddenContent theirs) {
+            if (theirs instanceof TypeParameter tp && parameterizedType.equals(tp.parameterizedType)) {
+                return theirs;
+            }
+            return null;
+        }
+
+        @Override
+        public boolean isHiddenContentOf(HiddenContent theirs) {
+            if (theirs instanceof TypeParameter tp) return tp.parameterizedType.equals(parameterizedType);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        LV lv = (LV) o;
+        if (value != lv.value) return false;
+        if (value == HC) {
+            return Objects.equals(mine, lv.mine) && Objects.equals(theirs, lv.theirs) && Objects.equals(causesOfDelay, lv.causesOfDelay);
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value, mine, theirs, causesOfDelay);
+    }
+
+    @Override
+    public String toString() {
+        return label;
     }
 }

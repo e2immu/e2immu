@@ -1576,8 +1576,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             assert methodInfo != null : "How come? this type should have an overloaded iterable() method";
             MethodInspection methodInspection = ac.getMethodInspection(methodInfo);
             ParameterizedType typeReturnedByIterableMethod = methodInspection.getReturnType();
-            HiddenContent theirs = new HiddenContent(List.of(typeReturnedByIterableMethod), CausesOfDelay.EMPTY);
-            HiddenContent mine = new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
+            LV.TypeParameter theirs = new LV.TypeParameter(typeReturnedByIterableMethod, 0);
+            LV.WholeType mine = new LV.WholeType(concreteType);
             linkLevel = LV.createHC(mine, theirs);
         } else {
             linkLevel = LV.LINK_DEPENDENT;
