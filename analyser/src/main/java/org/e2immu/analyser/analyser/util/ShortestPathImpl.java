@@ -28,16 +28,16 @@ public class ShortestPathImpl implements ShortestPath {
 
     private final Map<Variable, Integer> variableIndex;
     private final Variable[] variables;
-    private final Map<Integer, Map<Integer, Long>> edges;
-    private final Map<Integer, Map<Integer, Long>> edgesHigh;
+    private final Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edges;
+    private final Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edgesHigh;
     private final CausesOfDelay someDelay;
     private final DijkstraShortestPath dijkstraShortestPath;
     private final LinkMap linkMap;
 
     ShortestPathImpl(Map<Variable, Integer> variableIndex,
                      Variable[] variables,
-                     Map<Integer, Map<Integer, Long>> edges,
-                     Map<Integer, Map<Integer, Long>> edgesHigh,
+                     Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edges,
+                     Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edgesHigh,
                      CausesOfDelay someDelay,
                      LinkMap linkMap) {
         this.variables = variables;
@@ -121,12 +121,13 @@ public class ShortestPathImpl implements ShortestPath {
         return LV.delay(someDelay);
     }
 
-    private void debug(String msg, long[] l, BiFunction<Long, CausesOfDelay, LV> transform) {
+    private void debug(String msg, DijkstraShortestPath.DC[] l, BiFunction<Long, CausesOfDelay, LV> transform) {
         LOGGER.debug("Variables: {}", Arrays.stream(variables).map(Objects::toString)
                 .collect(Collectors.joining(", ")));
         LOGGER.debug("{}: {}", msg, Arrays.stream(l)
-                .mapToObj(v -> transform.apply(v, someDelay))
-                .map(lv -> lv == null ? "-" : lv.toString()).collect(Collectors.joining(", ")));
+                .map(v -> transform.apply(v.dist(), someDelay))
+                .map(lv -> lv == null ? "-" : lv.toString())
+                .collect(Collectors.joining(", ")));
     }
 
     public static char code(LV dv) {
@@ -173,38 +174,40 @@ public class ShortestPathImpl implements ShortestPath {
 
     private long[] computeDijkstra(int startVertex, LV maxWeight, long maxWeightLong) {
         DijkstraShortestPath.EdgeProvider edgeProvider = i -> {
-            Map<Integer, Long> edgeMap = edges.get(i);
+            Map<Integer, DijkstraShortestPath.DC> edgeMap = edges.get(i);
             if (edgeMap == null) return Stream.of();
             return edgeMap.entrySet().stream()
-                    .filter(e -> maxWeight == null || e.getValue() <= maxWeightLong);
+                    .filter(e -> maxWeight == null || e.getValue().dist() <= maxWeightLong);
         };
-        long[] shortestL = dijkstraShortestPath.shortestPath(variables.length, edgeProvider, startVertex);
+        DijkstraShortestPath.ConnectInfoProvider wholeType = v -> wholeType(variables[v].parameterizedType());
+        DijkstraShortestPath.DC[] shortestL = dijkstraShortestPath.shortestPath(variables.length, edgeProvider,
+                wholeType, startVertex);
         debug("delay low", shortestL, ShortestPathImpl::fromDistanceSum);
 
         long maxWeightLongHigh = maxWeight == null ? 0L : toDistanceComponentHigh(maxWeight);
         DijkstraShortestPath.EdgeProvider edgeProviderHigh = i -> {
-            Map<Integer, Long> edgeMap = edgesHigh.get(i);
+            Map<Integer, DijkstraShortestPath.DC> edgeMap = edgesHigh.get(i);
             if (edgeMap == null) return Stream.of();
             return edgeMap.entrySet().stream()
-                    .filter(e -> maxWeight == null || e.getValue() <= maxWeightLongHigh);
+                    .filter(e -> maxWeight == null || e.getValue().dist() <= maxWeightLongHigh);
         };
-        long[] shortestH = dijkstraShortestPath.shortestPath(variables.length, edgeProviderHigh, startVertex);
+        DijkstraShortestPath.DC[] shortestH = dijkstraShortestPath.shortestPath(variables.length, edgeProviderHigh,
+                wholeType, startVertex);
         debug("delay high", shortestH, ShortestPathImpl::fromDistanceSumHigh);
 
         long[] shortest = new long[shortestL.length];
         assert shortestL.length == shortestH.length;
         for (int i = 0; i < shortest.length; i++) {
             long v;
-            long l = shortestL[i];
+            long l = shortestL[i].dist();
             if (isDelay(l) || l == Long.MAX_VALUE) {
                 v = l;
             } else {
-                long h = shortestH[i];
+                long h = shortestH[i].dist();
                 v = fromHighToLow(h);
             }
             shortest[i] = v;
         }
-        debug("shortest", shortest, ShortestPathImpl::fromDistanceSum);
         return shortest;
     }
 

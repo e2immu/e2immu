@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.graph.op.DijkstraShortestPath;
 import org.e2immu.support.Freezable;
 import org.jgrapht.alg.util.UnionFind;
 
@@ -202,8 +203,8 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             ++i;
         }
         StringBuilder sb = new StringBuilder(n * n * 5);
-        Map<Integer, Map<Integer, Long>> edges = new LinkedHashMap<>();
-        Map<Integer, Map<Integer, Long>> edgesHigh = new LinkedHashMap<>();
+        Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edges = new LinkedHashMap<>();
+        Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edgesHigh = new LinkedHashMap<>();
         CausesOfDelay delay = null;
         for (int d1 = 0; d1 < n; d1++) {
             Node node = nodeMap.get(variables[d1]);
@@ -211,9 +212,9 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             sb.append(d1);
             if (dependsOn != null && !dependsOn.isEmpty()) {
 
-                Map<Integer, Long> edgesOfD1 = new LinkedHashMap<>();
+                Map<Integer, DijkstraShortestPath.DC> edgesOfD1 = new LinkedHashMap<>();
                 edges.put(d1, edgesOfD1);
-                Map<Integer, Long> edgesOfD1High = new LinkedHashMap<>();
+                Map<Integer, DijkstraShortestPath.DC> edgesOfD1High = new LinkedHashMap<>();
                 edgesHigh.put(d1, edgesOfD1High);
                 List<String> unsorted = new ArrayList<>(dependsOn.size());
                 for (Map.Entry<Variable, LV> e2 : dependsOn.entrySet()) {
@@ -223,10 +224,16 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                     if (dv.isDelayed() && delay == null) {
                         delay = dv.causesOfDelay();
                     }
+                    HiddenContent hc;
+                    if (e2.getValue().isCommonHC()) {
+                        hc = e2.getValue().theirs();
+                    } else {
+                        hc = null;
+                    }
                     long d = ShortestPathImpl.toDistanceComponent(dv);
-                    edgesOfD1.put(d2, d);
+                    edgesOfD1.put(d2, new DijkstraShortestPath.DC(d, hc));
                     long dHigh = ShortestPathImpl.toDistanceComponentHigh(dv);
-                    edgesOfD1High.put(d2, dHigh);
+                    edgesOfD1High.put(d2, new DijkstraShortestPath.DC(dHigh, hc));
 
                     unsorted.add(d2 + ":" + ShortestPathImpl.code(dv));
                 }

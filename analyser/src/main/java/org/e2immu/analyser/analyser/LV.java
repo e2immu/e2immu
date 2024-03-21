@@ -3,6 +3,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.graph.op.DijkstraShortestPath;
 
 import java.util.List;
 import java.util.Objects;
@@ -35,13 +36,15 @@ public class LV implements Comparable<LV> {
         return HC == value;
     }
 
-    public interface HiddenContent {
+    public interface HiddenContent extends DijkstraShortestPath.ConnectInfo {
         /*
         return null when the link cannot be found
          */
         HiddenContent intersect(HiddenContent theirs);
 
         boolean isHiddenContentOf(HiddenContent theirs); // level 3 link
+
+        boolean isWholeType();
     }
 
     private LV(int value, HiddenContent mine, HiddenContent theirs, String label, CausesOfDelay causesOfDelay,
@@ -197,13 +200,24 @@ public class LV implements Comparable<LV> {
         }
 
         @Override
+        public boolean accept(DijkstraShortestPath.ConnectInfo other) {
+            if (!(other instanceof HiddenContent)) throw new UnsupportedOperationException();
+            return equals(other) || isWholeType();
+        }
+
+        @Override
+        public boolean isWholeType() {
+            return sequence.isEmpty();
+        }
+
+        @Override
         public HiddenContent intersect(HiddenContent theirs) {
-            return null;
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public boolean isHiddenContentOf(HiddenContent theirs) {
-            return false;
+            return sequence.isEmpty() && !theirs.isWholeType();
         }
 
         @Override
