@@ -370,7 +370,7 @@ public class TestAssignment extends CommonTest {
 
     @Test @DisplayName("mark modified")
     public void test14() {
-        LocalVariable lvs = makeLocalVariableString("s");
+        LocalVariable lvs = makeLocalVariable(primitives.stringParameterizedType(), "s");
         StringConstant abc = new StringConstant(primitives, "abc");
         LocalVariableCreation s = new LocalVariableCreation(newId(), newId(),
                 new LocalVariableReference(lvs, abc));

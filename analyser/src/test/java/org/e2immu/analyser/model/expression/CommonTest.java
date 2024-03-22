@@ -15,35 +15,23 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.inspector.TypeContext;
-import org.e2immu.analyser.inspector.expr.ParseArrayCreationExpr;
-import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class CommonTest {
 
@@ -52,7 +40,34 @@ public abstract class CommonTest {
     protected final AnalysisProvider analysisProvider = AnalysisProvider.DEFAULT_PROVIDER;
     protected final ForwardEvaluationInfo onlySort = new ForwardEvaluationInfo.Builder().setOnlySort(true).build();
 
-    protected final AnalyserContext analyserContext = () -> primitives;
+    protected final TypeInfo recursivelyImmutable = new TypeInfo("com.foo", "RecursivelyImmutable");
+    protected final ParameterizedType recursivelyImmutablePt = new ParameterizedType(recursivelyImmutable, List.of());
+
+    protected final TypeInfo immutableHC = new TypeInfo("com.foo", "ImmutableHC");
+    protected final ParameterizedType immutableHCPt = new ParameterizedType(immutableHC, List.of());
+
+    protected final TypeInfo finalFields = new TypeInfo("com.foo", "FinalFields");
+    protected final ParameterizedType finalFieldsPt = new ParameterizedType(finalFields, List.of());
+
+    protected final TypeInfo mutable = new TypeInfo("com.foo", "Mutable");
+    protected final ParameterizedType mutablePt = new ParameterizedType(mutable, List.of());
+
+    protected static final LV LINK_COMMON_HC_ALL = LV.createHC(LV.CS_ALL, LV.CS_ALL);
+
+    protected final AnalyserContext analyserContext = new AnalyserContext() {
+        @Override
+        public Primitives getPrimitives() {
+            return primitives;
+        }
+
+        @Override
+        public DV typeImmutable(ParameterizedType parameterizedType) {
+            if (recursivelyImmutablePt == parameterizedType) return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+            if (immutableHCPt == parameterizedType) return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
+            if (finalFieldsPt == parameterizedType) return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
+            return MultiLevel.MUTABLE_DV;
+        }
+    };
 
     protected final TypeMap typeMap = new TypeMap() {
         @Override
@@ -137,7 +152,7 @@ public abstract class CommonTest {
 
             @Override
             public Properties defaultValueProperties(ParameterizedType parameterizedType, DV valueForNotNullExpression) {
-                if(parameterizedType == primitives.stringParameterizedType()) {
+                if (parameterizedType == primitives.stringParameterizedType()) {
                     return PRIMITIVE_VALUE_PROPERTIES;
                 }
                 return super.defaultValueProperties(parameterizedType, valueForNotNullExpression);
@@ -158,17 +173,13 @@ public abstract class CommonTest {
     }
 
     protected LocalVariable makeLocalVariableInt(String name) {
-        return new LocalVariable.Builder()
-                .setName(name)
-                .setParameterizedType(primitives.intParameterizedType())
-                .setOwningType(primitives.stringTypeInfo())
-                .build();
+        return makeLocalVariable(primitives.intParameterizedType(), name);
     }
 
-    protected LocalVariable makeLocalVariableString(String name) {
+    protected LocalVariable makeLocalVariable(ParameterizedType pt, String name) {
         return new LocalVariable.Builder()
                 .setName(name)
-                .setParameterizedType(primitives.stringParameterizedType())
+                .setParameterizedType(pt)
                 .setOwningType(primitives.stringTypeInfo())
                 .build();
     }
@@ -180,8 +191,24 @@ public abstract class CommonTest {
         return new VariableExpression(newId(), i.localVariableReference);
     }
 
+    protected VariableExpression makeLVAsExpression(String name, Expression initializer, ParameterizedType pt) {
+        LocalVariable lvi = makeLocalVariable(pt, name);
+        LocalVariableCreation i = new LocalVariableCreation(newId(), newId(),
+                new LocalVariableReference(lvi, initializer));
+        return new VariableExpression(newId(), i.localVariableReference);
+    }
+
     protected static Identifier newId() {
         return Identifier.generate("test");
     }
 
+
+    protected static ExpressionMock mockWithLinkedVariables(VariableExpression va, LV lv) {
+        return new ExpressionMock() {
+            @Override
+            public LinkedVariables linkedVariables(EvaluationResult context) {
+                return LinkedVariables.of(va.variable(), lv);
+            }
+        };
+    }
 }

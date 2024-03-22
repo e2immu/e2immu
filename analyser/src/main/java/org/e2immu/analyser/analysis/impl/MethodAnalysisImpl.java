@@ -67,6 +67,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final FieldInfo getSet;
     public final GetSetEquivalent getSetEquivalent;
     public final Set<String> indicesOfEscapesNotInPreOrPostConditions;
+    public final LV.HiddenContentSelector hiddenContentSelector;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -86,7 +87,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                ParSeq<ParameterInfo> parallelGroups,
                                FieldInfo getSet,
                                GetSetEquivalent getSetEquivalent,
-                               CommutableData commutableData) {
+                               CommutableData commutableData,
+                               LV.HiddenContentSelector hiddenContentSelector) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -106,6 +108,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.commutableData = commutableData;
         this.getSetEquivalent = getSetEquivalent;
         assert !(getSetEquivalent != null && getSet != null) : "GetSet and GetSetEquivalent cannot go together";
+        this.hiddenContentSelector = hiddenContentSelector;
+    }
+
+    @Override
+    public LV.HiddenContentSelector getHiddenContentSelector() {
+        return hiddenContentSelector;
     }
 
     @Override
@@ -280,6 +288,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final SetOnce<CommutableData> commutableData = new SetOnce<>();
 
         private final SetOnce<GetSetEquivalent> getSetEquivalent = new SetOnce<>();
+        private final SetOnce<LV.HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -445,7 +454,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getParallelGroups(),
                     getSetField(),
                     getSetEquivalent(),
-                    getCommutableData());
+                    getCommutableData(),
+                    getHiddenContentSelector());
         }
 
         /*
@@ -557,7 +567,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             assert !has || fieldInfo.type.isBoolean();
             assert set || mi.getParameters().isEmpty();
             assert !set || mi.getParameters().size() == 1
-                    && (mi.getReturnType().isVoidOrJavaLangVoid() || mi.getReturnType().typeInfo == methodInfo.typeInfo);
+                           && (mi.getReturnType().isVoidOrJavaLangVoid() || mi.getReturnType().typeInfo == methodInfo.typeInfo);
             return fieldInfo;
         }
 
@@ -851,6 +861,15 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public Precondition preconditionGet() {
             return precondition.get();
+        }
+
+        @Override
+        public LV.HiddenContentSelector getHiddenContentSelector() {
+            return hiddenContentSelector.get();
+        }
+
+        public void setHiddenContentSelector(LV.HiddenContentSelector hiddenContentSelector) {
+            this.hiddenContentSelector.set(hiddenContentSelector);
         }
     }
 

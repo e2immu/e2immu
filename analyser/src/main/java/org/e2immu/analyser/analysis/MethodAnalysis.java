@@ -233,7 +233,7 @@ public interface MethodAnalysis extends Analysis {
             if (vi.isAssigned()) {
                 VariableInfo accept;
                 if (vi.isDelayed()
-                        && vi.getValue().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY,
+                    && vi.getValue().causesOfDelay().containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY,
                         c -> c.variableIsField(fieldInfo) && getMethodInfo().equals(c.location().getInfo().getMethodInfo()))) {
                     String latestAssignment = vi.getAssignmentIds().getLatestAssignment();
                     StatementAnalysis saOfAssignment = getFirstStatement().navigateTo(StringUtil.stripStage(latestAssignment));
@@ -253,10 +253,10 @@ public interface MethodAnalysis extends Analysis {
                 // copy.t = this.s; copy.s = this.t;  will not be caught by this.
                 IsVariableExpression ive;
                 if ((ive = accept.getValue().asInstanceOf(IsVariableExpression.class)) == null
-                        || !(ive.variable() instanceof FieldReference fr)
-                        || !fieldInfo.equals(fr.fieldInfo())
-                        // accept this.f = <f:f>, as <f:f> is the initial value
-                        || fr.scope().equals(((FieldReference) accept.variable()).scope())) {
+                    || !(ive.variable() instanceof FieldReference fr)
+                    || !fieldInfo.equals(fr.fieldInfo())
+                    // accept this.f = <f:f>, as <f:f> is the initial value
+                    || fr.scope().equals(((FieldReference) accept.variable()).scope())) {
                     result.add(accept);
                 }
             }
@@ -274,4 +274,6 @@ public interface MethodAnalysis extends Analysis {
     }
 
     GetSetEquivalent getSetEquivalent();
+
+    LV.HiddenContentSelector getHiddenContentSelector();
 }

@@ -8,7 +8,6 @@ import org.e2immu.graph.op.DijkstraShortestPath;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class LV implements Comparable<LV> {
@@ -21,7 +20,7 @@ public class LV implements Comparable<LV> {
     public static final LV LINK_DEPENDENT = new LV(2, null, null,
             "dependent", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
 
-    // do not use for equality!
+    // do not use for equality! Use LV.isCommonHC()
     public static final LV LINK_COMMON_HC = new LV(HC, null, null,
             "common_hc", CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
     public static final LV LINK_INDEPENDENT = new LV(5, null, null,
@@ -187,8 +186,8 @@ public class LV implements Comparable<LV> {
     public static class HiddenContentSelectorImpl implements HiddenContentSelector {
         private final Set<Integer> set;
 
-        private HiddenContentSelectorImpl() {
-            set = Set.of(-1);
+        private HiddenContentSelectorImpl(boolean all) {
+            set = Set.of(all ? -1 : -2);
         }
 
         public HiddenContentSelectorImpl(Set<Integer> set) {
@@ -198,13 +197,15 @@ public class LV implements Comparable<LV> {
 
         @Override
         public boolean isDisjointFrom(DijkstraShortestPath.Connection other) {
+            if (CS_NONE == this || CS_NONE == other) throw new UnsupportedOperationException();
             return this != CS_ALL && other != CS_ALL
                    && Collections.disjoint(set, ((HiddenContentSelectorImpl) other).set);
         }
 
         @Override
         public String toString() {
-            return this == CS_ALL ? "*" : set.stream().sorted().map(Object::toString)
+            return this == CS_ALL ? "*" : this == CS_NONE ? "X"
+                    : set.stream().sorted().map(Object::toString)
                     .collect(Collectors.joining(",", "<", ">"));
         }
 
@@ -221,7 +222,8 @@ public class LV implements Comparable<LV> {
         return new HiddenContentSelectorImpl(Arrays.stream(is).boxed().collect(Collectors.toUnmodifiableSet()));
     }
 
-    public static final HiddenContentSelector CS_ALL = new HiddenContentSelectorImpl();
+    public static final HiddenContentSelector CS_ALL = new HiddenContentSelectorImpl(true);
+    public static final HiddenContentSelector CS_NONE = new HiddenContentSelectorImpl(false);
 
     public static class HiddenContentImpl implements HiddenContent {
         private final List<IndexedType> sequence;

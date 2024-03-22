@@ -173,4 +173,9 @@ class HardCodedMethodAnalysis implements MethodAnalysis {
                                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public LV.HiddenContentSelector getHiddenContentSelector() {
+        return null; // none of these types have hidden content
+    }
 }

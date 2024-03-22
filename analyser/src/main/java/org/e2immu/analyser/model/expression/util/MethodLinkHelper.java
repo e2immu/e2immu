@@ -530,19 +530,30 @@ public class MethodLinkHelper {
             CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
             for (Map.Entry<Variable, LV> e : linkedVariablesOfObject) {
                 DV immutable = context.getAnalyserContext().typeImmutable(e.getKey().parameterizedType());
-                assert e.getValue().lt(LINK_INDEPENDENT);
+                LV lv = e.getValue();
+                assert lv.lt(LINK_INDEPENDENT);
 
                 if (e.getKey() instanceof This) {
                     /*
                      without this line, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
                      */
-                    newLinked.put(e.getKey(), LINK_DEPENDENT.max(e.getValue()));
+                    newLinked.put(e.getKey(), LINK_DEPENDENT.max(lv));
                 } else if (immutable.isDelayed()) {
                     causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
-                } else if (MultiLevel.isMutable(immutable)) {
-                    newLinked.put(e.getKey(), LINK_DEPENDENT.max(e.getValue()));
-                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-                    newLinked.put(e.getKey(), LINK_COMMON_HC);
+                } else {
+                    if (MultiLevel.isMutable(immutable) && lv.equals(LINK_DEPENDENT)) {
+                        newLinked.put(e.getKey(), LINK_DEPENDENT);
+                    } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                        LV commonHC;
+                        if (lv.isCommonHC()) {
+                            LV.HiddenContentSelector newMine = methodAnalysis.getHiddenContentSelector();
+                            commonHC = LV.createHC(newMine, lv.mine());
+                        } else {
+                            // assigned, dependent...
+                            commonHC = LV.createHC(CS_ALL, CS_ALL);
+                        }
+                        newLinked.put(e.getKey(), commonHC);
+                    }
                 }
             }
             if (causesOfDelay.isDelayed()) {

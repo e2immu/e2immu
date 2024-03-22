@@ -101,7 +101,7 @@ public record ComputeIndependent(AnalyserContext analyserContext,
              */
             return MultiLevel.independentCorrespondingToImmutable(immutable);
         }
-        assert LINK_COMMON_HC.equals(linkLevel);
+        assert linkLevel.isCommonHC();
         /*
         normal rule: one of the types immutable -> INDEPENDENT, else INDEPENDENT_HC
         but: two non-recursively immutable types, COMMON_HC link, but without hidden content themselves -> independent

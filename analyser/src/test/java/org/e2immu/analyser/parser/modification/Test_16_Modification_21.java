@@ -14,12 +14,19 @@
 
 package org.e2immu.analyser.parser.modification;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_16_Modification_21 extends CommonTestRunner {
 
@@ -30,7 +37,25 @@ public class Test_16_Modification_21 extends CommonTestRunner {
     @Test
     public void test() throws IOException {
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test1".equals(d.methodInfo().name)) {
+                if ("i".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, IterationInfo.it(0, "list:4"));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.name)) {
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, 100, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+        };
         testClass("Modification_21", 0, 0, new DebugConfiguration.Builder()
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setComputeFieldAnalyserAcrossAllMethods(true).build());
     }
