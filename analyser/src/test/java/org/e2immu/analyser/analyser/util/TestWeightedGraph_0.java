@@ -43,19 +43,14 @@ public class TestWeightedGraph_0 extends CommonWG {
      */
     @BeforeEach
     public void beforeEach() {
-        thisVar = makeVariable("thisVar");
-        cycle = makeVariable("cycle");
-        removed = makeVariable("removed");
+        thisVar = makeVariable("thisVar"); // <T>
+        cycle = makeVariable("cycle"); // <T, Node<T>>
+        removed = makeVariable("removed"); // <T>, but delayed
 
         wg = new WeightedGraphImpl();
 
-        LV this_4_cycle = LV.createHC(LV.selectTypeParameter( 0),
-                LV.typeParameters(null, List.of(0), null, List.of(1, 0)));
-        assertEquals("<0>-4-<0,1-0>", this_4_cycle.toString());
-
-        LV map_4_map = LV.createHC(LV.typeParameters(null, List.of(0), null, List.of(1, 0)),
-                LV.typeParameters(null, List.of(0), null, List.of(1, 0)));
-        assertEquals("<0,1-0>-4-<0,1-0>", map_4_map.toString());
+        LV this_4_cycle = LV.createHC(LV.selectTypeParameter(0), LV.selectTypeParameter(0));
+        assertEquals("<0>-4-<0>", this_4_cycle.toString());
 
         wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, this_4_cycle));
         wg.addNode(cycle, Map.of(cycle, v0, thisVar, this_4_cycle.reverse()));

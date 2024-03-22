@@ -35,7 +35,7 @@ public class DijkstraShortestPath {
                 // no check, always true
                 return connection;
             }
-            if (mine.doesNotContain(connection)) {
+            if (connection.doesNotContain(mine)) {
                 return null;
             }
             return theirs;

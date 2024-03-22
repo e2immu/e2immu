@@ -21,6 +21,8 @@ public class TestWeightedGraph_8 extends CommonWG {
     WeightedGraph wg;
     ShortestPath shortestPath;
 
+    // Map<K,V> map = ...; Set<K> keys = map.keySet(); Collection<V> values = map.values()
+
     @BeforeEach
     public void beforeEach() {
         keys = makeVariable("keys");
@@ -29,10 +31,8 @@ public class TestWeightedGraph_8 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV map_4_keys = LV.createHC(LV.typeParameter(null, 0),
-                LV.typeParameter(null, 0));
-        LV map_4_values = LV.createHC(LV.typeParameter(null, 1),
-                LV.typeParameter(null, 0));
+        LV map_4_keys = LV.createHC(LV.selectTypeParameter(0),LV.selectTypeParameter(0));
+        LV map_4_values = LV.createHC(LV.selectTypeParameter(1), LV.selectTypeParameter(0));
         assertEquals("<1>-4-<0>", map_4_values.toString());
         assertEquals("<0>-4-<0>", map_4_keys.reverse().toString());
 
@@ -45,11 +45,31 @@ public class TestWeightedGraph_8 extends CommonWG {
 
     @Test
     @DisplayName("start in keys")
-    public void test() {
+    public void testK() {
         Map<Variable, LV> startAt = shortestPath.links(keys, null);
         assertEquals(2, startAt.size());
         assertEquals(v0, startAt.get(keys));
         assertEquals(v4, startAt.get(map));
         assertNull(startAt.get(values));
+    }
+
+    @Test
+    @DisplayName("start in values")
+    public void testV() {
+        Map<Variable, LV> startAt = shortestPath.links(values, null);
+        assertEquals(2, startAt.size());
+        assertEquals(v0, startAt.get(values));
+        assertEquals(v4, startAt.get(map));
+        assertNull(startAt.get(keys));
+    }
+
+    @Test
+    @DisplayName("start in map")
+    public void testM() {
+        Map<Variable, LV> startAt = shortestPath.links(map, null);
+        assertEquals(3, startAt.size());
+        assertEquals(v0, startAt.get(map));
+        assertEquals(v4, startAt.get(keys));
+        assertEquals(v4, startAt.get(values));
     }
 }

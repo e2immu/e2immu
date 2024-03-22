@@ -184,11 +184,32 @@ public class LV implements Comparable<LV> {
     }
 
     // integers represent type parameters, as result of HC.typeParameters()
-    public record HiddenContentSelectorImpl(Set<Integer> set) implements HiddenContentSelector {
+    public static class HiddenContentSelectorImpl implements HiddenContentSelector {
+        private final Set<Integer> set;
+
+        private HiddenContentSelectorImpl() {
+            set = Set.of(-1);
+        }
+
+        public HiddenContentSelectorImpl(Set<Integer> set) {
+            assert set != null && set.stream().allMatch(i -> i >= 0);
+            this.set = Set.copyOf(set);
+        }
+
         @Override
         public boolean doesNotContain(DijkstraShortestPath.Connection required) {
             boolean containsRequired = this == CS_ALL || set.containsAll(((HiddenContentSelectorImpl) required).set);
             return !containsRequired;
+        }
+
+        @Override
+        public String toString() {
+            return this == CS_ALL ? "*" : set.stream().sorted().map(Object::toString)
+                    .collect(Collectors.joining(",", "<", ">"));
+        }
+
+        public Set<Integer> set() {
+            return set;
         }
     }
 
@@ -196,7 +217,11 @@ public class LV implements Comparable<LV> {
         return new HiddenContentSelectorImpl(Set.of(i));
     }
 
-    public static final HiddenContentSelector CS_ALL = new HiddenContentSelectorImpl(Set.of(-1));
+    public static HiddenContentSelector selectTypeParameters(int... is) {
+        return new HiddenContentSelectorImpl(Arrays.stream(is).boxed().collect(Collectors.toUnmodifiableSet()));
+    }
+
+    public static final HiddenContentSelector CS_ALL = new HiddenContentSelectorImpl();
 
     public static class HiddenContentImpl implements HiddenContent {
         private final List<IndexedType> sequence;

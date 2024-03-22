@@ -65,7 +65,7 @@ public class TestLV {
         // String
         LV.HiddenContent hcString = LV.from(typeContext.getPrimitives().stringParameterizedType());
         assertEquals("<>", hcString.toString());
-        assertEquals("[]", hcString.all().toString());
+        assertEquals("<>", hcString.all().toString());
 
         // List<E>
         TypeInfo list = typeContext.getFullyQualified(List.class);
@@ -78,7 +78,7 @@ public class TestLV {
                 List.of(typeContext.getPrimitives().stringParameterizedType()));
         LV.HiddenContent hcListString = LV.from(listString);
         assertEquals("<*0>", hcListString.toString());
-        assertEquals("[0]", hcListString.all().toString());
+        assertEquals("<>", hcListString.all().toString());
 
         // Map<K,V>
         TypeInfo map = typeContext.getFullyQualified(Map.class);
@@ -93,7 +93,7 @@ public class TestLV {
         LV.HiddenContent hcMapKK = LV.from(mapKK);
         assertEquals("<0,0>", hcMapKK.toString());
 
-        assertEquals("[0]", hcMapKK.all().toString());
+        assertEquals("<0>", hcMapKK.all().toString());
 
         // K
         LV.HiddenContent hcK = LV.from(pt0);

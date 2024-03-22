@@ -3,14 +3,15 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.e2immu.analyser.analyser.LV.LINK_COMMON_HC;
+import static org.e2immu.analyser.analyser.LV.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class TestWeightedGraph_7 extends CommonWG {
 
@@ -32,7 +33,7 @@ public class TestWeightedGraph_7 extends CommonWG {
 
     /*
     this <0> ------4----- <1> map             Type parameter 0 corresponds to type parameter 1 in Map<K, V>
-    map <0,1> -----4----- <0-0,0-1> entries   All hidden content of Map (type parameters 0 and 1) correspond to
+    map <0,1> -----4----- <0,1> entries       All hidden content of Map (type parameters 0 and 1) correspond to
                                               type parameter 0 in Set<E>, which consists of the type parameters 0
                                               and 1 of Map.Entry
     entries <0-0,0-1> -- 4 -- <0,1> entry     ~ get() method, is part of HC
@@ -55,28 +56,24 @@ public class TestWeightedGraph_7 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV thisVar_4_map = LV.createHC(LV.typeParameter(null, 0),
-                LV.typeParameter(null, 1));
+        LV.HiddenContentSelector select0 = selectTypeParameter(0);
+        LV.HiddenContentSelector select1 = selectTypeParameter(1);
+        LV thisVar_4_map = LV.createHC(select0, select1);
         assertEquals("<0>-4-<1>", thisVar_4_map.toString());
         assertEquals("<1>-4-<0>", thisVar_4_map.reverse().toString());
 
         wg.addNode(thisVar, Map.of(map, thisVar_4_map));
-
-        LV map_4_entries = LV.createHC(LV.typeParameters(null, List.of(0), null, List.of(1)),
-                LV.typeParameters(null, List.of(0, 0), null, List.of(0, 1)));
-        assertEquals("<0,1>-4-<0-0,0-1>", map_4_entries.toString());
+        LV.HiddenContentSelector select01 = LV.selectTypeParameters(0, 1);
+        LV map_4_entries = LV.createHC(select01, select01);
+        assertEquals("<0,1>-4-<0,1>", map_4_entries.toString());
         wg.addNode(map, Map.of(thisVar, thisVar_4_map.reverse(), entries, map_4_entries));
+        wg.addNode(entries, Map.of(map, map_4_entries.reverse(), entry, map_4_entries));
 
-        LV entries_4_entry = LV.createHC(LV.typeParameters(null, List.of(0, 0), null, List.of(0, 1)),
-                LV.typeParameters(null, List.of(0), null, List.of(1)));
-        assertEquals("<0-0,0-1>-4-<0,1>", entries_4_entry.toString());
-        wg.addNode(entries, Map.of(map, map_4_entries.reverse(), entry, entries_4_entry));
-
-        LV entry_4_l = LV.createHC(LV.typeParameter(null, 0), LV.wholeType(null));
-        LV entry_4_t = LV.createHC(LV.typeParameter(null, 1), LV.wholeType(null));
-        assertEquals("<0>-4-<>", entry_4_l.toString());
-        assertEquals("<1>-4-<>", entry_4_t.toString());
-        wg.addNode(entry, Map.of(entries, entries_4_entry.reverse(), l, entry_4_l, t, entry_4_t));
+        LV entry_4_l = LV.createHC(select0, CS_ALL);
+        LV entry_4_t = LV.createHC(select1, CS_ALL);
+        assertEquals("<0>-4-*", entry_4_l.toString());
+        assertEquals("<1>-4-*", entry_4_t.toString());
+        wg.addNode(entry, Map.of(entries, map_4_entries.reverse(), l, entry_4_l, t, entry_4_t));
 
         wg.addNode(l, Map.of(entry, entry_4_l.reverse()));
         wg.addNode(t, Map.of(entry, entry_4_t.reverse()));
@@ -84,16 +81,38 @@ public class TestWeightedGraph_7 extends CommonWG {
         shortestPath = wg.shortestPath();
     }
 
-    // fully connected starting from 'this' up to 'entry'; not so for l and t
     @Test
-    public void test() {
-        Variable[] variables = new Variable[]{thisVar, map, entries, entry, l, t};
-        for (int i = 0; i < 4; i++) {
-            Map<Variable, LV> start = shortestPath.links(variables[i], LINK_COMMON_HC);
-            for (int j = 0; j < variables.length; j++) {
-                LV expect = i == j ? v0 : v4;
-                assertEquals(expect, start.get(variables[j]), "Goes wrong: " + i + ", " + j);
-            }
-        }
+    @DisplayName("starting in thisVar")
+    public void testTV() {
+        Map<Variable, LV> links = shortestPath.links(thisVar, null);
+        assertEquals(v0, links.get(thisVar)); // start all
+        assertEquals(v4, links.get(map)); // then <0> of map
+        assertEquals(v4, links.get(entries)); // <0> of entries
+        assertEquals(v4, links.get(entry)); // <0> of entry
+        assertEquals(v4, links.get(l)); // * of l
+        assertEquals(v4, links.get(t)); // * of t
     }
+
+    @Test
+    @DisplayName("starting in l")
+    public void testL() {
+        Map<Variable, LV> links = shortestPath.links(l, null);
+        assertEquals(v0, links.get(l)); // start all
+        assertEquals(v4, links.get(entry)); // then <0> of entry
+        assertNull(links.get(t)); // not reachable
+        assertEquals(v4, links.get(entries)); // <0> of entries
+        assertEquals(v4, links.get(map)); // <0> of map
+        assertEquals(v4, links.get(thisVar)); // <0> of thisVar
+    }
+
+    @Test
+    @DisplayName("starting in t")
+    public void testT() {
+        Map<Variable, LV> links = shortestPath.links(t, null);
+        assertEquals(v0, links.get(t)); // start all
+        assertEquals(v4, links.get(entry)); // then <0> of entry
+        assertNull(links.get(l)); // not reachable
+        assertEquals(v4, links.get(entries)); // <0> of entries
+    }
+
 }
