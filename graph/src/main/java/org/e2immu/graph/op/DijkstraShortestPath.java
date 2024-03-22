@@ -14,7 +14,7 @@ public class DijkstraShortestPath {
     private final Connection initialConnection;
 
     public interface Connection {
-        boolean doesNotContain(Connection required);
+        boolean isDisjointFrom(Connection required);
     }
 
     public record DC(long dist, Connection connection) implements Comparable<DC> {
@@ -35,7 +35,7 @@ public class DijkstraShortestPath {
                 // no check, always true
                 return connection;
             }
-            if (connection.doesNotContain(mine)) {
+            if (connection.isDisjointFrom(mine)) {
                 return null;
             }
             return theirs;

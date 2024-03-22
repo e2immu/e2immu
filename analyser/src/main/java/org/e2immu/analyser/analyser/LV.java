@@ -197,9 +197,9 @@ public class LV implements Comparable<LV> {
         }
 
         @Override
-        public boolean doesNotContain(DijkstraShortestPath.Connection required) {
-            boolean containsRequired = this == CS_ALL || set.containsAll(((HiddenContentSelectorImpl) required).set);
-            return !containsRequired;
+        public boolean isDisjointFrom(DijkstraShortestPath.Connection other) {
+            return this != CS_ALL && other != CS_ALL
+                   && Collections.disjoint(set, ((HiddenContentSelectorImpl) other).set);
         }
 
         @Override
