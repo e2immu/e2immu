@@ -12,7 +12,6 @@ import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.graph.op.DijkstraShortestPath;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -54,47 +53,19 @@ public class TestLV {
         analyserContext = rr.analyserContext();
     }
 
-    @Test
-    public void test() {
-        // <> as in T
-        LV.HiddenContent hc = LV.wholeType(null);
-        assertEquals("<>", hc.toString());
-
-        // <0> as in E of List<E>, this with a single type parameter T
-        LV.HiddenContent hc0 = LV.typeParameter(null, 0);
-        assertEquals("<0>", hc0.toString());
-
-        LV lva = LV.createHC(hc, hc0);
-        assertEquals("<>-4-<0>", lva.toString());
-        // going from T -> List<T>, we move from <> to <0>
-
-        // <1> as in V of Map<K, V>
-        LV.HiddenContent hc1 = LV.typeParameter(null, 1);
-        assertEquals("<1>", hc1.toString());
-
-        // <0,1> as in Map<K,V>
-        LV.HiddenContent hc0_1 = LV.typeParameters(null, List.of(0), null, List.of(1));
-        assertEquals("<0,1>", hc0_1.toString());
-
-
-        // <0-0,0-1> as in Set<Map.Entry<K, V>>
-        LV.HiddenContent hc00_01 = LV.typeParameters(null, List.of(0, 0), null, List.of(0, 1));
-        assertEquals("<0-0,0-1>", hc00_01.toString());
-    }
-
-    private static String sorted(DijkstraShortestPath.CurrentConnection cc) {
-        if (cc instanceof LV.CurrentConnectionImpl cci) {
+    private static String sorted(DijkstraShortestPath.Connection cc) {
+        if (cc instanceof LV.HiddenContentSelectorImpl cci) {
             return cci.set().stream().sorted().map(Object::toString).collect(Collectors.joining(", "));
         }
         throw new UnsupportedOperationException();
     }
 
     @Test
-    public void test2() {
+    public void test() {
         // String
         LV.HiddenContent hcString = LV.from(typeContext.getPrimitives().stringParameterizedType());
         assertEquals("<>", hcString.toString());
-        assertEquals("[]", hcString.apply(LV.CS_ALL).toString());
+        assertEquals("[]", hcString.all().toString());
 
         // List<E>
         TypeInfo list = typeContext.getFullyQualified(List.class);
@@ -102,24 +73,18 @@ public class TestLV {
         LV.HiddenContent hcList = LV.from(listE);
         assertEquals("<0>", hcList.toString());
 
-        DijkstraShortestPath.ConnectionSelector cs0 = new LV.ConnectionSelectorImpl(Set.of(0));
-        assertEquals("[0]", hcList.apply(cs0).toString());
-
         // List<String>
         ParameterizedType listString = new ParameterizedType(list,
                 List.of(typeContext.getPrimitives().stringParameterizedType()));
         LV.HiddenContent hcListString = LV.from(listString);
         assertEquals("<*0>", hcListString.toString());
-        assertEquals("[]", hcListString.apply(cs0).toString());
+        assertEquals("[0]", hcListString.all().toString());
 
         // Map<K,V>
         TypeInfo map = typeContext.getFullyQualified(Map.class);
         LV.HiddenContent hcMap = LV.from(map.asParameterizedType(typeContext));
         assertEquals("<0,1>", hcMap.toString());
-
-        DijkstraShortestPath.ConnectionSelector cs01 = new LV.ConnectionSelectorImpl(Set.of(0, 1));
-        assertEquals("0, 1", sorted(hcMap.apply(cs01)));
-        assertEquals("0, 1", sorted(hcMap.apply(LV.CS_ALL)));
+        assertEquals("0, 1", sorted(hcMap.all()));
 
         // Map<K,K>
         TypeParameter tp0 = typeContext.getTypeInspection(map).typeParameters().get(0);
@@ -128,8 +93,7 @@ public class TestLV {
         LV.HiddenContent hcMapKK = LV.from(mapKK);
         assertEquals("<0,0>", hcMapKK.toString());
 
-        assertEquals("[0]", hcMapKK.apply(cs0).toString());
-        assertEquals("[0]", hcMapKK.apply(cs01).toString());
+        assertEquals("[0]", hcMapKK.all().toString());
 
         // K
         LV.HiddenContent hcK = LV.from(pt0);
@@ -139,10 +103,7 @@ public class TestLV {
         ParameterizedType mapKListE = new ParameterizedType(map, List.of(pt0, listE));
         LV.HiddenContent hcMapKListE = LV.from(mapKListE);
         assertEquals("<0,*1-1>", hcMapKListE.toString());
-
-        DijkstraShortestPath.ConnectionSelector cs1 = new LV.ConnectionSelectorImpl(Set.of(1));
-        LV.HiddenContent one = LV.typeParameter(null, 1);
-        assertEquals("1", sorted(hcMapKListE.apply(cs1)));
+        assertEquals("0, 1", sorted(hcMapKListE.all()));
 
         // Map<K, List<K>>
         ParameterizedType listK = new ParameterizedType(list, List.of(pt0));
@@ -155,12 +116,12 @@ public class TestLV {
         ParameterizedType mapListEListE = new ParameterizedType(map, List.of(listE, listE));
         LV.HiddenContent hcMapListEListE = LV.from(mapListEListE);
         assertEquals("<*0-0,*1-0>", hcMapListEListE.toString());
-        assertEquals("0", sorted(hcMapListEListE.apply(cs01)));
+        assertEquals("0", sorted(hcMapListEListE.all()));
 
         // Map<List<E>, List<E>>
         ParameterizedType mapListStringListString = new ParameterizedType(map, List.of(listString, listString));
         LV.HiddenContent hcMapListStringListString = LV.from(mapListStringListString);
         assertEquals("<*0-*0,*1-*0>", hcMapListStringListString.toString());
-        assertEquals("", sorted(hcMapListStringListString.apply(cs1)));
+        assertEquals("", sorted(hcMapListStringListString.all()));
     }
 }

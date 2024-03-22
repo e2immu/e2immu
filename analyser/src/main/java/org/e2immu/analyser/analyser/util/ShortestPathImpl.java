@@ -25,7 +25,6 @@ public class ShortestPathImpl implements ShortestPath {
 
     private final Map<Variable, Integer> variableIndex;
     private final Variable[] variables;
-    private final DijkstraShortestPath.ConnectionPattern[] connectionPatterns;
     private final Map<Integer, Map<Integer, DijkstraShortestPath.DCP>> edges;
     private final Map<Integer, Map<Integer, DijkstraShortestPath.DCP>> edgesHigh;
     private final CausesOfDelay someDelay;
@@ -39,23 +38,11 @@ public class ShortestPathImpl implements ShortestPath {
                      CausesOfDelay someDelay,
                      LinkMap linkMap) {
         this.variables = variables;
-        this.connectionPatterns = Arrays.stream(variables).map(v -> LV.from(v.parameterizedType()))
-                .toArray(DijkstraShortestPath.ConnectionPattern[]::new);
         this.edges = edges;
         this.edgesHigh = edgesHigh;
         this.variableIndex = variableIndex;
         this.someDelay = someDelay;
-        dijkstraShortestPath = new DijkstraShortestPath(new DijkstraShortestPath.ConnectionProvider() {
-            @Override
-            public DijkstraShortestPath.ConnectionPattern connectionPattern(int i) {
-                return connectionPatterns[i];
-            }
-
-            @Override
-            public DijkstraShortestPath.CurrentConnection all() {
-                return CC_ALL;
-            }
-        });
+        dijkstraShortestPath = new DijkstraShortestPath(CS_ALL);
         this.linkMap = linkMap;
     }
 

@@ -224,8 +224,8 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                     if (dv.isDelayed() && delay == null) {
                         delay = dv.causesOfDelay();
                     }
-                    DijkstraShortestPath.ConnectionSelector mine;
-                    DijkstraShortestPath.ConnectionSelector theirs;
+                    DijkstraShortestPath.Connection mine;
+                    DijkstraShortestPath.Connection theirs;
                     if (e2.getValue().isCommonHC()) {
                         mine = e2.getValue().mine();
                         theirs = e2.getValue().theirs();

@@ -38,10 +38,11 @@ public class LV implements Comparable<LV> {
         return HC == value;
     }
 
-    public interface HiddenContentSelector extends DijkstraShortestPath.ConnectionSelector {
+    public interface HiddenContentSelector extends DijkstraShortestPath.Connection {
     }
 
-    public interface HiddenContent extends DijkstraShortestPath.ConnectionPattern {
+    public interface HiddenContent {
+        HiddenContentSelector all();
     }
 
     private LV(int value, HiddenContentSelector mine, HiddenContentSelector theirs,
@@ -182,43 +183,20 @@ public class LV implements Comparable<LV> {
         }
     }
 
-    public static HiddenContent wholeType(ParameterizedType parameterizedType) {
-        return new HiddenContentImpl(List.of(new IndexedType(parameterizedType, List.of())));
-    }
-
-    public static HiddenContentSelector typeParameter(ParameterizedType parameterizedType, int index) {
-        return new HiddenContentImpl(List.of(new IndexedType(parameterizedType, List.of(index))));
-    }
-
-    public static HiddenContentSelector typeParameters(ParameterizedType pt1, List<Integer> indices1) {
-        return new HiddenContentImpl(List.of(new IndexedType(pt1, List.copyOf(indices1))));
-    }
-
-    public static HiddenContent typeParameters(ParameterizedType pt1, List<Integer> indices1,
-                                               ParameterizedType pt2, List<Integer> indices2) {
-        return new HiddenContentImpl(List.of(new IndexedType(pt1, List.copyOf(indices1)),
-                new IndexedType(pt2, indices2)));
-    }
-
-    // integers represent type parameters, as result of HC.apply
-    public record CurrentConnectionImpl(Set<Integer> set) implements DijkstraShortestPath.CurrentConnection {
+    // integers represent type parameters, as result of HC.typeParameters()
+    public record HiddenContentSelectorImpl(Set<Integer> set) implements HiddenContentSelector {
         @Override
-        public boolean doesNotContain(DijkstraShortestPath.CurrentConnection required) {
-            boolean containsRequired = this == CC_ALL || set.containsAll(((CurrentConnectionImpl) required).set);
+        public boolean doesNotContain(DijkstraShortestPath.Connection required) {
+            boolean containsRequired = this == CS_ALL || set.containsAll(((HiddenContentSelectorImpl) required).set);
             return !containsRequired;
         }
     }
 
-    // integers represent positions in the HiddenContentImpl.sequence
-    public record ConnectionSelectorImpl(Set<Integer> set) implements HiddenContentSelector {
-    }
-
     public static HiddenContentSelector selectTypeParameter(int i) {
-        return new ConnectionSelectorImpl(Set.of(i));
+        return new HiddenContentSelectorImpl(Set.of(i));
     }
 
-    public static final DijkstraShortestPath.CurrentConnection CC_ALL = new CurrentConnectionImpl(Set.of(-1));
-    public static final HiddenContentSelector CS_ALL = new ConnectionSelectorImpl(Set.of(-1));
+    public static final HiddenContentSelector CS_ALL = new HiddenContentSelectorImpl(Set.of(-1));
 
     public static class HiddenContentImpl implements HiddenContent {
         private final List<IndexedType> sequence;
@@ -228,28 +206,10 @@ public class LV implements Comparable<LV> {
         }
 
         @Override
-        public boolean reject(DijkstraShortestPath.CurrentConnection other) {
-            // FIXME
-            return false;
-        }
-
-        /*
-        starting from a "node" HC (see TestLV.test2()), apply 'mine' or 'theirs'.
-        The former are recursive descent structures, with the numbers indicating distinct type parameters
-        which we are to collect. The latter are indices into this structure.
-         */
-        @Override
-        public DijkstraShortestPath.CurrentConnection apply(DijkstraShortestPath.ConnectionSelector mineOrTheirs) {
-            IntStream indexStream;
-            if (mineOrTheirs == CS_ALL) {
-                indexStream = IntStream.of(sequence.size());
-            } else {
-                indexStream = ((ConnectionSelectorImpl) mineOrTheirs).set.stream().mapToInt(i -> i);
-            }
-            Set<Integer> set = indexStream.mapToObj(sequence::get)
-                    .flatMap(IndexedType::typeParameterIndexStream)
+        public HiddenContentSelector all() {
+            Set<Integer> set = sequence.stream().flatMap(IndexedType::typeParameterIndexStream)
                     .collect(Collectors.toUnmodifiableSet());
-            return new CurrentConnectionImpl(set);
+            return new HiddenContentSelectorImpl(set);
         }
 
         @Override
