@@ -29,6 +29,23 @@ import static org.e2immu.analyser.analyser.LinkedVariables.*;
 
 public interface ComputeIndependent {
 
+    /**
+     * Primary LinkedVariables computation method from one expression to the next.
+     * Not used in Assignment, which has its own code.
+     *
+     * @param sourceType                      return type of source expression
+     * @param sourceLvs                       linked variables of source expression
+     * @param transferIndependent             the independence value of the transfer
+     * @param hiddenContentSelectorOfTransfer if transferIndependent is commonHC, the selector for the result
+     * @param targetType                      return type of the target expression
+     * @return linked variables for the transfer expression
+     */
+    LinkedVariables linkedVariables(ParameterizedType sourceType,
+                                    LinkedVariables sourceLvs,
+                                    DV transferIndependent,
+                                    HiddenContentSelector hiddenContentSelectorOfTransfer,
+                                    ParameterizedType targetType);
+
     DV typeImmutable(ParameterizedType pt);
 
     /**

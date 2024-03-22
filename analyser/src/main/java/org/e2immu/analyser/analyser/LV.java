@@ -180,6 +180,15 @@ public class LV implements Comparable<LV> {
             int i = index.get(index.size() - 1);
             return i >= 0 ? Stream.of(i) : Stream.of();
         }
+
+        public ParameterizedType concreteOf(ParameterizedType input) {
+            ParameterizedType pt = input;
+            for (int i : index) {
+                if (i >= 0) return pt.parameters.get(i);
+                pt = pt.parameters.get(realIndex(i));
+            }
+            return pt;
+        }
     }
 
     // integers represent type parameters, as result of HC.typeParameters()
@@ -256,6 +265,7 @@ public class LV implements Comparable<LV> {
         return from(pt, typeParameterIndex, counter);
     }
 
+
     private static HiddenContent from(ParameterizedType pt,
                                       Map<ParameterizedType, Integer> typeParameterIndex,
                                       AtomicInteger counter) {
@@ -283,6 +293,20 @@ public class LV implements Comparable<LV> {
             countParameter++;
         }
         return new HiddenContentImpl(List.copyOf(sequence));
+    }
+
+    public static Map<Integer, ParameterizedType> typesCorrespondingToHC(ParameterizedType pt) {
+        HiddenContentImpl hiddenContent = (HiddenContentImpl) from(pt);
+        // the selector tells us where to find types
+        Map<Integer, ParameterizedType> map = new HashMap<>();
+        for (IndexedType it : hiddenContent.sequence) {
+            int index = it.index.get(it.index.size() - 1);
+            if (index >= 0 && !map.containsKey(index)) {
+                ParameterizedType tp = it.concreteOf(pt);
+                map.put(index, tp);
+            }
+        }
+        return Map.copyOf(map);
     }
 
 }

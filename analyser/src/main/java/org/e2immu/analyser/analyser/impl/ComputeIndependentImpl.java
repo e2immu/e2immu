@@ -19,9 +19,14 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 
-import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
-import static org.e2immu.analyser.analyser.LV.LINK_INDEPENDENT;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.analyser.LV.*;
+import static org.e2immu.analyser.analyser.LV.CS_ALL;
 
 public record ComputeIndependentImpl(AnalyserContext analyserContext,
                                      SetOfTypes hiddenContentOfCurrentType,
@@ -37,9 +42,119 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         this(analyserContext, null, currentPrimaryType, true);
     }
 
+
+    @Override
+    public LinkedVariables linkedVariables(ParameterizedType sourceType,
+                                           LinkedVariables sourceLvs,
+                                           DV transferIndependent,
+                                           HiddenContentSelector hiddenContentSelectorOfTransfer,
+                                           ParameterizedType targetType) {
+
+        // RULE 1: no linking when the source is not linked or there is no transfer
+        if (sourceLvs.isEmpty() || MultiLevel.INDEPENDENT_DV.equals(transferIndependent)) {
+            return LinkedVariables.EMPTY;
+        }
+        DV immutableOfSource = typeImmutable(sourceType);
+        // RULE 2: delays
+        if (immutableOfSource.isDelayed()) {
+            return sourceLvs.changeToDelay(LV.delay(immutableOfSource.causesOfDelay()));
+        }
+        // RULE 3: immutable -> no link
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfSource)) {
+            /*
+             if the result type immutable because of a choice in type parameters, methodIndependent will return
+             INDEPENDENT_HC, but the concrete type is deeply immutable
+             */
+            return LinkedVariables.EMPTY;
+        }
+        // RULE 4: delays
+        if (transferIndependent.isDelayed()) {
+            // delay in method independent
+            return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
+        }
+        // we'll return a sensible value now
+
+        DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent);
+        HiddenContentSelector correctedTransferSelector = correctSelector(hiddenContentSelectorOfTransfer, targetType);
+        Map<Variable, LV> newLinked = new HashMap<>();
+        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+        for (Map.Entry<Variable, LV> e : sourceLvs) {
+            DV immutable = typeImmutable(e.getKey().parameterizedType());
+            LV lv = e.getValue();
+            assert lv.lt(LINK_INDEPENDENT);
+
+            if (e.getKey() instanceof This) {
+                    /*
+                     without this line, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
+                     -> we never delay on this for IMMUTABLE
+                     */
+                LV newLv;
+                if (MultiLevel.DEPENDENT_DV.equals(correctedIndependent) || lv.isCommonHC()) {
+                    newLv = LINK_DEPENDENT.max(lv);
+                } else {
+                    HiddenContentSelector mine = lv.isCommonHC() ? lv.mine() : CS_ALL;
+                    newLv = LV.createHC(correctedTransferSelector, mine);
+                }
+                newLinked.put(e.getKey(), newLv);
+            } else if (immutable.isDelayed()) {
+                causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
+            } else {
+                if (MultiLevel.isMutable(immutable) && MultiLevel.DEPENDENT_DV.equals(correctedIndependent)) {
+                    assert !lv.isCommonHC();
+                    newLinked.put(e.getKey(), LINK_DEPENDENT);
+                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                    LV commonHC;
+                    if (lv.isCommonHC()) {
+                        commonHC = LV.createHC(correctedTransferSelector, lv.mine());
+                    } else {
+                        // assigned, dependent...
+                        commonHC = LV.createHC(correctedTransferSelector, CS_ALL);
+                    }
+                    newLinked.put(e.getKey(), commonHC);
+                }
+            }
+        }
+        if (causesOfDelay.isDelayed()) {
+            return sourceLvs.changeToDelay(LV.delay(causesOfDelay));
+        }
+        return LinkedVariables.of(newLinked);
+    }
+
     /*
-    the value chosen here in case of "isMyself" has an impact, obviously; see e.g. Container_7, E2Immutable_15
+    Example: Map<K,V>.entrySet() has HCS <0,1>: we keep both type parameters. But Map<Long,V> must have
+    only <1>, because type parameter 0 cannot be hidden content in the result.
+    Map<StringBuilder, V> is not relevant here, because then the type would be mutable, the corrected independent
+    would be "dependent", and we'll not return a commonHC object.
+    So we'll only those type parameters that have a recursively immutable instantiation in the concrete type.
      */
+    private HiddenContentSelector correctSelector(HiddenContentSelector hiddenContentSelectorOfTransfer,
+                                                  ParameterizedType targetType) {
+        // find the types corresponding to the hidden content indices
+        Map<Integer, ParameterizedType> typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
+        Set<Integer> selectorSet = ((HiddenContentSelectorImpl) hiddenContentSelectorOfTransfer).set();
+        Set<Integer> remaining = typesCorrespondingToHC.entrySet().stream()
+                .filter(e -> e.getValue().isTypeParameter() && selectorSet.contains(e.getKey()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toUnmodifiableSet());
+        return new LV.HiddenContentSelectorImpl(remaining);
+    }
+
+    private static DV correctIndependent(DV immutableOfSource, DV independent) {
+        // immutableOfSource is not recursively immutable, independent is not fully independent
+        // remaining values immutable: mutable, immutable HC
+        // remaining values independent: dependent, independent hc
+        if (MultiLevel.isMutable(immutableOfSource) && MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
+            return MultiLevel.DEPENDENT_DV;
+        }
+        if (MultiLevel.isAtLeastImmutableHC(immutableOfSource) && MultiLevel.DEPENDENT_DV.equals(independent)) {
+            return MultiLevel.INDEPENDENT_HC_DV;
+        }
+        return independent;
+    }
+
+    /*
+        the value chosen here in case of "isMyself" has an impact, obviously; see e.g. Container_7, E2Immutable_15
+         */
     public DV typeImmutable(ParameterizedType pt) {
         if (myselfIsMutable && currentType.isMyself(pt, analyserContext).toFalse(Property.IMMUTABLE)) {
             return MultiLevel.MUTABLE_DV;
@@ -120,8 +235,8 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         CausesOfDelay causes = s1.delay.merge(s2.delay);
         if (causes.isDelayed()) return causes;
         return DV.fromBoolDv(s1.setOfTypes.contains(a2)
-                || s2.setOfTypes.contains(a1)
-                || !s1.setOfTypes.intersection(s2.setOfTypes).isEmpty());
+                             || s2.setOfTypes.contains(a1)
+                             || !s1.setOfTypes.intersection(s2.setOfTypes).isEmpty());
     }
 
     private HCAnalysis hiddenContentTypes(ParameterizedType pt) {
@@ -152,7 +267,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
     private DV max(DV immutableA, DV immutableB) {
         // minor shortcut wrt delays
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableA)
-                || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableB)) {
+            || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableB)) {
             return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
         }
         return immutableA.max(immutableB);
