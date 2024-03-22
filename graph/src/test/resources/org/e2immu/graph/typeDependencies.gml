@@ -1777,7 +1777,7 @@ graph
 	node
 	[
 		id 296
-		label "org.e2immu.analyser.analyser.util.ComputeIndependent"
+		label "org.e2immu.analyser.analyser.ComputeIndependent"
 		weight 6954336
 	]
 	node

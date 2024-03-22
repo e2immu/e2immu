@@ -15,8 +15,9 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
-import org.e2immu.analyser.analyser.util.ComputeIndependent;
+import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -43,15 +44,25 @@ public class MethodLinkHelper {
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
     private LinkedVariables linkedVariablesOfObject;
+    private final ComputeIndependent computeIndependent;
 
     public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo) {
-        this(context, methodInfo, context.getAnalyserContext().getMethodAnalysis(methodInfo));
+        this(context, methodInfo, context.getAnalyserContext().getMethodAnalysis(methodInfo),
+                new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType()));
     }
 
     public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        this(context, methodInfo, methodAnalysis,
+                new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType()));
+    }
+
+
+    public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo, MethodAnalysis methodAnalysis,
+                            ComputeIndependent computeIndependent) {
         this.context = context;
         this.methodInfo = methodInfo;
         this.methodAnalysis = methodAnalysis;
+        this.computeIndependent = computeIndependent;
     }
 
     /*
@@ -237,9 +248,6 @@ public class MethodLinkHelper {
         if (methodInspection.getParameters().isEmpty()) {
             return builder.build(); // nothing more we can do here
         }
-
-        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
-                context.getCurrentType());
 
         ParameterizedType objectPt = object.returnType();
 
@@ -562,8 +570,6 @@ public class MethodLinkHelper {
             return LinkedVariables.of(newLinked);
         }
         assert MultiLevel.INDEPENDENT_HC_DV.equals(methodIndependent);
-        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(),
-                context.getCurrentType());
         DV immutable = computeIndependent.typeImmutable(concreteReturnType);
         Map<Variable, LV> newLinked = new HashMap<>();
         for (Map.Entry<Variable, LV> e : linkedVariablesOfObject) {

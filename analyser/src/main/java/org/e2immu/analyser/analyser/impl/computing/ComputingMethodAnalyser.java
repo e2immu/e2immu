@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser.impl.computing;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
+import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.shallow.CompanionAnalyser;
@@ -48,7 +49,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
@@ -1198,7 +1198,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             }
             SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
-            ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+            ComputeIndependent computeIndependent = new ComputeIndependentImpl(analyserContext, hiddenContentCurrentType,
                     methodInfo.typeInfo, false);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
             if (concreteReturnType == ParameterizedType.NULL_CONSTANT) {

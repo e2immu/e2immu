@@ -17,8 +17,9 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
-import org.e2immu.analyser.analyser.util.ComputeIndependent;
+import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
@@ -308,7 +309,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 link = computedScope.causesOfDelay();
             } else {
                 /* array[3] ->?-> array is wholly dependent on the immutability of array[3] */
-                ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
+                ComputeIndependent computeIndependent = new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType());
                 DV immutableOfScope = computeIndependent.typeImmutable(scopeValue.returnType());
                 link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
             }
@@ -326,7 +327,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 link = computedScope.causesOfDelay();
             } else {
                 /* array[3] ->?-> array is wholly dependent on the immutability of array[3] */
-                ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
+                ComputeIndependent computeIndependent = new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType());
                 DV immutableOfScope = computeIndependent.typeImmutable(scopeValue.returnType());
                 link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
             }
@@ -524,7 +525,7 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
 
     @Override
     public LinkedVariables linkedVariables(EvaluationResult context) {
-        ComputeIndependent computeIndependent = new ComputeIndependent(context.getAnalyserContext(), context.getCurrentType());
+        ComputeIndependent computeIndependent = new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType());
         return internalLinkedVariables(computeIndependent, variable, LV.LINK_STATICALLY_ASSIGNED);
     }
 

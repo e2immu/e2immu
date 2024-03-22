@@ -18,10 +18,11 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.ParameterAnalyserImpl;
 import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
-import org.e2immu.analyser.analyser.util.ComputeIndependent;
+import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -298,7 +299,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                             return typeAnalysis.hiddenContentDelays().causesOfDelay();
                         }
                         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
-                        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+                        ComputeIndependent computeIndependent = new ComputeIndependentImpl(analyserContext, hiddenContentCurrentType,
                                 parameterInfo.getTypeInfo(), true);
 
                         DV independentOfParameter = computeIndependent.typesAtLinkLevel(linkToParameter,
@@ -325,7 +326,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         }
         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+        ComputeIndependent computeIndependent = new ComputeIndependentImpl(analyserContext, hiddenContentCurrentType,
                 parameterInfo.getTypeInfo(), true);
         DV independent = fields.entrySet().stream()
                 .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), parameterInfo.parameterizedType, immutable,

@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
+import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
@@ -783,7 +784,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
         // IMPROVE should we use fieldInfo.type or the concrete type from the value, if there?
-        ComputeIndependent computeIndependent = new ComputeIndependent(analyserContext, hiddenContentCurrentType,
+        ComputeIndependent computeIndependent = new ComputeIndependentImpl(analyserContext, hiddenContentCurrentType,
                 fieldInfo.owner, true);
         DV independent = fieldAnalysis.linkedVariables.get().stream()
                 .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()

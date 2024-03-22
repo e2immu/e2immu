@@ -12,32 +12,28 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.e2immu.analyser.analyser.util;
+package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 
-import java.util.HashSet;
-import java.util.Set;
+import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
+import static org.e2immu.analyser.analyser.LV.LINK_INDEPENDENT;
 
-import static org.e2immu.analyser.analyser.LV.*;
-import static org.e2immu.analyser.analyser.LinkedVariables.*;
+public record ComputeIndependentImpl(AnalyserContext analyserContext,
+                                     SetOfTypes hiddenContentOfCurrentType,
+                                     TypeInfo currentType,
+                                     boolean myselfIsMutable) implements ComputeIndependent {
 
-public record ComputeIndependent(AnalyserContext analyserContext,
-                                 SetOfTypes hiddenContentOfCurrentType,
-                                 TypeInfo currentType,
-                                 boolean myselfIsMutable) {
-
-    public ComputeIndependent {
+    public ComputeIndependentImpl {
         assert analyserContext != null;
         assert currentType != null;
     }
 
-    public ComputeIndependent(AnalyserContext analyserContext, TypeInfo currentPrimaryType) {
+    public ComputeIndependentImpl(AnalyserContext analyserContext, TypeInfo currentPrimaryType) {
         this(analyserContext, null, currentPrimaryType, true);
     }
 

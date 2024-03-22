@@ -18,9 +18,10 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.FlowDataConstants;
+import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
-import org.e2immu.analyser.analyser.util.ComputeIndependent;
+import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
@@ -1560,7 +1561,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                        ParameterizedType concreteType,
                                        ParameterizedType iterableType) {
         AnalyserContext ac = evaluationContext.getAnalyserContext();
-        ComputeIndependent computeIndependent = new ComputeIndependent(ac,
+        ComputeIndependent computeIndependent = new ComputeIndependentImpl(ac,
                 evaluationContext.getCurrentType());
         DV immutable = computeIndependent.typeImmutable(concreteType);
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return null; // no linking!
