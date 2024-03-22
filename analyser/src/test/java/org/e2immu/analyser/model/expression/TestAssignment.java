@@ -347,8 +347,9 @@ public class TestAssignment extends CommonTest {
         ExpressionMock mockEval = new ExpressionMock() {
             @Override
             public LinkedVariables linkedVariables(EvaluationResult context) {
-                return LinkedVariables.of(Map.of(vb.variable(), LINK_COMMON_HC,
-                        vc.variable(), LINK_COMMON_HC,
+                LV commonHc = LV.createHC(CS_ALL, CS_ALL);
+                return LinkedVariables.of(Map.of(vb.variable(), commonHc,
+                        vc.variable(), commonHc,
                         vf.variable(), LINK_STATICALLY_ASSIGNED));
             }
         };
