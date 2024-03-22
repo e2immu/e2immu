@@ -18,7 +18,7 @@ public class TestDijkstraShortestPath {
                 3, Map.of()
         );
         DijkstraShortestPath.EdgeProvider edgeProvider = i -> edges.get(i).entrySet().stream()
-                .map(e -> new DijkstraShortestPath.DCEntry(e));
+                .map(e -> new DijkstraShortestPath.DCPEntry(e));
         long[] dist0 = d.shortestPath(4, edgeProvider, 0);
         assertArrayEquals(new long[]{0, 1, 3, 4}, dist0);
         long[] dist1 = d.shortestPath(4, edgeProvider, 1);

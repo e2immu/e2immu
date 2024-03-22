@@ -8,6 +8,7 @@ import org.e2immu.graph.op.DijkstraShortestPath;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class LV implements Comparable<LV> {
@@ -27,8 +28,8 @@ public class LV implements Comparable<LV> {
             "independent", CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_DV);
 
     private final int value;
-    private final HiddenContent mine;
-    private final HiddenContent theirs;
+    private final HiddenContentSelector mine;
+    private final HiddenContentSelector theirs;
     private final String label;
     private final CausesOfDelay causesOfDelay;
     private final DV correspondingIndependent;
@@ -37,15 +38,14 @@ public class LV implements Comparable<LV> {
         return HC == value;
     }
 
-    public interface HiddenContent extends DijkstraShortestPath.ConnectInfo {
-
-        Set<Integer> apply(HiddenContent mineOrTheirs);
-
-        boolean isWholeType();
+    public interface HiddenContentSelector extends DijkstraShortestPath.ConnectionSelector {
     }
 
-    private LV(int value, HiddenContent mine, HiddenContent theirs, String label, CausesOfDelay causesOfDelay,
-               DV correspondingIndependent) {
+    public interface HiddenContent extends DijkstraShortestPath.ConnectionPattern {
+    }
+
+    private LV(int value, HiddenContentSelector mine, HiddenContentSelector theirs,
+               String label, CausesOfDelay causesOfDelay, DV correspondingIndependent) {
         this.value = value;
         this.mine = mine;
         this.theirs = theirs;
@@ -63,11 +63,11 @@ public class LV implements Comparable<LV> {
         return value;
     }
 
-    public HiddenContent mine() {
+    public HiddenContentSelector mine() {
         return mine;
     }
 
-    public HiddenContent theirs() {
+    public HiddenContentSelector theirs() {
         return theirs;
     }
 
@@ -84,7 +84,7 @@ public class LV implements Comparable<LV> {
         return new LV(-1, null, null, causes.label(), causes, causes);
     }
 
-    public static LV createHC(HiddenContent mine, HiddenContent theirs) {
+    public static LV createHC(HiddenContentSelector mine, HiddenContentSelector theirs) {
         return new LV(HC, mine, theirs, mine + "-4-" + theirs, CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
     }
 
@@ -174,17 +174,23 @@ public class LV implements Comparable<LV> {
             return index.stream().map(i -> i < 0 ? "*" + realIndex(i) : "" + i)
                     .collect(Collectors.joining("-"));
         }
+
+        public Stream<Integer> typeParameterIndexStream() {
+            if (index.isEmpty()) return Stream.of();
+            int i = index.get(index.size() - 1);
+            return i >= 0 ? Stream.of(i) : Stream.of();
+        }
     }
 
     public static HiddenContent wholeType(ParameterizedType parameterizedType) {
         return new HiddenContentImpl(List.of(new IndexedType(parameterizedType, List.of())));
     }
 
-    public static HiddenContent typeParameter(ParameterizedType parameterizedType, int index) {
+    public static HiddenContentSelector typeParameter(ParameterizedType parameterizedType, int index) {
         return new HiddenContentImpl(List.of(new IndexedType(parameterizedType, List.of(index))));
     }
 
-    public static HiddenContent typeParameters(ParameterizedType pt1, List<Integer> indices1) {
+    public static HiddenContentSelector typeParameters(ParameterizedType pt1, List<Integer> indices1) {
         return new HiddenContentImpl(List.of(new IndexedType(pt1, List.copyOf(indices1))));
     }
 
@@ -194,6 +200,26 @@ public class LV implements Comparable<LV> {
                 new IndexedType(pt2, indices2)));
     }
 
+    // integers represent type parameters, as result of HC.apply
+    public record CurrentConnectionImpl(Set<Integer> set) implements DijkstraShortestPath.CurrentConnection {
+        @Override
+        public boolean doesNotContain(DijkstraShortestPath.CurrentConnection required) {
+            boolean containsRequired = this == CC_ALL || set.containsAll(((CurrentConnectionImpl) required).set);
+            return !containsRequired;
+        }
+    }
+
+    // integers represent positions in the HiddenContentImpl.sequence
+    public record ConnectionSelectorImpl(Set<Integer> set) implements HiddenContentSelector {
+    }
+
+    public static HiddenContentSelector selectTypeParameter(int i) {
+        return new ConnectionSelectorImpl(Set.of(i));
+    }
+
+    public static final DijkstraShortestPath.CurrentConnection CC_ALL = new CurrentConnectionImpl(Set.of(-1));
+    public static final HiddenContentSelector CS_ALL = new ConnectionSelectorImpl(Set.of(-1));
+
     public static class HiddenContentImpl implements HiddenContent {
         private final List<IndexedType> sequence;
 
@@ -202,14 +228,9 @@ public class LV implements Comparable<LV> {
         }
 
         @Override
-        public boolean accept(DijkstraShortestPath.ConnectInfo other) {
-            if (!(other instanceof HiddenContent)) throw new UnsupportedOperationException();
-            return equals(other) || isWholeType();
-        }
-
-        @Override
-        public boolean isWholeType() {
-            return sequence.size() == 1 && sequence.get(0).index.isEmpty();
+        public boolean reject(DijkstraShortestPath.CurrentConnection other) {
+            // FIXME
+            return false;
         }
 
         /*
@@ -218,26 +239,17 @@ public class LV implements Comparable<LV> {
         which we are to collect. The latter are indices into this structure.
          */
         @Override
-        public Set<Integer> apply(HiddenContent mineOrTheirs) {
-            return ((HiddenContentImpl) mineOrTheirs).sequence.stream()
-                    .flatMap(it -> findSequence(it.index).stream())
-                    .collect(Collectors.toUnmodifiableSet());
-        }
-
-        public Set<Integer> findSequence(List<Integer> restriction) {
-            List<IndexedType> result = new ArrayList<>(sequence);
-            int i = 0;
-            for (int restrictionI : restriction) {
-                int finalI = i;
-                result.removeIf(it -> it.index.size() <= finalI
-                                      || IndexedType.realIndex(it.index.get(finalI)) != restrictionI);
-                if (result.isEmpty()) break;
-                i++;
+        public DijkstraShortestPath.CurrentConnection apply(DijkstraShortestPath.ConnectionSelector mineOrTheirs) {
+            IntStream indexStream;
+            if (mineOrTheirs == CS_ALL) {
+                indexStream = IntStream.of(sequence.size());
+            } else {
+                indexStream = ((ConnectionSelectorImpl) mineOrTheirs).set.stream().mapToInt(i -> i);
             }
-            return result.stream()
-                    .filter(it -> !it.index.isEmpty())
-                    .map(it -> it.index.get(it.index.size() - 1))
-                    .filter(j -> j >= 0).collect(Collectors.toUnmodifiableSet());
+            Set<Integer> set = indexStream.mapToObj(sequence::get)
+                    .flatMap(IndexedType::typeParameterIndexStream)
+                    .collect(Collectors.toUnmodifiableSet());
+            return new CurrentConnectionImpl(set);
         }
 
         @Override
@@ -246,6 +258,10 @@ public class LV implements Comparable<LV> {
                     "<", ">"));
         }
     }
+
+    /*
+    Create a HiddenContent object for a variable's type.
+     */
 
     public static HiddenContent from(ParameterizedType pt) {
         AtomicInteger counter = new AtomicInteger();

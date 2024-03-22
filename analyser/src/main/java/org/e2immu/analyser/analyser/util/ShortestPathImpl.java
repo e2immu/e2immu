@@ -1,10 +1,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.LV;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.delay.NoDelay;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.graph.op.DijkstraShortestPath;
 import org.slf4j.Logger;
@@ -28,24 +25,37 @@ public class ShortestPathImpl implements ShortestPath {
 
     private final Map<Variable, Integer> variableIndex;
     private final Variable[] variables;
-    private final Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edges;
-    private final Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edgesHigh;
+    private final DijkstraShortestPath.ConnectionPattern[] connectionPatterns;
+    private final Map<Integer, Map<Integer, DijkstraShortestPath.DCP>> edges;
+    private final Map<Integer, Map<Integer, DijkstraShortestPath.DCP>> edgesHigh;
     private final CausesOfDelay someDelay;
     private final DijkstraShortestPath dijkstraShortestPath;
     private final LinkMap linkMap;
 
     ShortestPathImpl(Map<Variable, Integer> variableIndex,
                      Variable[] variables,
-                     Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edges,
-                     Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edgesHigh,
+                     Map<Integer, Map<Integer, DijkstraShortestPath.DCP>> edges,
+                     Map<Integer, Map<Integer, DijkstraShortestPath.DCP>> edgesHigh,
                      CausesOfDelay someDelay,
                      LinkMap linkMap) {
         this.variables = variables;
+        this.connectionPatterns = Arrays.stream(variables).map(v -> LV.from(v.parameterizedType()))
+                .toArray(DijkstraShortestPath.ConnectionPattern[]::new);
         this.edges = edges;
         this.edgesHigh = edgesHigh;
         this.variableIndex = variableIndex;
         this.someDelay = someDelay;
-        dijkstraShortestPath = new DijkstraShortestPath();
+        dijkstraShortestPath = new DijkstraShortestPath(new DijkstraShortestPath.ConnectionProvider() {
+            @Override
+            public DijkstraShortestPath.ConnectionPattern connectionPattern(int i) {
+                return connectionPatterns[i];
+            }
+
+            @Override
+            public DijkstraShortestPath.CurrentConnection all() {
+                return CC_ALL;
+            }
+        });
         this.linkMap = linkMap;
     }
 
@@ -174,25 +184,24 @@ public class ShortestPathImpl implements ShortestPath {
 
     private long[] computeDijkstra(int startVertex, LV maxWeight, long maxWeightLong) {
         DijkstraShortestPath.EdgeProvider edgeProvider = i -> {
-            Map<Integer, DijkstraShortestPath.DC> edgeMap = edges.get(i);
+            Map<Integer, DijkstraShortestPath.DCP> edgeMap = edges.get(i);
             if (edgeMap == null) return Stream.of();
             return edgeMap.entrySet().stream()
                     .filter(e -> maxWeight == null || e.getValue().dist() <= maxWeightLong);
         };
-        DijkstraShortestPath.ConnectInfoProvider wholeType = v -> wholeType(variables[v].parameterizedType());
-        DijkstraShortestPath.DC[] shortestL = dijkstraShortestPath.shortestPath(variables.length, edgeProvider,
-                wholeType, startVertex);
+        DijkstraShortestPath.DC[] shortestL = dijkstraShortestPath.shortestPathDC(variables.length, edgeProvider,
+                startVertex);
         debug("delay low", shortestL, ShortestPathImpl::fromDistanceSum);
 
         long maxWeightLongHigh = maxWeight == null ? 0L : toDistanceComponentHigh(maxWeight);
         DijkstraShortestPath.EdgeProvider edgeProviderHigh = i -> {
-            Map<Integer, DijkstraShortestPath.DC> edgeMap = edgesHigh.get(i);
+            Map<Integer, DijkstraShortestPath.DCP> edgeMap = edgesHigh.get(i);
             if (edgeMap == null) return Stream.of();
             return edgeMap.entrySet().stream()
                     .filter(e -> maxWeight == null || e.getValue().dist() <= maxWeightLongHigh);
         };
-        DijkstraShortestPath.DC[] shortestH = dijkstraShortestPath.shortestPath(variables.length, edgeProviderHigh,
-                wholeType, startVertex);
+        DijkstraShortestPath.DC[] shortestH = dijkstraShortestPath.shortestPathDC(variables.length, edgeProviderHigh,
+                startVertex);
         debug("delay high", shortestH, ShortestPathImpl::fromDistanceSumHigh);
 
         long[] shortest = new long[shortestL.length];

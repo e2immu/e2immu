@@ -49,7 +49,7 @@ public class TestWeightedGraph_0 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV this_4_cycle = LV.createHC(LV.typeParameter(null, 0),
+        LV this_4_cycle = LV.createHC(LV.selectTypeParameter( 0),
                 LV.typeParameters(null, List.of(0), null, List.of(1, 0)));
         assertEquals("<0>-4-<0,1-0>", this_4_cycle.toString());
 

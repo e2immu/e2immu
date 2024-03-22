@@ -203,8 +203,8 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             ++i;
         }
         StringBuilder sb = new StringBuilder(n * n * 5);
-        Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edges = new LinkedHashMap<>();
-        Map<Integer, Map<Integer, DijkstraShortestPath.DC>> edgesHigh = new LinkedHashMap<>();
+        Map<Integer, Map<Integer, DijkstraShortestPath.DCP>> edges = new LinkedHashMap<>();
+        Map<Integer, Map<Integer, DijkstraShortestPath.DCP>> edgesHigh = new LinkedHashMap<>();
         CausesOfDelay delay = null;
         for (int d1 = 0; d1 < n; d1++) {
             Node node = nodeMap.get(variables[d1]);
@@ -212,9 +212,9 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             sb.append(d1);
             if (dependsOn != null && !dependsOn.isEmpty()) {
 
-                Map<Integer, DijkstraShortestPath.DC> edgesOfD1 = new LinkedHashMap<>();
+                Map<Integer, DijkstraShortestPath.DCP> edgesOfD1 = new LinkedHashMap<>();
                 edges.put(d1, edgesOfD1);
-                Map<Integer, DijkstraShortestPath.DC> edgesOfD1High = new LinkedHashMap<>();
+                Map<Integer, DijkstraShortestPath.DCP> edgesOfD1High = new LinkedHashMap<>();
                 edgesHigh.put(d1, edgesOfD1High);
                 List<String> unsorted = new ArrayList<>(dependsOn.size());
                 for (Map.Entry<Variable, LV> e2 : dependsOn.entrySet()) {
@@ -224,16 +224,19 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                     if (dv.isDelayed() && delay == null) {
                         delay = dv.causesOfDelay();
                     }
-                    HiddenContent hc;
+                    DijkstraShortestPath.ConnectionSelector mine;
+                    DijkstraShortestPath.ConnectionSelector theirs;
                     if (e2.getValue().isCommonHC()) {
-                        hc = e2.getValue().theirs();
+                        mine = e2.getValue().mine();
+                        theirs = e2.getValue().theirs();
                     } else {
-                        hc = null;
+                        mine = null;
+                        theirs = null;
                     }
                     long d = ShortestPathImpl.toDistanceComponent(dv);
-                    edgesOfD1.put(d2, new DijkstraShortestPath.DC(d, hc));
+                    edgesOfD1.put(d2, new DijkstraShortestPath.DCP(d, mine, theirs));
                     long dHigh = ShortestPathImpl.toDistanceComponentHigh(dv);
-                    edgesOfD1High.put(d2, new DijkstraShortestPath.DC(dHigh, hc));
+                    edgesOfD1High.put(d2, new DijkstraShortestPath.DCP(dHigh, mine, theirs));
 
                     unsorted.add(d2 + ":" + ShortestPathImpl.code(dv));
                 }

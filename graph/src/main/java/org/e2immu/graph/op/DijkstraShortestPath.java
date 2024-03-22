@@ -7,12 +7,31 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class DijkstraShortestPath {
 
-    public record DC(long dist, ConnectInfo ci) implements Comparable<DC> {
+    public interface ConnectionProvider {
+        ConnectionPattern connectionPattern(int i);
+
+        CurrentConnection all();
+    }
+
+    public interface ConnectionPattern {
+        boolean reject(CurrentConnection other);
+
+        CurrentConnection apply(ConnectionSelector selector);
+    }
+
+    public interface ConnectionSelector {
+
+    }
+
+    public interface CurrentConnection {
+        boolean doesNotContain(CurrentConnection required);
+    }
+
+    public record DC(long dist, CurrentConnection currentConnection) implements Comparable<DC> {
         @Override
         public int compareTo(DC o) {
             return Long.compare(dist, o.dist);
@@ -24,18 +43,34 @@ public class DijkstraShortestPath {
         }
     }
 
-    public static class DCEntry implements Map.Entry<Integer, DijkstraShortestPath.DC> {
-        int variable;
-        DC dc;
+    public record DCP(long dist, ConnectionSelector mine, ConnectionSelector theirs) {
+        public CurrentConnection accept(CurrentConnection currentConnection,
+                                        ConnectionPattern sourceConnectionPattern,
+                                        ConnectionPattern targetConnectionPattern) {
+            if (mine == null) {
+                // no check, always true
+                return currentConnection;
+            }
+            CurrentConnection required = sourceConnectionPattern.apply(mine);
+            if (currentConnection.doesNotContain(required)) {
+                return null;
+            }
+            return targetConnectionPattern.apply(theirs);
+        }
+    }
 
-        public DCEntry(Map.Entry<Integer, Long> e) {
+    public static class DCPEntry implements Map.Entry<Integer, DijkstraShortestPath.DCP> {
+        int variable;
+        DCP dcp;
+
+        public DCPEntry(Map.Entry<Integer, Long> e) {
             variable = e.getKey();
-            dc = new DC(e.getValue(), null);
+            dcp = new DCP(e.getValue(), null, null);
         }
 
-        public DCEntry(int variable, DC dc) {
+        public DCPEntry(int variable, DCP distanceAndConnectionPattern) {
             this.variable = variable;
-            this.dc = dc;
+            this.dcp = distanceAndConnectionPattern;
         }
 
         @Override
@@ -44,12 +79,12 @@ public class DijkstraShortestPath {
         }
 
         @Override
-        public DijkstraShortestPath.DC getValue() {
-            return dc;
+        public DijkstraShortestPath.DCP getValue() {
+            return dcp;
         }
 
         @Override
-        public DijkstraShortestPath.DC setValue(DijkstraShortestPath.DC value) {
+        public DijkstraShortestPath.DCP setValue(DijkstraShortestPath.DCP value) {
             throw new UnsupportedOperationException();
         }
     }
@@ -58,15 +93,7 @@ public class DijkstraShortestPath {
     the vertices are numbered 0...n-1
      */
     public interface EdgeProvider {
-        Stream<Map.Entry<Integer, DC>> edges(int i);
-    }
-
-    public interface ConnectInfoProvider {
-        ConnectInfo connectInfo(int i);
-    }
-
-    public interface ConnectInfo {
-        boolean accept(ConnectInfo other);
+        Stream<Map.Entry<Integer, DCP>> edges(int i);
     }
 
     /* from wikipedia:
@@ -99,15 +126,46 @@ public class DijkstraShortestPath {
 
     private static final DC NO_PATH = new DC(Long.MAX_VALUE, null);
 
+    private final ConnectionProvider connectionProvider;
+
+    public DijkstraShortestPath(ConnectionProvider connectionProvider) {
+        this.connectionProvider = connectionProvider;
+    }
+
+    public DijkstraShortestPath() {
+        CurrentConnection cc = required -> false;
+        ConnectionPattern cp = new ConnectionPattern() {
+            @Override
+            public boolean reject(CurrentConnection other) {
+                return true;
+            }
+
+            @Override
+            public CurrentConnection apply(ConnectionSelector selector) {
+                return cc;
+            }
+        };
+        this.connectionProvider = new ConnectionProvider() {
+            @Override
+            public ConnectionPattern connectionPattern(int i) {
+                return cp;
+            }
+
+            @Override
+            public CurrentConnection all() {
+                return cc;
+            }
+        };
+    }
+
     public long[] shortestPath(int numVertices, EdgeProvider edgeProvider, int sourceVertex) {
-        DC[] dcs = shortestPath(numVertices, edgeProvider, i -> null, sourceVertex);
+        DC[] dcs = shortestPathDC(numVertices, edgeProvider, sourceVertex);
         return Arrays.stream(dcs).mapToLong(DC::dist).toArray();
     }
 
-    public DC[] shortestPath(int numVertices,
-                             EdgeProvider edgeProvider,
-                             ConnectInfoProvider connectInfoProvider,
-                             int sourceVertex) {
+    public DC[] shortestPathDC(int numVertices,
+                               EdgeProvider edgeProvider,
+                               int sourceVertex) {
         DC[] dist = new DC[numVertices]; // dist[source]<-0 implicit
 
         // https://en.wikipedia.org/wiki/Priority_queue
@@ -121,34 +179,34 @@ public class DijkstraShortestPath {
             if (i != sourceVertex) {
                 dc = NO_PATH;
             } else {
-                dc = new DC(0, connectInfoProvider.connectInfo(i));
+                dc = new DC(0, connectionProvider.all());
             }
             dist[i] = dc;
             handles.add(priorityQueue.insert(dc, i));
         }
         while (!priorityQueue.isEmpty()) {
             int u = priorityQueue.deleteMin().getValue();
+            ConnectionPattern sourceConnectionPattern = connectionProvider.connectionPattern(u);
+
             edgeProvider.edges(u).forEach(edge -> {
+                int v = edge.getKey();
+
                 DC d = dist[u];
                 DC alt;
                 if (d == NO_PATH) {
                     alt = NO_PATH;
                 } else {
-                    DC edgeValue = edge.getValue();
-                    if (edgeValue.ci == null) {
-                        ConnectInfo ci = connectInfoProvider.connectInfo(u);
-                        alt = new DC(d.dist + edgeValue.dist, ci);
+                    DCP edgeValue = edge.getValue();
+                    ConnectionPattern targetConnectionPattern = connectionProvider.connectionPattern(v);
+                    CurrentConnection next = edgeValue.accept(d.currentConnection, sourceConnectionPattern,
+                            targetConnectionPattern);
+                    if (next == null) {
+                        alt = NO_PATH;
                     } else {
-                        boolean accept = d.ci.accept(edgeValue.ci);
-                        if (accept) {
-                            alt = new DC(d.dist + edgeValue.dist, edgeValue.ci);
-                        } else {
-                            alt = NO_PATH;
-                        }
+                        alt = new DC(d.dist + edgeValue.dist, next);
                     }
                 }
 
-                int v = edge.getKey();
                 if (alt.dist < dist[v].dist) {
                     dist[v] = alt;
                     AddressableHeap.Handle<DC, Integer> handle = handles.get(v);
