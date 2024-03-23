@@ -99,8 +99,9 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             } else if (immutable.isDelayed()) {
                 causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
             } else {
-                if (MultiLevel.isMutable(immutable) && MultiLevel.DEPENDENT_DV.equals(correctedIndependent)) {
-                    assert !lv.isCommonHC();
+                if (MultiLevel.isMutable(immutable)
+                    && MultiLevel.DEPENDENT_DV.equals(correctedIndependent)
+                    && !lv.isCommonHC()) {
                     newLinked.put(e.getKey(), LINK_DEPENDENT);
                 } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
                     LV commonHC;
@@ -139,6 +140,10 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         return new LV.HiddenContentSelectorImpl(remaining);
     }
 
+    /*
+    FIXME current implementation is wrong
+       immutableOfSource should be immutableOfTypeOfTransferredObject
+     */
     private static DV correctIndependent(DV immutableOfSource, DV independent) {
         // immutableOfSource is not recursively immutable, independent is not fully independent
         // remaining values immutable: mutable, immutable HC

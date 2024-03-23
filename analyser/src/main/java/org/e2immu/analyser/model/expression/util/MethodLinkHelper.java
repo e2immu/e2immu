@@ -504,83 +504,18 @@ public class MethodLinkHelper {
                     .changeNonStaticallyAssignedToDelay(identity.causesOfDelay());
         }
 
-        // RULE 3: otherwise, we link to the object, even if the object is 'this'
-        // note that we cannot use STATICALLY_ASSIGNED here
-        if (linkedVariablesOfObject.isEmpty()) {
-            // there is no linking...
-            return LinkedVariables.EMPTY;
+        // RULE 3: @Fluent simply returns the same object, hence, the same linked variables
+        DV fluent = methodAnalysis.getMethodProperty(Property.FLUENT);
+        if (fluent.valueIsTrue()) {
+            return linkedVariablesOfObject;
         }
-        ParameterizedType returnTypeOfObject = object.returnType();
-        DV immutableOfObject = context.getAnalyserContext().typeImmutable(returnTypeOfObject);
-        if (!context.evaluationContext().isMyself(returnTypeOfObject).toFalse(Property.IMMUTABLE)
-            && immutableOfObject.isDelayed()) {
-            return linkedVariablesOfObject.changeToDelay(LV.delay(immutableOfObject.causesOfDelay()));
-        }
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfObject)) {
-            /*
-             if the result type immutable because of a choice in type parameters, methodIndependent will return
-             INDEPENDENT_HC, but the concrete type is deeply immutable
-             */
-            return LinkedVariables.EMPTY;
+        if (fluent.isDelayed()) {
+            return linkedVariablesOfObject.changeNonStaticallyAssignedToDelay(fluent.causesOfDelay());
         }
 
-        DV methodIndependent = methodAnalysis.getPropertyFromMapDelayWhenAbsent(Property.INDEPENDENT);
-        if (methodIndependent.isDelayed()) {
-            // delay in method independent
-            return linkedVariablesOfObject.changeToDelay(LV.delay(methodIndependent.causesOfDelay()));
-        }
-        if (methodIndependent.equals(MultiLevel.INDEPENDENT_DV)) {
-            // we know the result is independent of the object
-            return LinkedVariables.EMPTY;
-        }
-        if (methodIndependent.equals(MultiLevel.DEPENDENT_DV)) {
-            Map<Variable, LV> newLinked = new HashMap<>();
-            CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
-            for (Map.Entry<Variable, LV> e : linkedVariablesOfObject) {
-                DV immutable = context.getAnalyserContext().typeImmutable(e.getKey().parameterizedType());
-                LV lv = e.getValue();
-                assert lv.lt(LINK_INDEPENDENT);
-
-                if (e.getKey() instanceof This) {
-                    /*
-                     without this line, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
-                     */
-                    newLinked.put(e.getKey(), LINK_DEPENDENT.max(lv));
-                } else if (immutable.isDelayed()) {
-                    causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
-                } else {
-                    if (MultiLevel.isMutable(immutable) && lv.equals(LINK_DEPENDENT)) {
-                        newLinked.put(e.getKey(), LINK_DEPENDENT);
-                    } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-                        LV commonHC;
-                        if (lv.isCommonHC()) {
-                            LV.HiddenContentSelector newMine = methodAnalysis.getHiddenContentSelector();
-                            commonHC = LV.createHC(newMine, lv.mine());
-                        } else {
-                            // assigned, dependent...
-                            commonHC = LV.createHC(CS_ALL, CS_ALL);
-                        }
-                        newLinked.put(e.getKey(), commonHC);
-                    }
-                }
-            }
-            if (causesOfDelay.isDelayed()) {
-                return linkedVariablesOfObject.changeToDelay(LV.delay(causesOfDelay));
-            }
-            return LinkedVariables.of(newLinked);
-        }
-        assert MultiLevel.INDEPENDENT_HC_DV.equals(methodIndependent);
-        DV immutable = computeIndependent.typeImmutable(concreteReturnType);
-        Map<Variable, LV> newLinked = new HashMap<>();
-        for (Map.Entry<Variable, LV> e : linkedVariablesOfObject) {
-            ParameterizedType pt1 = e.getKey().parameterizedType();
-            // how does the return type fit in the object (or at least, the variable linked to the object)
-            DV independent = computeIndependent.typesAtLinkLevel(e.getValue(), concreteReturnType, immutable, pt1);
-            if (!MultiLevel.INDEPENDENT_DV.equals(independent)) {
-                newLinked.put(e.getKey(), LinkedVariables.fromIndependentToLinkedVariableLevel(independent));
-            }
-        }
-        return LinkedVariables.of(newLinked);
+        DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
+        return computeIndependent.linkedVariables(object.returnType(), linkedVariablesOfObject,
+                independent, methodAnalysis.getHiddenContentSelector(), concreteReturnType);
     }
 
        /* we have to probe the object first, to see if there is a value
