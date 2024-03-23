@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -52,6 +53,12 @@ public abstract class CommonTest {
     protected final TypeInfo mutable = new TypeInfo("com.foo", "Mutable");
     protected final ParameterizedType mutablePt = new ParameterizedType(mutable, List.of());
 
+    protected final TypeInfo mutableWithOneTypeParameter = new TypeInfo("com.foo", "MutableTP");
+    protected final TypeParameter tp0 = new TypeParameterImpl("T", 0);
+    protected final ParameterizedType tp0Pt = new ParameterizedType(tp0, 0, ParameterizedType.WildCard.NONE);
+    protected final ParameterizedType mutablePtWithOneTypeParameter
+            = new ParameterizedType(mutableWithOneTypeParameter, List.of(tp0Pt));
+
     protected static final LV LINK_COMMON_HC_ALL = LV.createHC(LV.CS_ALL, LV.CS_ALL);
 
     protected final AnalyserContext analyserContext = new AnalyserContext() {
@@ -62,6 +69,7 @@ public abstract class CommonTest {
 
         @Override
         public DV typeImmutable(ParameterizedType parameterizedType) {
+            if (parameterizedType.isTypeParameter()) return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             if (recursivelyImmutablePt == parameterizedType) return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             if (immutableHCPt == parameterizedType) return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
             if (finalFieldsPt == parameterizedType) return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;

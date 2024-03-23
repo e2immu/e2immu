@@ -74,7 +74,8 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         }
         // we'll return a sensible value now
 
-        DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent);
+        DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
+                hiddenContentSelectorOfTransfer);
         HiddenContentSelector correctedTransferSelector = correctSelector(hiddenContentSelectorOfTransfer, targetType);
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
@@ -99,9 +100,8 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             } else if (immutable.isDelayed()) {
                 causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
             } else {
-                if (MultiLevel.isMutable(immutable)
-                    && MultiLevel.DEPENDENT_DV.equals(correctedIndependent)
-                    && !lv.isCommonHC()) {
+                if (MultiLevel.isMutable(immutable) && isDependent(transferIndependent, correctedIndependent,
+                        immutableOfSource, lv)) {
                     newLinked.put(e.getKey(), LINK_DEPENDENT);
                 } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
                     LV commonHC;
@@ -119,6 +119,20 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             return sourceLvs.changeToDelay(LV.delay(causesOfDelay));
         }
         return LinkedVariables.of(newLinked);
+    }
+
+    private boolean isDependent(DV transferIndependent, DV correctedIndependent,
+                                DV immutableOfSource,
+                                LV lv) {
+        return
+                // situation immutable(mutable), we'll have to override
+                MultiLevel.INDEPENDENT_HC_DV.equals(transferIndependent)
+                && MultiLevel.DEPENDENT_DV.equals(correctedIndependent)
+                ||
+                // situation mutable(immutable), dependent method,
+                MultiLevel.DEPENDENT_DV.equals(transferIndependent)
+                && !lv.isCommonHC()
+                && !MultiLevel.isAtLeastImmutableHC(immutableOfSource);
     }
 
     /*
@@ -140,19 +154,60 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         return new LV.HiddenContentSelectorImpl(remaining);
     }
 
-    /*
-    FIXME current implementation is wrong
-       immutableOfSource should be immutableOfTypeOfTransferredObject
-     */
-    private static DV correctIndependent(DV immutableOfSource, DV independent) {
+    private DV correctIndependent(DV immutableOfSource,
+                                  DV independent,
+                                  ParameterizedType targetType,
+                                  HiddenContentSelector hiddenContentSelectorOfTransfer) {
         // immutableOfSource is not recursively immutable, independent is not fully independent
         // remaining values immutable: mutable, immutable HC
         // remaining values independent: dependent, independent hc
-        if (MultiLevel.isMutable(immutableOfSource) && MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
-            return MultiLevel.DEPENDENT_DV;
+        if (MultiLevel.DEPENDENT_DV.equals(independent)) {
+            if (MultiLevel.isAtLeastImmutableHC(immutableOfSource)) {
+                return MultiLevel.INDEPENDENT_HC_DV;
+            }
+            if (hiddenContentSelectorOfTransfer == CS_ALL) {
+                DV immutablePt = typeImmutable(targetType);
+                if (immutablePt.isDelayed()) return immutablePt;
+                if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
+                    return MultiLevel.INDEPENDENT_HC_DV;
+                }
+            } else {
+                Set<Integer> selectorSet = ((HiddenContentSelectorImpl) hiddenContentSelectorOfTransfer).set();
+                Map<Integer, ParameterizedType> typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
+                boolean allIndependent = true;
+                for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHC.entrySet()) {
+                    if (selectorSet.contains(entry.getKey())) {
+                        DV immutablePt = typeImmutable(entry.getValue());
+                        if (immutablePt.isDelayed()) return immutablePt;
+                        if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
+                            allIndependent = false;
+                            break;
+                        }
+                    }
+                }
+                if (allIndependent) return MultiLevel.INDEPENDENT_HC_DV;
+            }
         }
-        if (MultiLevel.isAtLeastImmutableHC(immutableOfSource) && MultiLevel.DEPENDENT_DV.equals(independent)) {
-            return MultiLevel.INDEPENDENT_HC_DV;
+        if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
+            if (hiddenContentSelectorOfTransfer == CS_ALL) {
+                DV immutablePt = typeImmutable(targetType);
+                if (immutablePt.isDelayed()) return immutablePt;
+                if (MultiLevel.isMutable(immutablePt)) {
+                    return MultiLevel.DEPENDENT_DV;
+                }
+            } else {
+                Set<Integer> selectorSet = ((HiddenContentSelectorImpl) hiddenContentSelectorOfTransfer).set();
+                Map<Integer, ParameterizedType> typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
+                for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHC.entrySet()) {
+                    if (selectorSet.contains(entry.getKey())) {
+                        DV immutablePt = typeImmutable(entry.getValue());
+                        if (immutablePt.isDelayed()) return immutablePt;
+                        if (MultiLevel.isMutable(immutablePt)) {
+                            return MultiLevel.DEPENDENT_DV;
+                        }
+                    }
+                }
+            }
         }
         return independent;
     }
