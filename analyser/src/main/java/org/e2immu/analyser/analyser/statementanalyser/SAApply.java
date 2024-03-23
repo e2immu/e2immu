@@ -281,7 +281,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             */
             Variable loopVar = statementAnalysis.obtainLoopVar();
             return statementAnalysis.evaluationOfForEachVariable(loopVar,
-                    evaluationResultIn.getExpression(), evaluationResultIn.causesOfDelay(), evaluationResult1);
+                    evaluationResultIn, evaluationResultIn.causesOfDelay(), evaluationResult1);
         }
         return evaluationResult1;
     }

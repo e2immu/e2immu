@@ -146,7 +146,10 @@ public interface StateData {
 
     Expression valueOfExpressionGet();
 
+    LinkedVariables linkedVariablesOfExpressionGet();
+
     boolean valueOfExpressionIsVariable();
 
     boolean writeValueOfExpression(Expression expression);
+
 }

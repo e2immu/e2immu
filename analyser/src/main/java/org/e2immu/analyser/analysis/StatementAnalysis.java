@@ -213,7 +213,7 @@ public interface StatementAnalysis extends Analysis,
     Variable obtainLoopVar();
 
     EvaluationResult evaluationOfForEachVariable(Variable loopVar,
-                                                 Expression evaluatedIterable,
+                                                 EvaluationResult evaluatedIterable,
                                                  CausesOfDelay someValueWasDelayed,
                                                  EvaluationResult evaluationResult);
 

@@ -187,8 +187,7 @@ class MergeLinkingAndGroupProperties {
                     // any --3--> link to a variable not local to the loop, we also point to the iterable as <--4-->
 
                     EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
-                    LinkedVariables linkedVariables = statementAnalysis.stateData().valueOfExpressionGet()
-                            .linkedVariables(context);
+                    LinkedVariables linkedVariables = statementAnalysis.stateData().linkedVariablesOfExpressionGet();
 
                     for (Map.Entry<Variable, LV> lve : linkedVariables) {
                         Variable iterableVar = lve.getKey();

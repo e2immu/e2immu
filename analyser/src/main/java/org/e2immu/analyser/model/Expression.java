@@ -132,12 +132,7 @@ public interface Expression extends Element, Comparable<Expression> {
     default DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         throw new UnsupportedOperationException("For type " + getClass() + ", property " + property);
     }
-
-    @NotNull
-    default LinkedVariables linkedVariables(EvaluationResult context) {
-        return LinkedVariables.EMPTY;
-    }
-
+    
     default boolean isNullConstant() {
         return false;
     }

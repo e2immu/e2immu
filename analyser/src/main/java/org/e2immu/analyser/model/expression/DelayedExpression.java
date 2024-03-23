@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.impl.BaseExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -363,6 +362,11 @@ public final class DelayedExpression extends BaseExpression implements Expressio
                 builder.setProperty(variable, Property.CONTEXT_IMMUTABLE, causesOfDelay);
             }
         }
+        // we descend into "this", see e.g. Loops_17
+        Set<Variable> set = new HashSet<>(variables(DescendMode.YES_INCLUDE_THIS));
+        LV delayedLv = LV.delay(causesOfDelay);
+        LinkedVariables lv = LinkedVariables.of(set.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> delayedLv)));
+        builder.setLinkedVariablesOfExpression(lv);
         return builder.setExpression(this).build();
     }
 
@@ -402,14 +406,6 @@ public final class DelayedExpression extends BaseExpression implements Expressio
     @Override
     public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return original.variables(descendIntoFieldReferences);
-    }
-
-    @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        // we descend into "this", see e.g. Loops_17
-        Set<Variable> set = new HashSet<>(variables(DescendMode.YES_INCLUDE_THIS));
-        LV delayedLv = LV.delay(causesOfDelay);
-        return LinkedVariables.of(set.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> delayedLv)));
     }
 
     public CausesOfDelay causesOfDelay() {

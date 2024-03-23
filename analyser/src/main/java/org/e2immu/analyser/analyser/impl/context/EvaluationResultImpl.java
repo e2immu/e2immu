@@ -71,6 +71,7 @@ EvaluatedExpressionCache will be stored in StatementAnalysis.stateData() for use
  */
 public record EvaluationResultImpl(EvaluationContext evaluationContext,
                                    Expression value,
+                                   LinkedVariables linkedVariablesOfExpression,
                                    List<Expression> storedValues,
                                    CausesOfDelay causesOfDelay,
                                    Messages messages,
@@ -86,23 +87,23 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
     @Override
     public String toString() {
         return "EvaluationResult{" +
-                "evaluationContext=" + evaluationContext +
-                ", value=" + value +
-                ", storedValues=" + storedValues +
-                ", causesOfDelay=" + causesOfDelay +
-                ", messages=" + messages +
-                ", changeData=" + changeData.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue()).sorted().collect(Collectors.joining(";")) +
-                ", precondition=" + precondition +
-                '}';
+               "evaluationContext=" + evaluationContext +
+               ", value=" + value +
+               ", storedValues=" + storedValues +
+               ", causesOfDelay=" + causesOfDelay +
+               ", messages=" + messages +
+               ", changeData=" + changeData.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue()).sorted().collect(Collectors.joining(";")) +
+               ", precondition=" + precondition +
+               '}';
     }
 
     public EvaluationResultImpl copy(EvaluationContext evaluationContext) {
-        return new EvaluationResultImpl(evaluationContext, value, storedValues, causesOfDelay, messages, changeData,
-                precondition);
+        return new EvaluationResultImpl(evaluationContext, value, linkedVariablesOfExpression, storedValues,
+                causesOfDelay, messages, changeData, precondition);
     }
 
     public static EvaluationResultImpl from(EvaluationContext evaluationContext) {
-        return new EvaluationResultImpl(evaluationContext, null, List.of(),
+        return new EvaluationResultImpl(evaluationContext, null, LinkedVariables.EMPTY, List.of(),
                 CausesOfDelay.EMPTY, Messages.EMPTY, Map.of(), Precondition.empty(evaluationContext.getPrimitives()));
     }
 
@@ -215,20 +216,24 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
                 storedValues.stream().map(e -> e.translate(inspectionProvider, translationMap)).toList();
         CausesOfDelay translatedCauses = causesOfDelay.translate(inspectionProvider, translationMap);
         Precondition translatedPrecondition = precondition == null ? null : precondition.translate(inspectionProvider, translationMap);
-        return new EvaluationResultImpl(evaluationContext, translatedValue, translatedStoredValues,
+
+        LinkedVariables translatedLinkedVariables = linkedVariablesOfExpression == null ? null
+                : linkedVariablesOfExpression.translate(inspectionProvider, translationMap);
+        return new EvaluationResultImpl(evaluationContext, translatedValue, translatedLinkedVariables, translatedStoredValues,
                 translatedCauses, messages, newMap, translatedPrecondition);
     }
 
     public EvaluationResultImpl withNewEvaluationContext(EvaluationContext newEc) {
-        return new EvaluationResultImpl(newEc, value, storedValues, causesOfDelay, messages, changeData, precondition);
+        return new EvaluationResultImpl(newEc, value, linkedVariablesOfExpression, storedValues, causesOfDelay,
+                messages, changeData, precondition);
     }
 
     @Override
     public EvaluationResult withExtraChangeData(Variable variable, ChangeData cd) {
         Map<Variable, ChangeData> newChangeData = new HashMap<>(changeData);
         newChangeData.put(variable, cd);
-        return new EvaluationResultImpl(evaluationContext, value, storedValues, causesOfDelay, messages,
-                Map.copyOf(newChangeData), precondition);
+        return new EvaluationResultImpl(evaluationContext, value, linkedVariablesOfExpression, storedValues,
+                causesOfDelay, messages, Map.copyOf(newChangeData), precondition);
     }
 
     public LinkedVariables linkedVariables(Variable variable) {
@@ -243,8 +248,8 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         CausesOfDelay newChangeDataDelays = newChangeData.values()
                 .stream().map(ChangeData::delays).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
         CausesOfDelay newCauses = value.causesOfDelay().merge(newChangeDataDelays);
-        return new EvaluationResultImpl(evaluationContext, value, storedValues, newCauses, messages, newChangeData,
-                precondition);
+        return new EvaluationResultImpl(evaluationContext, value, linkedVariablesOfExpression, storedValues, newCauses,
+                messages, newChangeData, precondition);
     }
 
     public DV containsModification() {
@@ -256,23 +261,23 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         return evaluationContext.getCurrentStatementTime();
     }
 
-    public Integer modificationTime(Variable variable) {
+    private Integer modificationTime(Variable variable) {
         ChangeData cd = changeData.get(variable);
         int increment = cd == null ? 0 : cd.modificationTimeIncrement();
         return increment + evaluationContext.initialModificationTimeOrZero(variable);
     }
 
-    public Stream<Integer> modificationTimes(Expression expression) {
-        return expression.linkedVariables(this).assignedOrDependentVariables().map(this::modificationTime);
+    private Stream<Integer> modificationTimes(LinkedVariables linkedVariables) {
+        return linkedVariables.assignedOrDependentVariables().map(this::modificationTime);
     }
 
-    public String modificationTimesOf(Expression... values) {
-        return Arrays.stream(values).flatMap(this::modificationTimes).map(Object::toString)
+    public String modificationTimesOf(LinkedVariables... linkedVariables) {
+        return Arrays.stream(linkedVariables).flatMap(this::modificationTimes).map(Object::toString)
                 .collect(Collectors.joining(","));
     }
 
-    public String modificationTimesOf(Expression object, List<Expression> parameters) {
-        return Stream.concat(Stream.of(object), parameters.stream())
+    public String modificationTimesOf(LinkedVariables lvObject, List<LinkedVariables> lvParameters) {
+        return Stream.concat(Stream.of(lvObject), lvParameters.stream())
                 .flatMap(this::modificationTimes)
                 .map(Object::toString)
                 .collect(Collectors.joining(","));
@@ -306,6 +311,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         private int statementTime;
         private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Precondition precondition;
+        private LinkedVariables linkedVariables;
 
         public Builder(EvaluationResult evaluationResult) {
             this.previousResult = Objects.requireNonNull(evaluationResult);
@@ -410,7 +416,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
                 }
             }
             EvaluationContext ec = evaluationContext.updateStatementTime(statementTime);
-            return new EvaluationResultImpl(ec, value, storedExpressions == null ? null : List.copyOf(storedExpressions),
+            return new EvaluationResultImpl(ec, value, linkedVariables, storedExpressions == null ? null : List.copyOf(storedExpressions),
                     causesOfDelay, messages, valueChanges, precondition);
         }
 
@@ -468,8 +474,8 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             CausesOfDelay cmDelays = cm.causesOfDelay();
             if (cmDelays.isDelayed()) {
                 if (evaluationContext.breakDelayLevel().acceptStatement()
-                        && inSourceOfLoop
-                        && causeOfConditionManagerDelayIsLoopNotEmpty(cmDelays, variable)) {
+                    && inSourceOfLoop
+                    && causeOfConditionManagerDelayIsLoopNotEmpty(cmDelays, variable)) {
                     LOGGER.debug("Breaking delay on source of loop {}", variable);
                     setProperty(variable, Property.CONTEXT_NOT_NULL, notNullRequired);
                     return;
@@ -516,11 +522,11 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
 
         private boolean causeOfConditionManagerDelayIsLoopNotEmpty(CausesOfDelay cmDelays, Variable sourceOfLoop) {
             return cmDelays.containsCauseOfDelay(CauseOfDelay.Cause.EXTERNAL_NOT_NULL, c -> c instanceof VariableCause vc &&
-                    vc.variable().equals(sourceOfLoop) ||
-                    sourceOfLoop instanceof FieldReference fr &&
-                            c instanceof SimpleCause sc && sc.variableIsField(fr.fieldInfo()) ||
-                    sourceOfLoop instanceof ParameterInfo pi &&
-                            c instanceof SimpleCause scPi && scPi.location().getInfo().equals(pi));
+                                                                                            vc.variable().equals(sourceOfLoop) ||
+                                                                                            sourceOfLoop instanceof FieldReference fr &&
+                                                                                            c instanceof SimpleCause sc && sc.variableIsField(fr.fieldInfo()) ||
+                                                                                            sourceOfLoop instanceof ParameterInfo pi &&
+                                                                                            c instanceof SimpleCause scPi && scPi.location().getInfo().equals(pi));
         }
 
         // e.g. Lazy, Loops_23_1
@@ -528,7 +534,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         // FIXME REMOVED BREAK
         private boolean causeOfConditionManagerDelayIsAssignmentTarget(CausesOfDelay cmDelays, Variable assignmentTarget) {
             return cmDelays.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_INIT_DELAY, c -> c instanceof VariableCause vc &&
-                    (vc.variable().equals(assignmentTarget)));
+                                                                                           (vc.variable().equals(assignmentTarget)));
         }
 
         /*
@@ -800,7 +806,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
 
             // TODO not too efficient, but for now... we want to get the symmetry right
             for (Map.Entry<Variable, LV> entry : linkedVariables) {
-                link(assignmentTarget, entry.getKey(), entry.getValue(), true);
+                link(assignmentTarget, entry.getKey(), entry.getValue());
             }
             return this;
         }
@@ -809,8 +815,8 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
                                                Expression resultOfExpression,
                                                CausesOfDelay stateIsDelayed) {
             if (stateIsDelayed.isDelayed()
-                    && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
-                    && !resultOfExpression.isInstanceOf(DelayedVariableExpression.class)) {
+                && !evaluationContext.getConditionManager().isReasonForDelay(assignmentTarget)
+                && !resultOfExpression.isInstanceOf(DelayedVariableExpression.class)) {
                 return DelayedExpression.forState(Identifier.state(evaluationContext.statementIndex()),
                         resultOfExpression.returnType(), resultOfExpression, stateIsDelayed);
             }
@@ -897,13 +903,12 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         delayed links must be symmetrical, until we know whether the direction is LINK_IS_HC_OF or not.
         you can never link to the return variable.
          */
-        public void link(Variable from, Variable to, LV level, boolean bidirectional) {
+        public void link(Variable from, Variable to, LV level) {
             assert !LV.LINK_INDEPENDENT.equals(level);
 
             internalLink(from, to, level);
-            // TODO:IS_HC
-            if (!(from instanceof ReturnVariable) && bidirectional) {
-                internalLink(to, from, level);
+            if (!(from instanceof ReturnVariable)) {
+                internalLink(to, from, level.reverse());
             }
         }
 
@@ -1022,6 +1027,11 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             if (cd != null) {
                 valueChanges.put(variable, cd);
             }
+            return this;
+        }
+
+        public Builder setLinkedVariablesOfExpression(LinkedVariables linkedVariables) {
+            this.linkedVariables = linkedVariables;
             return this;
         }
     }

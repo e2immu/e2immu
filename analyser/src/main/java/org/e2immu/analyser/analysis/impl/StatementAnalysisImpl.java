@@ -1038,8 +1038,9 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression initialValue;
         LinkedVariables linkedVariables;
         if (variable instanceof DependentVariable dv) {
-            Expression arrayBase = new VariableExpression(dv.arrayExpression().getIdentifier(), dv.arrayVariable());
-            LinkedVariables lvArrayBase = arrayBase.linkedVariables(context);
+            VariableExpression arrayBase = new VariableExpression(dv.arrayExpression().getIdentifier(), dv.arrayVariable());
+            LinkedVariables lvArrayBase = LinkedVariables.of(arrayBase.variable(),
+                    LV.createHC(LV.CS_ALL, LV.selectTypeParameters(0))); // FIXME correct? like List.get(index)
             DV independent = determineIndependentOfArrayBase(context, arrayBase);
             CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
             Expression arrayValue;
@@ -1519,7 +1520,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public EvaluationResult evaluationOfForEachVariable(Variable loopVar,
-                                                        Expression evaluatedIterable,
+                                                        EvaluationResult evaluatedIterableResult,
                                                         CausesOfDelay someValueWasDelayed,
                                                         EvaluationResult evaluationResult) {
         EvaluationContext evaluationContext = evaluationResult.evaluationContext();
@@ -1530,6 +1531,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                 Set.of());
         ParameterizedType parameterizedType = loopVar.parameterizedType();
 
+        Expression evaluatedIterable = evaluatedIterableResult.getExpression();
         DV nne = notNullOfLoopVariable(evaluationContext, evaluatedIterable, someValueWasDelayed);
         Properties valueProperties = evaluationContext.defaultValueProperties(parameterizedType, nne);
 
@@ -1541,7 +1543,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), index, loopVar, valueProperties);
         }
-        LinkedVariables linkedOfIterable = evaluatedIterable.linkedVariables(EvaluationResultImpl.from(evaluationContext))
+        LinkedVariables linkedOfIterable = evaluatedIterableResult.linkedVariablesOfExpression()
                 .maximum(LV.LINK_ASSIGNED);
         DV linkOfLoopVarInIterable = linkOfLoopVarInIterable(evaluationContext, parameterizedType,
                 evaluatedIterable.returnType());

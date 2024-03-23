@@ -121,17 +121,15 @@ public interface EvaluationResult {
 
      int statementTime();
 
-    Integer modificationTime(Variable variable);
+    String modificationTimesOf(LinkedVariables... values);
 
-    Stream<Integer> modificationTimes(Expression expression);
-
-    String modificationTimesOf(Expression... values);
-
-    String modificationTimesOf(Expression object, List<Expression> parameters);
+    String modificationTimesOf(LinkedVariables lvOfObject, List<LinkedVariables> lvOfParameters);
 
     Map<Variable, Integer> modificationTimeIncrements();
 
     DV getProperty(Expression expression, Property property);
 
     EvaluationResult withExtraChangeData(Variable variable, ChangeData cd);
+
+    LinkedVariables linkedVariablesOfExpression();
 }

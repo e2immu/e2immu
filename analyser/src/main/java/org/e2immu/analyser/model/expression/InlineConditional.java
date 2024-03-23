@@ -90,8 +90,8 @@ public class InlineConditional extends BaseExpression implements Expression {
         if (o == null || getClass() != o.getClass()) return false;
         InlineConditional that = (InlineConditional) o;
         return condition.equals(that.condition) &&
-                ifTrue.equals(that.ifTrue) &&
-                ifFalse.equals(that.ifFalse);
+               ifTrue.equals(that.ifTrue) &&
+               ifFalse.equals(that.ifFalse);
     }
 
     @Override
@@ -185,13 +185,6 @@ public class InlineConditional extends BaseExpression implements Expression {
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        LinkedVariables linkedVariablesTrue = ifTrue.linkedVariables(context);
-        LinkedVariables linkedVariablesFalse = ifFalse.linkedVariables(context);
-        return linkedVariablesTrue.merge(linkedVariablesFalse);
-    }
-
-    @Override
     public int order() {
         return condition.order();
     }
@@ -207,7 +200,7 @@ public class InlineConditional extends BaseExpression implements Expression {
 
     @Override
     public void visit(Visitor visitor) {
-        if(visitor.beforeExpression(this)) {
+        if (visitor.beforeExpression(this)) {
             condition.visit(visitor);
             ifTrue.visit(visitor);
             ifFalse.visit(visitor);
@@ -279,6 +272,10 @@ public class InlineConditional extends BaseExpression implements Expression {
                 .max(conditionResult.containsModification());
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(context,
                 conditionAfterState, t, f, forwardEvaluationInfo.isComplainInlineConditional(), null, modifying);
+        LinkedVariables linkedVariablesTrue = ifTrueResult.linkedVariablesOfExpression();
+        LinkedVariables linkedVariablesFalse = ifFalseResult.linkedVariablesOfExpression();
+        LinkedVariables lvMerge = linkedVariablesTrue.merge(linkedVariablesFalse);
+        builder.setLinkedVariablesOfExpression(lvMerge);
         return builder.compose(cv).build();
     }
 

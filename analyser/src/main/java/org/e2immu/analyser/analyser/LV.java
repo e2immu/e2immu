@@ -89,8 +89,10 @@ public class LV implements Comparable<LV> {
     }
 
     public LV reverse() {
-        assert value == HC;
-        return createHC(theirs, mine);
+        if(isCommonHC()) {
+            return createHC(theirs, mine);
+        }
+        return this;
     }
 
     public boolean isDelayed() {

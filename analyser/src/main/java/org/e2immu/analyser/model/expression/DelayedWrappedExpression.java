@@ -124,7 +124,9 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResultImpl.Builder(context).setExpression(this).build();
+        return new EvaluationResultImpl.Builder(context).setExpression(this)
+                .setLinkedVariablesOfExpression(linkedVariables)
+                .build();
     }
 
     @Override
@@ -163,11 +165,6 @@ public final class DelayedWrappedExpression extends BaseExpression implements Ex
     @Override
     public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);
-    }
-
-    @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        return linkedVariables;
     }
 
     public CausesOfDelay causesOfDelay() {

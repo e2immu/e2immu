@@ -140,13 +140,6 @@ public class InstanceOf extends BaseExpression implements Expression {
         return minimalOutput();
     }
 
-    // makes sense if there is a patternVariable, and we continue with that patternVariable
-
-    @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        return expression.linkedVariables(context);
-    }
-
     @Override
     public List<Variable> variables(DescendMode descendIntoFieldReferences) {
         return expression.variables(descendIntoFieldReferences);

@@ -157,11 +157,6 @@ public class EnclosedExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        return inner.linkedVariables(context);
-    }
-
-    @Override
     public Double numericValue() {
         return inner.numericValue();
     }

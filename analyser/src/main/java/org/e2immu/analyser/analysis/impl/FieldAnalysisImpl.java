@@ -145,7 +145,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             FieldReference fr = new FieldReferenceImpl(InspectionProvider.DEFAULT, fieldInfo);
             DelayedVariableExpression dve = DelayedVariableExpression.forField(fr, 0, initialDelay);
             setValue(dve);
-            linkedVariables.setVariable(dve.linkedVariables(null));
+            linkedVariables.setVariable(dve.computeLinkedVariables());
             this.values = new VariableFirstThen<>(initialDelay);
         }
 
@@ -224,8 +224,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
             // @Final(after=), @Final, @Variable
             if (effectivelyFinal.valueIsFalse()
-                    && !ownerImmutable.isDelayed()
-                    && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
+                && !ownerImmutable.isDelayed()
+                && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
                 String labels = typeAnalysisOfOwner.markLabel();
                 addAnnotation(e2.effectivelyFinal.copyWith(primitives, "after", labels));
             } else if (effectivelyFinal.valueIsTrue()) {
@@ -242,7 +242,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
             // @NotModified(after=), @NotModified, @Modified
             if (modified.valueIsTrue() && !ownerImmutable.isDelayed()
-                    && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
+                && MultiLevel.effective(ownerImmutable) == MultiLevel.Effective.EVENTUAL) {
                 if (MultiLevel.level(dynamicallyImmutable) <= MultiLevel.Level.MUTABLE.level) {
                     String labels = typeAnalysisOfOwner.markLabel();
                     addAnnotation(e2.notModified.copyWith(primitives, "after", labels));

@@ -87,6 +87,7 @@ public class CommaExpression extends BaseExpression implements Expression {
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         EvaluationResultImpl.Builder builderForIncrementalResult = new EvaluationResultImpl.Builder(context);
         int count = 0;
+        LinkedVariables mergedLv = LinkedVariables.EMPTY;
         for (Expression expression : expressions) {
             ForwardEvaluationInfo fwd = count == expressions.size() - 1 ? forwardEvaluationInfo : ForwardEvaluationInfo.DEFAULT;
             EvaluationResult incrementalResult = builderForIncrementalResult.build();
@@ -96,6 +97,7 @@ public class CommaExpression extends BaseExpression implements Expression {
 
             EvaluationResult result = e.evaluate(incrementalResult, fwd);
             builder.composeStore(result);
+            mergedLv = mergedLv.merge(result.linkedVariablesOfExpression());
 
             if (clearIncremental) {
                 builderForIncrementalResult = new EvaluationResultImpl.Builder(context);
@@ -105,7 +107,7 @@ public class CommaExpression extends BaseExpression implements Expression {
             count++;
         }
         // as we compose, the value of the last result survives, earlier ones are discarded
-        return builder.build();
+        return builder.setLinkedVariablesOfExpression(mergedLv).build();
     }
 
     @Override
@@ -114,7 +116,7 @@ public class CommaExpression extends BaseExpression implements Expression {
     }
 
     @Override
-    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError{
+    public int internalCompareTo(Expression v) throws ExpressionComparator.InternalError {
         if (v instanceof CommaExpression ce) {
             return ListUtil.compare(expressions, ce.expressions);
         }
@@ -145,11 +147,6 @@ public class CommaExpression extends BaseExpression implements Expression {
 
     public List<Expression> expressions() {
         return expressions;
-    }
-
-    @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        return expressions.stream().map(e -> e.linkedVariables(context)).reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
     }
 
     @Override

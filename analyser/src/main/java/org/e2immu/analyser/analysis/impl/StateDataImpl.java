@@ -56,6 +56,7 @@ public class StateDataImpl implements StateData {
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfInterrupts;
     private final SetOnceMap<String, EventuallyFinal<Expression>> statesOfReturnInLoop;
     public final EventuallyFinal<Expression> valueOfExpression = new EventuallyFinal<>();
+    private final EventuallyFinal<LinkedVariables> linkedVariablesOfExpression = new EventuallyFinal<>();
     private final EventuallyFinal<Expression> absoluteState = new EventuallyFinal<>();
 
     private final EventuallyFinal<Expression> staticSideEffect = new EventuallyFinal<>();
@@ -75,6 +76,7 @@ public class StateDataImpl implements StateData {
         assert preconditionFromMethodCalls.isFinal();
         assert postCondition.isFinal();
         assert valueOfExpression.isFinal();
+        assert linkedVariablesOfExpression.isFinal();
         assert absoluteState.isFinal();
         assert statesOfInterrupts == null || statesOfInterrupts.valueStream().allMatch(EventuallyFinal::isFinal);
         assert statesOfReturnInLoop == null || statesOfReturnInLoop.valueStream().allMatch(EventuallyFinal::isFinal);
@@ -393,6 +395,20 @@ public class StateDataImpl implements StateData {
     @Override
     public Expression valueOfExpressionGet() {
         return valueOfExpression.get();
+    }
+
+    @Override
+    public LinkedVariables linkedVariablesOfExpressionGet() {
+        return linkedVariablesOfExpression.get();
+    }
+
+    public boolean setLinkedVariablesOfExpression(LinkedVariables linkedVariables) {
+        if (linkedVariables.isDelayed()) {
+            this.linkedVariablesOfExpression.setVariable(linkedVariables);
+            return false;
+        }
+        this.linkedVariablesOfExpression.setFinal(linkedVariables);
+        return true;
     }
 
     @Override

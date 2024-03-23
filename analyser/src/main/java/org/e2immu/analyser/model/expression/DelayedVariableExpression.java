@@ -146,8 +146,8 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     @Override
     public boolean equals(Object o) {
         return o instanceof DelayedVariableExpression dve
-                && variable.equals(dve.variable)
-                && statementTime == dve.statementTime;
+               && variable.equals(dve.variable)
+               && statementTime == dve.statementTime;
     }
 
     @Override
@@ -237,7 +237,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         if (!forwardEvaluationInfo.isAssignmentTarget()) {
             builder.markRead(variable);
         }
+        builder.setLinkedVariablesOfExpression(computeLinkedVariables());
         return builder.setExpression(this).build();
+    }
+
+    public LinkedVariables computeLinkedVariables() {
+        LV delayedLv = LV.delay(causesOfDelay);
+        Map<Variable, LV> map = variable.variableStream().distinct().collect(Collectors.toMap(v -> v, v -> delayedLv));
+        return LinkedVariables.of(map);
     }
 
     @Override
@@ -278,14 +285,6 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             }
         }
         return this;
-    }
-
-
-    @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        LV delayedLv = LV.delay(causesOfDelay);
-        Map<Variable, LV> map = variable.variableStream().distinct().collect(Collectors.toMap(v -> v, v -> delayedLv));
-        return LinkedVariables.of(map);
     }
 
     /*

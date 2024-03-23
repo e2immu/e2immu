@@ -93,11 +93,6 @@ public class Cast extends BaseExpression implements Expression {
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        return expression.linkedVariables(context);
-    }
-
-    @Override
     public ParameterizedType returnType() {
         return parameterizedType;
     }

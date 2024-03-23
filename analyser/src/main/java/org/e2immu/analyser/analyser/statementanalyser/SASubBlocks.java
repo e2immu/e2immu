@@ -312,7 +312,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (!execution.equals(FlowDataConstants.NEVER) && startOfBlock != null) {
                 StatementAnalysis lastStatement = startOfBlock.lastStatement().getStatementAnalysis();
                 return lastStatement.flowData().interruptStatus().equals(FlowDataConstants.ALWAYS)
-                        && !lastStatement.flowData().alwaysEscapesViaException();
+                       && !lastStatement.flowData().alwaysEscapesViaException();
             }
             return false;
         }
@@ -417,9 +417,9 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                  */
                 int increment = atLeastOneBlockExecuted ? 0 : 1;
                 maxTime = lastStatements.stream()
-                        .map(MergeVariables.ConditionAndLastStatement::lastStatement)
-                        .mapToInt(sa -> sa.getStatementAnalysis().flowData().getTimeAfterSubBlocks())
-                        .max().orElse(statementAnalysis.flowData().getTimeAfterEvaluation()) + increment;
+                                  .map(MergeVariables.ConditionAndLastStatement::lastStatement)
+                                  .mapToInt(sa -> sa.getStatementAnalysis().flowData().getTimeAfterSubBlocks())
+                                  .max().orElse(statementAnalysis.flowData().getTimeAfterEvaluation()) + increment;
             }
             int maxTimeWithEscape;
             if (executions.stream().allMatch(ExecutionOfBlock::escapesAlways)) {
@@ -448,8 +448,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                 // block: simply exit
                 ConditionManager newLocalConditionManager;
                 if (atLeastOneBlockExecuted &&
-                        executions.stream().allMatch(e -> e.startOfBlock.lastStatement().getStatementAnalysis()
-                                .flowData().bestAlwaysInterrupt().isAtLeastBreak())) {
+                    executions.stream().allMatch(e -> e.startOfBlock.lastStatement().getStatementAnalysis()
+                            .flowData().bestAlwaysInterrupt().isAtLeastBreak())) {
                     Expression newState = new BooleanConstant(sharedState.evaluationContext().getPrimitives(), true);
                     newLocalConditionManager = sharedState.localConditionManager()
                             .withStateCompute(sharedState.context(), newState);
@@ -535,8 +535,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         StatementAnalyser sa = statementAnalyser;
         while (true) {
             if (sa.index().compareTo(startAt) >= 0 &&
-                    (sa.getStatementAnalysis().statement() instanceof ReturnStatement ||
-                            sa.getStatementAnalysis().statement() instanceof BreakStatement))
+                (sa.getStatementAnalysis().statement() instanceof ReturnStatement ||
+                 sa.getStatementAnalysis().statement() instanceof BreakStatement))
                 return sa;
             if (sa.navigationDataNextGet().isPresent()) {
                 sa = sa.navigationDataNextGet().get();
@@ -560,8 +560,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;
         // we have a default, and all conditions have code, and are possible
         return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&
-                list.stream().allMatch(e -> (e.execution.equals(FlowDataConstants.CONDITIONALLY) || e.execution.isDelayed())
-                        && e.startOfBlock != null);
+               list.stream().allMatch(e -> (e.execution.equals(FlowDataConstants.CONDITIONALLY) || e.execution.isDelayed())
+                                           && e.startOfBlock != null);
     }
 
     private Map<Variable, DV> addToContextNotNullAfterStatement(EvaluationResult context, List<ExecutionOfBlock> list) {
@@ -712,10 +712,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         } else {
             DV firstBlockStatementsExecution = structure.statementExecution().apply(value, sharedState.context());
             DV firstBlockExecution = statementAnalysis.flowData().execution(firstBlockStatementsExecution);
-
+            LinkedVariables lvOfValue = statementAnalysis.stateData().linkedVariablesOfExpressionGet();
             executions.add(makeExecutionOfPrimaryBlock(sharedState.context(),
                     sharedState.localConditionManager(),
-                    firstBlockExecution, startOfBlocks, value,
+                    firstBlockExecution, startOfBlocks, value, lvOfValue,
                     valueIsDelayed));
             start = 1;
         }
@@ -783,6 +783,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                                          DV firstBlockExecution,
                                                          List<Optional<StatementAnalyser>> startOfBlocks,
                                                          Expression value,
+                                                         LinkedVariables lvOfValue,
                                                          CausesOfDelay valueIsDelayed) {
         Expression condition;
         Expression absoluteState;
@@ -795,7 +796,8 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             absoluteState = null;
         } else {
             Primitives primitives = statementAnalysis.primitives();
-            cm = conditionManagerForFirstBlock(localConditionManager, evaluationContext, primitives, value, valueIsDelayed);
+            cm = conditionManagerForFirstBlock(localConditionManager, evaluationContext, primitives, value, lvOfValue,
+                    valueIsDelayed);
             if (cm == localConditionManager) {
                 condition = new BooleanConstant(primitives, true);
                 conditionVariables = Set.of();
@@ -814,6 +816,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
                                                            EvaluationResult context,
                                                            Primitives primitives,
                                                            Expression value,
+                                                           LinkedVariables lvOfValue,
                                                            CausesOfDelay valueIsDelayed) {
         Structure structure = statement().getStructure();
 
@@ -856,7 +859,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             }
             if (statement() instanceof ForEachStatement) {
                 // the expression is not a condition; however, we add one to ensure that the content is not empty
-                Expression condition = isNotEmpty(context, value, valueIsDelayed.isDelayed());
+                Expression condition = isNotEmpty(context, value, lvOfValue, valueIsDelayed.isDelayed());
                 Set<Variable> conditionVariables = Stream.concat(structure.expression().variableStream(),
                         condition.variableStream()).collect(Collectors.toUnmodifiableSet());
                 return localConditionManager.newAtStartOfNewBlockDoNotChangePrecondition(primitives, condition, conditionVariables);
@@ -879,7 +882,10 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
         return localConditionManager;
     }
 
-    private Expression isNotEmpty(EvaluationResult context, Expression value, boolean valueIsDelayed) {
+    private Expression isNotEmpty(EvaluationResult context,
+                                  Expression value,
+                                  LinkedVariables lvOfValue,
+                                  boolean valueIsDelayed) {
         if (valueIsDelayed) {
             return DelayedExpression.forUnspecifiedLoopCondition(Identifier.loopCondition(index()),
                     context.getPrimitives().booleanParameterizedType(), value, value.causesOfDelay());
@@ -900,7 +906,7 @@ record SASubBlocks(StatementAnalysis statementAnalysis, StatementAnalyser statem
             if (collection != null) {
                 MethodInfo isEmpty = collection.findUniqueMethod("isEmpty", 0);
                 return Negation.negate(context, new MethodCall(Identifier.generate("isEmpty call"), false, value, isEmpty,
-                        isEmpty.returnType(), List.of(), context.modificationTimesOf(value)));
+                        isEmpty.returnType(), List.of(), context.modificationTimesOf(lvOfValue)));
             }
         }
         return Instance.forUnspecifiedLoopCondition(index(), context.getPrimitives());

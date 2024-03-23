@@ -54,9 +54,9 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         this.linkedVariables = linkedVariables != null && linkedVariables.isEmpty() ? null : linkedVariables;
         this.castType = castType;
         assert state != null && !state.isBoolValueTrue() ||
-                properties != null && !properties.isEmpty() ||
-                linkedVariables != null && !linkedVariables.isEmpty() ||
-                castType != null;
+               properties != null && !properties.isEmpty() ||
+               linkedVariables != null && !linkedVariables.isEmpty() ||
+               castType != null;
     }
 
     public static Expression wrapPreventIncrementalEvaluation(Expression expression) {
@@ -114,10 +114,13 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
         Map<Property, DV> reduced = properties == null ? null : reduce(context, newValue, properties);
         boolean dropWrapper = (reduced == null || reduced.isEmpty())
-                && state == null && linkedVariables == null && castType == null;
+                              && state == null && linkedVariables == null && castType == null;
         Expression result = dropWrapper ? newValue
                 : new PropertyWrapper(newValue, state, reduced, linkedVariables, castType);
 
+        if (linkedVariables != null) {
+            builder.setLinkedVariablesOfExpression(linkedVariables);
+        }
         return builder.setExpression(result).build();
     }
 
@@ -317,7 +320,7 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         if (castType != null && (
                 property == Property.IMMUTABLE || property == Property.CONTAINER ||
-                        property == Property.INDEPENDENT)) {
+                property == Property.INDEPENDENT)) {
             return context.getAnalyserContext().getProperty(castType, property);
         }
         DV inMap = properties == null ? null : properties.getOrDefault(property, null);
@@ -327,12 +330,6 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
             return dv.max(MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }
         return dv;
-    }
-
-    @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        if (linkedVariables != null) return linkedVariables;
-        return expression.linkedVariables(context);
     }
 
     @Override
@@ -382,10 +379,10 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
         if (this == o) return true;
         if (!(o instanceof PropertyWrapper pw)) return false;
         return expression.equals(pw.expression)
-                && Objects.equals(state, pw.state)
-                && Objects.equals(castType, pw.castType)
-                && Objects.equals(properties, pw.properties)
-                && Objects.equals(linkedVariables, pw.linkedVariables);
+               && Objects.equals(state, pw.state)
+               && Objects.equals(castType, pw.castType)
+               && Objects.equals(properties, pw.properties)
+               && Objects.equals(linkedVariables, pw.linkedVariables);
     }
 
     @Override
@@ -396,8 +393,8 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
     @Override
     public boolean hasState() {
         return state != null
-                && state.returnType().isBoolean()
-                && !state.isConstant();
+               && state.returnType().isBoolean()
+               && !state.isConstant();
     }
 
     public Expression state() {

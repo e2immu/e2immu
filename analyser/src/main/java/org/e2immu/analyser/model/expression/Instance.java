@@ -252,11 +252,6 @@ public final class Instance extends BaseExpression implements Expression {
     }
 
     @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        return LinkedVariables.EMPTY;
-    }
-
-    @Override
     public int internalCompareTo(Expression v) {
         if (!(v instanceof Instance)) {
             return 1; // we're at the back; Instance is used as "too complex" in boolean expressions
