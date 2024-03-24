@@ -1554,9 +1554,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             LV lv = LinkedVariables.fromIndependentToLinkedVariableLevel(linkOfLoopVarInIterable);
             linked = linkedOfIterable.maximum(lv);
         }
-        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(evaluationResult);
-        builder.assignment(loopVar, value, linked);
-        return builder.compose(evaluationResult).build();
+        return new EvaluationResultImpl.Builder(evaluationResult)
+                .setLinkedVariablesOfExpression(linked)
+                .assignment(loopVar, value)
+                .compose(evaluationResult).build();
     }
 
     private DV linkOfLoopVarInIterable(EvaluationContext evaluationContext,

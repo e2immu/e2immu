@@ -41,7 +41,7 @@ public class CommaExpression extends BaseExpression implements Expression {
 
     public static Expression comma(EvaluationResult context, List<Expression> input) {
         List<Expression> expressions = input.stream().filter(e -> !e.isConstant()).toList();
-        if (expressions.size() == 0) return new BooleanConstant(context.getPrimitives(), true);
+        if (expressions.isEmpty()) return new BooleanConstant(context.getPrimitives(), true);
         if (expressions.size() == 1) return expressions.get(0);
         if (expressions.stream().anyMatch(Expression::isEmpty)) throw new UnsupportedOperationException();
         return new CommaExpression(List.copyOf(expressions));
@@ -87,7 +87,6 @@ public class CommaExpression extends BaseExpression implements Expression {
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         EvaluationResultImpl.Builder builderForIncrementalResult = new EvaluationResultImpl.Builder(context);
         int count = 0;
-        LinkedVariables mergedLv = LinkedVariables.EMPTY;
         for (Expression expression : expressions) {
             ForwardEvaluationInfo fwd = count == expressions.size() - 1 ? forwardEvaluationInfo : ForwardEvaluationInfo.DEFAULT;
             EvaluationResult incrementalResult = builderForIncrementalResult.build();
@@ -97,7 +96,6 @@ public class CommaExpression extends BaseExpression implements Expression {
 
             EvaluationResult result = e.evaluate(incrementalResult, fwd);
             builder.composeStore(result);
-            mergedLv = mergedLv.merge(result.linkedVariablesOfExpression());
 
             if (clearIncremental) {
                 builderForIncrementalResult = new EvaluationResultImpl.Builder(context);
@@ -107,7 +105,7 @@ public class CommaExpression extends BaseExpression implements Expression {
             count++;
         }
         // as we compose, the value of the last result survives, earlier ones are discarded
-        return builder.setLinkedVariablesOfExpression(mergedLv).build();
+        return builder.build();
     }
 
     @Override

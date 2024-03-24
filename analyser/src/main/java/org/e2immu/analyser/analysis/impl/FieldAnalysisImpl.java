@@ -145,7 +145,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             FieldReference fr = new FieldReferenceImpl(InspectionProvider.DEFAULT, fieldInfo);
             DelayedVariableExpression dve = DelayedVariableExpression.forField(fr, 0, initialDelay);
             setValue(dve);
-            linkedVariables.setVariable(dve.computeLinkedVariables());
+            linkedVariables.setVariable(dve.computeLinkedVariablesWithoutScopeVariable());
             this.values = new VariableFirstThen<>(initialDelay);
         }
 

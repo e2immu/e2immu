@@ -54,8 +54,8 @@ We track delays in state change
 EvaluatedExpressionCache will be stored in StatementAnalysis.stateData() for use by CodeModernizer.
 
  */
-public interface EvaluationResult {
-    
+public interface EvaluationResult extends Comparable<EvaluationResult> {
+
     EvaluationContext evaluationContext();
 
     Expression value();
@@ -119,7 +119,7 @@ public interface EvaluationResult {
 
     DV containsModification();
 
-     int statementTime();
+    int statementTime();
 
     String modificationTimesOf(LinkedVariables... values);
 
@@ -132,4 +132,9 @@ public interface EvaluationResult {
     EvaluationResult withExtraChangeData(Variable variable, ChangeData cd);
 
     LinkedVariables linkedVariablesOfExpression();
+
+    @Override
+    default int compareTo(EvaluationResult o) {
+        return getExpression().compareTo(o.getExpression());
+    }
 }

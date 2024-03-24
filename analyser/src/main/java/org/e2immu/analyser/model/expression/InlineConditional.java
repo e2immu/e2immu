@@ -272,10 +272,6 @@ public class InlineConditional extends BaseExpression implements Expression {
                 .max(conditionResult.containsModification());
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueConditionResolved(context,
                 conditionAfterState, t, f, forwardEvaluationInfo.isComplainInlineConditional(), null, modifying);
-        LinkedVariables linkedVariablesTrue = ifTrueResult.linkedVariablesOfExpression();
-        LinkedVariables linkedVariablesFalse = ifFalseResult.linkedVariablesOfExpression();
-        LinkedVariables lvMerge = linkedVariablesTrue.merge(linkedVariablesFalse);
-        builder.setLinkedVariablesOfExpression(lvMerge);
         return builder.compose(cv).build();
     }
 

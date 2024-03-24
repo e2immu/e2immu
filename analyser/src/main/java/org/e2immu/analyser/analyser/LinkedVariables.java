@@ -286,4 +286,12 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     public Stream<Variable> assignedOrDependentVariables() {
         return variables.entrySet().stream().filter(e -> isAssignedOrLinked(e.getValue())).map(Map.Entry::getKey);
     }
+
+    public LinkedVariables removeStaticallyAssigned() {
+        if (isEmpty() || this == NOT_YET_SET) return this;
+        Map<Variable, LV> map = variables.entrySet().stream()
+                .filter(e -> !e.getValue().equals(LINK_STATICALLY_ASSIGNED))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return of(map);
+    }
 }

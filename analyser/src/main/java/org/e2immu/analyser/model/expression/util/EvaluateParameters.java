@@ -20,10 +20,7 @@ import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -45,19 +42,24 @@ public class EvaluateParameters {
                     Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV,
                     Property.CONTEXT_NOT_NULL, MultiLevel.NULLABLE_DV);
 
-    public static Pair<EvaluationResultImpl.Builder, List<Expression>> go(List<Expression> parameterExpressions,
-                                                                          EvaluationResult context,
-                                                                          ForwardEvaluationInfo forwardEvaluationInfo,
-                                                                          MethodInfo methodInfo,
-                                                                          boolean recursiveOrPartOfCallCycle,
-                                                                          Expression scopeObject,
-                                                                          boolean allowUpgradeCnnOfScope) {
-        int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
-        List<Expression> parameterValues = new ArrayList<>(n);
+    public record Result(EvaluationResultImpl.Builder builder, List<EvaluationResult> evaluationResults) {
+    }
+
+    public static Result go(List<Expression> parameterExpressions,
+                            EvaluationResult context,
+                            ForwardEvaluationInfo forwardEvaluationInfo,
+                            MethodInfo methodInfo,
+                            boolean recursiveOrPartOfCallCycle,
+                            Expression scopeObject,
+                            boolean allowUpgradeCnnOfScope) {
+        MethodInspection methodInspection = methodInfo == null ? null
+                : context.getAnalyserContext().getMethodInspection(methodInfo);
+        int n = methodInfo == null ? 10 : methodInspection.getParameters().size();
         int i = 0;
         DV minCnnOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(context);
+        List<EvaluationResult> evaluationResults = new ArrayList<>(n);
 
         if (!parameterExpressions.isEmpty()) {
             DV scopeIsContainer = scopeIsContainer(context, recursiveOrPartOfCallCycle, scopeObject);
@@ -65,36 +67,38 @@ public class EvaluateParameters {
 
             for (Expression parameterExpression : parameterExpressions) {
                 minCnnOverParameters = oneParameterReturnCnn(forwardEvaluationInfo,
-                        methodInfo, recursiveOrPartOfCallCycle, parameterValues, i, builder, parameterExpression,
-                        scopeIsContainer, scopeIsIndependent);
+                        methodInfo, methodInspection, recursiveOrPartOfCallCycle, evaluationResults, i,
+                        context,
+                        builder,
+                        parameterExpression, scopeIsContainer, scopeIsIndependent);
                 i++;
             }
         }
 
         VariableExpression scopeVariable;
         if (allowUpgradeCnnOfScope &&
-                minCnnOverParameters.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
-                i > 0 &&
-                methodInfo != null &&
-                scopeObject != null &&
-                methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
-                (scopeVariable = scopeObject.asInstanceOf(VariableExpression.class)) != null) {
+            minCnnOverParameters.ge(MultiLevel.EFFECTIVELY_NOT_NULL_DV) &&
+            i > 0 &&
+            methodInfo != null &&
+            scopeObject != null &&
+            methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
+            (scopeVariable = scopeObject.asInstanceOf(VariableExpression.class)) != null) {
             builder.setProperty(scopeVariable.variable(), Property.CONTEXT_NOT_NULL,
                     MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV);
         }
 
-        List<Expression> sortedParameters;
+        List<EvaluationResult> sortedResults;
         if (methodInfo != null) {
             MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysisNullWhenAbsent(methodInfo);
             if (methodAnalysis != null && methodAnalysis.hasParallelGroups()) {
-                sortedParameters = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(parameterExpressions);
+                sortedResults = methodAnalysis.sortAccordingToParallelGroupsAndNaturalOrder(evaluationResults);
             } else {
-                sortedParameters = parameterValues;
+                sortedResults = evaluationResults;
             }
         } else {
-            sortedParameters = parameterValues;
+            sortedResults = evaluationResults;
         }
-        return new Pair<>(builder, sortedParameters);
+        return new Result(builder, sortedResults);
     }
 
     private static DV scopeIsContainer(EvaluationResult context, boolean recursiveOrPartOfCallCycle, Expression scopeObject) {
@@ -111,23 +115,24 @@ public class EvaluateParameters {
 
     private static DV oneParameterReturnCnn(ForwardEvaluationInfo forwardEvaluationInfo,
                                             MethodInfo methodInfo,
+                                            MethodInspection methodInspection,
                                             boolean recursiveOrPartOfCallCycle,
-                                            List<Expression> parameterValues,
+                                            List<EvaluationResult> evaluationResults,
                                             int position,
+                                            EvaluationResult context,
                                             EvaluationResultImpl.Builder builder,
                                             Expression parameterExpression,
                                             DV scopeIsContainer,
                                             DV scopeIsIndependent) {
         DV contextNotNull;
         DV contextModified;
-        ParameterInfo parameterInfo = methodInfo == null ? null : getParameterInfo(methodInfo, position);
+        ParameterInfo parameterInfo = methodInfo == null ? null : getParameterInfo(methodInspection, position);
         ForwardEvaluationInfo forward;
 
         /*
         we start with the accumulated information from previous parameter evaluations
         See e.g. Basics_26
          */
-        EvaluationResult context = builder.build();
 
         if (methodInfo != null) {
             // NOT_NULL, NOT_MODIFIED
@@ -135,7 +140,7 @@ public class EvaluateParameters {
             try {
                 MethodAnalyser currentMethod = context.getCurrentMethod();
                 if (currentMethod != null &&
-                        currentMethod.getMethodInfo() == methodInfo) {
+                    currentMethod.getMethodInfo() == methodInfo) {
                     map = new HashMap<>(RECURSIVE_CALL);
                 } else {
                     // copy from parameter into map used for forwarding
@@ -153,7 +158,7 @@ public class EvaluateParameters {
             if (map.get(Property.CONTEXT_CONTAINER).isDelayed() && recursiveOrPartOfCallCycle) {
                 map.put(Property.CONTEXT_CONTAINER, MultiLevel.NOT_CONTAINER_DV);
             }
-            if  (recursiveOrPartOfCallCycle || scopeIsContainer.equals(MultiLevel.CONTAINER_DV)) {
+            if (recursiveOrPartOfCallCycle || scopeIsContainer.equals(MultiLevel.CONTAINER_DV)) {
                 map.put(Property.CONTEXT_MODIFIED, DV.FALSE_DV);
             }
 
@@ -202,26 +207,24 @@ public class EvaluateParameters {
         }
 
         EvaluationResult parameterResult = parameterExpression.evaluate(context, forward);
-        builder.compose(parameterResult);
+        builder.compose(parameterResult, lvs -> null); // do not merge the linked variables, that will come later
+        EvaluationResult afterModification;
 
-        Expression afterModification;
         // we don't want delays when processing companion expressions, which are never modifying and cause
         // unnecessary stress to the shallow analyser
         Expression parameterValue = parameterResult.value();
         if (!contextModified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression()) {
             EvaluationResult er = potentiallyModifyConstructorCall(context, parameterExpression, parameterValue,
                     contextModified);
-            if (er != null) {
-                afterModification = er.getExpression() == null ? parameterValue : er.getExpression();
-                builder.compose(er);
+            if (er != null && er.getExpression() != null) {
+                afterModification = er;
             } else {
-                afterModification = parameterValue;
+                afterModification = parameterResult;
             }
         } else {
-            afterModification = parameterValue;
+            afterModification = parameterResult;
         }
-        assert afterModification != null;
-        parameterValues.add(afterModification);
+        evaluationResults.add(afterModification);
         return contextNotNull;
     }
 
@@ -276,9 +279,9 @@ public class EvaluateParameters {
                                                        LV dvLink,
                                                        Variable variable) {
         if (variable instanceof This
-                || variable instanceof ParameterInfo // because they are always an instance anyway
-                || variable instanceof ReturnVariable
-                || !variableIsRecursivelyPresentOrField(context.evaluationContext(), variable)) {
+            || variable instanceof ParameterInfo // because they are always an instance anyway
+            || variable instanceof ReturnVariable
+            || !variableIsRecursivelyPresentOrField(context.evaluationContext(), variable)) {
             return false;
         }
         // done/non-delayed situation first...
@@ -291,8 +294,8 @@ public class EvaluateParameters {
                 ConstructorCall cc;
                 Expression newInstance;
                 if (varVal != null
-                        && (cc = varVal.asInstanceOf(ConstructorCall.class)) != null
-                        && cc.constructor() != null) {
+                    && (cc = varVal.asInstanceOf(ConstructorCall.class)) != null
+                    && cc.constructor() != null) {
                     Properties valueProperties = context.evaluationContext().getValueProperties(cc);
                     newInstance = Instance.forMethodResult(cc.identifier, context.evaluationContext().statementIndex(),
                             cc.returnType(), valueProperties);
@@ -348,9 +351,9 @@ public class EvaluateParameters {
         return evaluationContext.isPresent(variable);
     }
 
-    private static ParameterInfo getParameterInfo(MethodInfo methodInfo, int position) {
+    private static ParameterInfo getParameterInfo(MethodInspection methodInspection, int position) {
         ParameterInfo parameterInfo;
-        List<ParameterInfo> params = methodInfo.methodInspection.get().getParameters();
+        List<ParameterInfo> params = methodInspection.getParameters();
         if (position >= params.size()) {
             ParameterInfo lastParameter = params.get(params.size() - 1);
             if (lastParameter.parameterInspection.get().isVarArgs()) {

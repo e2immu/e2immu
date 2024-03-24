@@ -241,9 +241,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
+    public <X extends Comparable<? super X>> List<X> sortAccordingToParallelGroupsAndNaturalOrder(List<X> xs) {
         if (parallelGroups == null) throw new NullPointerException("No parallel groups available");
-        return parallelGroups.sortParallels(parameterExpressions, Comparator.naturalOrder());
+        return parallelGroups.sortParallels(xs, Comparator.naturalOrder());
     }
 
     @Override
@@ -390,7 +390,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
+        public <X extends Comparable<? super X>> List<X> sortAccordingToParallelGroupsAndNaturalOrder(List<X> parameterExpressions) {
             return parallelGroups.get().sortParallels(parameterExpressions, Comparator.naturalOrder());
         }
 

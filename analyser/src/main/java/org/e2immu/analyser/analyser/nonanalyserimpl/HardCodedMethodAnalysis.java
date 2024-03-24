@@ -98,7 +98,7 @@ class HardCodedMethodAnalysis implements MethodAnalysis {
     }
 
     @Override
-    public List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions) {
+    public <X extends Comparable<? super X>> List<X> sortAccordingToParallelGroupsAndNaturalOrder(List<X> xs) {
         throw new UnsupportedOperationException();
     }
 

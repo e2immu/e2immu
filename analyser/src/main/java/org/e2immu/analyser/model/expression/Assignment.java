@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class Assignment extends BaseExpression implements Expression {
     private static final Logger LOGGER = LoggerFactory.getLogger(Assignment.class);
@@ -302,31 +301,32 @@ public class Assignment extends BaseExpression implements Expression {
             return builder.setExpression(newAssignment).build();
         }
 
+        // see Warnings_13, we want to raise a potential null pointer exception when a non-primitive is assigned to a
+        // primitive
         VariableExpression ve = target.asInstanceOf(VariableExpression.class);
-
-        // see Warnings_13, we want to raise a potential null pointer exception when a non-primitive is assigned to a primitive
         Variable variable = ve == null ? null : ve.variable();
         ForwardEvaluationInfo.Builder fwdBuilder = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
                 .setAssignmentTarget(variable);
         if (target.returnType().isPrimitiveExcludingVoid()) {
             fwdBuilder.setCnnNotNull();
         }
-        ForwardEvaluationInfo fwd = fwdBuilder.build();
 
+        // value
+        ForwardEvaluationInfo fwd = fwdBuilder.build();
         EvaluationResult valueResult;
         if (evaluationOfValue != null) {
             valueResult = evaluationOfValue;
         } else {
             valueResult = value.evaluate(context, fwd);
         }
+        builder.compose(valueResult, lvs -> lvs.maximum(LV.LINK_ASSIGNED));
 
+        // target
         EvaluationResult targetResult = target.evaluate(context, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
-        builder.compose(valueResult);
-
         Variable newVariableTarget = handleArrayAccess(targetResult.value());
 
-        LOGGER.debug("Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
+        LOGGER.debug("Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
         E2 e2;
         if (binaryOperator != null) {
             e2 = handleBinaryOperator(context, forwardEvaluationInfo, newVariableTarget, valueResult, builder);
@@ -358,9 +358,8 @@ public class Assignment extends BaseExpression implements Expression {
             expression = e2.resultOfExpression;
         }
 
-        markModified(builder, context, newVariableTarget, false);
-        LinkedVariables lvAfterDelay = computeLinkedVariables(context, finalValue);
-        builder.assignment(newVariableTarget, finalValue, lvAfterDelay);
+        markModified(builder, targetResult, newVariableTarget, false);
+        builder.assignment(newVariableTarget, finalValue);
 
         assert expression != null;
         return builder.setExpression(expression).build();
@@ -449,7 +448,9 @@ public class Assignment extends BaseExpression implements Expression {
         return new E2(resultOfExpression, operationResult.value());
     }
 
-    private void markModified(EvaluationResultImpl.Builder builder, EvaluationResult context, Variable at,
+    private void markModified(EvaluationResultImpl.Builder builder,
+                              EvaluationResult context,
+                              Variable at,
                               boolean inRecursion) {
         // see if we need to raise an error (writing out to fields outside our class, etc.)
         if (at instanceof FieldReference fieldReference) {
@@ -477,7 +478,7 @@ public class Assignment extends BaseExpression implements Expression {
                     instance = Instance.forGetInstance(identifier, context.evaluationContext().statementIndex(),
                             returnType, valueProperties);
                 }
-                LinkedVariables lvs = fieldReference.scope().linkedVariables(context);
+                LinkedVariables lvs = context.linkedVariablesOfExpression().removeStaticallyAssigned();
                 builder.modifyingMethodAccess(fieldReference.scopeVariable(), instance, lvs);
 
                 // IMPROVE: recursion also in markModified --  but what about the code above?
@@ -499,42 +500,6 @@ public class Assignment extends BaseExpression implements Expression {
                 markModified(builder, context, arrayVariable, true);
             }
         }
-    }
-
-    private LinkedVariables computeLinkedVariables(EvaluationResult context, Expression resultOfExpression) {
-        /*
-        There are fundamentally two approaches to computing linked variables here.
-        The first is to compute them on "value", the second one on "resultOfExpression".
-        The former stays the same, and does not include the "tryShortCut", "single return value" substitutions,
-        computation simplifications, etc. etc., which are present in the latter.
-
-        We choose the former approach! this has repercussions...
-        Update 20221030: we do both! See Independent1_12 for why this is necessary (stream:2)
-         */
-        LinkedVariables lvOfResult = resultOfExpression.linkedVariables(context);
-        LinkedVariables lvOfValue = value.linkedVariables(context);
-        LinkedVariables lvMerged = lvOfResult.merge(lvOfValue);
-        LinkedVariables lvExpression = lvMerged.maximum(LV.LINK_ASSIGNED);
-        LinkedVariables linkedVariables;
-        if (allowStaticallyAssigned) {
-            Set<Variable> directAssignment = value.directAssignmentVariables();
-            if (!directAssignment.isEmpty()) {
-                Map<Variable, LV> map = directAssignment.stream()
-                        .collect(Collectors.toMap(v -> v, v -> LV.LINK_STATICALLY_ASSIGNED));
-                linkedVariables = lvExpression.merge(LinkedVariables.of(map));
-            } else {
-                linkedVariables = lvExpression;
-            }
-        } else {
-            linkedVariables = lvExpression;
-        }
-        if (resultOfExpression.isDelayed()) {
-            Set<Variable> vars = new HashSet<>(value.variables());
-            Map<Variable, LV> map = vars.stream()
-                    .collect(Collectors.toUnmodifiableMap(v -> v, v -> LV.delay(resultOfExpression.causesOfDelay())));
-            return linkedVariables.merge(LinkedVariables.of(map));
-        }
-        return linkedVariables;
     }
 
     private static boolean checkIllAdvisedAssignment(FieldReference fieldReference, TypeInfo currentType, boolean isStatic) {

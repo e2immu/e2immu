@@ -228,7 +228,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             EvaluationResult scopeResult = fr.scope().evaluate(context, forward);
             builder.compose(scopeResult);
         }
-
+        if (variable instanceof DependentVariable dv) {
+            // do not continue modification into index
+            EvaluationResult arrayResult = dv.arrayExpression().evaluate(context, forwardEvaluationInfo);
+            builder.compose(arrayResult);
+            ForwardEvaluationInfo forward = forwardEvaluationInfo.copy().ensureModificationSetNotNull().build();
+            EvaluationResult indexResult = dv.indexExpression().evaluate(context, forward);
+            builder.compose(indexResult);
+        }
         DV cnn = forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL);
         if (cnn.gt(MultiLevel.NULLABLE_DV)) {
             builder.variableOccursInNotNullContext(variable, this, cnn, forwardEvaluationInfo);
@@ -237,11 +244,12 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
         if (!forwardEvaluationInfo.isAssignmentTarget()) {
             builder.markRead(variable);
         }
-        builder.setLinkedVariablesOfExpression(computeLinkedVariables());
-        return builder.setExpression(this).build();
+        return builder.mergeLinkedVariablesOfExpression(computeLinkedVariablesWithoutScopeVariable())
+                .setExpression(this)
+                .build();
     }
 
-    public LinkedVariables computeLinkedVariables() {
+    public LinkedVariables computeLinkedVariablesWithoutScopeVariable() {
         LV delayedLv = LV.delay(causesOfDelay);
         Map<Variable, LV> map = variable.variableStream().distinct().collect(Collectors.toMap(v -> v, v -> delayedLv));
         return LinkedVariables.of(map);

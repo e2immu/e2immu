@@ -235,10 +235,8 @@ public class MethodLinkHelper {
     /*
     Add all necessary links from parameters into scope, and in-between parameters
      */
-    public EvaluationResult fromParametersIntoObject(Expression object,
-                                                     Expression objectValue,
-                                                     List<Expression> parameterExpressions,
-                                                     List<Expression> parameterValues,
+    public EvaluationResult fromParametersIntoObject(EvaluationResult objectResult,
+                                                     List<EvaluationResult> parameterResults,
                                                      boolean fromParametersIntoObject,
                                                      boolean addLinksBetweenParameters) {
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);

@@ -160,7 +160,7 @@ public interface MethodAnalysis extends Analysis {
         return parSeq != null && parSeq.containsParallels();
     }
 
-    List<Expression> sortAccordingToParallelGroupsAndNaturalOrder(List<Expression> parameterExpressions);
+    <X extends Comparable<? super X>> List<X> sortAccordingToParallelGroupsAndNaturalOrder(List<X> parameterExpressions);
 
     default String postConditionsSortedToString() {
         return getPostConditions().stream().map(Object::toString).sorted().collect(Collectors.joining(", "));

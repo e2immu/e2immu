@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -328,7 +329,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         public Builder compose(EvaluationResult... previousResults) {
             assert previousResults != null;
             for (EvaluationResult evaluationResult : previousResults) {
-                append(false, evaluationResult);
+                append(false, evaluationResult, null);
             }
             return this;
         }
@@ -336,13 +337,13 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         public void composeIgnoreExpression(EvaluationResult... previousResults) {
             assert previousResults != null;
             for (EvaluationResult evaluationResult : previousResults) {
-                append(true, evaluationResult);
+                append(true, evaluationResult, null);
             }
         }
 
         public Builder compose(Iterable<EvaluationResult> previousResults) {
             for (EvaluationResult evaluationResult : previousResults) {
-                append(false, evaluationResult);
+                append(false, evaluationResult, null);
             }
             return this;
         }
@@ -350,10 +351,17 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         public void composeStore(EvaluationResult evaluationResult) {
             if (storedExpressions == null) storedExpressions = new LinkedList<>();
             storedExpressions.add(evaluationResult.getExpression());
-            append(false, evaluationResult);
+            append(false, evaluationResult, null);
         }
 
-        private void append(boolean ignoreExpression, EvaluationResult evaluationResult) {
+        public void compose(EvaluationResult evaluationResult, Function<LinkedVariables, LinkedVariables> modifyLvs) {
+            if (storedExpressions == null) storedExpressions = new LinkedList<>();
+            storedExpressions.add(evaluationResult.getExpression());
+            append(false, evaluationResult, modifyLvs);
+        }
+
+        private void append(boolean ignoreExpression, EvaluationResult evaluationResult,
+                            Function<LinkedVariables, LinkedVariables> modifyLvs) {
             if (!ignoreExpression && evaluationResult.value() != null) {
                 setExpression(evaluationResult.value());
             }
@@ -373,6 +381,19 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
                     EvaluationResultImpl context = EvaluationResultImpl.from(evaluationContext);
                     precondition = precondition.combine(context, evaluationResult.precondition());
                 }
+            }
+
+            LinkedVariables lvs = evaluationResult.linkedVariablesOfExpression();
+            LinkedVariables modifiedLvs;
+            if (lvs != null && modifyLvs != null) {
+                modifiedLvs = modifyLvs.apply(lvs);
+            } else {
+                modifiedLvs = lvs;
+            }
+            if (this.linkedVariables == null) {
+                this.linkedVariables = modifiedLvs;
+            } else {
+                this.linkedVariables = this.linkedVariables.merge(modifiedLvs);
             }
         }
 
@@ -770,8 +791,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         Called from Assignment and from LocalVariableCreation.
          */
         public Builder assignment(Variable assignmentTarget,
-                                  Expression resultOfExpression,
-                                  LinkedVariables linkedVariables) {
+                                  Expression resultOfExpression) {
             assert evaluationContext != null;
 
             // if we assign a new value to a target, the other variables linking to the target
@@ -1033,6 +1053,16 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         public Builder setLinkedVariablesOfExpression(LinkedVariables linkedVariables) {
             this.linkedVariables = linkedVariables;
             return this;
+        }
+
+        public Builder mergeLinkedVariablesOfExpression(LinkedVariables linkedVariables) {
+            this.linkedVariables = this.linkedVariables == null ? linkedVariables :
+                    this.linkedVariables.merge(linkedVariables);
+            return this;
+        }
+
+        public CausesOfDelay causesOfDelay() {
+            return causesOfDelay;
         }
     }
 }

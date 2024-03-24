@@ -109,7 +109,10 @@ public class ExpandedVariable extends BaseExpression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResultImpl.Builder(context).setExpression(this).setLinkedVariablesOfExpression(linkedVariables).build();
+        return new EvaluationResultImpl.Builder(context)
+                .setExpression(this)
+                .setLinkedVariablesOfExpression(linkedVariables)
+                .build();
     }
 
     @Override

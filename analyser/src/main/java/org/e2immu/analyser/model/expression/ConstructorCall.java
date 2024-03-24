@@ -159,12 +159,12 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         if (o == null || getClass() != o.getClass()) return false;
         ConstructorCall newObject = (ConstructorCall) o;
         return identifier.equals(newObject.identifier) &&
-                parameterizedType.equals(newObject.parameterizedType) &&
-                parameterExpressions.equals(newObject.parameterExpressions) &&
-                Objects.equals(scope, newObject.scope) &&
-                Objects.equals(anonymousClass, newObject.anonymousClass) &&
-                Objects.equals(constructor, newObject.constructor) &&
-                Objects.equals(arrayInitializer, newObject.arrayInitializer);
+               parameterizedType.equals(newObject.parameterizedType) &&
+               parameterExpressions.equals(newObject.parameterExpressions) &&
+               Objects.equals(scope, newObject.scope) &&
+               Objects.equals(anonymousClass, newObject.anonymousClass) &&
+               Objects.equals(constructor, newObject.constructor) &&
+               Objects.equals(arrayInitializer, newObject.arrayInitializer);
     }
 
     @Override
@@ -195,9 +195,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 ensureExpressionType(
                         arrayInitializer.translate(inspectionProvider, translationMap), ArrayInitializer.class);
         if (translatedScope == scope
-                && translatedType == this.parameterizedType
-                && translatedParameterExpressions == this.parameterExpressions
-                && translatedInitializer == arrayInitializer) {
+            && translatedType == this.parameterizedType
+            && translatedParameterExpressions == this.parameterExpressions
+            && translatedInitializer == arrayInitializer) {
             return this;
         }
         CausesOfDelay causesOfDelay = translatedParameterExpressions.stream()
@@ -224,29 +224,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     @Override
     public String toString() {
         return minimalOutput();
-    }
-
-    @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        if (constructor == null) {
-            return LinkedVariables.EMPTY;
-        }
-        Expression theScope = scope == null ? new VariableExpression(getIdentifier(),
-                context.evaluationContext().currentThis()) : scope;
-        Expression scopeValue = scope == null ? theScope : scope.evaluate(context, ForwardEvaluationInfo.DEFAULT).value();
-        IsVariableExpression scopeVariable;
-        if ((scopeVariable = theScope.asInstanceOf(IsVariableExpression.class)) == null) {
-            return LinkedVariables.EMPTY;
-        }
-        List<Expression> parameterValues = parameterExpressions.stream()
-                .map(pe -> pe.evaluate(context, ForwardEvaluationInfo.DEFAULT).value())
-                .toList();
-        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, constructor);
-        EvaluationResult links = methodLinkHelper.fromParametersIntoObject(
-                theScope, scopeValue,
-                parameterExpressions, parameterValues, true, false);
-        ChangeData cd = links.changeData().get(scopeVariable.variable());
-        return cd == null ? LinkedVariables.EMPTY : cd.linkedVariables();
     }
 
     @Override
@@ -474,16 +451,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             return evaluateComponents(context, forwardEvaluationInfo);
         }
 
-        EvaluationResult scopeResult;
-        Expression scopeValue;
-        if (scope != null) {
-            scopeResult = scope.evaluate(context, forwardEvaluationInfo);
-            scopeValue = scopeResult.value();
-        } else {
-            scopeResult = null;
-            scopeValue = null;
-        }
-
         // arrayInitializer variant
 
         if (arrayInitializer != null) {
@@ -499,37 +466,44 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         }
 
         // "normal"
-
-        Pair<EvaluationResultImpl.Builder, List<Expression>> res = EvaluateParameters.go(parameterExpressions,
-                context, forwardEvaluationInfo, constructor, false, null,
-                false);
-        CausesOfDelay parameterDelays = res.v.stream().map(Expression::causesOfDelay).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        EvaluateParameters.Result res = EvaluateParameters.go(parameterExpressions, context, forwardEvaluationInfo,
+                constructor, false, null, false);
+        CausesOfDelay parameterDelays = res.builder().causesOfDelay();
         if (parameterDelays.isDelayed()) {
-            return delayedConstructorCall(context, res.k, parameterDelays);
+            return delayedConstructorCall(context, res.builder(), parameterDelays);
         }
 
-        // linking
-
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
-        builder.compose(res.k.build());
+        builder.compose(res.builder().build());
 
+        Expression theScope = scope == null ? new VariableExpression(getIdentifier(),
+                context.evaluationContext().currentThis()) : scope;
+        EvaluationResult scopeResult = theScope.evaluate(context, forwardEvaluationInfo);
+        builder.compose(scopeResult);
+
+        // linking
         if (constructor != null) {
             MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, constructor);
-            EvaluationResult links = methodLinkHelper.fromParametersIntoObject(
-                    scope == null ? EmptyExpression.EMPTY_EXPRESSION : scope,
-                    scopeValue == null ? EmptyExpression.EMPTY_EXPRESSION : scopeValue,
-                    parameterExpressions, res.v, false, true);
+            EvaluationResult links = methodLinkHelper.fromParametersIntoObject(scopeResult, res.evaluationResults(),
+                    false, true);
             builder.compose(links);
+            if (scope instanceof IsVariableExpression ive) {
+                ChangeData cd = links.changeData().get(ive.variable());
+                builder.setLinkedVariablesOfExpression(cd.linkedVariables());
+            } else {
+                builder.setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
+            }
         }
 
         // check state changes of companion methods
         Expression instance;
         if (constructor != null) {
-            int sumComplexity = res.v.stream().mapToInt(Expression::getComplexity).sum();
-            ConstructorCall withEvalParam = sumComplexity >= Expression.CONSTRUCTOR_CALL_EXPANSION_LIMIT
-                    ? this : withParameterExpressions(res.v);
+            List<Expression> expressions = res.evaluationResults().stream().map(EvaluationResult::getExpression).toList();
+            int sumComplexity = expressions.stream().mapToInt(Expression::getComplexity).sum();
+            ConstructorCall withEvalParam = sumComplexity >= Expression.CONSTRUCTOR_CALL_EXPANSION_LIMIT ? this
+                    : withParameterExpressions(expressions);
             MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, builder, context,
-                    constructor, null, withEvalParam, res.v, this, DV.TRUE_DV);
+                    constructor, null, withEvalParam, expressions, this, DV.TRUE_DV);
             if (modReturn == null) {
                 instance = withEvalParam;
             } else if (modReturn.expression() != null) {
@@ -545,7 +519,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         builder.setExpression(instance);
 
         if (constructor != null &&
-                (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
+            (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
             builder.incrementStatementTime();
         }
 
@@ -642,8 +616,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                             if (linked.isDone()) {
                                 fieldAnalysis.getLinkedVariables().variables().forEach((v, lv) -> {
                                     if (v instanceof ParameterInfo pi
-                                            && pi.owner == constructor
-                                            && lv.equals(LV.LINK_STATICALLY_ASSIGNED)) {
+                                        && pi.owner == constructor
+                                        && lv.equals(LV.LINK_STATICALLY_ASSIGNED)) {
                                         // the field has been statically assigned to pi
                                         Expression original = parameterExpressions.get(pi.index);
                                         Expression de = DelayedExpression.forConstructorCallExpansion(identifier, delayName,
