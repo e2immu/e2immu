@@ -97,13 +97,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                        boolean checkDelays) {
         super(identifier,
                 object.getComplexity()
-                        + methodInfo.getComplexity()
-                        + parameterExpressions.stream().mapToInt(Expression::getComplexity).sum(),
+                + methodInfo.getComplexity()
+                + parameterExpressions.stream().mapToInt(Expression::getComplexity).sum(),
                 methodInfo, returnType);
         this.object = Objects.requireNonNull(object);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         assert !checkDelays
-                || parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a method call with delayed arguments";
+               || parameterExpressions.stream().noneMatch(Expression::isDelayed) : "Creating a method call with delayed arguments";
         this.objectIsImplicit = objectIsImplicit;
         this.modificationTimes = Objects.requireNonNull(modificationTimes);
     }
@@ -123,9 +123,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         String newModificationTimes = Objects.requireNonNullElse(
                 translationMap.modificationTimes(this, translatedObject, translatedParameters), modificationTimes);
         if (translatedMethod == methodInfo && translatedObject == object
-                && translatedReturnType == concreteReturnType
-                && translatedParameters == parameterExpressions
-                && newModificationTimes.equals(modificationTimes)) {
+            && translatedReturnType == concreteReturnType
+            && translatedParameters == parameterExpressions
+            && newModificationTimes.equals(modificationTimes)) {
             return this;
         }
         CausesOfDelay causesOfDelay = translatedParameters.stream()
@@ -171,12 +171,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (o == null || getClass() != o.getClass()) return false;
         MethodCall that = (MethodCall) o;
         boolean sameMethod = methodInfo.equals(that.methodInfo) ||
-                checkSpecialCasesWhereDifferentMethodsAreEqual(methodInfo, that.methodInfo);
+                             checkSpecialCasesWhereDifferentMethodsAreEqual(methodInfo, that.methodInfo);
         return sameMethod
-                // FIXME see Basics_28, but undoubtedly other tests that require this!   && modificationTimes.equals(that.modificationTimes)
-                // https://github.com/e2immu/e2immu/issues/56
-                && parameterExpressions.equals(that.parameterExpressions)
-                && object.equals(that.object);
+               // FIXME see Basics_28, but undoubtedly other tests that require this!   && modificationTimes.equals(that.modificationTimes)
+               // https://github.com/e2immu/e2immu/issues/56
+               && parameterExpressions.equals(that.parameterExpressions)
+               && object.equals(that.object);
     }
 
     /*
@@ -244,10 +244,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         qualification.qualifierRequired(methodInfo) ? YES : NO_METHOD));
                 if (guideGenerator != null) start = true;
             } else if ((ve = object.asInstanceOf(VariableExpression.class)) != null &&
-                    ve.variable() instanceof This thisVar) {
+                       ve.variable() instanceof This thisVar) {
                 //     (we check methodInspection is set, because of debugOutput)
                 assert !methodInfo.isStatic() : "Have a static method with scope 'this'? "
-                        + methodInfo.fullyQualifiedName + "; this " + thisVar.typeInfo.fullyQualifiedName;
+                                                + methodInfo.fullyQualifiedName + "; this " + thisVar.typeInfo.fullyQualifiedName;
                 TypeName typeName = thisVar.typeInfo.typeName(qualification.qualifierRequired(thisVar.typeInfo));
                 ThisName thisName = new ThisName(thisVar.writeSuper, typeName, qualification.qualifierRequired(thisVar));
                 outputBuilder.add(new QualifiedName(methodInfo.name, thisName,
@@ -360,26 +360,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // see DGSimplified_4, backupComparator. the functional interface's CNN cannot be upgraded to content not null,
         // because it is nullable
         boolean allowUpgradeCnnOfScope = objectValue instanceof IsVariableExpression ive &&
-                builder.contextNotNullIsNotNullable(ive.variable());
+                                         builder.contextNotNullIsNotNullable(ive.variable());
 
         // process parameters
-        Pair<EvaluationResultImpl.Builder, List<Expression>> res = EvaluateParameters.go(parameterExpressions,
-                objectResult, forwardEvaluationInfo, concreteMethod,
-                firstInCallCycle, objectValue, allowUpgradeCnnOfScope);
-        List<Expression> parameterValues = res.v;
-        builder.compose(objectResult, res.k.build());
+        EvaluateParameters.Result res = EvaluateParameters.go(parameterExpressions, objectResult, forwardEvaluationInfo,
+                concreteMethod, firstInCallCycle, objectValue, allowUpgradeCnnOfScope);
+        List<Expression> parameterValues = res.evaluationResults().stream().map(EvaluationResult::getExpression).toList();
+        builder.compose(objectResult, res.builder().build());
 
         // precondition
         Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, identifier, concreteMethod,
                 objectValue, parameterValues);
         builder.addPrecondition(precondition);
 
+        // links, 1st: param -> object and param <-> param
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
-        EvaluationResult links = methodLinkHelper.fromParametersIntoObject(object, objectValue, parameterExpressions,
-                parameterValues, true, true);
+        EvaluationResult parametersToObject = methodLinkHelper.fromParametersIntoObject(objectResult,
+                res.evaluationResults(), true, true);
         LinkedVariables linkedVariablesOfObject = methodLinkHelper.getLinkedVariablesOfObject();
-        CausesOfDelay linkDelays = links.causesOfDelay();
-        builder.compose(links);
+        builder.compose(parametersToObject);
+
+        // links, 2nd: object -> result; this will be the result of the expression
+        LinkedVariables lvsResult = methodLinkHelper.linkedVariables(objectResult, res.evaluationResults(),
+                concreteReturnType);
 
         // increment the time, irrespective of NO_VALUE
         CausesOfDelay incrementDelays;
@@ -389,18 +392,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             incrementDelays = CausesOfDelay.EMPTY;
         }
 
-        CausesOfDelay delayedFinalizer = checkFinalizer(context, builder, methodAnalysis, objectValue);
+        CausesOfDelay delayedFinalizer = checkFinalizer(context, builder, methodAnalysis, objectResult);
 
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
+        CausesOfDelay linkDelays = parametersToObject.causesOfDelay().merge(lvsResult.causesOfDelay());
         CausesOfDelay delays1 = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
                 .merge(objectResult.causesOfDelay()).merge(incrementDelays).merge(linkDelays);
 
 
         Expression modifiedInstance;
         ModReturn modReturn = checkCompanionMethodsModifying(identifier, builder, context,
-                concreteMethod, object, objectValue, parameterValues, this, modified);
+                concreteMethod, object, objectResult, parameterValues, this, modified);
         if (modReturn != null) {
             // mod delayed or true
             if (modReturn.expression != null) {
@@ -422,11 +426,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         CausesOfDelay delays2 = modifiedInstance == null ? delays1 : delays1.merge(modifiedInstance.causesOfDelay());
 
         EvaluationResult mv = new EvaluateMethodCall(context, this, delays2)
-                .methodValue(modified, methodAnalysis, objectIsImplicit, objectValue, concreteReturnType,
-                        parameterValues, forwardEvaluationInfo, modifiedInstance, firstInCallCycle);
+                .methodValue(modified, methodAnalysis, objectIsImplicit, objectResult, concreteReturnType,
+                        res.evaluationResults(), lvsResult, forwardEvaluationInfo, modifiedInstance, firstInCallCycle);
         builder.compose(mv);
+        builder.setLinkedVariablesOfExpression(lvsResult);
 
-        MethodInspection methodInspection = concreteMethod.methodInspection.get();
         complianceWithForwardRequirements(context, builder, methodAnalysis, forwardEvaluationInfo);
 
         checkCommonErrors(builder, context, concreteMethod, objectValue);
@@ -505,7 +509,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
             // TODO aggregated needs its specific code
             case CONTRACTED, AGGREGATED -> increment = !methodInfo.methodResolution.isSet() ||
-                    methodInfo.methodResolution.get().allowsInterrupts();
+                                                       methodInfo.methodResolution.get().allowsInterrupts();
             default -> throw new IllegalStateException("Unexpected value: " + methodAnalysis.analysisMode());
         }
         if (increment) builder.incrementStatementTime();
@@ -517,16 +521,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private CausesOfDelay checkFinalizer(EvaluationResult context,
                                          EvaluationResultImpl.Builder builder,
                                          MethodAnalysis methodAnalysis,
-                                         Expression objectValue) {
+                                         EvaluationResult objectResult) {
         if (methodAnalysis.getProperty(Property.FINALIZER).valueIsTrue()) {
             IsVariableExpression ive;
-            if ((ive = objectValue.asInstanceOf(IsVariableExpression.class)) != null) {
+            if ((ive = objectResult.getExpression().asInstanceOf(IsVariableExpression.class)) != null) {
                 if (raiseErrorForFinalizer(context, builder, ive.variable())) {
                     return CausesOfDelay.EMPTY;
                 }
             }
             // check links of this expression
-            LinkedVariables linked = objectValue.linkedVariables(context);
+            LinkedVariables linked = objectResult.linkedVariablesOfExpression();
             if (linked.isDelayed()) {
                 // we'll have to come back, we need to know the linked variables
                 return linked.causesOfDelay();
@@ -545,7 +549,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                            EvaluationResultImpl.Builder builder, Variable variable) {
         if (variable.parameterizedType().bestTypeInfo().equals(methodInfo.typeInfo)) {
             if (variable instanceof FieldReference && (context.getCurrentMethod() == null ||
-                    !context.getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
+                                                       !context.getCurrentMethod().getMethodAnalysis().getProperty(Property.FINALIZER).valueIsTrue())) {
                 // ensure that the current method has been marked @Finalizer
                 builder.raiseError(getIdentifier(), Message.Label.FINALIZER_METHOD_CALLED_ON_FIELD_NOT_IN_FINALIZER);
                 return true;
@@ -619,7 +623,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             EvaluationResult context,
             MethodInfo methodInfo,
             Expression object,
-            Expression objectValue,
+            EvaluationResult objectResult,
             List<Expression> parameterValues,
             Expression original,
             DV modified) {
@@ -627,6 +631,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext().getLocation(Stage.EVALUATION),
                 CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
+        Expression objectValue = objectResult.value();
         if (objectValue.isDelayed() || modified.isDelayed()) {
             return new ModReturn(null, delayMarker);
         }
@@ -637,7 +642,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Expression newInstance = createNewInstance(context, methodInfo, objectValue, iveValue, identifier, original);
         boolean inLoop = iveValue instanceof VariableExpression ve && ve.getSuffix() instanceof VariableExpression.VariableInLoop;
 
-        Expression newState = computeNewState(context, builder, methodInfo, objectValue, parameterValues);
+        Expression newState = computeNewState(context, builder, methodInfo, objectResult, parameterValues);
         if (newState.isDelayed()) {
             return new ModReturn(null, delayMarker.merge(newState.causesOfDelay()));
         }
@@ -656,9 +661,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.modifyingMethodAccess(ive.variable(), modifiedInstance, null);
             }
 
-            LinkedVariables linkedVariables = object.linkedVariables(context);
-            LinkedVariables linkedVariablesValue = objectValue.linkedVariables(context);
-            LinkedVariables linkedVariablesCombined = linkedVariables.merge(linkedVariablesValue);
+            LinkedVariables linkedVariablesCombined = objectResult.linkedVariablesOfExpression();
             for (Map.Entry<Variable, LV> e : linkedVariablesCombined.variables().entrySet()) {
                 LV lv = e.getValue();
                 Variable variable = e.getKey();
@@ -686,6 +689,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     } else {
                         // delay
                         Expression delayed = DelayedExpression.forModification(object, delayMarker);
+                        // FIXME this used to be linkedVariablesValue (only those of the value, not of the original one)
+                        //   check that we still get correct results
+                        LinkedVariables linkedVariablesValue = objectResult.linkedVariablesOfExpression();
                         builder.modifyingMethodAccess(variable, delayed, linkedVariablesValue);
                     }
                 } // else: already done: modifiedInstance
@@ -711,7 +717,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else if (objectValue.isInstanceOf(Instance.class)) {
             Expression unwrapped = unwrap(objectValue);
             newInstance = unwrapped instanceof Instance unwrappedInstance
-                    && statementIndex.equals(unwrappedInstance.getIndex()) ? unwrapped : null;
+                          && statementIndex.equals(unwrappedInstance.getIndex()) ? unwrapped : null;
             createInstanceBasedOn = objectValue;
         } else if (ive != null) {
             Expression current = context.currentValue(ive.variable());
@@ -721,7 +727,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else if (current.isInstanceOf(Instance.class)) {
                 Expression unwrapped = unwrap(current);
                 newInstance = unwrapped instanceof Instance unwrappedInstance
-                        && statementIndex.equals(unwrappedInstance.getIndex()) ? unwrapped : null;
+                              && statementIndex.equals(unwrappedInstance.getIndex()) ? unwrapped : null;
                 createInstanceBasedOn = current;
             } else {
                 createInstanceBasedOn = current;
@@ -761,10 +767,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private static Expression computeNewState(EvaluationResult context,
                                               EvaluationResultImpl.Builder builder,
                                               MethodInfo methodInfo,
-                                              Expression objectValue,
+                                              EvaluationResult objectResult,
                                               List<Expression> parameterValues) {
         Expression state;
         BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
+        Expression objectValue = objectResult.value();
         if (context.evaluationContext().hasState(objectValue)) {
             state = context.evaluationContext().state(objectValue);
         } else {
@@ -780,7 +787,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             newState.set(TRUE);
         } else {
             EvaluationResult temporaryContext = builder.build();
-            String objectModificationTimes = temporaryContext.modificationTimesOf(objectValue);
+            LinkedVariables linkedVariables = objectResult.linkedVariablesOfExpression();
+            String objectModificationTimes = temporaryContext.modificationTimesOf(linkedVariables);
             cMap.keySet().stream()
                     .filter(cmn -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(cmn.action()))
                     .sorted()
@@ -815,7 +823,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(methodInfo.typeInfo);
             aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
             assert aspectMethod != null : "Expect aspect method in " + companionMethodName +
-                    " to be known to " + methodInfo.typeInfo.fullyQualifiedName;
+                                          " to be known to " + methodInfo.typeInfo.fullyQualifiedName;
         } else {
             aspectMethod = null;
         }
@@ -924,7 +932,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
 
         translationMap.setModificationTimesHandler((beforeTranslation, translatedObject, translatedParameters) -> {
-            String params = currentContext.modificationTimesOf(translatedParameters.toArray(Expression[]::new));
+            String params = "XX";// currentContext.modificationTimesOf(translatedParameters.toArray(Expression[]::new));
+            // FIXME this needs serious attention
             return objectModificationTimes + (params.isEmpty() ? "" : ("," + params));
         });
 
@@ -940,7 +949,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private static DV notNullRequirementOnScope(MethodInfo concreteMethod, DV notNullRequirement) {
         if (concreteMethod.typeInfo.typeInspection.get().isFunctionalInterface()
-                && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
+            && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
             return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV; // @NotNull1
         }
         return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
@@ -953,7 +962,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (concreteMethod.fullyQualifiedName().equals("java.lang.String.toString()")) {
             ParameterizedType type = objectValue.returnType();
             if (type != null && type.typeInfo != null && type.typeInfo ==
-                    context.getPrimitives().stringTypeInfo()) {
+                                                         context.getPrimitives().stringTypeInfo()) {
                 builder.raiseError(getIdentifier(), Message.Label.UNNECESSARY_METHOD_CALL, "toString()");
             }
         }
@@ -968,8 +977,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(method);
         DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
         if (modified.valueIsTrue()
-                && !context.evaluationContext().inConstructionOrInStaticWithRespectTo(object.returnType().typeInfo)
-                && context.evaluationContext().cannotBeModified(objectValue).valueIsTrue()) {
+            && !context.evaluationContext().inConstructionOrInStaticWithRespectTo(object.returnType().typeInfo)
+            && context.evaluationContext().cannotBeModified(objectValue).valueIsTrue()) {
             builder.raiseError(getIdentifier(), Message.Label.CALLING_MODIFYING_METHOD_ON_IMMUTABLE_OBJECT,
                     "Method: " + methodInfo.fullyQualifiedName + ", Type: " + objectValue.returnType());
         }
@@ -991,7 +1000,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     boolean cnnTravelsToFields = context.getAnalyserContext().getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods();
                     boolean scopeIsFunctionalInterfaceLinkedToParameter = !objectVars.isEmpty() && objectVars.stream()
                             .allMatch(v -> v.parameterizedType().isFunctionalInterface() && (v instanceof ParameterInfo ||
-                                    cnnTravelsToFields && v instanceof FieldReference fr && fr.fieldInfo().owner.primaryType() == context.getCurrentType()));
+                                                                                             cnnTravelsToFields && v instanceof FieldReference fr && fr.fieldInfo().owner.primaryType() == context.getCurrentType()));
                     if (!isNotNull && !builder.isNotNull(this).valueIsTrue() && !scopeIsFunctionalInterfaceLinkedToParameter) {
                         builder.raiseError(getIdentifier(), Message.Label.POTENTIAL_NULL_POINTER_EXCEPTION,
                                 "Result of method call " + methodInfo.fullyQualifiedName());
@@ -1080,15 +1089,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return fromConcrete.max(formal);
         }
         return formal;
-    }
-
-
-    // code shared with MethodReference
-
-    @Override
-    public LinkedVariables linkedVariables(EvaluationResult context) {
-        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo);
-        return methodLinkHelper.linkedVariables(object, parameterExpressions, concreteReturnType);
     }
 
     @Override

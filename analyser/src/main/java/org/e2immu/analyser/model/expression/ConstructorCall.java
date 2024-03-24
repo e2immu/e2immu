@@ -502,8 +502,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             int sumComplexity = expressions.stream().mapToInt(Expression::getComplexity).sum();
             ConstructorCall withEvalParam = sumComplexity >= Expression.CONSTRUCTOR_CALL_EXPANSION_LIMIT ? this
                     : withParameterExpressions(expressions);
+            EvaluationResult objectResult = builder.build(); // linked variables have been set
             MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, builder, context,
-                    constructor, null, withEvalParam, expressions, this, DV.TRUE_DV);
+                    constructor, withEvalParam, objectResult, expressions, this, DV.TRUE_DV);
             if (modReturn == null) {
                 instance = withEvalParam;
             } else if (modReturn.expression() != null) {

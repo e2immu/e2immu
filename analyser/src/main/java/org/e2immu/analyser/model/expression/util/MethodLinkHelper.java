@@ -475,8 +475,8 @@ public class MethodLinkHelper {
    4/ independence is determined by the independence value of the method, and the independence value of the object 'a'
     */
 
-    public LinkedVariables linkedVariables(Expression object,
-                                           List<Expression> parameterExpressions,
+    public LinkedVariables linkedVariables(EvaluationResult objectResult,
+                                           List<EvaluationResult> parameterResults,
                                            ParameterizedType concreteReturnType) {
         // RULE 1: void method cannot link
         if (methodInfo.noReturnValue()) return LinkedVariables.EMPTY;

@@ -60,9 +60,10 @@ public class EvaluateMethodCall {
     public EvaluationResult methodValue(DV modified,
                                         MethodAnalysis methodAnalysis,
                                         boolean objectIsImplicit,
-                                        Expression objectValue,
+                                        EvaluationResult objectResult,
                                         ParameterizedType concreteReturnTypeIn,
-                                        List<Expression> parameters,
+                                        List<EvaluationResult> parameterResults,
+                                        LinkedVariables linkedVariables,
                                         ForwardEvaluationInfo forwardEvaluationInfo,
                                         Expression modifiedInstance,
                                         boolean firstInCallCycle) {
@@ -82,6 +83,9 @@ public class EvaluateMethodCall {
             concreteReturnType = concreteReturnTypeIn;
         }
 
+        Expression objectValue = objectResult.value();
+        List<Expression> parameters = parameterResults.stream().map(EvaluationResult::getExpression).toList();
+
         if (earlierDelays.isDelayed()) {
             return delay(builder, methodInfo, concreteReturnType, objectValue, earlierDelays,
                     context.evaluationContext().breakDelayLevel());
@@ -90,7 +94,8 @@ public class EvaluateMethodCall {
             return builder.setExpression(EmptyExpression.NO_RETURN_VALUE).build();
         }
 
-        String currentModificationTimes = context.modificationTimesOf(objectValue, parameters);
+        String currentModificationTimes = context.modificationTimesOf(objectResult.linkedVariablesOfExpression(),
+                parameterResults.stream().map(EvaluationResult::linkedVariablesOfExpression).toList());
         String modificationTimes = methodCall.hasEmptyModificationTimes() ? currentModificationTimes
                 : methodCall.getModificationTimes();
 
@@ -105,11 +110,10 @@ public class EvaluateMethodCall {
          */
         InlinedMethod inlineValue;
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
-                (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
-                inlineValue.canBeApplied(context)) {
+            (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
+            inlineValue.canBeApplied(context)) {
             Expression scopeOfObjectValue = new VariableExpression(inlineValue.identifier,
                     context.evaluationContext().currentThis());
-            LinkedVariables linkedVariables = methodCall.linkedVariables(context);
             TranslationMap translationMap = inlineValue.translationMap(context,
                     parameters, scopeOfObjectValue, context.getCurrentType(), identifier, linkedVariables);
             Expression translated = inlineValue.translate(analyserContext, translationMap);
@@ -125,7 +129,7 @@ public class EvaluateMethodCall {
         }
 
         if (TypeInfo.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) && !analyserContext.inAnnotatedAPIAnalysis() &&
-                parameters.get(0) instanceof BooleanConstant boolValue) {
+            parameters.get(0) instanceof BooleanConstant boolValue) {
             BooleanConstant TRUE = new BooleanConstant(primitives, true);
             Expression clause = new MethodCall(identifier, objectValue, methodInfo, List.of(TRUE));
             if (boolValue.constant()) {
@@ -147,15 +151,15 @@ public class EvaluateMethodCall {
             Expression condition = context.evaluationContext().getConditionManager().condition();
             And and;
             if (methodCall.equals(condition) || (and = condition.asInstanceOf(And.class)) != null
-                    && and.getExpressions().stream().anyMatch(methodCall::equals)) {
+                                                && and.getExpressions().stream().anyMatch(methodCall::equals)) {
                 BooleanConstant TRUE = new BooleanConstant(context.getPrimitives(), true);
                 return builder.setExpression(TRUE).build();
             }
             Negation n;
             And and2;
             if ((n = condition.asInstanceOf(Negation.class)) != null && methodCall.equals(n.expression) ||
-                    (and2 = condition.asInstanceOf(And.class)) != null
-                            && and2.getExpressions().stream().anyMatch(methodCall::equals)) {
+                (and2 = condition.asInstanceOf(And.class)) != null
+                && and2.getExpressions().stream().anyMatch(methodCall::equals)) {
                 BooleanConstant FALSE = new BooleanConstant(context.getPrimitives(), false);
                 return builder.setExpression(FALSE).build();
             }
@@ -234,8 +238,7 @@ public class EvaluateMethodCall {
             }
             InlinedMethod iv;
             if ((iv = srv.asInstanceOf(InlinedMethod.class)) != null && iv.canBeApplied(context) &&
-                    forwardEvaluationInfo.allowInline(methodInfo)) {
-                LinkedVariables linkedVariables = methodCall.linkedVariables(context);
+                forwardEvaluationInfo.allowInline(methodInfo)) {
                 TranslationMap translationMap = iv.translationMap(context, parameters, objectValue,
                         context.getCurrentType(), identifier, linkedVariables);
                 Expression translated = iv.translate(analyserContext, translationMap);
@@ -324,7 +327,7 @@ public class EvaluateMethodCall {
                     are the only types of variables that end up in ExpandedVariable expressions--parameters generally
                     are expanded
                     */
-                    builder.link(ive.variable(), thisVar, LV.delay(finalDelays), true);
+                    builder.link(ive.variable(), thisVar, LV.delay(finalDelays));
                 }
             }
         } // else: cannot be expanded, so this extra delay is not necessary
@@ -346,8 +349,8 @@ public class EvaluateMethodCall {
         if (isName) {
             VariableExpression ve;
             if ((ve = objectValue.asInstanceOf(VariableExpression.class)) != null
-                    && ve.variable() instanceof FieldReference fr
-                    && fr.fieldInfo().owner == methodInfo.typeInfo) {
+                && ve.variable() instanceof FieldReference fr
+                && fr.fieldInfo().owner == methodInfo.typeInfo) {
                 return new StringConstant(primitives, fr.fieldInfo().name);
             }
             Properties valueProperties = EvaluationContext.PRIMITIVE_VALUE_PROPERTIES;
@@ -527,7 +530,7 @@ public class EvaluateMethodCall {
 
     private Expression computeStaticEvaluation(MethodInfo methodInfo, List<Expression> parameters) {
         if ("java.lang.Integer.toString(int)".equals(methodInfo.fullyQualifiedName()) &&
-                parameters.get(0).isConstant()) {
+            parameters.get(0).isConstant()) {
             return new StringConstant(primitives, Integer.toString(((IntConstant) parameters.get(0)).constant()));
         }
         return null;
@@ -537,12 +540,12 @@ public class EvaluateMethodCall {
         if (!objectValue.isConstant()) return null;
         StringConstant stringValue;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
-                (stringValue = objectValue.asInstanceOf(StringConstant.class)) != null) {
+            (stringValue = objectValue.asInstanceOf(StringConstant.class)) != null) {
             return new IntConstant(primitives, objectValue.getIdentifier(), stringValue.constant().length());
         }
         ConstantExpression<?> ce;
         if ("equals".equals(methodInfo.name) && params.size() == 1 &&
-                (ce = params.get(0).asInstanceOf(ConstantExpression.class)) != null) {
+            (ce = params.get(0).asInstanceOf(ConstantExpression.class)) != null) {
             // the constant can be wrapped in a property wrapper
             return new BooleanConstant(primitives, objectValue.equals(ce.unwrapIfConstant()));
         }

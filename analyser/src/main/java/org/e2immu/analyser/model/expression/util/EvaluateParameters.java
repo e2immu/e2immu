@@ -212,9 +212,8 @@ public class EvaluateParameters {
 
         // we don't want delays when processing companion expressions, which are never modifying and cause
         // unnecessary stress to the shallow analyser
-        Expression parameterValue = parameterResult.value();
         if (!contextModified.valueIsFalse() && !forwardEvaluationInfo.isInCompanionExpression()) {
-            EvaluationResult er = potentiallyModifyConstructorCall(context, parameterExpression, parameterValue,
+            EvaluationResult er = potentiallyModifyConstructorCall(context, parameterExpression, parameterResult,
                     contextModified);
             if (er != null && er.getExpression() != null) {
                 afterModification = er;
@@ -239,21 +238,19 @@ public class EvaluateParameters {
      */
     private static EvaluationResult potentiallyModifyConstructorCall(EvaluationResult context,
                                                                      Expression parameterExpression,
-                                                                     Expression parameterValue,
+                                                                     EvaluationResult parameterResult,
                                                                      DV contextModified) {
 
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
-        LinkedVariables lvExpression = parameterExpression.linkedVariables(context);
-        LinkedVariables lvValue = parameterValue.linkedVariables(context);
-        LinkedVariables linkedVariables = lvExpression.merge(lvValue);
+        LinkedVariables linkedVariables = parameterResult.linkedVariablesOfExpression();
         IsVariableExpression ive;
         Variable theVariable = (ive = parameterExpression.asInstanceOf(IsVariableExpression.class)) != null ? ive.variable() : null;
         boolean changed = false;
         for (Map.Entry<Variable, LV> e : linkedVariables.variables().entrySet()) {
             LV lv = e.getValue();
             Variable variable = e.getKey();
-            changed |= potentiallyChangeOneVariable(context, parameterExpression, parameterValue, contextModified,
-                    builder, lvExpression, theVariable, lv, variable);
+            changed |= potentiallyChangeOneVariable(context, parameterExpression, parameterResult, contextModified,
+                    builder, linkedVariables, theVariable, lv, variable);
             if (!contextModified.valueIsFalse()) {
                 /* modifyingMethod(map.keySet) -> must also mark map as context modified; see Modification_29 */
                 if (lv.isDelayed() || lv.ge(LV.LINK_STATICALLY_ASSIGNED) && lv.le(LV.LINK_DEPENDENT)) {
@@ -271,7 +268,7 @@ public class EvaluateParameters {
 
     public static boolean potentiallyChangeOneVariable(EvaluationResult context,
                                                        Expression parameterExpression,
-                                                       Expression parameterValue,
+                                                       EvaluationResult parameterResult,
                                                        DV contextModified,
                                                        EvaluationResultImpl.Builder builder,
                                                        LinkedVariables lvExpression,
@@ -285,7 +282,7 @@ public class EvaluateParameters {
             return false;
         }
         // done/non-delayed situation first...
-        CausesOfDelay delays = dvLink.causesOfDelay().merge(parameterValue.causesOfDelay())
+        CausesOfDelay delays = dvLink.causesOfDelay().merge(parameterResult.causesOfDelay())
                 .merge(contextModified.causesOfDelay());
 
         if (delays.isDone()) {
@@ -319,8 +316,8 @@ public class EvaluateParameters {
         CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext()
                 .getLocation(Stage.EVALUATION), CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));
         Expression combinedDelays;
-        if (parameterValue.isDelayed()) {
-            combinedDelays = parameterValue.mergeDelays(delayMarker);
+        if (parameterResult.causesOfDelay().isDelayed()) {
+            combinedDelays = parameterResult.getExpression().mergeDelays(delayMarker);
         } else {
             combinedDelays = DelayedExpression.forModification(parameterExpression, delays.merge(delayMarker));
         }
