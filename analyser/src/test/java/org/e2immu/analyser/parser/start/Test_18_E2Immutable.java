@@ -85,7 +85,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             // the constructor with 1 parameter
             if ("E2Immutable_1".equals(d.methodInfo().name) &&
-                    d.methodInfo().methodInspection.get().getParameters().size() == 1) {
+                d.methodInfo().methodInspection.get().getParameters().size() == 1) {
                 // this.parent2
 
                 /*
@@ -99,12 +99,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             }
             // the constructor with 2 parameters
             if ("E2Immutable_1".equals(d.methodInfo().name) &&
-                    d.methodInfo().methodInspection.get().getParameters().size() == 2) {
+                d.methodInfo().methodInspection.get().getParameters().size() == 2) {
                 assertTrue(d.methodInfo().isConstructor());
 
                 // parent2Param.level2
                 if (d.variable() instanceof FieldReference fr && "level2".equals(fr.fieldInfo().name) &&
-                        fr.scope() instanceof VariableExpression ve && "parent2Param".equals(ve.variable().simpleName())) {
+                    fr.scope() instanceof VariableExpression ve && "parent2Param".equals(ve.variable().simpleName())) {
                     assertNotEquals("0", d.statementId());
                     if ("1".equals(d.statementId())) {
                         String expectValue = d.iteration() <= 1 ? "<f:parent2Param.level2>" : "instance type int";
@@ -230,7 +230,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("E2Immutable_3".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fieldReference &&
-                    "strings4".equals(fieldReference.fieldInfo().name)) {
+                "strings4".equals(fieldReference.fieldInfo().name)) {
                 assertEquals("Set.copyOf(input4)", d.currentValue().toString());
                 assertDv(d, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, NOT_NULL_EXPRESSION);
                 // Set<String>, E2 -> ER
@@ -240,7 +240,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             }
 
             if ("getStrings4".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr &&
-                    "strings4".equals(fr.fieldInfo().name)) {
+                "strings4".equals(fr.fieldInfo().name)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, EXTERNAL_IMMUTABLE);
                 assertEquals("", d.variableInfo().getLinkedVariables().toString());
             }
@@ -574,7 +574,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "<m:firstEntry>" : "map.firstEntry()";
                 assertEquals(expectValue, v.toString());
                 String expectLinked = d.iteration() == 0 ? "this.map:-1,this:-1" : "this.map:4,this:4";
-                assertEquals(expectLinked, v.linkedVariables(d.evaluationResult()).toString());
+                assertEquals(expectLinked, d.evaluationResult().linkedVariablesOfExpression().toString());
             }
 
             if ("stream".equals(d.methodInfo().name)) {
@@ -582,7 +582,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 String expectValue = d.iteration() == 0 ? "<m:of>" : "Stream.of(map.firstEntry())";
                 assertEquals(expectValue, v.toString());
                 String expectLinked = d.iteration() == 0 ? "this.map:-1,this:-1" : "";
-                assertEquals(expectLinked, v.linkedVariables(d.evaluationResult()).toString());
+                assertEquals(expectLinked, d.evaluationResult().linkedVariablesOfExpression().toString());
             }
         };
 

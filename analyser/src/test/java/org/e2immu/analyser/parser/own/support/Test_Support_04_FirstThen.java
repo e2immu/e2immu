@@ -47,8 +47,8 @@ public class Test_Support_04_FirstThen extends CommonTestRunner {
                 if ("1.0.0".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "<null-check>" : "null==first";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    String linked = d.iteration() < 2 ? "this.first:-1,this:-1" : "";
-                    assertEquals(linked, d.evaluationResult().value().linkedVariables(d.evaluationResult()).toString());
+                    String expectLinked = d.iteration() < 2 ? "this.first:-1,this:-1" : "";
+                    assertEquals(expectLinked, d.evaluationResult().linkedVariablesOfExpression().toString());
                 }
             }
         };

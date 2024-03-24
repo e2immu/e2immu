@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.modification;
 
-import org.e2immu.analyser.analyser.ChangeData;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.LinkedVariables;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -92,7 +89,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
             if ("add".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof FieldReference fr && "set".equals(fr.fieldInfo().name)) {
                     assertTrue(d.variableInfoContainer().hasEvaluation()
-                            && !d.variableInfoContainer().hasMerge());
+                               && !d.variableInfoContainer().hasMerge());
                     assertTrue(d.variableInfo().isRead());
                     String expectValue = d.iteration() == 0 ? "<f:set>"
                             : "instance 0 type Set<String>/*this.size()>=1&&this.contains(v)*/";
@@ -101,8 +98,10 @@ public class Test_16_Modification_0 extends CommonTestRunner {
                     assertLinked(d, it(0, "this:2"));
 
                     // separate test on VE:
-                    LinkedVariables lvSet = new VariableExpression(d.variableInfo().getIdentifier(),
-                            d.variable()).linkedVariables(d.context());
+                    LinkedVariables lvSet = new VariableExpression(d.variableInfo().getIdentifier(), d.variable())
+                            .evaluate(d.context(), ForwardEvaluationInfo.DEFAULT)
+                            .linkedVariablesOfExpression();
+
                     assertEquals("this.set:0,this:2", lvSet.toString());
                     // end separate test
                 }
@@ -212,7 +211,7 @@ public class Test_16_Modification_0 extends CommonTestRunner {
 
                 Expression e = d.fieldAnalysis().getValue();
                 assertEquals("instance type HashSet<StringBuilder>", e.toString());
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),  it(0, "v:4"));
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(), it(0, "v:4"));
             }
         };
 

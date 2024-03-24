@@ -377,7 +377,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
         EvaluationResult parametersToObject = methodLinkHelper.fromParametersIntoObject(objectResult,
                 res.evaluationResults(), true, true);
-        LinkedVariables linkedVariablesOfObject = methodLinkHelper.getLinkedVariablesOfObject();
+        LinkedVariables linkedVariablesOfObject = parametersToObject.linkedVariablesOfExpression();
         builder.compose(parametersToObject);
 
         // links, 2nd: object -> result; this will be the result of the expression

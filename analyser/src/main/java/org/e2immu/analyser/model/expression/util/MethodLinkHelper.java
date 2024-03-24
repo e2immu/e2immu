@@ -43,7 +43,6 @@ public class MethodLinkHelper {
     private final EvaluationResult context;
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
-    private LinkedVariables linkedVariablesOfObject;
     private final ComputeIndependent computeIndependent;
 
     public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo) {
@@ -68,20 +67,16 @@ public class MethodLinkHelper {
     /*
     called by ConstructorCall and MethodCall
      */
-    private List<LinkedVariables> computeLinkedVariablesOfParameters(List<Expression> parameterExpressions,
-                                                                     List<Expression> parameterValues) {
-        assert parameterExpressions.size() == parameterValues.size();
+    private List<LinkedVariables> computeLinkedVariablesOfParameters(List<EvaluationResult> parameterResults) {
         int i = 0;
-        List<LinkedVariables> result = new ArrayList<>(parameterExpressions.size());
-        for (Expression expression : parameterExpressions) {
-            Expression value = parameterValues.get(i);
+        List<LinkedVariables> result = new ArrayList<>(parameterResults.size());
+        for (EvaluationResult evaluationResult : parameterResults) {
+            Expression value = evaluationResult.value();
             LinkedVariables lv;
-            if (expression.isInstanceOf(VariableExpression.class) || value.isInstanceOf(ExpandedVariable.class)) {
-                lv = expression.linkedVariables(context);
-            } else if (expression.returnType().isFunctionalInterface()) {
-                lv = additionalLinkingFunctionalInterface(context, expression, parameterValues.get(i));
+            if (value.returnType().isFunctionalInterface()) {
+                lv = additionalLinkingFunctionalInterface(context, value, parameterResults.get(i));
             } else {
-                lv = value.linkedVariables(context);
+                lv = evaluationResult.linkedVariablesOfExpression();
             }
             result.add(lv.maximum(LINK_DEPENDENT));
             i++;
@@ -91,8 +86,8 @@ public class MethodLinkHelper {
 
     private static LinkedVariables additionalLinkingFunctionalInterface(EvaluationResult context,
                                                                         Expression parameterExpression,
-                                                                        Expression parameterValue) {
-        List<LinkedVariables> list = additionalLinkingFunctionalInterface2(context, parameterExpression, parameterValue);
+                                                                        EvaluationResult parameterResult) {
+        List<LinkedVariables> list = additionalLinkingFunctionalInterface2(context, parameterExpression, parameterResult);
         return list.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
     }
 
@@ -113,12 +108,13 @@ public class MethodLinkHelper {
     */
     private static List<LinkedVariables> additionalLinkingFunctionalInterface2(EvaluationResult context,
                                                                                Expression parameterExpression,
-                                                                               Expression parameterValue) {
+                                                                               EvaluationResult parameterResult) {
         MethodInfo methodInfo;
         TypeInfo nestedType;
         ConstructorCall cc;
         MethodReference methodReference;
         Lambda lambda;
+
         if ((lambda = parameterExpression.asInstanceOf(Lambda.class)) != null) {
             methodInfo = lambda.methodInfo;
             nestedType = lambda.methodInfo.typeInfo;
@@ -129,6 +125,7 @@ public class MethodLinkHelper {
             methodInfo = anonymousClassInspection.findMethodOverridingSAMOf(parameterExpression.returnType().typeInfo);
             nestedType = cc.anonymousClass();
         } else if ((methodReference = parameterExpression.asInstanceOf(MethodReference.class)) != null) {
+            Expression parameterValue = parameterResult.value();
             MethodReference mr;
             if ((mr = parameterValue.asInstanceOf(MethodReference.class)) != null) {
                 // do we have access to the code?
@@ -187,7 +184,7 @@ public class MethodLinkHelper {
                                                                                   MethodReference methodReference) {
         DV immutable = context.getProperty(methodReference.scope, Property.IMMUTABLE);
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return List.of();
-        LinkedVariables allLinkedVariablesOfScope = methodReference.scope.linkedVariables(context);
+        LinkedVariables allLinkedVariablesOfScope = methodReference.scope.evaluate(context, ForwardEvaluationInfo.DEFAULT).linkedVariablesOfExpression();
         if (allLinkedVariablesOfScope.isEmpty()) return List.of();
         LinkedVariables linkedVariablesOfScope = allLinkedVariablesOfScope
                 .remove(v -> !context.evaluationContext().acceptForVariableAccessReport(v, null));
@@ -241,15 +238,15 @@ public class MethodLinkHelper {
                                                      boolean addLinksBetweenParameters) {
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
-        linkedVariablesOfObject = formalAndValueLinkedVariables(object, objectValue);
+        LinkedVariables linkedVariablesOfObject = objectResult.linkedVariablesOfExpression();
 
         if (methodInspection.getParameters().isEmpty()) {
             return builder.build(); // nothing more we can do here
         }
 
-        ParameterizedType objectPt = object.returnType();
+        ParameterizedType objectPt = objectResult.getExpression().returnType();
 
-        List<LinkedVariables> parameterLv = computeLinkedVariablesOfParameters(parameterExpressions, parameterValues);
+        List<LinkedVariables> parameterLv = computeLinkedVariablesOfParameters(parameterResults);
 
         if (fromParametersIntoObject) {
             DV scopeImmutable = computeIndependent.typeImmutable(objectPt);
@@ -261,9 +258,8 @@ public class MethodLinkHelper {
                 if (!INDEPENDENT_DV.equals(formalParameterIndependent)) {
 
                     int index = parameterAnalysis.getParameterInfo().index;
-                    Expression parameterValue = parameterValues.get(index);
-                    Expression parameterExpression = parameterExpressions.get(index);
-                    ParameterizedType concreteParameterType = parameterValue.returnType();
+                    EvaluationResult parameterResult = parameterResults.get(index);
+                    ParameterizedType concreteParameterType = parameterResult.value().returnType();
                     LV linkLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(formalParameterIndependent);
                     DV parameterIndependent = computeIndependent.typesAtLinkLevel(linkLevel, objectPt, scopeImmutable, concreteParameterType);
                     LV parameterIndependentLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(parameterIndependent);
@@ -272,12 +268,12 @@ public class MethodLinkHelper {
                         assert parameterIndependentLevel.isDelayed()
                                || LINK_DEPENDENT.equals(parameterIndependentLevel)
                                || LINK_COMMON_HC.equals(parameterIndependentLevel);
-                        LinkedVariables linkedVariablesOfParameter = formalAndValueLinkedVariables(parameterExpression, parameterValue);
+                        LinkedVariables linkedVariablesOfParameter = parameterResult.linkedVariablesOfExpression();
 
                         for (Map.Entry<Variable, LV> eFrom : linkedVariablesOfObject) {
                             for (Map.Entry<Variable, LV> eTo : linkedVariablesOfParameter) {
                                 LV level = eFrom.getValue().max(eTo.getValue()).max(parameterIndependentLevel);
-                                builder.link(eFrom.getKey(), eTo.getKey(), level, true);
+                                builder.link(eFrom.getKey(), eTo.getKey(), level);
                             }
                         }
                     }
@@ -286,28 +282,15 @@ public class MethodLinkHelper {
         }
 
         if (addLinksBetweenParameters) {
-            linksBetweenParameters(builder, methodInfo, parameterExpressions, parameterValues, parameterLv);
+            linksBetweenParameters(builder, methodInfo, parameterResults, parameterLv);
         }
+        builder.setLinkedVariablesOfExpression(linkedVariablesOfObject);
         return builder.build();
     }
 
-    private LinkedVariables formalAndValueLinkedVariables(Expression object, Expression objectValue) {
-        LinkedVariables linkedVariables = objectValue.linkedVariables(context);
-        if (object instanceof IsVariableExpression ive) {
-            return linkedVariables.merge(ive.linkedVariables(context));
-        }
-        return linkedVariables;
-    }
-
-    public LinkedVariables getLinkedVariablesOfObject() {
-        return linkedVariablesOfObject;
-    }
-
-
     public void linksBetweenParameters(EvaluationResultImpl.Builder builder,
                                        MethodInfo concreteMethod,
-                                       List<Expression> parameterExpressions,
-                                       List<Expression> parameterValues,
+                                       List<EvaluationResult> parameterResults,
                                        List<LinkedVariables> parameterLv) {
         // key is dependent on values, but only if all of them are variable expressions
         Map<ParameterInfo, LinkedVariables> crossLinks = concreteMethod.crossLinks(context.getAnalyserContext());
@@ -316,14 +299,17 @@ public class MethodLinkHelper {
             ParameterInfo target = (ParameterInfo) e.getKey();
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
             LV level = e.getValue();
-            Expression targetExpression = parameterExpressions.get(target.index);
-            Expression targetValue = parameterValues.get(target.index);
+            EvaluationResult targetResult = parameterResults.get(target.index);
+            Expression targetValue = targetResult.value();
+            /*
+            FIXME solve when we've tested more
             Variable targetVariable = bestTargetVariable(targetExpression, targetValue);
             if (targetVariable != null) {
                 Expression expression = bestExpression(parameterExpressions.get(pi.index), parameterValues.get(pi.index));
                 tryLinkBetweenParameters(builder, context, targetVariable, target.index, targetIsVarArgs, level, expression,
                         parameterExpressions, parameterValues, parameterLv);
-            }
+            }*/
+
         }));
     }
 
@@ -452,7 +438,7 @@ public class MethodLinkHelper {
         Expression parameterValue = parameterValues.get(targetIndex);
         CausesOfDelay delays = parameterValue.causesOfDelay().merge(source.causesOfDelay());
         targetLinks.variables().forEach((v, l) ->
-                builder.link(source.variable(), v, delays.isDelayed() ? LV.delay(delays) : level.max(l), true));
+                builder.link(source.variable(), v, delays.isDelayed() ? LV.delay(delays) : level.max(l)));
     }
 
     /*
@@ -490,15 +476,15 @@ public class MethodLinkHelper {
         // RULE 2: @Identity links to the 1st parameter
         DV identity = methodAnalysis.getProperty(Property.IDENTITY);
         if (identity.valueIsTrue()) {
-            return parameterExpressions.get(0).linkedVariables(context).maximum(LINK_ASSIGNED);
+            return parameterResults.get(0).linkedVariablesOfExpression().maximum(LINK_ASSIGNED);
         }
-        LinkedVariables linkedVariablesOfObject = object.linkedVariables(context)
+        LinkedVariables linkedVariablesOfObject = objectResult.linkedVariablesOfExpression()
                 .maximum(LINK_ASSIGNED); // should be delay-able!
 
-        if (identity.isDelayed() && !parameterExpressions.isEmpty()) {
+        if (identity.isDelayed() && !parameterResults.isEmpty()) {
             // temporarily link to both the object and the parameter, in a delayed way
             return linkedVariablesOfObject
-                    .merge(parameterExpressions.get(0).linkedVariables(context))
+                    .merge(parameterResults.get(0).linkedVariablesOfExpression())
                     .changeNonStaticallyAssignedToDelay(identity.causesOfDelay());
         }
 
@@ -512,7 +498,7 @@ public class MethodLinkHelper {
         }
 
         DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
-        return computeIndependent.linkedVariables(object.returnType(), linkedVariablesOfObject,
+        return computeIndependent.linkedVariables(objectResult.getExpression().returnType(), linkedVariablesOfObject,
                 independent, methodAnalysis.getHiddenContentSelector(), concreteReturnType);
     }
 
