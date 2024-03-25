@@ -18,6 +18,8 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
+import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
@@ -116,7 +118,10 @@ public abstract class CommonTest {
             @Override
             public DV getProperty(Expression value, Property property,
                                   boolean duringEvaluation, boolean ignoreStateInConditionManager) {
-                return null;
+                if (value instanceof ExpressionMock em) {
+                    return em.getProperty(null, property, duringEvaluation);
+                }
+                throw new UnsupportedOperationException("Not implemented");
             }
 
             @Override
@@ -171,9 +176,46 @@ public abstract class CommonTest {
 
     @BeforeEach
     public void beforeEach() {
+        primitives.objectTypeInfo().typeInspection.set(new TypeInspectionImpl.Builder(primitives.objectTypeInfo(),
+                Inspector.BY_HAND).build(analyserContext));
+
         TypeInfo string = primitives.stringTypeInfo();
         string.typeInspection.set(new TypeInspectionImpl.Builder(string, Inspector.BY_HAND)
                 .setAccess(Inspection.Access.PUBLIC));
+        TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                string, analyserContext);
+        builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
+        string.typeAnalysis.set(builder.build());
+
+        mutable.typeInspection.set(new TypeInspectionImpl.Builder(mutable, Inspector.BY_HAND)
+                .setFunctionalInterface(null)
+                .setParentClass(primitives.objectParameterizedType())
+                .build(analyserContext));
+        TypeAnalysisImpl.Builder mBuilder = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                mutable, analyserContext);
+        mBuilder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+        mBuilder.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
+        mutable.typeAnalysis.set(mBuilder.build());
+
+        recursivelyImmutable.typeInspection.set(new TypeInspectionImpl.Builder(recursivelyImmutable, Inspector.BY_HAND)
+                .setFunctionalInterface(null)
+                .setParentClass(primitives.objectParameterizedType())
+                .build(analyserContext));
+        TypeAnalysisImpl.Builder riBuilder = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                recursivelyImmutable, analyserContext);
+        riBuilder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+        riBuilder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
+        recursivelyImmutable.typeAnalysis.set(mBuilder.build());
+
+        immutableHC.typeInspection.set(new TypeInspectionImpl.Builder(immutableHC, Inspector.BY_HAND)
+                .setFunctionalInterface(null)
+                .setParentClass(primitives.objectParameterizedType())
+                .build(analyserContext));
+        TypeAnalysisImpl.Builder ihcBuilder = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                immutableHC, analyserContext);
+        ihcBuilder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+        ihcBuilder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV);
+        immutableHC.typeAnalysis.set(mBuilder.build());
     }
 
     protected EvaluationResult context(EvaluationContext evaluationContext) {
@@ -213,9 +255,37 @@ public abstract class CommonTest {
 
     protected static ExpressionMock mockWithLinkedVariables(VariableExpression va, LV lv) {
         return new ExpressionMock() {
+
             @Override
-            public LinkedVariables linkedVariables(EvaluationResult context) {
-                return LinkedVariables.of(va.variable(), lv);
+            public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+                return new EvaluationResultImpl.Builder(context)
+                        .setExpression(va)
+                        .setLinkedVariablesOfExpression(LinkedVariables.of(va.variable(), lv))
+                        .build();
+            }
+        };
+    }
+
+
+    protected static ExpressionMock simpleMock(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
+        return new ExpressionMock() {
+            @Override
+            public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+                return new EvaluationResultImpl.Builder(context)
+                        .setLinkedVariablesOfExpression(linkedVariables)
+                        .setExpression(this).build();
+            }
+
+            @Override
+            public ParameterizedType returnType() {
+                return parameterizedType;
+            }
+
+            @Override
+            public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
+                if (Property.IGNORE_MODIFICATIONS == property) return DV.TRUE_DV;
+                assert parameterizedType.typeInfo != null;
+                return parameterizedType.typeInfo.typeAnalysis.get(parameterizedType.toString()).getProperty(property);
             }
         };
     }

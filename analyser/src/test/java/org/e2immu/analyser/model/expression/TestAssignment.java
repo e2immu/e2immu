@@ -123,7 +123,7 @@ public class TestAssignment extends CommonTest {
         assertEquals("i=j", assignment.minimalOutput());
         EvaluationResult context = context(evaluationContext(Map.of("i", zero, "j", instance)));
         EvaluationResult result = assignment.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-        assertEquals("j:0", result.linkedVariables(vi.variable()).toString());
+        assertEquals("i:0,j:0", result.linkedVariables(vi.variable()).toString());
     }
 
     @Test
@@ -196,6 +196,7 @@ public class TestAssignment extends CommonTest {
         DependentVariable aiDv = new DependentVariable(newId(), va, va.variable(), vi, vi.variable(),
                 intArray, "0");
         VariableExpression ai = new VariableExpression(newId(), aiDv);
+        assertEquals("a[i]", ai.minimalOutput());
 
         DependentVariable a3Dv = new DependentVariable(newId(), va, va.variable(), three, null,
                 intArray, "0");
@@ -205,13 +206,18 @@ public class TestAssignment extends CommonTest {
                 "j", instance, "a", newIntArray, "a[i]", a3)));
         EvaluationResult aiResult = ai.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         assertEquals("a[3]", aiResult.value().toString());
+        // any change to a[i] (in particular here, a re-assignment) will change the object graph of a
+        assertEquals("a:2,a[i]:0", aiResult.linkedVariablesOfExpression().toString());
 
         Assignment assignment = new Assignment(primitives, ai, vj);
         assertEquals("a[i]=j", assignment.minimalOutput());
         EvaluationResult eval = assignment.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         assertEquals("instance 0 type int", eval.value().minimalOutput());
         assertTrue(eval.messages().isEmpty());
-        assertTrue(eval.linkedVariables(a.localVariableReference).isEmpty());
+        // ?? potentially also a[3]:0
+        assertEquals("a:2,a[i]:0,j:0", eval.linkedVariablesOfExpression().toString());
+        // FIXME ??
+        assertEquals("a:2,a[3]:0,a[i]:0", eval.linkedVariables(a.localVariableReference).toString());
 
         ChangeData cdAi = eval.changeData().get(aiDv);
         assertNotNull(cdAi);
@@ -287,7 +293,7 @@ public class TestAssignment extends CommonTest {
         assertEquals("1+<test>", cd.value().toString());
 
         assertEquals("constant@NOT_YET_SET", cd.value().causesOfDelay().toString());
-        assertEquals("", er.linkedVariables(vi.variable()).toString());
+        assertEquals("i:0", er.linkedVariables(vi.variable()).toString());
 
         EvaluationResult er2 = hack.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         assertEquals("1+<test>", er2.value().toString());
@@ -331,12 +337,19 @@ public class TestAssignment extends CommonTest {
         FieldReference f = new FieldReferenceImpl(inspectionProvider, fieldInfo);
         VariableExpression vf = new VariableExpression(newId(), f);
 
-        ExpressionMock mockFormal = new ExpressionMock() {
+        ExpressionMock mock1 = new ExpressionMock() {
             @Override
-            public LinkedVariables linkedVariables(EvaluationResult context) {
-                return LinkedVariables.of(Map.of(va.variable(), LINK_DEPENDENT,
+            public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+                LV commonHc = LV.createHC(CS_ALL, CS_ALL);
+                LinkedVariables lv = LinkedVariables.of(Map.of(
+                        va.variable(), LINK_DEPENDENT,
                         vc.variable(), LINK_ASSIGNED,
-                        vd.variable(), LINK_STATICALLY_ASSIGNED));
+                        vf.variable(), LINK_STATICALLY_ASSIGNED,
+                        vd.variable(), commonHc));
+                return new EvaluationResultImpl.Builder(context)
+                        .setExpression(this)
+                        .setLinkedVariablesOfExpression(lv)
+                        .build();
             }
 
             @Override
@@ -344,31 +357,23 @@ public class TestAssignment extends CommonTest {
                 return Set.of(ve.variable());
             }
         };
-        ExpressionMock mockEval = new ExpressionMock() {
-            @Override
-            public LinkedVariables linkedVariables(EvaluationResult context) {
-                LV commonHc = LV.createHC(CS_ALL, CS_ALL);
-                return LinkedVariables.of(Map.of(vb.variable(), commonHc,
-                        vc.variable(), commonHc,
-                        vf.variable(), LINK_STATICALLY_ASSIGNED));
-            }
-        };
+
         Instance instance = Instance.forTesting(primitives.intParameterizedType());
         EvaluationContext ec = evaluationContext(Map.of("v", instance));
         EvaluationResult context = new EvaluationResultImpl.Builder(ec).build();
-        EvaluationResult mockEvalResult = new EvaluationResultImpl.Builder(context)
-                .setExpression(mockEval)
-                .build();
-        Assignment assignment = new Assignment(primitives, vv, mockFormal, mockEvalResult);
-        assertTrue(assignment.linkedVariables(context).isEmpty()); // default implementation
+
+        Assignment assignment = new Assignment(primitives, vv, mock1);
         EvaluationResult result = assignment.evaluate(context, ForwardEvaluationInfo.DEFAULT);
+        LinkedVariables linkedVariables = result.linkedVariablesOfExpression();
+        assertEquals("a:2,c:1,d:4,this.f:0,v:0", linkedVariables.toString());
         LinkedVariables lv = result.linkedVariables(vv.variable());
 
         // we take values from both, minimize; 0->1; static assignment variables
-        assertEquals("a:2,b:4,c:1,d:1,e:0,this.f:1", lv.toString());
+        assertEquals("a:2,c:1,d:4,this.f:0,v:0", lv.toString());
     }
 
-    @Test @DisplayName("mark modified")
+    @Test
+    @DisplayName("mark modified")
     public void test14() {
         LocalVariable lvs = makeLocalVariable(primitives.stringParameterizedType(), "s");
         StringConstant abc = new StringConstant(primitives, "abc");
@@ -385,7 +390,7 @@ public class TestAssignment extends CommonTest {
         assertEquals("s.f", vf.toString());
 
         StringConstant x = new StringConstant(primitives, "x");
-        Assignment a  = new Assignment(primitives, vf, x);
+        Assignment a = new Assignment(primitives, vf, x);
         assertEquals("s.f=\"x\"", a.minimalOutput());
 
         EvaluationResult context = context(evaluationContext(Map.of("s", abc, "f", NullConstant.NULL_CONSTANT)));

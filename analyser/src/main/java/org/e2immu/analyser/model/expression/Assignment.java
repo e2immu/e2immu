@@ -319,12 +319,11 @@ public class Assignment extends BaseExpression implements Expression {
         } else {
             valueResult = value.evaluate(context, fwd);
         }
-        builder.compose(valueResult, lvs -> lvs.maximum(LV.LINK_ASSIGNED));
+        builder.compose(valueResult);
 
         // target
         EvaluationResult targetResult = target.evaluate(context, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         Variable newVariableTarget = handleArrayAccess(targetResult.value());
-
 
         LOGGER.debug("Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
         E2 e2;

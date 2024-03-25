@@ -392,7 +392,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             }
             if (this.linkedVariables == null) {
                 this.linkedVariables = modifiedLvs;
-            } else {
+            } else if (modifiedLvs != null) {
                 this.linkedVariables = this.linkedVariables.merge(modifiedLvs);
             }
         }

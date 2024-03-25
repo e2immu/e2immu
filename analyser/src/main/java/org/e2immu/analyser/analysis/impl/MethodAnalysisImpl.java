@@ -865,7 +865,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public LV.HiddenContentSelector getHiddenContentSelector() {
-            return hiddenContentSelector.get();
+            return hiddenContentSelector.get(methodInfo.fullyQualifiedName);
         }
 
         public void setHiddenContentSelector(LV.HiddenContentSelector hiddenContentSelector) {

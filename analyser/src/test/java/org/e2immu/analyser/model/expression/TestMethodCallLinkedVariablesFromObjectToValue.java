@@ -13,18 +13,18 @@ import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.LV.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestMethodCallLinkedVariables extends CommonTest {
+public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
 
     private final HiddenContentSelector SELECT_0 = LV.selectTypeParameter(0);
     private final HiddenContentSelector SELECT_1 = LV.selectTypeParameter(1);
@@ -64,11 +64,7 @@ public class TestMethodCallLinkedVariables extends CommonTest {
         builder.setProperty(Property.IDENTITY, identity);
         builder.setProperty(Property.FLUENT, fluent);
         builder.setProperty(Property.INDEPENDENT, independent);
-        if (hiddenContentSelector != null) {
-            builder.setHiddenContentSelector(hiddenContentSelector);
-        } else {
-            builder.setHiddenContentSelector(LV.CS_NONE);
-        }
+        builder.setHiddenContentSelector(Objects.requireNonNullElse(hiddenContentSelector, CS_NONE));
         methodInfo.setAnalysis(builder.build());
         return methodInfo;
     }
@@ -83,40 +79,32 @@ public class TestMethodCallLinkedVariables extends CommonTest {
         VariableExpression vc = makeLVAsExpression("c", zero);
         VariableExpression vd = makeLVAsExpression("d", zero);
 
-        Expression p0 = mockWithLinkedVariables(vc, LINK_DEPENDENT);
-        Expression p1 = mockWithLinkedVariables(vd, LINK_COMMON_HC_ALL);
+        Expression p0 = simpleMock(mutablePt, LinkedVariables.of(vc.variable(), LINK_DEPENDENT));
+        Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vd.variable(), LINK_ASSIGNED));
 
-        Expression object = new ExpressionMock() {
-            @Override
-            public LinkedVariables linkedVariables(EvaluationResult context) {
-                return LinkedVariables.of(Map.of(vo.variable(), lvo, va.variable(), lva, vb.variable(), lvb));
-            }
-
-            @Override
-            public ParameterizedType returnType() {
-                return objectType;
-            }
-        };
+        LinkedVariables lv = LinkedVariables.of(Map.of(vo.variable(), lvo, va.variable(), lva, vb.variable(), lvb));
+        Expression object = simpleMock(objectType, lv);
 
         MethodCall methodCall = new MethodCall(newId(), object, methodInfo, List.of(p0, p1));
         Expression abc = new StringConstant(primitives, "abc");
         EvaluationResult context = context(evaluationContext(Map.of("p0", abc, "p1", abc)));
-        return methodCall.linkedVariables(context);
+        return methodCall.evaluate(context, ForwardEvaluationInfo.DEFAULT).linkedVariablesOfExpression();
     }
+
 
     @Test
     @DisplayName("base, identity delayed, object has no linked variables")
     public void test1() {
         MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
                 null, mutablePt);
-
-        Expression p0 = new ExpressionMock();
-        Expression p1 = new ExpressionMock();
-        Expression object = new ExpressionMock();
+        Expression p0 = simpleMock(mutablePt, LinkedVariables.EMPTY);
+        Expression p1 = simpleMock(mutablePt, LinkedVariables.EMPTY);
+        Expression object = simpleMock(mutablePt, LinkedVariables.EMPTY);
         MethodCall methodCall = new MethodCall(newId(), object, methodInfo, List.of(p0, p1));
         Expression abc = new StringConstant(primitives, "abc");
         EvaluationResult context = context(evaluationContext(Map.of("p0", abc, "p1", abc)));
-        LinkedVariables lv = methodCall.linkedVariables(context);
+        LinkedVariables lv = methodCall.evaluate(context, ForwardEvaluationInfo.DEFAULT)
+                .linkedVariablesOfExpression();
         assertTrue(lv.isEmpty());
     }
 
@@ -131,13 +119,14 @@ public class TestMethodCallLinkedVariables extends CommonTest {
         VariableExpression va = makeLVAsExpression("a", zero);
         VariableExpression vb = makeLVAsExpression("b", zero);
 
-        Expression p0 = mockWithLinkedVariables(va, LINK_COMMON_HC_ALL);
-        Expression p1 = mockWithLinkedVariables(vb, LINK_DEPENDENT);
-        Expression object = new ExpressionMock();
+        Expression p0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), LINK_COMMON_HC_ALL));
+        Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LINK_DEPENDENT));
+        Expression object = simpleMock(mutablePt, LinkedVariables.EMPTY);
         MethodCall methodCall = new MethodCall(newId(), object, methodInfo, List.of(p0, p1));
         Expression abc = new StringConstant(primitives, "abc");
         EvaluationResult context = context(evaluationContext(Map.of("p0", abc, "p1", abc)));
-        LinkedVariables lv = methodCall.linkedVariables(context);
+        LinkedVariables lv = methodCall.evaluate(context, ForwardEvaluationInfo.DEFAULT)
+                .linkedVariablesOfExpression();
 
         assertEquals("identity@NOT_YET_SET", lv.causesOfDelay().toString());
         assertEquals("a:-1", lv.toString());
@@ -154,13 +143,14 @@ public class TestMethodCallLinkedVariables extends CommonTest {
         VariableExpression vb = makeLVAsExpression("b", zero);
 
         for (LV dv : List.of(LINK_STATICALLY_ASSIGNED, LINK_ASSIGNED, LINK_DEPENDENT, LINK_COMMON_HC_ALL)) {
-            Expression p0 = mockWithLinkedVariables(va, dv);
-            Expression p1 = mockWithLinkedVariables(vb, LINK_COMMON_HC_ALL);
-            Expression object = new ExpressionMock();
+            Expression p0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), dv));
+            Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LINK_COMMON_HC_ALL));
+            Expression object = simpleMock(mutablePt, LinkedVariables.EMPTY);
             MethodCall methodCall = new MethodCall(newId(), object, methodInfo, List.of(p0, p1));
             Expression abc = new StringConstant(primitives, "abc");
             EvaluationResult context = context(evaluationContext(Map.of("p0", abc, "p1", abc)));
-            LinkedVariables lv = methodCall.linkedVariables(context);
+            LinkedVariables lv = methodCall.evaluate(context, ForwardEvaluationInfo.DEFAULT)
+                    .linkedVariablesOfExpression();
             assertEquals(1L, lv.stream().count());
             LV result = dv.max(LINK_ASSIGNED);
 

@@ -107,7 +107,7 @@ public class EvaluateParameters {
     }
 
     private static DV scopeIsIndependent(EvaluationResult context, boolean recursiveOrPartOfCallCycle, Expression scopeObject) {
-        if (scopeObject != null && !recursiveOrPartOfCallCycle && scopeObject.returnType().isFunctionalInterface()) {
+        if (scopeObject != null && !recursiveOrPartOfCallCycle && scopeObject.returnType().isFunctionalInterface(context.getAnalyserContext())) {
             return context.getProperty(scopeObject, Property.INDEPENDENT);
         }
         return MultiLevel.DEPENDENT_DV; // inactive

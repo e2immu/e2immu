@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.impl;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.analysis.Analysis;
@@ -790,7 +791,7 @@ public class PrimitivesImpl implements Primitives {
     }
 
     @Override
-    public MethodAnalysis createEmptyMethodAnalysis(MethodInfo methodInfo) {
+    public MethodAnalysis createMethodAnalysisForArrayConstructor(MethodInfo methodInfo) {
         List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
                 .map(p -> {
                     ParameterAnalysisImpl.Builder pb = new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p);
@@ -802,6 +803,7 @@ public class PrimitivesImpl implements Primitives {
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
                 methodInfo, null, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
+        builder.setHiddenContentSelector(LV.CS_NONE);
         return (MethodAnalysis) builder.build();
     }
 

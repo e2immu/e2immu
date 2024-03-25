@@ -69,7 +69,7 @@ public class TestStatementAnalysisComparator {
 
     private StatementAnalysisImpl newStatementAnalysis(String s) {
         MethodInfo operator = primitives.lessOperatorInt();
-        return new StatementAnalysisImpl(primitives, primitives.createEmptyMethodAnalysis(operator),
+        return new StatementAnalysisImpl(primitives, primitives.createMethodAnalysisForArrayConstructor(operator),
                 emptyStatement, null, s, false);
     }
 }
