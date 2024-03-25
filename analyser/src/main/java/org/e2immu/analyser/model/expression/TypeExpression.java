@@ -15,10 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -99,7 +96,9 @@ public class TypeExpression extends BaseExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
-        return builder.setExpression(new TypeExpression(identifier, parameterizedType, diamond)).build();
+        return builder
+                .setLinkedVariablesOfExpression(LinkedVariables.EMPTY)
+                .setExpression(new TypeExpression(identifier, parameterizedType, diamond)).build();
     }
 
     @Override

@@ -201,7 +201,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             int n = (int) parameterInfo.getMethodInfo().typeInfo.typeInspection.get().typeParameters().stream()
                     .filter(TypeParameter::isUnbound).count();
             List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
-            LV.HiddenContentSelector mine = bestHiddenContentSelector(n, parameterInfo.parameterizedType);
+            LV.HiddenContentSelector mine = bestHiddenContentSelector(n, false, parameterInfo.parameterizedType);
             for (int parameterIndex : linkParameters) {
                 if (parameterIndex < 0 || parameterIndex >= parameters.size()) {
                     LOGGER.error("Illegal parameter index {} for method {}", parameterIndex, parameterInfo.getMethod());
@@ -209,7 +209,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    LV.HiddenContentSelector theirs = bestHiddenContentSelector(n, pi.parameterizedType);
+                    LV.HiddenContentSelector theirs = bestHiddenContentSelector(n,
+                            pi.parameterInspection.get().isVarArgs(), pi.parameterizedType);
                     map.put(pi, LV.createHC(mine, theirs));
                 }
             }
@@ -221,8 +222,18 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         Type parameters of the method vs type parameters of the type
          */
         private LV.HiddenContentSelector bestHiddenContentSelector(int numHiddenContentTypesOfType,
+                                                                   boolean isVarargs,
                                                                    ParameterizedType parameterType) {
-            Set<Integer> set = parameterType.extractTypeParameters().stream()
+            ParameterizedType pt;
+            if (isVarargs) {
+                assert parameterType.arrays > 0;
+                pt = parameterType.copyWithOneFewerArrays();
+            } else {
+                pt = parameterType;
+            }
+            if (pt.isTypeParameter() && pt.typeParameter.isUnbound()) return LV.CS_ALL;
+            // TODO: what to do with arrays?
+            Set<Integer> set = pt.extractTypeParameters().stream()
                     .map(tp -> tp.isMethodTypeParameter() ? numHiddenContentTypesOfType + tp.getIndex()
                             : tp.getIndex()).collect(Collectors.toUnmodifiableSet());
             return new LV.HiddenContentSelectorImpl(set);

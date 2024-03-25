@@ -26,7 +26,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
     @Test
     @DisplayName("param 1 dependent on param 0, o~c.copy(p0~a,p1~b), dependent")
     public void test1() {
-        MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, true);
+        MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, true, false);
 
         EvaluationResult er = evaluateMethodCallTwoArguments(method);
         assertEquals("", er.linkedVariablesOfExpression().toString());
@@ -41,7 +41,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
     @Test
     @DisplayName("param 1 dependent on param 0, o~c.copy(p0~a,p1~b), independent HC")
     public void test1b() {
-        MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, false);
+        MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, false, false);
 
         EvaluationResult er = evaluateMethodCallTwoArguments(method);
         assertEquals("", er.linkedVariablesOfExpression().toString());
@@ -50,6 +50,26 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
         assertEquals("b:4", ca.linkedVariables().toString());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:4", cb.linkedVariables().toString());
+    }
+
+    @Test
+    @DisplayName("param 1... independent HC on param 0, Collections.add(c, a, b)")
+    public void test2() {
+        ParameterizedType typeParameterArray = new ParameterizedType(tp0, 1, ParameterizedType.WildCard.NONE);
+        MethodInfo method = methodCallTwoArguments(mutablePtWithOneTypeParameter, typeParameterArray, false,
+                true);
+
+        EvaluationResult er = evaluateMethodCallVarargs(method);
+        assertEquals("", er.linkedVariablesOfExpression().toString());
+        assertEquals(4, er.changeData().size());
+        ChangeData ca = er.findChangeData("a");
+        assertEquals("c:4", ca.linkedVariables().toString());
+        ChangeData cb = er.findChangeData("b");
+        assertEquals("c:4", cb.linkedVariables().toString());
+        ChangeData cc = er.findChangeData("c");
+        assertEquals("a:4,b:4", cc.linkedVariables().toString());
+        ChangeData cThis = er.findChangeData("this");
+        assertTrue(cThis.linkedVariables().isEmpty());
     }
 
 
@@ -70,14 +90,32 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
         return mc.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
     }
 
+    private EvaluationResult evaluateMethodCallVarargs(MethodInfo method) {
+        Expression zero = IntConstant.zero(primitives);
+        VariableExpression va = makeLVAsExpression("a", zero);
+        VariableExpression vb = makeLVAsExpression("b", zero);
+        VariableExpression vc = makeLVAsExpression("c", zero);
+
+        ExpressionMock argument0 = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(vc.variable(), LV.LINK_DEPENDENT));
+        ExpressionMock argument1 = simpleMock(tp0Pt, LinkedVariables.of(va.variable(), LV.LINK_ASSIGNED));
+        ExpressionMock argument2 = simpleMock(tp0Pt, LinkedVariables.of(vb.variable(), LV.LINK_ASSIGNED));
+
+        MethodCall mc = new MethodCall(newId(), new TypeExpression(newId(), primitives.stringParameterizedType(), Diamond.NO),
+                method, List.of(argument0, argument1, argument2));
+        Expression thisMock = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.EMPTY);
+
+        EvaluationContext ec = evaluationContext(Map.of("this", thisMock, "a", va, "b", vb, "c", vc));
+        return mc.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
+    }
+
     // non-static method, using the type parameter of the type
-    private MethodInfo methodCallTwoArguments(ParameterizedType p0Type, ParameterizedType p1Type, boolean dependentLink) {
+    private MethodInfo methodCallTwoArguments(ParameterizedType p0Type, ParameterizedType p1Type, boolean dependentLink,
+                                              boolean p1Varargs) {
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 p0Type, "p0", 0);
         LV.HiddenContentSelector p0Hcs = LV.selectTypeParameter(0);
-        ParameterInspectionImpl.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
-                p1Type, "p1", 1);
-        LV.HiddenContentSelector p1Hcs = LV.selectTypeParameter(1);
+        ParameterInspection.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
+                p1Type, "p1", 1).setVarArgs(p1Varargs);
 
         MethodInfo method = new MethodInspectionImpl.Builder(newId(), mutableWithOneTypeParameter, "method",
                 MethodInfo.MethodType.METHOD)
@@ -94,16 +132,23 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
                 .Builder(primitives, analysisProvider, param0)
                 .setHiddenContentSelector(p0Hcs);
         p0Builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
+        int[] hcLinkParameters = dependentLink ? null : new int[]{1};
+        int[] dependentLinkParameters = dependentLink ? new int[]{1} : null;
+        p0Builder.writeHiddenContentLink(hcLinkParameters, dependentLinkParameters);
         ParameterAnalysis p0Analysis = (ParameterAnalysis) p0Builder.build();
+
+        int d = dependentLink ? 2 : 4;
+        assertEquals("p1:" + d, p0Analysis.getLinksToOtherParameters().toString());
+        if (!dependentLink && p1Varargs) {
+            assertEquals("<0>-4-*", p0Analysis.getLinksToOtherParameters().stream().findFirst()
+                    .orElseThrow().getValue().toString());
+        }
 
         ParameterInfo param1 = method.methodInspection.get().getParameters().get(1);
         ParameterAnalysisImpl.Builder p1Builder = new ParameterAnalysisImpl
                 .Builder(primitives, analysisProvider, param1)
                 .setHiddenContentSelector(p0Hcs);
         p1Builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        int[] hcLinkParameters = dependentLink ? null : new int[]{0};
-        int[] dependentLinkParameters = dependentLink ? new int[]{0} : null;
-        p1Builder.writeHiddenContentLink(hcLinkParameters, dependentLinkParameters);
         ParameterAnalysis p1Analysis = (ParameterAnalysis) p1Builder.build();
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,

@@ -26,12 +26,10 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -270,15 +268,13 @@ public class MethodLinkHelper {
         }
 
         if (addLinksBetweenParameters) {
-            List<Expression> evaluatedParameters = parameterResults.stream().map(EvaluationResult::getExpression).toList();
-            linksBetweenParameters(builder, methodInfo, evaluatedParameters, parameterLv);
+            linksBetweenParameters(builder, methodInfo, parameterLv);
         }
         return builder.build();
     }
 
     public void linksBetweenParameters(EvaluationResultImpl.Builder builder,
                                        MethodInfo concreteMethod,
-                                       List<Expression> evaluatedParameters,
                                        List<LinkedVariables> parameterLvs) {
         Map<ParameterInfo, LinkedVariables> crossLinks = concreteMethod.crossLinks(context.getAnalyserContext());
         if (crossLinks.isEmpty()) return;
@@ -288,13 +284,11 @@ public class MethodLinkHelper {
             assert !sourceIsVarArgs : "Varargs must always be a target";
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
             LV level = e.getValue();
-            Expression sourceValue = evaluatedParameters.get(pi.index);
             LinkedVariables sourceLvs = parameterLvs.get(pi.index);
-            Expression targetValue = evaluatedParameters.get(target.index);
             LinkedVariables targetLvs = parameterLvs.get(target.index);
             if (!targetLvs.isEmpty()) {
-                tryLinkBetweenParameters(builder, context, target.index, targetIsVarArgs, targetLvs, level, sourceValue,
-                        sourceLvs, evaluatedParameters);
+                tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, targetLvs, level, sourceLvs,
+                        parameterLvs);
             }
 
         }));
@@ -306,15 +300,24 @@ public class MethodLinkHelper {
     //target ts is modified; values are new String[4] and generator, linked variables are this.ts:2 and generator:2
     //
     private void tryLinkBetweenParameters(EvaluationResultImpl.Builder builder,
-                                          EvaluationResult context,
                                           int targetIndex,
                                           boolean targetIsVarArgs,
                                           LinkedVariables targetLinkedVariables,
                                           LV level,
-                                          Expression source,
                                           LinkedVariables sourceLinkedVariables,
-                                          List<Expression> parameterExpressions) {
-        assert !targetIsVarArgs : "NYI";
+                                          List<LinkedVariables> parameterLvs) {
+        if (targetIsVarArgs) {
+            for (int i = targetIndex; i < parameterLvs.size(); i++) {
+                linkFromTo(builder, level, sourceLinkedVariables, parameterLvs.get(i));
+            }
+        } else {
+            linkFromTo(builder, level, sourceLinkedVariables, targetLinkedVariables);
+        }
+    }
+
+    private static void linkFromTo(EvaluationResultImpl.Builder builder, LV level,
+                                   LinkedVariables sourceLinkedVariables,
+                                   LinkedVariables targetLinkedVariables) {
         sourceLinkedVariables.stream().forEach(e ->
                 targetLinkedVariables.stream().forEach(e2 ->
                         builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()).max(level))));

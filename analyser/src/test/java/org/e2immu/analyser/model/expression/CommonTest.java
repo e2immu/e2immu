@@ -63,7 +63,7 @@ public abstract class CommonTest {
     protected final CausesOfDelay immutableDelay = DelayFactory.createDelay(Location.NOT_YET_SET,
             CauseOfDelay.Cause.IMMUTABLE);
     protected final TypeInfo mutableWithOneTypeParameter = new TypeInfo("com.foo", "MutableTP");
-    protected final TypeParameter tp0 = new TypeParameterImpl("T", 0);
+    protected final TypeParameter tp0 = new TypeParameterImpl(mutableWithOneTypeParameter, "T", 0);
     protected final ParameterizedType tp0Pt = new ParameterizedType(tp0, 0, ParameterizedType.WildCard.NONE);
     protected final ParameterizedType mutablePtWithOneTypeParameter
             = new ParameterizedType(mutableWithOneTypeParameter, List.of(tp0Pt));
@@ -134,6 +134,7 @@ public abstract class CommonTest {
             public DV getProperty(Expression value, Property property,
                                   boolean duringEvaluation, boolean ignoreStateInConditionManager) {
                 if (property == Property.IGNORE_MODIFICATIONS) return MultiLevel.IGNORE_MODS_DV;
+                if(property == Property.CONTAINER) return MultiLevel.CONTAINER_DV;
                 if (value instanceof ExpressionMock em) {
                     return em.getProperty(null, property, duringEvaluation);
                 }
