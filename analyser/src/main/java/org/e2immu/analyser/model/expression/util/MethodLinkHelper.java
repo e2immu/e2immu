@@ -237,11 +237,12 @@ public class MethodLinkHelper {
                                                      boolean fromParametersIntoObject,
                                                      boolean addLinksBetweenParameters) {
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
-        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context)
+                .setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
 
         if (methodInspection.getParameters().isEmpty()) {
             // explicitly set empty
-            return builder.setLinkedVariablesOfExpression(LinkedVariables.EMPTY).build();
+            return builder.build();
         }
 
         List<LinkedVariables> parameterLv = computeLinkedVariablesOfParameters(parameterResults);

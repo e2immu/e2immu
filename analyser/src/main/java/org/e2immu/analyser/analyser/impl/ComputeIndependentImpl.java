@@ -54,6 +54,9 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         if (sourceLvs.isEmpty() || MultiLevel.INDEPENDENT_DV.equals(transferIndependent)) {
             return LinkedVariables.EMPTY;
         }
+        assert !(hiddenContentSelectorOfTransfer == CS_NONE && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
+                : "Impossible to have no knowledge of hidden content, and INDEPENDENT_HC";
+
         DV immutableOfSource = typeImmutable(sourceType);
         // RULE 2: delays
         if (immutableOfSource.isDelayed()) {
