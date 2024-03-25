@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
 
     @Test
-    @DisplayName("param 1 dependent on param 0, o~c.copy(p0~a,p1~b)")
+    @DisplayName("param 1 dependent on param 0, o~c.copy(p0~a,p1~b), dependent")
     public void test1() {
         MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, true);
 
@@ -32,11 +32,26 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
         assertEquals("", er.linkedVariablesOfExpression().toString());
         assertEquals(2, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
-        assertEquals("b:-1", ca.linkedVariables().toString());
+        assertEquals("b:2", ca.linkedVariables().toString());
         ChangeData cb = er.findChangeData("b");
-        assertEquals("a:-1", cb.linkedVariables().toString());
-        assertEquals("independent@Parameter_p0", cb.linkedVariables().causesOfDelay().toString());
+        assertEquals("a:2", cb.linkedVariables().toString());
     }
+
+
+    @Test
+    @DisplayName("param 1 dependent on param 0, o~c.copy(p0~a,p1~b), independent HC")
+    public void test1b() {
+        MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, false);
+
+        EvaluationResult er = evaluateMethodCallTwoArguments(method);
+        assertEquals("", er.linkedVariablesOfExpression().toString());
+        assertEquals(2, er.changeData().size());
+        ChangeData ca = er.findChangeData("a");
+        assertEquals("b:4", ca.linkedVariables().toString());
+        ChangeData cb = er.findChangeData("b");
+        assertEquals("a:4", cb.linkedVariables().toString());
+    }
+
 
     private EvaluationResult evaluateMethodCallTwoArguments(MethodInfo method) {
         Expression zero = IntConstant.zero(primitives);

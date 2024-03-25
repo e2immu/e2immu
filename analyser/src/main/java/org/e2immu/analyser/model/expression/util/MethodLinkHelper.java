@@ -270,60 +270,34 @@ public class MethodLinkHelper {
         }
 
         if (addLinksBetweenParameters) {
-            linksBetweenParameters(builder, methodInfo, parameterResults, parameterLv);
+            List<Expression> evaluatedParameters = parameterResults.stream().map(EvaluationResult::getExpression).toList();
+            linksBetweenParameters(builder, methodInfo, evaluatedParameters, parameterLv);
         }
         return builder.build();
     }
 
     public void linksBetweenParameters(EvaluationResultImpl.Builder builder,
                                        MethodInfo concreteMethod,
-                                       List<EvaluationResult> parameterResults,
-                                       List<LinkedVariables> parameterLv) {
-        // key is dependent on values, but only if all of them are variable expressions
+                                       List<Expression> evaluatedParameters,
+                                       List<LinkedVariables> parameterLvs) {
         Map<ParameterInfo, LinkedVariables> crossLinks = concreteMethod.crossLinks(context.getAnalyserContext());
         if (crossLinks.isEmpty()) return;
         crossLinks.forEach((pi, lv) -> lv.stream().forEach(e -> {
             ParameterInfo target = (ParameterInfo) e.getKey();
+            boolean sourceIsVarArgs = pi.parameterInspection.get().isVarArgs();
+            assert !sourceIsVarArgs : "Varargs must always be a target";
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
             LV level = e.getValue();
-            EvaluationResult targetResult = parameterResults.get(target.index);
-            Expression targetValue = targetResult.value();
-            /*
-            FIXME solve when we've tested more
-            Variable targetVariable = bestTargetVariable(targetExpression, targetValue);
-            if (targetVariable != null) {
-                Expression expression = bestExpression(parameterExpressions.get(pi.index), parameterValues.get(pi.index));
-                tryLinkBetweenParameters(builder, context, targetVariable, target.index, targetIsVarArgs, level, expression,
-                        parameterExpressions, parameterValues, parameterLv);
-            }*/
+            Expression sourceValue = evaluatedParameters.get(pi.index);
+            LinkedVariables sourceLvs = parameterLvs.get(pi.index);
+            Expression targetValue = evaluatedParameters.get(target.index);
+            LinkedVariables targetLvs = parameterLvs.get(target.index);
+            if (!targetLvs.isEmpty()) {
+                tryLinkBetweenParameters(builder, context, target.index, targetIsVarArgs, targetLvs, level, sourceValue,
+                        sourceLvs, evaluatedParameters);
+            }
 
         }));
-    }
-
-    //
-    //in order of importance:
-
-    //InlinedMethod priority over Lambda
-    //
-
-    private Expression bestExpression(Expression raw, Expression evaluated) {
-        if (evaluated.isInstanceOf(IsVariableExpression.class)) return evaluated;
-        if (evaluated.isInstanceOf(InlinedMethod.class)) return evaluated;
-        MethodReference mr = evaluated.asInstanceOf(MethodReference.class);
-        if (mr != null && mr.scope.isInstanceOf(IsVariableExpression.class)) return evaluated;
-        return raw;
-    }
-
-    private Variable bestTargetVariable(Expression targetExpression, Expression targetValue) {
-        IsVariableExpression ive = targetValue.asInstanceOf(IsVariableExpression.class);
-        if (ive != null) {
-            return ive.variable();
-        }
-        IsVariableExpression ive2 = targetExpression.asInstanceOf(IsVariableExpression.class);
-        if (ive2 != null) {
-            return ive2.variable();
-        }
-        return null;
     }
 
     //
@@ -333,14 +307,20 @@ public class MethodLinkHelper {
     //
     private void tryLinkBetweenParameters(EvaluationResultImpl.Builder builder,
                                           EvaluationResult context,
-                                          Variable target,
                                           int targetIndex,
                                           boolean targetIsVarArgs,
+                                          LinkedVariables targetLinkedVariables,
                                           LV level,
                                           Expression source,
-                                          List<Expression> parameterExpressions,
-                                          List<Expression> parameterValues,
-                                          List<LinkedVariables> linkedVariables) {
+                                          LinkedVariables sourceLinkedVariables,
+                                          List<Expression> parameterExpressions) {
+        assert !targetIsVarArgs : "NYI";
+        sourceLinkedVariables.stream().forEach(e ->
+                targetLinkedVariables.stream().forEach(e2 ->
+                        builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()).max(level))));
+    }
+
+    /*
         IsVariableExpression vSource = source.asInstanceOf(IsVariableExpression.class);
         if (vSource != null) {
             // Independent1_2, DependentVariables_1
@@ -427,7 +407,7 @@ public class MethodLinkHelper {
         targetLinks.variables().forEach((v, l) ->
                 builder.link(source.variable(), v, delays.isDelayed() ? LV.delay(delays) : level.max(l)));
     }
-
+*/
     /*
    In general, the method result 'a', in 'a = b.method(c, d)', can link to 'b', 'c' and/or 'd'.
    Independence and immutability restrict the ability to link.
