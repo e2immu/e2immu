@@ -287,6 +287,11 @@ public abstract class CommonTest {
                 assert parameterizedType.typeInfo != null;
                 return parameterizedType.typeInfo.typeAnalysis.get(parameterizedType.toString()).getProperty(property);
             }
+
+            @Override
+            public Precedence precedence() {
+                return Precedence.BOTTOM;
+            }
         };
     }
 }
