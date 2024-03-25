@@ -45,7 +45,7 @@ public class TestCast extends CommonTest {
         assertSame(vx, cast2.getExpression());
         assertEquals(1, cast2.subElements().size());
         assertSame(vx, cast2.subElements().get(0));
-        
+
         assertNotEquals(cast, cast2);
         assertNotEquals(cast.hashCode(), cast2.hashCode());
         assertFalse(cast.internalCompareTo(cast2) > 0);

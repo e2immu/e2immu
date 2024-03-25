@@ -84,20 +84,12 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             LV lv = e.getValue();
             assert lv.lt(LINK_INDEPENDENT);
 
-            if (e.getKey() instanceof This) {
-                    /*
-                     without this line, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
+             /*
+               FIXME check this!
+               without the 2nd condition, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
                      -> we never delay on this for IMMUTABLE
-                     */
-                LV newLv;
-                if (MultiLevel.DEPENDENT_DV.equals(correctedIndependent) || lv.isCommonHC()) {
-                    newLv = LINK_DEPENDENT.max(lv);
-                } else {
-                    HiddenContentSelector mine = lv.isCommonHC() ? lv.mine() : CS_ALL;
-                    newLv = LV.createHC(correctedTransferSelector, mine);
-                }
-                newLinked.put(e.getKey(), newLv);
-            } else if (immutable.isDelayed()) {
+              */
+            if (immutable.isDelayed() && !(e.getKey() instanceof This)) {
                 causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
             } else {
                 if (MultiLevel.isMutable(immutable) && isDependent(transferIndependent, correctedIndependent,

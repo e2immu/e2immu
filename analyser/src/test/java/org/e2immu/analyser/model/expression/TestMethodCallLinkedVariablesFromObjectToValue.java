@@ -12,6 +12,7 @@ import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,11 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         Expression p0 = simpleMock(mutablePt, LinkedVariables.of(vc.variable(), LINK_DEPENDENT));
         Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vd.variable(), LINK_ASSIGNED));
 
-        LinkedVariables lv = LinkedVariables.of(Map.of(vo.variable(), lvo, va.variable(), lva, vb.variable(), lvb));
+        VariableExpression thisVE = new VariableExpression(newId(), new This(analyserContext,
+                primitives.stringTypeInfo()));
+
+        LinkedVariables lv = LinkedVariables.of(Map.of(vo.variable(), lvo, va.variable(), lva, vb.variable(), lvb,
+                thisVE.variable(), LINK_DEPENDENT));
         Expression object = simpleMock(objectType, lv);
 
         MethodCall methodCall = new MethodCall(newId(), object, methodInfo, List.of(p0, p1));
@@ -178,7 +183,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
                 LINK_COMMON_HC_ALL);
         // the resulting object is the same as the object, so it keeps its linked variables
-        assertEquals("a:2,b:4,o:1", lv.toString());
+        assertEquals("a:2,b:4,o:1,this:2", lv.toString());
     }
 
     @Test
@@ -190,7 +195,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
                 LINK_COMMON_HC_ALL);
 
-        assertEquals("a:-1,b:-1,o:-1", lv.toString());
+        assertEquals("a:-1,b:-1,o:-1,this:-1", lv.toString());
         assertEquals("independent@NOT_YET_SET", lv.causesOfDelay().toString());
     }
 
@@ -227,7 +232,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                 commonHC);
 
         /*
-        object is linked o:0, a:2, b:4 <0>-<0>
+        object is linked o:0, a:2, b:4 <0>-<0>, this:2
         for example
             o = new ArrayList<T>(ts); // ts is some collection of T objects
             a = o.sublist(1, 3);
@@ -239,6 +244,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
             o:2 (dependent)
             a:2 (still dependent)
             b:4 (with mine computed as (*), and theirs the mine of object->4->b)
+            this:2 (still dependent)
 
         NOTE: linked variables of parameters are not part of the computation
         (*): the computation is dependent on the method's formal return type, and is stored in
@@ -246,7 +252,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
              see "correctedTransferSelector"
          */
 
-        assertEquals("a:2,b:4,o:2", lv.toString());
+        assertEquals("a:2,b:4,o:2,this:2", lv.toString());
         assertTrue(lv.causesOfDelay().isDone());
         Variable b = lv.variables().keySet().stream().filter(v -> "b".equals(v.simpleName())).findFirst().orElseThrow();
         LV lvb = lv.value(b);
@@ -287,7 +293,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         Therefore, through the method, we obtain another object which we cannot be assigned to, nor dependent.
         All links must be common HC.
          */
-        assertEquals("a:4,b:4,o:4", lv.toString());
+        assertEquals("a:4,b:4,o:4,this:4", lv.toString());
         assertTrue(lv.causesOfDelay().isDone());
     }
 
@@ -308,7 +314,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
 
          method is independent HC, e.g., object.get(index)
          */
-        assertEquals("a:4,b:4,o:4", lv.toString());
+        assertEquals("a:4,b:4,o:4,this:4", lv.toString());
         assertTrue(lv.causesOfDelay().isDone());
     }
 
@@ -332,7 +338,24 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
 
          how to distinguish? using the correction algorithm 'correctIndependent'
          */
-        assertEquals("a:2,b:2,o:2", lv.toString());
+        assertEquals("a:2,b:2,o:2,this:2", lv.toString());
         assertTrue(lv.causesOfDelay().isDone());
     }
+
+
+    @Test
+    @DisplayName("immutable delayed, dependent method")
+    public void test11() {
+        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
+                null, mutablePt);
+        // values LINK_ASSIGNED should not be present; but they won't be used
+        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, immutableDelayedPt, LINK_ASSIGNED, LINK_ASSIGNED,
+                LINK_ASSIGNED);
+
+        // FIXME: is this:-1 the correct decision?? we used to have special code for This to avoid delays
+        //   in ComputeIndependent, because of Test_Util_07_Trie causing CONTEXT_IMMUTABLE delays
+        //   however, this code seemed to be in ineffective
+        assertEquals("a:-1,b:-1,o:-1,this:-1", lv.toString());
+    }
+
 }

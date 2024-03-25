@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
@@ -55,6 +56,10 @@ public abstract class CommonTest {
     protected final TypeInfo mutable = new TypeInfo("com.foo", "Mutable");
     protected final ParameterizedType mutablePt = new ParameterizedType(mutable, List.of());
 
+    protected final TypeInfo immutableDelayed = new TypeInfo("com.foo", "ImmutableDelayed");
+    protected final ParameterizedType immutableDelayedPt = new ParameterizedType(immutableDelayed, List.of());
+    protected final CausesOfDelay immutableDelay = DelayFactory.createDelay(Location.NOT_YET_SET,
+            CauseOfDelay.Cause.IMMUTABLE);
     protected final TypeInfo mutableWithOneTypeParameter = new TypeInfo("com.foo", "MutableTP");
     protected final TypeParameter tp0 = new TypeParameterImpl("T", 0);
     protected final ParameterizedType tp0Pt = new ParameterizedType(tp0, 0, ParameterizedType.WildCard.NONE);
@@ -75,6 +80,7 @@ public abstract class CommonTest {
             if (recursivelyImmutablePt == parameterizedType) return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             if (immutableHCPt == parameterizedType) return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
             if (finalFieldsPt == parameterizedType) return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
+            if (immutableDelayedPt == parameterizedType) return immutableDelay;
             return MultiLevel.MUTABLE_DV;
         }
     };
@@ -196,6 +202,16 @@ public abstract class CommonTest {
         mBuilder.setProperty(Property.CONTAINER, DV.TRUE_DV);
         mBuilder.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
         mutable.typeAnalysis.set(mBuilder.build());
+
+        immutableDelayed.typeInspection.set(new TypeInspectionImpl.Builder(immutableDelayed, Inspector.BY_HAND)
+                .setFunctionalInterface(null)
+                .setParentClass(primitives.objectParameterizedType())
+                .build(analyserContext));
+        TypeAnalysisImpl.Builder idBuilder = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                immutableDelayed, analyserContext);
+        idBuilder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+        idBuilder.setProperty(Property.IMMUTABLE, immutableDelay);
+        immutableDelayed.typeAnalysis.set(idBuilder.build());
 
         recursivelyImmutable.typeInspection.set(new TypeInspectionImpl.Builder(recursivelyImmutable, Inspector.BY_HAND)
                 .setFunctionalInterface(null)
