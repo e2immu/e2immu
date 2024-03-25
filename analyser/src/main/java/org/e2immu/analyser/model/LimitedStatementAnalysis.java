@@ -20,44 +20,61 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.stream.Stream;
 
-public interface LimitedStatementAnalysis {
+public interface LimitedStatementAnalysis extends  CommonHasNavigationDataAndLimitedStatementAnalysis {
+
+    default  boolean haveLocalMessages(){
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    Statement statement();
-
-    boolean haveLocalMessages();
-
-    @NotNull
-    Stream<Message> localMessageStream();
+    default  Stream<Message> localMessageStream(){
+        throw new UnsupportedOperationException();
+    }
 
     static LimitedStatementAnalysis startOfBlock(LimitedStatementAnalysis sa, int block) {
         return sa == null ? null : sa.startOfBlock(block);
     }
-    
-    LimitedStatementAnalysis startOfBlock(int block);
+
+    default  LimitedStatementAnalysis startOfBlock(int block){
+        throw new UnsupportedOperationException();
+    }
 
     // navigationData.blocks.get().get(0).orElse(null)
-    LimitedStatementAnalysis navigationBlock0OrElseNull();
+    default LimitedStatementAnalysis navigationBlock0OrElseNull(){
+        throw new UnsupportedOperationException();
+    }
 
-    OutputBuilder output(Qualification qualification);
-
-    String index();
+    default  OutputBuilder output(Qualification qualification){
+        throw new UnsupportedOperationException();
+    }
 
     //navigationData.replacement.isSet()
-    boolean navigationReplacementIsSet();
+    default  boolean navigationReplacementIsSet(){
+        throw new UnsupportedOperationException();
+    }
 
     //navigationData.next.isSet()
-    boolean navigationNextIsSet();
+    default  boolean navigationNextIsSet(){
+        throw new UnsupportedOperationException();
+    }
 
     // navigationData.next.get().orElse(null)
-    LimitedStatementAnalysis navigationNextGetOrElseNull();
+    default LimitedStatementAnalysis navigationNextGetOrElseNull(){
+        throw new UnsupportedOperationException();
+    }
 
     //navigationData.replacement.get()
-    LimitedStatementAnalysis navigationReplacementGet();
+    default LimitedStatementAnalysis navigationReplacementGet(){
+        throw new UnsupportedOperationException();
+    }
 
     // navigationData.hasSubBlocks()
-    boolean navigationHasSubBlocks();
+    default boolean navigationHasSubBlocks(){
+        throw new UnsupportedOperationException();
+    }
 
     // navigationData.blocks.get().get(0).isPresent()
-    boolean navigationBlock0IsPresent();
+    default  boolean navigationBlock0IsPresent(){
+        throw new UnsupportedOperationException();
+    }
 }

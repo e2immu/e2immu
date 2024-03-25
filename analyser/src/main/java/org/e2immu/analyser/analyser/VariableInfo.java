@@ -33,51 +33,73 @@ import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_YET_READ;
 
 public interface VariableInfo {
     @NotNull
-    String name();
+    default String name() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    Variable variable();
+    default Variable variable() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return null when not yet set
      */
-    LinkedVariables getLinkedVariables();
+    default LinkedVariables getLinkedVariables() {
+        throw new UnsupportedOperationException();
+    }
 
     default boolean linkedVariablesIsSet() {
         return !getLinkedVariables().isDelayed();
     }
 
     @NotNull
-    Expression getValue();
+    default Expression getValue() {
+        throw new UnsupportedOperationException();
+    }
 
     default boolean isDelayed() {
         return !valueIsSet();
     }
 
     @NotNull(content = true)
-    Set<Integer> getReadAtStatementTimes();
+    default Set<Integer> getReadAtStatementTimes() {
+        throw new UnsupportedOperationException();
+    }
 
-    boolean valueIsSet();
+    default boolean valueIsSet() {
+        throw new UnsupportedOperationException();
+    }
 
-    DV getProperty(Property property, DV delayValue);
+    default DV getProperty(Property property, DV delayValue) {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    DV getProperty(Property property);
+    default DV getProperty(Property property) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return immutable copy of the properties map, for debugging mostly
      */
     @NotNull
-    Map<Property, DV> getProperties();
+    default Map<Property, DV> getProperties() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return an immutable copy, or the same object frozen
      */
     @NotNull
-    VariableInfo freeze();
+    default VariableInfo freeze() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull(content = true)
-    Stream<Map.Entry<Property, DV>> propertyStream();
+    default Stream<Map.Entry<Property, DV>> propertyStream() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return the empty set, if there has not been an assignment in this method yet; otherwise the statement ids
@@ -88,10 +110,14 @@ public interface VariableInfo {
      * which still contribute to the value, i.e., the last assignment was conditional
      */
     @NotNull
-    AssignmentIds getAssignmentIds();
+    default AssignmentIds getAssignmentIds() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    String getReadId();
+    default String getReadId() {
+        throw new UnsupportedOperationException();
+    }
 
     default boolean isRead() {
         return !getReadId().equals(NOT_YET_READ);
@@ -106,32 +132,44 @@ public interface VariableInfo {
         if (assignmentIds.hasNotYetBeenAssigned()) return false;
         String latest = getAssignmentIds().getLatestAssignment();
         return latest.compareTo(index) < 0 // assigned before me!
-                && (!isRead() || getReadId().compareTo(latest) < 0)
-                && StringUtil.inSameBlock(latest, index);
+               && (!isRead() || getReadId().compareTo(latest) < 0)
+               && StringUtil.inSameBlock(latest, index);
     }
 
     // extract the value properties
     @NotNull
-    Properties valueProperties();
+    default Properties valueProperties() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    Properties valuePropertiesAndExtraForEnclosing();
+    default Properties valuePropertiesAndExtraForEnclosing() {
+        throw new UnsupportedOperationException();
+    }
 
     default boolean isAssignedAt(String index) {
         return getAssignmentIds().getLatestAssignmentIndex().equals(index);
     }
 
-    Properties properties();
+    default Properties properties() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    Properties contextProperties();
+    default Properties contextProperties() {
+        throw new UnsupportedOperationException();
+    }
 
-    int getModificationTimeOrNegative();
+    default int getModificationTimeOrNegative() {
+        throw new UnsupportedOperationException();
+    }
 
     /*
     Backup method, used to create synthetic constructs with this variable.
      */
-    Identifier getIdentifier();
+    default Identifier getIdentifier() {
+        throw new UnsupportedOperationException();
+    }
 
     record MergeOp(Property property, BinaryOperator<DV> operator, DV initial) {
     }

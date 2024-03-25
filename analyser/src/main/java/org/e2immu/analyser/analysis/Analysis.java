@@ -45,11 +45,17 @@ public interface Analysis {
         throw new UnsupportedOperationException("Only in builder!");
     }
 
-    AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression);
+ default    AnnotationExpression annotationGetOrDefaultNull(AnnotationExpression expression){
+        throw new UnsupportedOperationException();
+    }
 
-    void internalAllDoneCheck();
+  default   void internalAllDoneCheck(){
+        throw new UnsupportedOperationException();
+    }
 
-    void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes);
+  default   void setPropertyDelayWhenNotFinal(Property property, CausesOfDelay causes){
+        throw new UnsupportedOperationException();
+    }
 
     /*
     three states of computed:
@@ -100,29 +106,39 @@ public interface Analysis {
 
      getXXXProperty is then always implemented in XXXAnalysis
      */
-    DV getProperty(Property property);
+   default DV getProperty(Property property){
+        throw new UnsupportedOperationException();
+    }
 
     // internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only
     @NotNull
-    DV getPropertyFromMapDelayWhenAbsent(Property property);
+  default   DV getPropertyFromMapDelayWhenAbsent(Property property){
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * internal use, with obvious implementations in AbstractAnalysisBuilder and AnalysisImpl only.
      * Reverts to <code>variableProperty.valueWhenAbsent</code> when no value present in map.
      */
     @NotNull
-    DV getPropertyFromMapNeverDelay(Property property);
+  default   DV getPropertyFromMapNeverDelay(Property property){
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    Location location(Stage stage);
+   default Location location(Stage stage){
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
     @Modified
-    Messages fromAnnotationsIntoProperties(
+    default Messages fromAnnotationsIntoProperties(
             Analyser.AnalyserIdentification analyserIdentification,
             boolean acceptVerifyAsContracted,
             Collection<AnnotationExpression> annotations,
-            E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
+            E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        throw new UnsupportedOperationException();
+    }
 
     default Analysis build() {
         throw new UnsupportedOperationException();

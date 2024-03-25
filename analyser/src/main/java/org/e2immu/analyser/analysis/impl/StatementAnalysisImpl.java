@@ -1385,17 +1385,6 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         return !parent.variableIsSet(variableName);
     }
 
-    /**
-     * this method assumes that the variable already exists!
-     *
-     * @param variableName the variable's fully qualified name
-     * @return the container
-     */
-    @Override
-    public VariableInfoContainer findForWriting(@NotNull String variableName) {
-        return variables.get(variableName);
-    }
-
     /*
     will cause errors if variable does not exist yet!
     before you write, you'll have to ensureEvaluation

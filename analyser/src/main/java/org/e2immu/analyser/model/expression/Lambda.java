@@ -321,7 +321,7 @@ public class Lambda extends BaseExpression implements Expression {
                 result = withLocalAnalyser(statementIndex, parameterizedType, methodAnalysis);
             }
         }
-
+        builder.setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
         builder.setExpression(result);
         return builder.build();
     }

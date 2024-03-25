@@ -346,7 +346,9 @@ public final class Instance extends BaseExpression implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-        return new EvaluationResultImpl.Builder(context).setExpression(this).build();
+        return new EvaluationResultImpl.Builder(context)
+                .setLinkedVariablesOfExpression(LinkedVariables.EMPTY)
+                .setExpression(this).build();
     }
 
     public ParameterizedType parameterizedType() {

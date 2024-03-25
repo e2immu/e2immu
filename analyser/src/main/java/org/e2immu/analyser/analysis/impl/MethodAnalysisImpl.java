@@ -769,8 +769,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return eventual.get();
         }
 
-        public void setFirstStatement(StatementAnalysis firstStatement) {
+        public Builder setFirstStatement(StatementAnalysis firstStatement) {
             this.firstStatement.set(firstStatement);
+            return this;
         }
 
         @Override
@@ -868,8 +869,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return hiddenContentSelector.get(methodInfo.fullyQualifiedName);
         }
 
-        public void setHiddenContentSelector(LV.HiddenContentSelector hiddenContentSelector) {
+        public Builder setHiddenContentSelector(LV.HiddenContentSelector hiddenContentSelector) {
             this.hiddenContentSelector.set(hiddenContentSelector);
+            return this;
         }
     }
 

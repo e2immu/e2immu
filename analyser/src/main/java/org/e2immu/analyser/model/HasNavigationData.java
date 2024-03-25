@@ -21,23 +21,36 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import java.util.List;
 import java.util.function.BiFunction;
 
-public interface HasNavigationData<T extends HasNavigationData<T>> {
-    NavigationData<T> getNavigationData();
+public interface HasNavigationData<T extends HasNavigationData<T>> extends CommonHasNavigationDataAndLimitedStatementAnalysis {
+    default NavigationData<T> getNavigationData() {
+        throw new UnsupportedOperationException();
+    }
 
-    T followReplacements();
+    default T followReplacements() {
+        throw new UnsupportedOperationException();
+    }
 
-    T lastStatement();
-    T lastStatement(boolean excludeThrows);
+    default T lastStatement() {
+        throw new UnsupportedOperationException();
+    }
 
-    String index();
+    default T lastStatement(boolean excludeThrows) {
+        throw new UnsupportedOperationException();
+    }
 
-    Statement statement();
+    default StatementAnalysis parent() {
+        throw new UnsupportedOperationException();
+    }
 
-    StatementAnalysis parent();
+    default void wireNext(T newStatement) {
+        throw new UnsupportedOperationException();
+    }
 
-    void wireNext(T newStatement);
+    default void wireDirectly(T newStatement) {
+        throw new UnsupportedOperationException();
+    }
 
-    void wireDirectly(T newStatement);
-
-    BiFunction<List<Statement>, String, T> generator(EvaluationContext evaluationContext);
+    default BiFunction<List<Statement>, String, T> generator(EvaluationContext evaluationContext) {
+        throw new UnsupportedOperationException();
+    }
 }

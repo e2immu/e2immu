@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
@@ -113,6 +114,7 @@ public class MethodLinkHelper {
         TypeInfo nestedType;
         ConstructorCall cc;
         MethodReference methodReference;
+        Instance instance;
         Lambda lambda;
 
         if ((lambda = parameterExpression.asInstanceOf(Lambda.class)) != null) {
@@ -162,6 +164,11 @@ public class MethodLinkHelper {
             } else {
                 throw new UnsupportedOperationException("Method reference evaluated into " + parameterValue.getClass());
             }
+        } else if ((instance = parameterExpression.asInstanceOf(Instance.class)) != null) {
+            MethodTypeParameterMap sam = instance.returnType()
+                    .findSingleAbstractMethodOfInterface(context.getAnalyserContext());
+            methodInfo = sam.methodInspection.getMethodInfo();
+            nestedType = sam.methodInspection.getMethodInfo().typeInfo;
         } else {
             methodInfo = null;
             nestedType = null;

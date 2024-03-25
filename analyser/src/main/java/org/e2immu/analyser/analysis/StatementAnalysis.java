@@ -41,35 +41,63 @@ public interface StatementAnalysis extends Analysis,
         LimitedStatementAnalysis {
 
     @NotNull
-    String fullyQualifiedName();
+    default String fullyQualifiedName() {
+        throw new UnsupportedOperationException();
+    }
 
-    List<StatementAnalysis> lastStatementsOfNonEmptySubBlocks();
+    default List<StatementAnalysis> lastStatementsOfNonEmptySubBlocks() {
+        throw new UnsupportedOperationException();
+    }
 
-    boolean atTopLevel();
+    default boolean atTopLevel() {
+        throw new UnsupportedOperationException();
+    }
 
-    void ensure(Message newMessage);
-
-    @NotNull
-    VariableInfo getLatestVariableInfo(String variableName);
-
-    List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo);
-
-    Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo);
-
-    boolean containsMessage(Message.Label messageLabel);
-
-    boolean containsMessage(Message message);
-
-    void initIteration0(EvaluationContext evaluationContext, MethodInfo currentMethod, StatementAnalysis previous);
-
-    void ensureMessages(Stream<Message> messageStream);
-
-    boolean assignsToFields();
-
-    boolean noIncompatiblePrecondition();
+    default void ensure(Message newMessage) {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    Stream<Message> messageStream();
+    default VariableInfo getLatestVariableInfo(String variableName) {
+        throw new UnsupportedOperationException();
+    }
+
+    default List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean containsMessage(Message.Label messageLabel) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean containsMessage(Message message) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void initIteration0(EvaluationContext evaluationContext, MethodInfo currentMethod, StatementAnalysis previous) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void ensureMessages(Stream<Message> messageStream) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean assignsToFields() {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean noIncompatiblePrecondition() {
+        throw new UnsupportedOperationException();
+    }
+
+    @NotNull
+    default Stream<Message> messageStream() {
+        throw new UnsupportedOperationException();
+    }
 
     /*
         create a variable, potentially even assign an initial value and a linked variables set.
@@ -77,93 +105,157 @@ public interface StatementAnalysis extends Analysis,
          */
     @Modified
     @NotNull
-    VariableInfoContainer createVariable(EvaluationContext evaluationContext,
-                                         Variable variable,
-                                         int statementTime,
-                                         VariableNature variableInLoop);
+    default VariableInfoContainer createVariable(EvaluationContext evaluationContext,
+                                                 Variable variable,
+                                                 int statementTime,
+                                                 VariableNature variableInLoop) {
+        throw new UnsupportedOperationException();
+    }
 
-    StatementAnalysis mostEnclosingLoop();
+    default StatementAnalysis mostEnclosingLoop() {
+        throw new UnsupportedOperationException();
+    }
 
     /*
         We've encountered a break or continue statement, and need to find the corresponding loop...
          */
-    FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue);
+    default FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue) {
+        throw new UnsupportedOperationException();
+    }
 
-    VariableInfo findOrNull(@NotNull Variable variable, Stage level);
+    default VariableInfo findOrNull(@NotNull Variable variable, Stage level) {
+        throw new UnsupportedOperationException();
+    }
 
-    VariableInfoContainer findOrNull(@NotNull Variable variable);
+    default VariableInfoContainer findOrNull(@NotNull Variable variable) {
+        throw new UnsupportedOperationException();
+    }
 
-    VariableInfo findOrThrow(@NotNull Variable variable);
+    default VariableInfo findOrThrow(@NotNull Variable variable) {
+        throw new UnsupportedOperationException();
+    }
 
-    boolean isLocalVariableAndLocalToThisBlock(String variableName);
-
-    VariableInfoContainer findForWriting(@NotNull String variableName);
+    default boolean isLocalVariableAndLocalToThisBlock(String variableName) {
+        throw new UnsupportedOperationException();
+    }
 
     /*
         will cause errors if variable does not exist yet!
         before you write, you'll have to ensureEvaluation
          */
-    VariableInfoContainer findForWriting(@NotNull Variable variable);
+    default VariableInfoContainer findForWriting(@NotNull Variable variable) {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull(content = true)
-    Stream<VariableInfo> variableStream();
+    default Stream<VariableInfo> variableStream() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull(content = true)
-    Stream<Map.Entry<String, VariableInfoContainer>> rawVariableStream();
+    default Stream<Map.Entry<String, VariableInfoContainer>> rawVariableStream() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull(content = true)
-    Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(Stage level);
+    default Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream(Stage level) {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull(content = true)
-    Stream<VariableInfoContainer> variableInfoContainerStream();
+    default Stream<VariableInfoContainer> variableInfoContainerStream() {
+        throw new UnsupportedOperationException();
+    }
 
-    Expression notNullValuesAsExpression(EvaluationContext evaluationContext);
-
-    @NotNull
-    NavigationData<StatementAnalysis> navigationData();
-
-    @NotNull
-    FlowData flowData();
+    default Expression notNullValuesAsExpression(EvaluationContext evaluationContext) {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    MethodLevelData methodLevelData();
-
-    StatementAnalysis navigateTo(String target);
-
-    StatementAnalysis startOfBlockStatementAnalysis(int i);
-
-    VariableInfoContainer getVariable(String fullyQualifiedName);
-
-    VariableInfoContainer getVariableOrDefaultNull(String fullyQualifiedName);
-
-    boolean variableIsSet(String fullyQualifiedName);
+    default NavigationData<StatementAnalysis> navigationData() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    StateData stateData();
+    default FlowData flowData() {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    RangeData rangeData();
+    default MethodLevelData methodLevelData() {
+        throw new UnsupportedOperationException();
+    }
 
-    boolean inSyncBlock();
+    default StatementAnalysis navigateTo(String target) {
+        throw new UnsupportedOperationException();
+    }
 
-    int statementTime(Stage merge);
+    default StatementAnalysis startOfBlockStatementAnalysis(int i) {
+        throw new UnsupportedOperationException();
+    }
+
+    default VariableInfoContainer getVariable(String fullyQualifiedName) {
+        throw new UnsupportedOperationException();
+    }
+
+    default VariableInfoContainer getVariableOrDefaultNull(String fullyQualifiedName) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean variableIsSet(String fullyQualifiedName) {
+        throw new UnsupportedOperationException();
+    }
 
     @NotNull
-    MethodAnalysis methodAnalysis();
+    default StateData stateData() {
+        throw new UnsupportedOperationException();
+    }
 
-    int numberOfVariables();
+    @NotNull
+    default RangeData rangeData() {
+        throw new UnsupportedOperationException();
+    }
 
-    Primitives primitives();
+    default boolean inSyncBlock() {
+        throw new UnsupportedOperationException();
+    }
 
-    void initIteration1Plus(EvaluationContext evaluationContext, StatementAnalysis previous);
+    default int statementTime(Stage merge) {
+        throw new UnsupportedOperationException();
+    }
 
-    Stream<Variable> candidateVariablesForNullPtrWarningStream();
+    @NotNull
+    default MethodAnalysis methodAnalysis() {
+        throw new UnsupportedOperationException();
+    }
 
-    void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport);
+    default int numberOfVariables() {
+        throw new UnsupportedOperationException();
+    }
 
-    List<Variable> variablesReadBySubAnalysers();
+    default Primitives primitives() {
+        throw new UnsupportedOperationException();
+    }
 
-    Stream<Map.Entry<Variable, Properties>> propertiesFromSubAnalysers();
+    default void initIteration1Plus(EvaluationContext evaluationContext, StatementAnalysis previous) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Stream<Variable> candidateVariablesForNullPtrWarningStream() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setVariableAccessReportOfSubAnalysers(VariableAccessReport variableAccessReport) {
+        throw new UnsupportedOperationException();
+    }
+
+    default List<Variable> variablesReadBySubAnalysers() {
+        throw new UnsupportedOperationException();
+    }
+
+    default Stream<Map.Entry<Variable, Properties>> propertiesFromSubAnalysers() {
+        throw new UnsupportedOperationException();
+    }
 
     default String propertiesFromSubAnalysersSortedToString() {
         return propertiesFromSubAnalysers()
@@ -171,29 +263,48 @@ public interface StatementAnalysis extends Analysis,
                 .sorted().collect(Collectors.joining(", "));
     }
 
-    boolean havePropertiesFromSubAnalysers();
+    default boolean havePropertiesFromSubAnalysers() {
+        throw new UnsupportedOperationException();
+    }
 
-    boolean latestDelay(CausesOfDelay delay);
+    default boolean latestDelay(CausesOfDelay delay) {
+        throw new UnsupportedOperationException();
+    }
 
-    boolean inLoop();
+    default boolean inLoop() {
+        throw new UnsupportedOperationException();
+    }
 
     // can we still reach index?
-    boolean isStillReachable(String index);
+    default boolean isStillReachable(String index) {
+        throw new UnsupportedOperationException();
+    }
 
-    DependentVariable searchInEquivalenceGroupForLatestAssignment(EvaluationContext evaluationContext,
-                                                                  DependentVariable variable,
-                                                                  Expression arrayValue,
-                                                                  Expression indexValue,
-                                                                  ForwardEvaluationInfo forwardEvaluationInfo);
+    default DependentVariable searchInEquivalenceGroupForLatestAssignment(EvaluationContext evaluationContext,
+                                                                          DependentVariable variable,
+                                                                          Expression arrayValue,
+                                                                          Expression indexValue,
+                                                                          ForwardEvaluationInfo forwardEvaluationInfo) {
+        throw new UnsupportedOperationException();
+    }
 
-    void makeUnreachable();
+    default void makeUnreachable() {
+        throw new UnsupportedOperationException();
+    }
 
-    Either<CausesOfDelay, Set<Variable>> recursivelyLinkedToParameterOrField(AnalyserContext analyserContext,
-                                                                             Variable v,
-                                                                             boolean cnnTravelsToFields);
+    default Either<CausesOfDelay, Set<Variable>> recursivelyLinkedToParameterOrField(AnalyserContext analyserContext,
+                                                                                     Variable v,
+                                                                                     boolean cnnTravelsToFields) {
+        throw new UnsupportedOperationException();
+    }
 
-    boolean isBrokeDelay();
-    void setBrokeDelay();
+    default boolean isBrokeDelay() {
+        throw new UnsupportedOperationException();
+    }
+
+    default void setBrokeDelay() {
+        throw new UnsupportedOperationException();
+    }
 
     default DV variableHasBeenModified(Variable variable) {
         VariableInfoContainer vic = getVariable(variable.fullyQualifiedName());
@@ -201,37 +312,57 @@ public interface StatementAnalysis extends Analysis,
         return vi.getProperty(CONTEXT_MODIFIED);
     }
 
-    boolean recursivelyContainedIn(Expression expression, Variable variable);
+    default boolean recursivelyContainedIn(Expression expression, Variable variable) {
+        throw new UnsupportedOperationException();
+    }
 
     record FindLoopResult(StatementAnalysis statementAnalysis, int steps, boolean isLoop) {
     }
 
-    DV isReturnOrEscapeAlwaysExecutedInCurrentBlock(boolean escapeOnly);
+    default DV isReturnOrEscapeAlwaysExecutedInCurrentBlock(boolean escapeOnly) {
+        throw new UnsupportedOperationException();
+    }
 
-    DV isEscapeAlwaysExecutedInCurrentBlock();
+    default DV isEscapeAlwaysExecutedInCurrentBlock() {
+        throw new UnsupportedOperationException();
+    }
 
-    Variable obtainLoopVar();
+    default Variable obtainLoopVar() {
+        throw new UnsupportedOperationException();
+    }
 
-    EvaluationResult evaluationOfForEachVariable(Variable loopVar,
-                                                 EvaluationResult evaluatedIterable,
-                                                 CausesOfDelay someValueWasDelayed,
-                                                 EvaluationResult evaluationResult);
+    default EvaluationResult evaluationOfForEachVariable(Variable loopVar,
+                                                         EvaluationResult evaluatedIterable,
+                                                         CausesOfDelay someValueWasDelayed,
+                                                         EvaluationResult evaluationResult) {
+        throw new UnsupportedOperationException();
+    }
 
-    void potentiallyRaiseErrorsOnNotNullInContext(AnalyserContext analyserContext,
-                                                  Map<Variable, ChangeData> changeDataMap);
+    default void potentiallyRaiseErrorsOnNotNullInContext(AnalyserContext analyserContext,
+                                                          Map<Variable, ChangeData> changeDataMap) {
+        throw new UnsupportedOperationException();
+    }
 
-    void potentiallyRaiseNullPointerWarningENN();
+    default void potentiallyRaiseNullPointerWarningENN() {
+        throw new UnsupportedOperationException();
+    }
 
     // return progress
-    boolean applyPrecondition(Precondition precondition,
-                              EvaluationContext evaluationContext,
-                              ConditionManager localConditionManager);
+    default boolean applyPrecondition(Precondition precondition,
+                                      EvaluationContext evaluationContext,
+                                      ConditionManager localConditionManager) {
+        throw new UnsupportedOperationException();
+    }
 
-    void ensureVariable(EvaluationContext evaluationContext,
-                        Variable variable,
-                        ChangeData changeData,
-                        int newStatementTime);
+    default void ensureVariable(EvaluationContext evaluationContext,
+                                Variable variable,
+                                ChangeData changeData,
+                                int newStatementTime) {
+        throw new UnsupportedOperationException();
+    }
 
     // return progress
-    boolean addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName);
+    default boolean addToAssignmentsInLoop(VariableInfoContainer vic, String fullyQualifiedName) {
+        throw new UnsupportedOperationException();
+    }
 }

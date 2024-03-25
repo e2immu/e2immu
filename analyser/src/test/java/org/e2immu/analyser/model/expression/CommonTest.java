@@ -31,6 +31,8 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
+import org.e2immu.analyser.parser.impl.TypeMapImpl;
+import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.util.List;
@@ -107,6 +109,8 @@ public abstract class CommonTest {
         }
     };
 
+    protected final TypeMapImpl.Builder typeMapBuilder = new TypeMapImpl.Builder(new Resources(), false);
+
     protected final TypeContext typeContext = new TypeContext() {
         @Override
         public Primitives getPrimitives() {
@@ -116,6 +120,11 @@ public abstract class CommonTest {
         @Override
         public TypeMap typeMap() {
             return typeMap;
+        }
+
+        @Override
+        public TypeMap.Builder typeMapBuilder() {
+            return typeMapBuilder;
         }
     };
 
