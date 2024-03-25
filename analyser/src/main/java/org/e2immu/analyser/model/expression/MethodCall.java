@@ -954,7 +954,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private static DV notNullRequirementOnScope(MethodInfo concreteMethod, DV notNullRequirement) {
-        if (concreteMethod.typeInfo.typeInspection.get().isFunctionalInterface()
+        if (concreteMethod.typeInfo.typeInspection.get(concreteMethod.typeInfo.fullyQualifiedName).isFunctionalInterface()
             && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
             return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV; // @NotNull1
         }

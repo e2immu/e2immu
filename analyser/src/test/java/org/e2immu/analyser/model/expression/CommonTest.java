@@ -213,6 +213,19 @@ public abstract class CommonTest {
         mBuilder.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
         mutable.typeAnalysis.set(mBuilder.build());
 
+        TypeParameter typeParameter = new TypeParameterImpl(mutableWithOneTypeParameter, "T", 0);
+        mutableWithOneTypeParameter.typeInspection.set(new TypeInspectionImpl.Builder(mutableWithOneTypeParameter, Inspector.BY_HAND)
+                .setFunctionalInterface(null)
+                .addTypeParameter(typeParameter)
+                .setParentClass(primitives.objectParameterizedType())
+                .build(analyserContext));
+        TypeAnalysisImpl.Builder mtpBuilder = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                mutableWithOneTypeParameter, analyserContext);
+        mtpBuilder.setProperty(Property.CONTAINER, DV.TRUE_DV);
+        mtpBuilder.setProperty(Property.IMMUTABLE, MultiLevel.MUTABLE_DV);
+        mutableWithOneTypeParameter.typeAnalysis.set(mBuilder.build());
+
+
         immutableDelayed.typeInspection.set(new TypeInspectionImpl.Builder(immutableDelayed, Inspector.BY_HAND)
                 .setFunctionalInterface(null)
                 .setParentClass(primitives.objectParameterizedType())

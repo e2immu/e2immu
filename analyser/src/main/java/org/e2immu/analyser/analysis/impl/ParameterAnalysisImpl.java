@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterAnalysisImpl.class);
@@ -43,6 +45,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     private final ParameterInfo parameterInfo;
     public final Map<FieldInfo, LV> assignedToField;
     private final LinkedVariables linksToOtherParameters;
+    // TODO at some point private final LinkedVariables linkToReturnValueOfMethod;
     private final LV.HiddenContentSelector hiddenContentSelector;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
@@ -166,7 +169,18 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        protected void writeHiddenContentLink(int[] linkParameters) {
+        public void writeHiddenContentLink(int[] hcLinkParameters, int[] dependentLinkToParameters) {
+            LinkedVariables hcLv = hcLinkParameters == null ? LinkedVariables.EMPTY
+                    : hcLinkToParameters(hcLinkParameters);
+            LinkedVariables depLv = dependentLinkToParameters == null ? LinkedVariables.EMPTY
+                    : dependentLinkToParameters(dependentLinkToParameters);
+            LinkedVariables lv = hcLv.merge(depLv);
+            if (!linksToParameters.isSet() || !linksToParameters.get().equals(lv)) {
+                linksToParameters.set(lv);
+            }
+        }
+
+        private LinkedVariables dependentLinkToParameters(int[] linkParameters) {
             Map<Variable, LV> map = new HashMap<>();
             List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
             for (int parameterIndex : linkParameters) {
@@ -176,14 +190,44 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    map.put(pi, LV.createHC(null, null)); // FIXME LV
+                    map.put(pi, LV.LINK_DEPENDENT);
                 }
             }
-            LinkedVariables lv = LinkedVariables.of(map);
-            if (!linksToParameters.isSet() || !linksToParameters.get().equals(lv)) {
-                linksToParameters.set(lv);
-            }
+            return LinkedVariables.of(map);
         }
+
+        private LinkedVariables hcLinkToParameters(int[] linkParameters) {
+            Map<Variable, LV> map = new HashMap<>();
+            int n = (int) parameterInfo.getMethodInfo().typeInfo.typeInspection.get().typeParameters().stream()
+                    .filter(TypeParameter::isUnbound).count();
+            List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
+            LV.HiddenContentSelector mine = bestHiddenContentSelector(n, parameterInfo.parameterizedType);
+            for (int parameterIndex : linkParameters) {
+                if (parameterIndex < 0 || parameterIndex >= parameters.size()) {
+                    LOGGER.error("Illegal parameter index {} for method {}", parameterIndex, parameterInfo.getMethod());
+                } else if (parameterIndex == parameterInfo.index) {
+                    LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
+                } else {
+                    ParameterInfo pi = parameters.get(parameterIndex);
+                    LV.HiddenContentSelector theirs = bestHiddenContentSelector(n, pi.parameterizedType);
+                    map.put(pi, LV.createHC(mine, theirs));
+                }
+            }
+            return LinkedVariables.of(map);
+        }
+
+        /*
+        situations that we want to address...
+        Type parameters of the method vs type parameters of the type
+         */
+        private LV.HiddenContentSelector bestHiddenContentSelector(int numHiddenContentTypesOfType,
+                                                                   ParameterizedType parameterType) {
+            Set<Integer> set = parameterType.extractTypeParameters().stream()
+                    .map(tp -> tp.isMethodTypeParameter() ? numHiddenContentTypesOfType + tp.getIndex()
+                            : tp.getIndex()).collect(Collectors.toUnmodifiableSet());
+            return new LV.HiddenContentSelectorImpl(set);
+        }
+
 
         @Override
         public LV.HiddenContentSelector getHiddenContentSelector() {

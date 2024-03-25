@@ -152,7 +152,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         String eventualFieldNames;
         boolean isType = this instanceof TypeAnalysis;
         boolean showFieldNames = isType && ((TypeAnalysis) this).isEventual()
-                || immutable.isDone() && MultiLevel.effective(immutable) == MultiLevel.Effective.EVENTUAL;
+                                 || immutable.isDone() && MultiLevel.effective(immutable) == MultiLevel.Effective.EVENTUAL;
         if (showFieldNames) {
             eventualFieldNames = markLabelFromType();
         } else {
@@ -177,7 +177,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
 
     protected boolean doIndependent(E2ImmuAnnotationExpressions e2, DV independent, DV formallyIndependent, DV immutable) {
         boolean implied = independent.equals(formallyIndependent)
-                || MultiLevel.independentCorrespondsToImmutable(independent, immutable);
+                          || MultiLevel.independentCorrespondsToImmutable(independent, immutable);
         Map<Class<?>, Map<String, Object>> map = GenerateAnnotationsIndependent.map(independent, implied);
         return generate(e2, map);
     }
@@ -204,6 +204,9 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         boolean container = false;
         DV independent = DelayFactory.initialDelay();
         int[] linkHcParameters = null;
+        int[] linkDependentParameters = null;
+        boolean linkDependentReturnValue = false;
+        boolean linkHcReturnValue = false;
 
         // immutable values
         MultiLevel.Level levelImmutable = MultiLevel.Level.ABSENT;
@@ -214,7 +217,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         boolean isConstant = false;
 
         Property modified = analyserIdentification == Analyser.AnalyserIdentification.FIELD ||
-                analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? Property.MODIFIED_VARIABLE
+                            analyserIdentification == Analyser.AnalyserIdentification.PARAMETER ? Property.MODIFIED_VARIABLE
                 : Property.MODIFIED_METHOD;
 
         for (AnnotationExpression annotationExpression : annotations) {
@@ -236,7 +239,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (isImmutable) {
                     // @Immutable
                     boolean hiddenContent = analyserIdentification.isAbstract ||
-                            annotationExpression.extract(HIDDEN_CONTENT, false);
+                                            annotationExpression.extract(HIDDEN_CONTENT, false);
                     MultiLevel.Level immutable = hiddenContent ? MultiLevel.Level.IMMUTABLE_HC : MultiLevel.Level.IMMUTABLE;
                     levelImmutable = parameters.absent() ? MultiLevel.Level.ABSENT : levelImmutable.max(immutable);
                     DV independentHc = hiddenContent ? MultiLevel.INDEPENDENT_HC_DV : MultiLevel.INDEPENDENT_DV;
@@ -253,6 +256,9 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                             hc ? MultiLevel.INDEPENDENT_HC_DV : MultiLevel.INDEPENDENT_DV;
                     if (analyserIdentification == Analyser.AnalyserIdentification.PARAMETER) {
                         linkHcParameters = annotationExpression.extract(HC_PARAMETERS, INT_ARRAY);
+                        linkDependentParameters = annotationExpression.extract(DEPENDENT_PARAMETERS, INT_ARRAY);
+                        linkHcReturnValue = annotationExpression.extract(HC_RETURN_VALUE, false);
+                        linkDependentReturnValue = annotationExpression.extract(DEPENDENT_RETURN_VALUE, false);
                     }
                 } else if (e2ImmuAnnotationExpressions.container.typeInfo() == t) {
                     // @Container, allowing absent
@@ -376,8 +382,14 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             boolean test = !before; // default == after==true == before==false
             writeEventual(markValue, false, null, test);
         }
-        if (linkHcParameters != null) {
-            writeHiddenContentLink(linkHcParameters);
+        if (linkHcParameters != null || linkDependentParameters != null) {
+            writeHiddenContentLink(linkHcParameters, linkDependentParameters);
+        }
+        if (linkHcReturnValue) {
+            writeHiddenContentLink();
+        }
+        if (linkDependentReturnValue) {
+            writeDependentLink();
         }
         return messages;
     }
@@ -397,7 +409,15 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         throw new UnsupportedOperationException();
     }
 
-    protected void writeHiddenContentLink(int[] linkParameters) {
+    public void writeHiddenContentLink(int[] linkHCParameters, int[] linkDependentParameters) {
+        throw new UnsupportedOperationException();
+    }
+
+    protected void writeHiddenContentLink() {
+        throw new UnsupportedOperationException();
+    }
+
+    protected void writeDependentLink() {
         throw new UnsupportedOperationException();
     }
 
