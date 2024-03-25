@@ -124,10 +124,11 @@ public abstract class CommonTest {
             @Override
             public DV getProperty(Expression value, Property property,
                                   boolean duringEvaluation, boolean ignoreStateInConditionManager) {
+                if (property == Property.IGNORE_MODIFICATIONS) return MultiLevel.IGNORE_MODS_DV;
                 if (value instanceof ExpressionMock em) {
                     return em.getProperty(null, property, duringEvaluation);
                 }
-                throw new UnsupportedOperationException("Not implemented");
+                throw new UnsupportedOperationException("Not implemented: " + property);
             }
 
             @Override
@@ -300,6 +301,7 @@ public abstract class CommonTest {
             @Override
             public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
                 if (Property.IGNORE_MODIFICATIONS == property) return DV.TRUE_DV;
+                if (Property.NOT_NULL_EXPRESSION == property) return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
                 assert parameterizedType.typeInfo != null;
                 return parameterizedType.typeInfo.typeAnalysis.get(parameterizedType.toString()).getProperty(property);
             }

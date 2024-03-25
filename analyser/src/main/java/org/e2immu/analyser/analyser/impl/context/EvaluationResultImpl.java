@@ -919,6 +919,10 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             return Map.copyOf(res);
         }
 
+        public void link(Variable from, LinkedVariables to) {
+            to.stream().forEach(e -> link(from, e.getKey(), e.getValue()));
+        }
+
         /*
         delayed links must be symmetrical, until we know whether the direction is LINK_IS_HC_OF or not.
         you can never link to the return variable.

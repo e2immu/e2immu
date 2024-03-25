@@ -137,4 +137,9 @@ public interface EvaluationResult extends Comparable<EvaluationResult> {
     default int compareTo(EvaluationResult o) {
         return getExpression().compareTo(o.getExpression());
     }
+
+    default ChangeData findChangeData(String name) {
+        return changeData().entrySet().stream().filter(e -> name.equals(e.getKey().simpleName()))
+                .map(Map.Entry::getValue).findFirst().orElseThrow();
+    }
 }

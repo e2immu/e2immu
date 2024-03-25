@@ -193,14 +193,14 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("mutable object, independence delayed")
     public void test4() {
-        DV delay = DelayFactory.createDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.VALUE_INDEPENDENT);
+        DV delay = DelayFactory.createDelay(primitives.stringTypeInfo().newLocation(), CauseOfDelay.Cause.VALUE_INDEPENDENT);
         MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, delay, null,
                 mutablePt);
         LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
                 LINK_COMMON_HC_ALL);
 
         assertEquals("a:-1,b:-1,o:-1,this:-1", lv.toString());
-        assertEquals("independent@NOT_YET_SET", lv.causesOfDelay().toString());
+        assertEquals("independent@Class_String", lv.causesOfDelay().toString());
     }
 
     @Test

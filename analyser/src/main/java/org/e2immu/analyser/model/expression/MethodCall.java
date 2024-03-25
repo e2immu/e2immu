@@ -367,6 +367,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 concreteMethod, firstInCallCycle, objectValue, allowUpgradeCnnOfScope);
         List<Expression> parameterValues = res.evaluationResults().stream().map(EvaluationResult::getExpression).toList();
         builder.compose(objectResult, res.builder().build());
+        LinkedVariables linkedVariablesOfObject = objectResult.linkedVariablesOfExpression();
 
         // precondition
         Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, identifier, concreteMethod,
@@ -378,8 +379,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
         EvaluationResult parametersToObject = methodLinkHelper.fromParametersIntoObject(objectType,
                 res.evaluationResults(), true, true);
-        LinkedVariables linkedVariablesOfObject = parametersToObject.linkedVariablesOfExpression();
+        LinkedVariables linkedVariablesOfObjectFromParams = parametersToObject.linkedVariablesOfExpression();
         builder.compose(parametersToObject);
+        linkedVariablesOfObject.stream().forEach(e ->
+                linkedVariablesOfObjectFromParams.stream().forEach(e2 ->
+                        builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))
+                ));
 
         // links, 2nd: object -> result; this will be the result of the expression
         LinkedVariables lvsResult = methodLinkHelper.linkedVariables(objectResult, res.evaluationResults(),
@@ -411,8 +416,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (modReturn.expression != null) {
                 // delay in expression
                 // for now the only test that uses this wrapped linked variables is Finalizer_0; but it is really pertinent.
-                modifiedInstance = linkedVariablesOfObject.isEmpty() ? modReturn.expression
-                        : PropertyWrapper.propertyWrapper(modReturn.expression, linkedVariablesOfObject);
+                modifiedInstance = linkedVariablesOfObjectFromParams.isEmpty() ? modReturn.expression
+                        : PropertyWrapper.propertyWrapper(modReturn.expression, linkedVariablesOfObjectFromParams);
             } else {
                 // delay in separate causes
                 modifiedInstance = null;

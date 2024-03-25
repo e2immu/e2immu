@@ -112,6 +112,13 @@ public class LV implements Comparable<LV> {
     }
 
     public LV min(LV other) {
+        if(isDelayed()) {
+            if(other.isDelayed()) {
+                return delay(causesOfDelay.merge(other.causesOfDelay));
+            }
+            return this;
+        }
+        if(other.isDelayed()) return other;
         if (value > other.value) return other;
         assert value != HC || other.value != HC || mineEqualsTheirs(other);
         return this;
@@ -122,6 +129,13 @@ public class LV implements Comparable<LV> {
     }
 
     public LV max(LV other) {
+        if(isDelayed()) {
+            if(other.isDelayed()) {
+                return delay(causesOfDelay.merge(other.causesOfDelay));
+            }
+            return this;
+        }
+        if(other.isDelayed()) return other;
         if (value < other.value) return other;
         assert value != HC || other.value != HC || mineEqualsTheirs(other);
         return this;
