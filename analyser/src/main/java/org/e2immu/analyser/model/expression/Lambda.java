@@ -141,7 +141,7 @@ public class Lambda extends BaseExpression implements Expression {
         if (o == null || getClass() != o.getClass()) return false;
         Lambda lambda = (Lambda) o;
         return abstractFunctionalType.equals(lambda.abstractFunctionalType) &&
-                implementation.equals(lambda.implementation);
+               implementation.equals(lambda.implementation);
     }
 
     @Override
@@ -316,17 +316,20 @@ public class Lambda extends BaseExpression implements Expression {
             boolean firstInCycle = breakCallCycleDelay || recursiveCall;
             String statementIndex = context.evaluationContext().statementIndex();
             if (firstInCycle) {
-                result = makeInstance(statementIndex, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                result = makeInstance(context, statementIndex, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
             } else {
-                result = withLocalAnalyser(statementIndex, parameterizedType, methodAnalysis);
+                result = withLocalAnalyser(context, statementIndex, parameterizedType, methodAnalysis);
             }
         }
-        builder.setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
+        builder.setLinkedVariablesOfExpression(
+                result instanceof PropertyWrapper pw && pw.linkedVariables() != null
+                        ? pw.linkedVariables() : LinkedVariables.EMPTY);
         builder.setExpression(result);
         return builder.build();
     }
 
-    private Expression withLocalAnalyser(String statementIndex,
+    private Expression withLocalAnalyser(EvaluationResult context,
+                                         String statementIndex,
                                          ParameterizedType parameterizedType,
                                          MethodAnalysis methodAnalysis) {
         Expression result;
@@ -350,7 +353,7 @@ public class Lambda extends BaseExpression implements Expression {
                     // modifying method, we cannot simply substitute; or: non-modifying, too complex
                     DV nne = MultiLevel.composeOneLevelMoreNotNull(nneParam);
                     assert nne.isDone();
-                    result = makeInstance(statementIndex, parameterizedType, nne);
+                    result = makeInstance(context, statementIndex, parameterizedType, nne);
                 }
             } else {
                 CausesOfDelay causes = srv.causesOfDelay().merge(modified.causesOfDelay()).merge(nneParam.causesOfDelay());
@@ -358,12 +361,15 @@ public class Lambda extends BaseExpression implements Expression {
             }
         } else {
             // the lambda
-            result = makeInstance(statementIndex, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            result = makeInstance(context, statementIndex, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }
         return result;
     }
 
-    private Expression makeInstance(String statementIndex, ParameterizedType parameterizedType, DV nne) {
+    private Expression makeInstance(EvaluationResult context,
+                                    String statementIndex,
+                                    ParameterizedType parameterizedType,
+                                    DV nne) {
         Expression result;
         Properties valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, nne,
                 Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
@@ -372,6 +378,12 @@ public class Lambda extends BaseExpression implements Expression {
                 Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
                 Property.IDENTITY, Property.IDENTITY.falseDv));
         result = Instance.forGetInstance(identifier, statementIndex, parameterizedType, valueProperties);
+        if (concreteReturnType.isVoid()) {
+            List<LinkedVariables> lvsList = MethodLinkHelper.additionalLinkingConsumer(context.evaluationContext(),
+                    methodInfo, methodInfo.typeInfo);
+            LinkedVariables lvs = lvsList.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+            return PropertyWrapper.propertyWrapper(result, lvs);
+        }
         return result;
     }
 

@@ -67,30 +67,11 @@ public class MethodLinkHelper {
     called by ConstructorCall and MethodCall
      */
     private List<LinkedVariables> computeLinkedVariablesOfParameters(List<EvaluationResult> parameterResults) {
-        int i = 0;
-        List<LinkedVariables> result = new ArrayList<>(parameterResults.size());
-        for (EvaluationResult evaluationResult : parameterResults) {
-            Expression value = evaluationResult.value();
-            LinkedVariables lv;
-            if (value.returnType().isFunctionalInterface()) {
-                lv = additionalLinkingFunctionalInterface(context, value, parameterResults.get(i));
-            } else {
-                lv = evaluationResult.linkedVariablesOfExpression();
-            }
-            result.add(lv.maximum(LINK_DEPENDENT));
-            i++;
-        }
-        return result;
-    }
-
-    private static LinkedVariables additionalLinkingFunctionalInterface(EvaluationResult context,
-                                                                        Expression parameterExpression,
-                                                                        EvaluationResult parameterResult) {
-        List<LinkedVariables> list = additionalLinkingFunctionalInterface2(context, parameterExpression, parameterResult);
-        return list.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+        return parameterResults.stream().map(er -> er.linkedVariablesOfExpression().maximum(LINK_DEPENDENT)).toList();
     }
 
     /*
+    TODO this code must move to evaluation of the respective types
     situations:
 
     1. consumer, as in .forEach(Consumer<T> consumer)
@@ -214,9 +195,9 @@ public class MethodLinkHelper {
         return result;
     }
 
-    private static List<LinkedVariables> additionalLinkingConsumer(EvaluationContext evaluationContext,
-                                                                   MethodInfo concreteMethod,
-                                                                   TypeInfo nestedType) {
+    public static List<LinkedVariables> additionalLinkingConsumer(EvaluationContext evaluationContext,
+                                                                  MethodInfo concreteMethod,
+                                                                  TypeInfo nestedType) {
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(concreteMethod);
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
@@ -287,8 +268,8 @@ public class MethodLinkHelper {
             LinkedVariables sourceLvs = parameterLvs.get(pi.index);
             LinkedVariables targetLvs = parameterLvs.get(target.index);
             if (!targetLvs.isEmpty()) {
-                tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, targetLvs, level, sourceLvs,
-                        parameterLvs);
+                tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, target.parameterizedType,
+                        targetLvs, level, pi.parameterizedType, sourceLvs, parameterLvs);
             }
 
         }));
@@ -302,115 +283,33 @@ public class MethodLinkHelper {
     private void tryLinkBetweenParameters(EvaluationResultImpl.Builder builder,
                                           int targetIndex,
                                           boolean targetIsVarArgs,
+                                          ParameterizedType targetType,
                                           LinkedVariables targetLinkedVariables,
                                           LV level,
+                                          ParameterizedType sourceType,
                                           LinkedVariables sourceLinkedVariables,
                                           List<LinkedVariables> parameterLvs) {
+        LinkedVariables mergedLvs;
+        HiddenContentSelector hcs = level.isCommonHC() ? level.mine() : CS_NONE;
+        DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
         if (targetIsVarArgs) {
+            mergedLvs = LinkedVariables.EMPTY;
+            ParameterizedType targetTypeCorrected = targetType.copyWithOneFewerArrays();
             for (int i = targetIndex; i < parameterLvs.size(); i++) {
-                linkFromTo(builder, level, sourceLinkedVariables, parameterLvs.get(i));
+                LinkedVariables lvs = parameterLvs.get(i);
+                LinkedVariables lv = computeIndependent.linkedVariables(targetTypeCorrected, lvs, independentDv, hcs, sourceType);
+                mergedLvs = mergedLvs.merge(lv);
             }
         } else {
-            linkFromTo(builder, level, sourceLinkedVariables, targetLinkedVariables);
+            mergedLvs = computeIndependent.linkedVariables(targetType, targetLinkedVariables, independentDv, hcs, sourceType);
         }
-    }
-
-    private static void linkFromTo(EvaluationResultImpl.Builder builder, LV level,
-                                   LinkedVariables sourceLinkedVariables,
-                                   LinkedVariables targetLinkedVariables) {
+        LinkedVariables finalMergedLvs = mergedLvs;
         sourceLinkedVariables.stream().forEach(e ->
-                targetLinkedVariables.stream().forEach(e2 ->
-                        builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()).max(level))));
+                finalMergedLvs.stream().forEach(e2 ->
+                        builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))
+                ));
     }
 
-    /*
-        IsVariableExpression vSource = source.asInstanceOf(IsVariableExpression.class);
-        if (vSource != null) {
-            // Independent1_2, DependentVariables_1
-            linksBetweenParametersVarArgs(builder, targetIndex, targetIsVarArgs, level, vSource,
-                    parameterExpressions, parameterValues, linkedVariables);
-        }
-        MethodReference methodReference = source.asInstanceOf(MethodReference.class);
-        if (methodReference != null) {
-            // Independent1_3
-            IsVariableExpression mrSource = methodReference.scope.asInstanceOf(IsVariableExpression.class);
-            if (mrSource != null) {
-                linksBetweenParametersVarArgs(builder, targetIndex, targetIsVarArgs, level, mrSource,
-                        parameterExpressions, parameterValues, linkedVariables);
-            }
-        }
-        InlinedMethod inlinedMethod = source.asInstanceOf(InlinedMethod.class);
-        if (inlinedMethod != null) {
-            // Independent1_4 TODO written to fit exactly this situation, needs expanding
-            // we decide between the first argument of the lambda and the return type
-            // first, the return type TODO
-            ParameterizedType typeOfHiddenContent = inlinedMethod.returnType().erased();
-            ParameterizedType typeOfTarget = target.parameterizedType().erased();
-            if (typeOfHiddenContent.equals(typeOfTarget)) {
-                Expression srv = context.getAnalyserContext().getMethodAnalysis(inlinedMethod.methodInfo()).getSingleReturnValue();
-                List<Variable> vars = srv.variables();
-                for (Variable v : vars) {
-                    if (v instanceof ParameterInfo piLambda && piLambda.owner != inlinedMethod.methodInfo()) {
-                        LV l = srv.isDelayed() ? LV.delay(srv.causesOfDelay()) : level;
-                        linksBetweenParametersVarArgs(builder, targetIndex, targetIsVarArgs, l,
-                                new VariableExpression(piLambda.identifier, v),
-                                parameterExpressions, parameterValues, linkedVariables);
-                    }
-                }
-            }
-        }
-        // we must have both lambda and inline: lambda to provide the correct delays in LV, and inline to provide the
-        // final value. Code is very similar
-        Lambda lambda = source.asInstanceOf(Lambda.class);
-        if (lambda != null) {
-            ParameterizedType typeOfHiddenContent = lambda.concreteReturnType().erased();
-            ParameterizedType typeOfTarget = target.parameterizedType().erased();
-            if (typeOfHiddenContent.equals(typeOfTarget)) {
-                Expression srv = context.getAnalyserContext().getMethodAnalysis(lambda.methodInfo).getSingleReturnValue();
-                List<Variable> vars = srv.variables();
-                for (Variable v : vars) {
-                    if (v instanceof ParameterInfo piLambda && piLambda.owner != lambda.methodInfo) {
-                        LV l = srv.isDelayed() ? LV.delay(srv.causesOfDelay()) : level;
-                        linksBetweenParametersVarArgs(builder, targetIndex, targetIsVarArgs, l,
-                                new VariableExpression(piLambda.identifier, v), parameterExpressions, parameterValues,
-                                linkedVariables);
-                    }
-                }
-            }
-        }
-    }
-
-    private void linksBetweenParametersVarArgs(EvaluationResultImpl.Builder builder,
-                                               int targetIndex,
-                                               boolean targetIsVarArgs,
-                                               LV level,
-                                               IsVariableExpression vSource,
-                                               List<Expression> parameterExpressions,
-                                               List<Expression> parameterValues,
-                                               List<LinkedVariables> linkedVariables) {
-        if (!LINK_INDEPENDENT.equals(level)) {
-            linksBetweenParameters(builder, vSource, targetIndex, level, parameterValues, linkedVariables);
-            if (targetIsVarArgs) {
-                for (int i = targetIndex + 1; i < parameterExpressions.size(); i++) {
-                    linksBetweenParameters(builder, vSource, i, level, parameterValues, linkedVariables);
-                }
-            }
-        }
-    }
-
-    private void linksBetweenParameters(EvaluationResultImpl.Builder builder,
-                                        IsVariableExpression source,
-                                        int targetIndex,
-                                        LV level,
-                                        List<Expression> parameterValues,
-                                        List<LinkedVariables> linkedVariables) {
-        LinkedVariables targetLinks = linkedVariables.get(targetIndex);
-        Expression parameterValue = parameterValues.get(targetIndex);
-        CausesOfDelay delays = parameterValue.causesOfDelay().merge(source.causesOfDelay());
-        targetLinks.variables().forEach((v, l) ->
-                builder.link(source.variable(), v, delays.isDelayed() ? LV.delay(delays) : level.max(l)));
-    }
-*/
     /*
    In general, the method result 'a', in 'a = b.method(c, d)', can link to 'b', 'c' and/or 'd'.
    Independence and immutability restrict the ability to link.
@@ -431,9 +330,9 @@ public class MethodLinkHelper {
    4/ independence is determined by the independence value of the method, and the independence value of the object 'a'
     */
 
-    public LinkedVariables linkedVariables(EvaluationResult objectResult,
-                                           List<EvaluationResult> parameterResults,
-                                           ParameterizedType concreteReturnType) {
+    public LinkedVariables linkedVariablesMethodCallObjectToReturnType(EvaluationResult objectResult,
+                                                                       List<EvaluationResult> parameterResults,
+                                                                       ParameterizedType concreteReturnType) {
         // RULE 1: void method cannot link
         if (methodInfo.noReturnValue()) return LinkedVariables.EMPTY;
         boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());

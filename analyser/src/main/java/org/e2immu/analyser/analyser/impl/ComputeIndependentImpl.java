@@ -57,18 +57,25 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         assert !(hiddenContentSelectorOfTransfer == CS_NONE && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
                 : "Impossible to have no knowledge of hidden content, and INDEPENDENT_HC";
 
-        DV immutableOfSource = typeImmutable(sourceType);
-        // RULE 2: delays
-        if (immutableOfSource.isDelayed()) {
-            return sourceLvs.changeToDelay(LV.delay(immutableOfSource.causesOfDelay()));
-        }
-        // RULE 3: immutable -> no link
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfSource)) {
+        DV immutableOfSource;
+        if (sourceType.isUnboundTypeParameter()) {
+            // for the purpose of this algorithm...
+            immutableOfSource = MultiLevel.INDEPENDENT_HC_DV;
+        } else {
+            immutableOfSource = typeImmutable(sourceType);
+            // RULE 2: delays
+            if (immutableOfSource.isDelayed()) {
+                return sourceLvs.changeToDelay(LV.delay(immutableOfSource.causesOfDelay()));
+            }
+
+            // RULE 3: immutable -> no link
+            if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfSource)) {
             /*
              if the result type immutable because of a choice in type parameters, methodIndependent will return
              INDEPENDENT_HC, but the concrete type is deeply immutable
              */
-            return LinkedVariables.EMPTY;
+                return LinkedVariables.EMPTY;
+            }
         }
         // RULE 4: delays
         if (transferIndependent.isDelayed()) {

@@ -34,7 +34,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util2.PackedIntMap;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.support.Either;
 import org.slf4j.Logger;
@@ -387,8 +386,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 ));
 
         // links, 2nd: object -> result; this will be the result of the expression
-        LinkedVariables lvsResult = methodLinkHelper.linkedVariables(objectResult, res.evaluationResults(),
-                concreteReturnType);
+        LinkedVariables lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
+                res.evaluationResults(), concreteReturnType);
 
         // increment the time, irrespective of NO_VALUE
         CausesOfDelay incrementDelays;

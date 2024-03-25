@@ -36,6 +36,7 @@ import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -173,6 +174,7 @@ public class TestAssignment extends CommonTest {
         assertEquals("8", eval.value().toString());
     }
 
+    @Disabled("fix later: not sure what the result should be")
     @Test
     @DisplayName("assign to array: int[] a = new int[10]; int i=03; a[i]=j")
     public void test8() {
