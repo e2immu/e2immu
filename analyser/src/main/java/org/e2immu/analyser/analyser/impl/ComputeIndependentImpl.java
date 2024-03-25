@@ -74,9 +74,11 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         }
         // we'll return a sensible value now
 
-        DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
+        DV correctedIndependent = targetType == null ? transferIndependent
+                : correctIndependent(immutableOfSource, transferIndependent, targetType,
                 hiddenContentSelectorOfTransfer);
-        HiddenContentSelector correctedTransferSelector = correctSelector(hiddenContentSelectorOfTransfer, targetType);
+        HiddenContentSelector correctedTransferSelector = targetType == null ? hiddenContentSelectorOfTransfer
+                : correctSelector(hiddenContentSelectorOfTransfer, targetType);
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         for (Map.Entry<Variable, LV> e : sourceLvs) {

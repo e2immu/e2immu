@@ -374,8 +374,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.addPrecondition(precondition);
 
         // links, 1st: param -> object and param <-> param
+        ParameterizedType objectType = methodInfo.isStatic() ? null : object.returnType();
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
-        EvaluationResult parametersToObject = methodLinkHelper.fromParametersIntoObject(objectResult,
+        EvaluationResult parametersToObject = methodLinkHelper.fromParametersIntoObject(objectType,
                 res.evaluationResults(), true, true);
         LinkedVariables linkedVariablesOfObject = parametersToObject.linkedVariablesOfExpression();
         builder.compose(parametersToObject);

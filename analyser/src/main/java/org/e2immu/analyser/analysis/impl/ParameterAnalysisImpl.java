@@ -43,16 +43,19 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     private final ParameterInfo parameterInfo;
     public final Map<FieldInfo, LV> assignedToField;
     private final LinkedVariables linksToOtherParameters;
+    private final LV.HiddenContentSelector hiddenContentSelector;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<Property, DV> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
                                   Map<FieldInfo, LV> assignedToField,
-                                  LinkedVariables linksToOtherParameters) {
+                                  LinkedVariables linksToOtherParameters,
+                                  LV.HiddenContentSelector hiddenContentSelector) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
         this.assignedToField = assignedToField;
         this.linksToOtherParameters = linksToOtherParameters;
+        this.hiddenContentSelector = hiddenContentSelector;
     }
 
     @Override
@@ -81,6 +84,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
+    public LV.HiddenContentSelector getHiddenContentSelector() {
+        return hiddenContentSelector;
+    }
+
+    @Override
     public Map<FieldInfo, LV> getAssignedToField() {
         return assignedToField;
     }
@@ -93,6 +101,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         private final AnalysisProvider analysisProvider;
         private final SetOnce<MethodAnalysisImpl.Builder> methodAnalysis = new SetOnce<>();
         private final SetOnce<LinkedVariables> linksToParameters = new SetOnce<>();
+        private final SetOnce<LV.HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -177,10 +186,21 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
+        public LV.HiddenContentSelector getHiddenContentSelector() {
+            return hiddenContentSelector.get(parameterInfo.fullyQualifiedName);
+        }
+
+        public Builder setHiddenContentSelector(LV.HiddenContentSelector hiddenContentSelector) {
+            this.hiddenContentSelector.set(hiddenContentSelector);
+            return this;
+        }
+
+        @Override
         public Analysis build() {
             return new ParameterAnalysisImpl(parameterInfo, properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(), getAssignedToField(),
-                    linksToParameters.getOrDefault(LinkedVariables.EMPTY));
+                    linksToParameters.getOrDefault(LinkedVariables.EMPTY),
+                    getHiddenContentSelector());
         }
 
         public void transferPropertiesToAnnotations(AnalyserContext analysisProvider, E2ImmuAnnotationExpressions e2) {

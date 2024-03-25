@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
@@ -476,23 +477,17 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
         builder.compose(res.builder().build());
 
-        Expression theScope = scope == null ? new VariableExpression(getIdentifier(),
-                context.evaluationContext().currentThis()) : scope;
-        EvaluationResult scopeResult = theScope.evaluate(context, forwardEvaluationInfo);
-        builder.compose(scopeResult);
+        if (scope != null && !(scope instanceof VariableExpression ve && ve.variable() instanceof This)) {
+            EvaluationResult scopeResult = scope.evaluate(context, forwardEvaluationInfo);
+            builder.compose(scopeResult);
+        }
 
         // linking
         if (constructor != null) {
             MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, constructor);
-            EvaluationResult links = methodLinkHelper.fromParametersIntoObject(scopeResult, res.evaluationResults(),
-                    false, true);
+            EvaluationResult links = methodLinkHelper.fromParametersIntoObject(null, res.evaluationResults(),
+                    true, true);
             builder.compose(links);
-            if (scope instanceof IsVariableExpression ive) {
-                ChangeData cd = links.changeData().get(ive.variable());
-                builder.setLinkedVariablesOfExpression(cd.linkedVariables());
-            } else {
-                builder.setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
-            }
         }
 
         // check state changes of companion methods
@@ -502,7 +497,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             int sumComplexity = expressions.stream().mapToInt(Expression::getComplexity).sum();
             ConstructorCall withEvalParam = sumComplexity >= Expression.CONSTRUCTOR_CALL_EXPANSION_LIMIT ? this
                     : withParameterExpressions(expressions);
-            EvaluationResult objectResult = builder.build(); // linked variables have been set
+            This thisVar = new This(context.getAnalyserContext(), context.getCurrentType());
+            VariableExpression thisVe = new VariableExpression(identifier, thisVar);
+            EvaluationResult objectResult = builder.setExpression(thisVe).build(); // linked variables have been set
             MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, builder, context,
                     constructor, withEvalParam, objectResult, expressions, this, DV.TRUE_DV);
             if (modReturn == null) {

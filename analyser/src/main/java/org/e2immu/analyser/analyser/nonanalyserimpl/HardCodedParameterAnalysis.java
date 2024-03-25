@@ -55,6 +55,11 @@ record HardCodedParameterAnalysis(String fullyQualifiedName) implements Paramete
     }
 
     @Override
+    public LV.HiddenContentSelector getHiddenContentSelector() {
+        return LV.CS_NONE;
+    }
+
+    @Override
     public Location location(Stage stage) {
         throw new UnsupportedOperationException();
     }

@@ -275,5 +275,8 @@ public interface MethodAnalysis extends Analysis {
 
     GetSetEquivalent getSetEquivalent();
 
+    /*
+    the hidden content selector of the return value
+     */
     LV.HiddenContentSelector getHiddenContentSelector();
 }

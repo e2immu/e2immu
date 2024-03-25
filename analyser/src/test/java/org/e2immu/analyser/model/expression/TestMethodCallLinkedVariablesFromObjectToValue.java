@@ -55,9 +55,13 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 primitives.stringTypeInfo(), analyserContext).build();
         ParameterAnalysis p0Analysis = (ParameterAnalysis) new ParameterAnalysisImpl
-                .Builder(primitives, analysisProvider, param0).build();
+                .Builder(primitives, analysisProvider, param0)
+                .setHiddenContentSelector(CS_NONE)
+                .build();
         ParameterAnalysis p1Analysis = (ParameterAnalysis) new ParameterAnalysisImpl
-                .Builder(primitives, analysisProvider, param1).build();
+                .Builder(primitives, analysisProvider, param1)
+                .setHiddenContentSelector(CS_NONE)
+                .build();
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 primitives, analysisProvider, inspectionProvider, methodInfo, typeAnalysis,

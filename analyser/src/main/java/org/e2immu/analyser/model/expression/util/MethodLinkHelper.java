@@ -232,51 +232,31 @@ public class MethodLinkHelper {
     /*
     Add all necessary links from parameters into scope, and in-between parameters
      */
-    public EvaluationResult fromParametersIntoObject(EvaluationResult objectResult,
+    public EvaluationResult fromParametersIntoObject(ParameterizedType objectPt,
                                                      List<EvaluationResult> parameterResults,
                                                      boolean fromParametersIntoObject,
                                                      boolean addLinksBetweenParameters) {
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
-        LinkedVariables linkedVariablesOfObject = objectResult.linkedVariablesOfExpression();
 
         if (methodInspection.getParameters().isEmpty()) {
-            return builder.build(); // nothing more we can do here
+            // explicitly set empty
+            return builder.setLinkedVariablesOfExpression(LinkedVariables.EMPTY).build();
         }
-
-        ParameterizedType objectPt = objectResult.getExpression().returnType();
 
         List<LinkedVariables> parameterLv = computeLinkedVariablesOfParameters(parameterResults);
 
         if (fromParametersIntoObject) {
-            DV scopeImmutable = computeIndependent.typeImmutable(objectPt);
-            // store the results by doing builder.link()...
-
             // links between object and parameters
             for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
                 DV formalParameterIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
                 if (!INDEPENDENT_DV.equals(formalParameterIndependent)) {
-
-                    int index = parameterAnalysis.getParameterInfo().index;
-                    EvaluationResult parameterResult = parameterResults.get(index);
-                    ParameterizedType concreteParameterType = parameterResult.value().returnType();
-                    LV linkLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(formalParameterIndependent);
-                    DV parameterIndependent = computeIndependent.typesAtLinkLevel(linkLevel, objectPt, scopeImmutable, concreteParameterType);
-                    LV parameterIndependentLevel = LinkedVariables.fromIndependentToLinkedVariableLevel(parameterIndependent);
-
-                    if (!INDEPENDENT_DV.equals(parameterIndependent)) {
-                        assert parameterIndependentLevel.isDelayed()
-                               || LINK_DEPENDENT.equals(parameterIndependentLevel)
-                               || LINK_COMMON_HC.equals(parameterIndependentLevel);
-                        LinkedVariables linkedVariablesOfParameter = parameterResult.linkedVariablesOfExpression();
-
-                        for (Map.Entry<Variable, LV> eFrom : linkedVariablesOfObject) {
-                            for (Map.Entry<Variable, LV> eTo : linkedVariablesOfParameter) {
-                                LV level = eFrom.getValue().max(eTo.getValue()).max(parameterIndependentLevel);
-                                builder.link(eFrom.getKey(), eTo.getKey(), level);
-                            }
-                        }
-                    }
+                    ParameterInfo pi = parameterAnalysis.getParameterInfo();
+                    ParameterizedType parameterType = pi.parameterizedType;
+                    LinkedVariables parameterLvs = parameterLv.get(pi.index);
+                    LinkedVariables addToObject = computeIndependent.linkedVariables(parameterType, parameterLvs,
+                            formalParameterIndependent, parameterAnalysis.getHiddenContentSelector(), objectPt);
+                    builder.mergeLinkedVariablesOfExpression(addToObject);
                 }
             }
         }
@@ -284,7 +264,6 @@ public class MethodLinkHelper {
         if (addLinksBetweenParameters) {
             linksBetweenParameters(builder, methodInfo, parameterResults, parameterLv);
         }
-        builder.setLinkedVariablesOfExpression(linkedVariablesOfObject);
         return builder.build();
     }
 

@@ -165,7 +165,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 .toList();
         List<EvaluationResult> parameterResults = parameterExpressions.stream()
                 .map(e -> e.evaluate(context, forwardEvaluationInfo)).toList();
-        EvaluationResult links = methodLinkHelper.fromParametersIntoObject(scopeResult, parameterResults,
+        EvaluationResult links = methodLinkHelper.fromParametersIntoObject(scope.returnType(), parameterResults,
                 true, true);
         builder.compose(links);
         builder.setExpression(this);

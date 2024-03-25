@@ -124,5 +124,13 @@ public interface ParameterAnalysis extends Analysis {
 
     ParameterInfo getParameterInfo();
 
-    default LinkedVariables getLinksToOtherParameters() { return LinkedVariables.EMPTY; }
+    default LinkedVariables getLinksToOtherParameters() {
+        return LinkedVariables.EMPTY;
+    }
+
+    /*
+    which part of the hidden content of the type is assigned from the parameter to the field,
+    or vice versa?
+     */
+    LV.HiddenContentSelector getHiddenContentSelector();
 }
