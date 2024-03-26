@@ -135,25 +135,26 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         assertEquals("b:4", er.findChangeData("c").linkedVariables().toString());
         assertEquals("b:4", er.findChangeData("d").linkedVariables().toString());
         ChangeData cb = er.findChangeData("b");
-        assertEquals("a:4", cb.linkedVariables().toString());
+        assertEquals("a:4,c:4,d:4", cb.linkedVariables().toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
     }
 
     private EvaluationResult evaluateMethodCall(MethodInfo method) {
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
-        VariableExpression vc = makeLVAsExpression("c", zero);
-        VariableExpression vd = makeLVAsExpression("d", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
+        VariableExpression vb = makeLVAsExpression("b", zero, mutablePtWithOneTypeParameter);
+        VariableExpression vc = makeLVAsExpression("c", zero, mutablePtWithOneTypeParameter);
+        VariableExpression vd = makeLVAsExpression("d", zero, mutablePtWithOneTypeParameter);
 
         LV.HiddenContentSelector select0 = LV.selectTypeParameter(0);
         LV hc = LV.createHC(select0, select0);
         assertEquals("<0>-4-<0>", hc.toString());
-        ExpressionMock argument0 = simpleMock(mutablePt, LinkedVariables.of(Map.of(va.variable(), LV.LINK_ASSIGNED,
-                vd.variable(), LV.LINK_DEPENDENT, vc.variable(), hc)));
-        ExpressionMock argument1 = simpleMock(mutablePt, LinkedVariables.of(Map.of(vc.variable(), LV.LINK_ASSIGNED,
-                va.variable(), hc, vd.variable(), hc)));
-        ExpressionMock object = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LV.LINK_DEPENDENT));
+        ExpressionMock argument0 = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(Map.of(va.variable(),
+                LV.LINK_ASSIGNED, vd.variable(), LV.LINK_DEPENDENT, vc.variable(), hc)));
+        ExpressionMock argument1 = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(Map.of(vc.variable(),
+                LV.LINK_ASSIGNED, va.variable(), hc, vd.variable(), hc)));
+        ExpressionMock object = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(vb.variable(),
+                LV.LINK_DEPENDENT));
 
         MethodCall mc = new MethodCall(newId(), object, method, List.of(argument0, argument1));
 

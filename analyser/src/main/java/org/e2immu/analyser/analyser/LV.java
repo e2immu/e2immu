@@ -38,6 +38,9 @@ public class LV implements Comparable<LV> {
     }
 
     public interface HiddenContentSelector extends DijkstraShortestPath.Connection {
+        HiddenContentSelector intersection(HiddenContentSelector other);
+
+        HiddenContentSelector union(HiddenContentSelector other);
     }
 
     public interface HiddenContent {
@@ -120,8 +123,11 @@ public class LV implements Comparable<LV> {
         }
         if (other.isDelayed()) return other;
         if (value > other.value) return other;
-        assert value != HC || other.value != HC || mineEqualsTheirs(other)
-                : "mine = " + mine + ", theirs = " + theirs;
+        if (isCommonHC() && other.isCommonHC()) {
+            HiddenContentSelector mineUnion = mine.union(other.mine);
+            HiddenContentSelector theirsUnion = theirs.union(other.theirs);
+            return createHC(mineUnion, theirsUnion);
+        }
         return this;
     }
 
@@ -237,6 +243,40 @@ public class LV implements Comparable<LV> {
 
         public Set<Integer> set() {
             return set;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            HiddenContentSelectorImpl selector = (HiddenContentSelectorImpl) o;
+            return Objects.equals(set, selector.set);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(set);
+        }
+
+        @Override
+        public HiddenContentSelector union(HiddenContentSelector other) {
+            assert (other == CS_ALL) == (this == CS_ALL);
+            if (this == CS_NONE) return other;
+            if (other == CS_NONE) return this;
+            Set<Integer> set = new HashSet<>(this.set);
+            set.addAll(((HiddenContentSelectorImpl) other).set);
+            assert !set.isEmpty();
+            return new HiddenContentSelectorImpl(set);
+        }
+
+        @Override
+        public HiddenContentSelector intersection(HiddenContentSelector other) {
+            assert (other == CS_ALL) == (this == CS_ALL);
+            if (this == CS_NONE || other == CS_NONE) return CS_NONE;
+            Set<Integer> set = new HashSet<>(this.set);
+            set.removeAll(((HiddenContentSelectorImpl) other).set);
+            if (set.isEmpty()) return CS_NONE;
+            return new HiddenContentSelectorImpl(set);
         }
     }
 

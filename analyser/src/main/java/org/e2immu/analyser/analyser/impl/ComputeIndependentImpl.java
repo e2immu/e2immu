@@ -83,12 +83,19 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
         }
         // we'll return a sensible value now
-
-        DV correctedIndependent = targetType == null ? transferIndependent
-                : correctIndependent(immutableOfSource, transferIndependent, targetType,
-                hiddenContentSelectorOfTransfer);
-        HiddenContentSelector correctedTransferSelector = targetType == null ? hiddenContentSelectorOfTransfer
-                : correctSelector(hiddenContentSelectorOfTransfer, targetType);
+        Map<Integer, ParameterizedType> typesCorrespondingToHC;
+        DV correctedIndependent;
+        HiddenContentSelector correctedTransferSelector;
+        if (targetType == null) {
+            typesCorrespondingToHC = null;
+            correctedIndependent = null;
+            correctedTransferSelector = null;
+        } else {
+            typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
+            correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
+                    hiddenContentSelectorOfTransfer);
+            correctedTransferSelector = correctSelector(hiddenContentSelectorOfTransfer, typesCorrespondingToHC);
+        }
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         for (Map.Entry<Variable, LV> e : sourceLvs) {
@@ -112,8 +119,10 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                     if (lv.isCommonHC()) {
                         commonHC = LV.createHC(correctedTransferSelector, lv.mine());
                     } else {
-                        // assigned, dependent...
-                        commonHC = LV.createHC(correctedTransferSelector, CS_ALL);
+                        // assigned, dependent... take the most complete hidden content selector, if possible
+                        HiddenContentSelector theirs = typesCorrespondingToHC == null ? CS_ALL
+                                : new HiddenContentSelectorImpl(typesCorrespondingToHC.keySet());
+                        commonHC = LV.createHC(correctedTransferSelector, theirs);
                     }
                     newLinked.put(e.getKey(), commonHC);
                 }
@@ -147,9 +156,8 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
     So we'll only remove those type parameters that have a recursively immutable instantiation in the concrete type.
      */
     private HiddenContentSelector correctSelector(HiddenContentSelector hiddenContentSelectorOfTransfer,
-                                                  ParameterizedType targetType) {
+                                                  Map<Integer, ParameterizedType> typesCorrespondingToHC) {
         // find the types corresponding to the hidden content indices
-        Map<Integer, ParameterizedType> typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
         Set<Integer> selectorSet = ((HiddenContentSelectorImpl) hiddenContentSelectorOfTransfer).set();
         Set<Integer> remaining = typesCorrespondingToHC.entrySet().stream()
                 .filter(e -> e.getValue().isTypeParameter() && selectorSet.contains(e.getKey()))
