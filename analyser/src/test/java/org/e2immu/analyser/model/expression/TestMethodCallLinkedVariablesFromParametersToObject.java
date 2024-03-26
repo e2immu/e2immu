@@ -222,7 +222,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     public void test2() {
         MethodInfo method = methodWithConsumerParameter(MultiLevel.DEPENDENT_DV, CS_NONE);
 
-        EvaluationResult er = evaluateMethodWithLambdaAsConsumerArgument(method);
+        EvaluationResult er = evaluateMethodWithLambdaAsConsumerArgument(method, mutablePtWithOneTypeParameter);
         assertEquals("", er.linkedVariablesOfExpression().toString());
         assertEquals(2, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
@@ -304,6 +304,28 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         assertEquals(0, er.changeData().size());
     }
 
+    @Test
+    @DisplayName("b.map(a::get), Function<T,T>, a and b independent HC")
+    public void test3e() {
+        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.CS_ALL);
+        MethodInfo map = methodWithFunctionParameter(tpHc0Pt, MultiLevel.INDEPENDENT_HC_DV,
+                LV.selectTypeParameter(0), tpHc0Pt, MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0),
+                immutableHcPtWithOneTypeParameter);
+        assertEquals("[com.foo.ImmutableHcTP|null]", tpHc0.getOwner().toString());
+        ParameterInfo p0 = map.methodInspection.get().getParameters().get(0);
+        assertEquals("Type _internal_.SyntheticFunction1<T,T>", p0.parameterizedType.toString());
+        assertEquals("com.foo.MutableTP.method(_internal_.SyntheticFunction1<T,T>)",
+                map.fullyQualifiedName());
+
+        assertEquals("Type com.foo.ImmutableHcTP<T>", map.returnType().toString());
+
+        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(map, get, tpHc0Pt);
+
+        // b:4 should now be present, because in this example, b is feeding
+        assertEquals("a:4,b:4", er.linkedVariablesOfExpression().toString());
+        assertEquals(0, er.changeData().size());
+    }
+
     private EvaluationResult evaluateMethodReference(MethodInfo method) {
         Expression zero = IntConstant.zero(primitives);
         VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
@@ -337,10 +359,11 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     }
 
     // b.forEach(e -> a.add(e))
-    private EvaluationResult evaluateMethodWithLambdaAsConsumerArgument(MethodInfo methodWithConsumerParameter) {
+    private EvaluationResult evaluateMethodWithLambdaAsConsumerArgument(MethodInfo methodWithConsumerParameter,
+                                                                        ParameterizedType typeOfAandB) {
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
-        VariableExpression vb = makeLVAsExpression("b", zero, mutablePtWithOneTypeParameter);
+        VariableExpression va = makeLVAsExpression("a", zero, typeOfAandB);
+        VariableExpression vb = makeLVAsExpression("b", zero, typeOfAandB);
         TypeInfo consumerTypeInfo = typeMapBuilder.syntheticFunction(1, true);
         MethodInfo abstractSam = consumerTypeInfo.findUniqueMethod("accept", 1);
         ParameterizedType abstractFunctionalType = consumerTypeInfo.asParameterizedType(inspectionProvider);
