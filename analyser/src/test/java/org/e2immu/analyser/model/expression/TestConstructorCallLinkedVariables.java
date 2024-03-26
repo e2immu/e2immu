@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.e2immu.analyser.analyser.LV.CS_NONE;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestConstructorCallLinkedVariables extends CommonTest {
@@ -39,7 +38,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        builder.setHiddenContentSelector(CS_NONE);
+        builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         constructor.setAnalysis(builder.build());
 
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
@@ -60,7 +59,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, delayed")
     public void test2() {
-        MethodInfo constructor = constructorOneArgument(null, CS_NONE);
+        MethodInfo constructor = constructorOneArgument(null, HiddenContentSelector.None.INSTANCE);
 
         EvaluationResult er = evaluateConstructorOneArgument(constructor);
         assertEquals("a:-1", er.linkedVariablesOfExpression().toString());
@@ -70,7 +69,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, dependent")
     public void test2b() {
-        MethodInfo constructor = constructorOneArgument(MultiLevel.DEPENDENT_DV, CS_NONE);
+        MethodInfo constructor = constructorOneArgument(MultiLevel.DEPENDENT_DV, HiddenContentSelector.None.INSTANCE);
 
         EvaluationResult er = evaluateConstructorOneArgument(constructor);
         assertEquals("a:2", er.linkedVariablesOfExpression().toString());
@@ -80,11 +79,11 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, independent HC")
     public void test2c() {
-        MethodInfo constructor1 = constructorOneArgument(MultiLevel.INDEPENDENT_HC_DV, CS_NONE);
-        // the parameter has HiddenContentSelector == CS_NONE
+        MethodInfo constructor1 = constructorOneArgument(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.None.INSTANCE);
+        // the parameter has HiddenContentSelector == HiddenContentSelector.None.INSTANCE
         assertThrows(AssertionError.class, () -> evaluateConstructorOneArgument(constructor1));
 
-        LV.HiddenContentSelector tp0 = LV.selectTypeParameter(0);
+        HiddenContentSelector tp0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
         MethodInfo constructor = constructorOneArgument(MultiLevel.INDEPENDENT_HC_DV, tp0);
 
         EvaluationResult er = evaluateConstructorOneArgument(constructor);
@@ -95,7 +94,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, independent")
     public void test2d() {
-        MethodInfo constructor = constructorOneArgument(MultiLevel.INDEPENDENT_DV, CS_NONE);
+        MethodInfo constructor = constructorOneArgument(MultiLevel.INDEPENDENT_DV, HiddenContentSelector.None.INSTANCE);
 
         EvaluationResult er = evaluateConstructorOneArgument(constructor);
         assertTrue(er.linkedVariablesOfExpression().isEmpty());
@@ -114,7 +113,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
         return cc.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
     }
 
-    private MethodInfo constructorOneArgument(DV independentP0, LV.HiddenContentSelector p0Hcs) {
+    private MethodInfo constructorOneArgument(DV independentP0, HiddenContentSelector p0Hcs) {
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 mutablePt, "p0", 0);
 
@@ -139,7 +138,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
-        builder.setHiddenContentSelector(CS_NONE);
+        builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         constructor.setAnalysis(builder.build());
 
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),

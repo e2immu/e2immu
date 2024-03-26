@@ -184,7 +184,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private AnalysisStatus markFirstIteration(SharedState sharedState) {
         methodAnalysis.markFirstIteration();
-        methodAnalysis.setHiddenContentSelector(LV.CS_ALL); // FIXME this is very temporary 20240322
+        methodAnalysis.setHiddenContentSelector(HiddenContentSelector.All.INSTANCE); // FIXME this is very temporary 20240322
         return DONE;
     }
 

@@ -14,13 +14,13 @@
 
 package org.e2immu.analyser.analyser.util;
 
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.e2immu.analyser.analyser.LV.*;
@@ -49,7 +49,8 @@ public class TestWeightedGraph_0 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV this_4_cycle = LV.createHC(LV.selectTypeParameter(0), LV.selectTypeParameter(0));
+        LV this_4_cycle = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(0),
+                HiddenContentSelector.CsSet.selectTypeParameter(0));
         assertEquals("<0>-4-<0>", this_4_cycle.toString());
 
         wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, this_4_cycle));

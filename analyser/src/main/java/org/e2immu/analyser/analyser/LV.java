@@ -37,12 +37,6 @@ public class LV implements Comparable<LV> {
         return HC == value;
     }
 
-    public interface HiddenContentSelector extends DijkstraShortestPath.Connection {
-        HiddenContentSelector intersection(HiddenContentSelector other);
-
-        HiddenContentSelector union(HiddenContentSelector other);
-    }
-
     public interface HiddenContent {
         HiddenContentSelector all();
     }
@@ -214,83 +208,6 @@ public class LV implements Comparable<LV> {
         }
     }
 
-    // integers represent type parameters, as result of HC.typeParameters()
-    public static class HiddenContentSelectorImpl implements HiddenContentSelector {
-        private final Set<Integer> set;
-
-        private HiddenContentSelectorImpl(boolean all) {
-            set = Set.of(all ? -1 : -2);
-        }
-
-        public HiddenContentSelectorImpl(Set<Integer> set) {
-            assert set != null && !set.isEmpty() && set.stream().allMatch(i -> i >= 0);
-            this.set = Set.copyOf(set);
-        }
-
-        @Override
-        public boolean isDisjointFrom(DijkstraShortestPath.Connection other) {
-            if (CS_NONE == this || CS_NONE == other) throw new UnsupportedOperationException();
-            return this != CS_ALL && other != CS_ALL
-                   && Collections.disjoint(set, ((HiddenContentSelectorImpl) other).set);
-        }
-
-        @Override
-        public String toString() {
-            return this == CS_ALL ? "*" : this == CS_NONE ? "X"
-                    : set.stream().sorted().map(Object::toString)
-                    .collect(Collectors.joining(",", "<", ">"));
-        }
-
-        public Set<Integer> set() {
-            return set;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            HiddenContentSelectorImpl selector = (HiddenContentSelectorImpl) o;
-            return Objects.equals(set, selector.set);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(set);
-        }
-
-        @Override
-        public HiddenContentSelector union(HiddenContentSelector other) {
-            assert (other == CS_ALL) == (this == CS_ALL);
-            if (this == CS_NONE) return other;
-            if (other == CS_NONE) return this;
-            Set<Integer> set = new HashSet<>(this.set);
-            set.addAll(((HiddenContentSelectorImpl) other).set);
-            assert !set.isEmpty();
-            return new HiddenContentSelectorImpl(set);
-        }
-
-        @Override
-        public HiddenContentSelector intersection(HiddenContentSelector other) {
-            assert (other == CS_ALL) == (this == CS_ALL);
-            if (this == CS_NONE || other == CS_NONE) return CS_NONE;
-            Set<Integer> set = new HashSet<>(this.set);
-            set.removeAll(((HiddenContentSelectorImpl) other).set);
-            if (set.isEmpty()) return CS_NONE;
-            return new HiddenContentSelectorImpl(set);
-        }
-    }
-
-    public static HiddenContentSelector selectTypeParameter(int i) {
-        return new HiddenContentSelectorImpl(Set.of(i));
-    }
-
-    public static HiddenContentSelector selectTypeParameters(int... is) {
-        return new HiddenContentSelectorImpl(Arrays.stream(is).boxed().collect(Collectors.toUnmodifiableSet()));
-    }
-
-    public static final HiddenContentSelector CS_ALL = new HiddenContentSelectorImpl(true);
-    public static final HiddenContentSelector CS_NONE = new HiddenContentSelectorImpl(false);
-
     public static class HiddenContentImpl implements HiddenContent {
         private final List<IndexedType> sequence;
 
@@ -302,7 +219,7 @@ public class LV implements Comparable<LV> {
         public HiddenContentSelector all() {
             Set<Integer> set = sequence.stream().flatMap(IndexedType::typeParameterIndexStream)
                     .collect(Collectors.toUnmodifiableSet());
-            return new HiddenContentSelectorImpl(set);
+            return new HiddenContentSelector.CsSet(set);
         }
 
         @Override

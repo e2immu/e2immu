@@ -1,16 +1,14 @@
 package org.e2immu.analyser.analyser.util;
 
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import static org.e2immu.analyser.analyser.LV.LINK_COMMON_HC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -31,8 +29,8 @@ public class TestWeightedGraph_8 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV map_4_keys = LV.createHC(LV.selectTypeParameter(0),LV.selectTypeParameter(0));
-        LV map_4_values = LV.createHC(LV.selectTypeParameter(1), LV.selectTypeParameter(0));
+        LV map_4_keys = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(0), HiddenContentSelector.CsSet.selectTypeParameter(0));
+        LV map_4_values = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(1), HiddenContentSelector.CsSet.selectTypeParameter(0));
         assertEquals("<1>-4-<0>", map_4_values.toString());
         assertEquals("<0>-4-<0>", map_4_keys.reverse().toString());
 

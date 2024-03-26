@@ -75,7 +75,8 @@ public abstract class CommonTest {
     protected final ParameterizedType immutableHcPtWithOneTypeParameter
             = new ParameterizedType(immutableHcWithOneTypeParameter, List.of(tpHc0Pt));
 
-    protected static final LV LINK_COMMON_HC_ALL = LV.createHC(LV.CS_ALL, LV.CS_ALL);
+    protected static final LV LINK_COMMON_HC_ALL = LV.createHC(HiddenContentSelector.All.INSTANCE,
+            HiddenContentSelector.All.INSTANCE);
 
     protected final AnalyserContext analyserContext = new AnalyserContext() {
         @Override
@@ -264,7 +265,7 @@ public abstract class CommonTest {
     protected static Identifier newId() {
         return Identifier.generate("test");
     }
-    
+
     protected static ExpressionMock simpleMock(ParameterizedType parameterizedType, LinkedVariables linkedVariables) {
         return new ExpressionMock() {
             @Override

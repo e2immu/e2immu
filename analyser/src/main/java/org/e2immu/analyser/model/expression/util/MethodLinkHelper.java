@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.ComputeIndependent;
@@ -176,7 +177,7 @@ public class MethodLinkHelper {
                                           LinkedVariables sourceLinkedVariables,
                                           List<LinkedVariables> parameterLvs) {
         LinkedVariables mergedLvs;
-        HiddenContentSelector hcs = level.isCommonHC() ? level.mine() : CS_NONE;
+        HiddenContentSelector hcs = level.isCommonHC() ? level.mine() : HiddenContentSelector.None.INSTANCE;
         DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
         if (targetIsVarArgs) {
             mergedLvs = LinkedVariables.EMPTY;

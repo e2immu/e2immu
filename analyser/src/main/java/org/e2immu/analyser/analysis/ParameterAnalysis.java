@@ -132,5 +132,5 @@ public interface ParameterAnalysis extends Analysis {
     which part of the hidden content of the type is assigned from the parameter to the field,
     or vice versa?
      */
-    LV.HiddenContentSelector getHiddenContentSelector();
+    HiddenContentSelector getHiddenContentSelector();
 }

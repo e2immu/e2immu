@@ -278,5 +278,5 @@ public interface MethodAnalysis extends Analysis {
     /*
     the hidden content selector of the return value
      */
-    LV.HiddenContentSelector getHiddenContentSelector();
+    HiddenContentSelector getHiddenContentSelector();
 }

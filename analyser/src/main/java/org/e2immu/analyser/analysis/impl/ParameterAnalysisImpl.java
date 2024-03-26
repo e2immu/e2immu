@@ -46,14 +46,14 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     public final Map<FieldInfo, LV> assignedToField;
     private final LinkedVariables linksToOtherParameters;
     // TODO at some point private final LinkedVariables linkToReturnValueOfMethod;
-    private final LV.HiddenContentSelector hiddenContentSelector;
+    private final HiddenContentSelector hiddenContentSelector;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<Property, DV> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
                                   Map<FieldInfo, LV> assignedToField,
                                   LinkedVariables linksToOtherParameters,
-                                  LV.HiddenContentSelector hiddenContentSelector) {
+                                  HiddenContentSelector hiddenContentSelector) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
         this.assignedToField = assignedToField;
@@ -87,7 +87,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
-    public LV.HiddenContentSelector getHiddenContentSelector() {
+    public HiddenContentSelector getHiddenContentSelector() {
         return hiddenContentSelector;
     }
 
@@ -104,7 +104,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         private final AnalysisProvider analysisProvider;
         private final SetOnce<MethodAnalysisImpl.Builder> methodAnalysis = new SetOnce<>();
         private final SetOnce<LinkedVariables> linksToParameters = new SetOnce<>();
-        private final SetOnce<LV.HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
+        private final SetOnce<HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -201,7 +201,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             int n = (int) parameterInfo.getMethodInfo().typeInfo.typeInspection.get().typeParameters().stream()
                     .filter(TypeParameter::isUnbound).count();
             List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
-            LV.HiddenContentSelector mine = bestHiddenContentSelector(n, false, parameterInfo.parameterizedType);
+            HiddenContentSelector mine = bestHiddenContentSelector(n, false, parameterInfo.parameterizedType);
             for (int parameterIndex : linkParameters) {
                 if (parameterIndex < 0 || parameterIndex >= parameters.size()) {
                     LOGGER.error("Illegal parameter index {} for method {}", parameterIndex, parameterInfo.getMethod());
@@ -209,7 +209,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    LV.HiddenContentSelector theirs = bestHiddenContentSelector(n,
+                    HiddenContentSelector theirs = bestHiddenContentSelector(n,
                             pi.parameterInspection.get().isVarArgs(), pi.parameterizedType);
                     map.put(pi, LV.createHC(mine, theirs));
                 }
@@ -221,7 +221,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         situations that we want to address...
         Type parameters of the method vs type parameters of the type
          */
-        private LV.HiddenContentSelector bestHiddenContentSelector(int numHiddenContentTypesOfType,
+        private HiddenContentSelector bestHiddenContentSelector(int numHiddenContentTypesOfType,
                                                                    boolean isVarargs,
                                                                    ParameterizedType parameterType) {
             ParameterizedType pt;
@@ -231,22 +231,22 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             } else {
                 pt = parameterType;
             }
-            if (pt.isTypeParameter() && pt.typeParameter.isUnbound()) return LV.CS_ALL;
+            if (pt.isTypeParameter() && pt.typeParameter.isUnbound()) return HiddenContentSelector.All.INSTANCE;
             // TODO: what to do with arrays?
             Set<Integer> set = pt.extractTypeParameters().stream()
                     .map(tp -> tp.isMethodTypeParameter() ? numHiddenContentTypesOfType + tp.getIndex()
                             : tp.getIndex()).collect(Collectors.toUnmodifiableSet());
-            if (set.isEmpty()) return LV.CS_NONE;
-            return new LV.HiddenContentSelectorImpl(set);
+            if (set.isEmpty()) return HiddenContentSelector.None.INSTANCE;
+            return new HiddenContentSelector.CsSet(set);
         }
 
 
         @Override
-        public LV.HiddenContentSelector getHiddenContentSelector() {
+        public HiddenContentSelector getHiddenContentSelector() {
             return hiddenContentSelector.get(parameterInfo.fullyQualifiedName);
         }
 
-        public Builder setHiddenContentSelector(LV.HiddenContentSelector hiddenContentSelector) {
+        public Builder setHiddenContentSelector(HiddenContentSelector hiddenContentSelector) {
             this.hiddenContentSelector.set(hiddenContentSelector);
             return this;
         }

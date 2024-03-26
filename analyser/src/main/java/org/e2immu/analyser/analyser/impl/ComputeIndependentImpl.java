@@ -15,6 +15,7 @@
 package org.e2immu.analyser.analyser.impl;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -26,7 +27,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.LV.*;
-import static org.e2immu.analyser.analyser.LV.CS_ALL;
 
 public record ComputeIndependentImpl(AnalyserContext analyserContext,
                                      SetOfTypes hiddenContentOfCurrentType,
@@ -54,7 +54,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         if (sourceLvs.isEmpty() || MultiLevel.INDEPENDENT_DV.equals(transferIndependent)) {
             return LinkedVariables.EMPTY;
         }
-        assert !(hiddenContentSelectorOfTransfer == CS_NONE && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
+        assert !(hiddenContentSelectorOfTransfer.isNone() && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
                 : "Impossible to have no knowledge of hidden content, and INDEPENDENT_HC";
 
         DV immutableOfSource;
@@ -94,7 +94,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
             correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
                     hiddenContentSelectorOfTransfer);
-            correctedTransferSelector = typesCorrespondingToHC == null ? CS_ALL
+            correctedTransferSelector = typesCorrespondingToHC == null ? HiddenContentSelector.All.INSTANCE
                     : correctSelector(hiddenContentSelectorOfTransfer, typesCorrespondingToHC);
         }
         Map<Variable, LV> newLinked = new HashMap<>();
@@ -123,8 +123,8 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                         commonHC = LV.createHC(correctedTransferSelector, lv.mine());
                     } else {
                         // assigned, dependent... take the most complete hidden content selector, if possible
-                        HiddenContentSelector theirs = typesCorrespondingToHC == null ? CS_ALL
-                                : new HiddenContentSelectorImpl(typesCorrespondingToHC.keySet());
+                        HiddenContentSelector theirs = typesCorrespondingToHC == null ? HiddenContentSelector.All.INSTANCE
+                                : new HiddenContentSelector.CsSet(typesCorrespondingToHC.keySet());
                         commonHC = LV.createHC(correctedTransferSelector, theirs);
                     }
                     newLinked.put(e.getKey(), commonHC);
@@ -160,14 +160,17 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
      */
     private HiddenContentSelector correctSelector(HiddenContentSelector hiddenContentSelectorOfTransfer,
                                                   Map<Integer, ParameterizedType> typesCorrespondingToHC) {
+        if(hiddenContentSelectorOfTransfer.isNone() || hiddenContentSelectorOfTransfer.isAll()) {
+            return hiddenContentSelectorOfTransfer;
+        }
         // find the types corresponding to the hidden content indices
-        Set<Integer> selectorSet = ((HiddenContentSelectorImpl) hiddenContentSelectorOfTransfer).set();
+        Set<Integer> selectorSet = hiddenContentSelectorOfTransfer.set();
         Set<Integer> remaining = typesCorrespondingToHC.entrySet().stream()
                 .filter(e -> e.getValue().isTypeParameter() && selectorSet.contains(e.getKey()))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toUnmodifiableSet());
-        if (remaining.isEmpty()) return CS_NONE;
-        return new LV.HiddenContentSelectorImpl(remaining);
+        if (remaining.isEmpty()) return HiddenContentSelector.None.INSTANCE;
+        return new HiddenContentSelector.CsSet(remaining);
     }
 
     private DV correctIndependent(DV immutableOfSource,
@@ -181,14 +184,14 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             if (MultiLevel.isAtLeastImmutableHC(immutableOfSource)) {
                 return MultiLevel.INDEPENDENT_HC_DV;
             }
-            if (hiddenContentSelectorOfTransfer == CS_ALL) {
+            if (hiddenContentSelectorOfTransfer.isAll()) {
                 DV immutablePt = typeImmutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
                     return MultiLevel.INDEPENDENT_HC_DV;
                 }
             } else {
-                Set<Integer> selectorSet = ((HiddenContentSelectorImpl) hiddenContentSelectorOfTransfer).set();
+                Set<Integer> selectorSet = hiddenContentSelectorOfTransfer.isNone() ? Set.of() : hiddenContentSelectorOfTransfer.set();
                 Map<Integer, ParameterizedType> typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
                 boolean allIndependent = true;
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHC.entrySet()) {
@@ -205,14 +208,14 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             }
         }
         if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
-            if (hiddenContentSelectorOfTransfer == CS_ALL) {
+            if (hiddenContentSelectorOfTransfer.isAll()) {
                 DV immutablePt = typeImmutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isMutable(immutablePt)) {
                     return MultiLevel.DEPENDENT_DV;
                 }
             } else {
-                Set<Integer> selectorSet = ((HiddenContentSelectorImpl) hiddenContentSelectorOfTransfer).set();
+                Set<Integer> selectorSet = ((HiddenContentSelector) hiddenContentSelectorOfTransfer).set();
                 Map<Integer, ParameterizedType> typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHC.entrySet()) {
                     if (selectorSet.contains(entry.getKey())) {

@@ -67,7 +67,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final FieldInfo getSet;
     public final GetSetEquivalent getSetEquivalent;
     public final Set<String> indicesOfEscapesNotInPreOrPostConditions;
-    public final LV.HiddenContentSelector hiddenContentSelector;
+    public final HiddenContentSelector hiddenContentSelector;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -88,7 +88,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                FieldInfo getSet,
                                GetSetEquivalent getSetEquivalent,
                                CommutableData commutableData,
-                               LV.HiddenContentSelector hiddenContentSelector) {
+                               HiddenContentSelector hiddenContentSelector) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -112,7 +112,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public LV.HiddenContentSelector getHiddenContentSelector() {
+    public HiddenContentSelector getHiddenContentSelector() {
         return hiddenContentSelector;
     }
 
@@ -288,7 +288,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final SetOnce<CommutableData> commutableData = new SetOnce<>();
 
         private final SetOnce<GetSetEquivalent> getSetEquivalent = new SetOnce<>();
-        private final SetOnce<LV.HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
+        private final SetOnce<HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -865,11 +865,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public LV.HiddenContentSelector getHiddenContentSelector() {
+        public HiddenContentSelector getHiddenContentSelector() {
             return hiddenContentSelector.get(methodInfo.fullyQualifiedName);
         }
 
-        public Builder setHiddenContentSelector(LV.HiddenContentSelector hiddenContentSelector) {
+        public Builder setHiddenContentSelector(HiddenContentSelector hiddenContentSelector) {
             this.hiddenContentSelector.set(hiddenContentSelector);
             return this;
         }

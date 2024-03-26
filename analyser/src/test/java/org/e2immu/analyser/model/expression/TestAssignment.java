@@ -15,34 +15,24 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
-import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
-import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.expr.ParseArrayCreationExpr;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
-import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.parser.impl.PrimitivesImpl;
-import org.e2immu.analyser.parser.impl.TypeMapImpl;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import static org.e2immu.analyser.analyser.LV.*;
@@ -342,7 +332,7 @@ public class TestAssignment extends CommonTest {
         ExpressionMock mock1 = new ExpressionMock() {
             @Override
             public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-                LV commonHc = LV.createHC(CS_ALL, CS_ALL);
+                LV commonHc = LV.createHC(HiddenContentSelector.All.INSTANCE, HiddenContentSelector.All.INSTANCE);
                 LinkedVariables lv = LinkedVariables.of(Map.of(
                         va.variable(), LINK_DEPENDENT,
                         vc.variable(), LINK_ASSIGNED,

@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.e2immu.analyser.analyser.LV.CS_NONE;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
@@ -114,7 +113,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
                                               boolean p1Varargs) {
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 p0Type, "p0", 0);
-        LV.HiddenContentSelector p0Hcs = LV.selectTypeParameter(0);
+        HiddenContentSelector p0Hcs = HiddenContentSelector.CsSet.selectTypeParameter(0);
         ParameterInspection.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
                 p1Type, "p1", 1).setVarArgs(p1Varargs);
 
@@ -159,7 +158,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        builder.setHiddenContentSelector(CS_NONE);
+        builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         method.setAnalysis(builder.build());
 
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),

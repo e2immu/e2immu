@@ -175,7 +175,7 @@ class HardCodedMethodAnalysis implements MethodAnalysis {
     }
 
     @Override
-    public LV.HiddenContentSelector getHiddenContentSelector() {
+    public HiddenContentSelector getHiddenContentSelector() {
         return null; // none of these types have hidden content
     }
 }

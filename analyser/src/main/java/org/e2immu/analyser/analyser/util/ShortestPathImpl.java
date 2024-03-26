@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.graph.op.DijkstraShortestPath;
@@ -42,7 +43,7 @@ public class ShortestPathImpl implements ShortestPath {
         this.edgesHigh = edgesHigh;
         this.variableIndex = variableIndex;
         this.someDelay = someDelay;
-        dijkstraShortestPath = new DijkstraShortestPath(CS_ALL);
+        dijkstraShortestPath = new DijkstraShortestPath(HiddenContentSelector.All.INSTANCE);
         this.linkMap = linkMap;
     }
 

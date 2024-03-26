@@ -1,6 +1,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -27,15 +28,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
 
-    private final HiddenContentSelector SELECT_0 = LV.selectTypeParameter(0);
-    private final HiddenContentSelector SELECT_1 = LV.selectTypeParameter(1);
+    private final HiddenContentSelector SELECT_0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
+    private final HiddenContentSelector SELECT_1 = HiddenContentSelector.CsSet.selectTypeParameter(1);
 
     private MethodInfo methodWithTwoArgs(DV identity,
                                          DV fluent,
                                          DV independent,
                                          HiddenContentSelector hiddenContentSelector,
                                          ParameterizedType methodReturnType) {
-        ParameterizedType parameterType = hiddenContentSelector == null ? mutablePt: mutablePtWithOneTypeParameter;
+        ParameterizedType parameterType = hiddenContentSelector == null ? mutablePt : mutablePtWithOneTypeParameter;
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 parameterType, "p0", 0);
         ParameterInspectionImpl.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
@@ -57,11 +58,11 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                 primitives.stringTypeInfo(), analyserContext).build();
         ParameterAnalysis p0Analysis = (ParameterAnalysis) new ParameterAnalysisImpl
                 .Builder(primitives, analysisProvider, param0)
-                .setHiddenContentSelector(CS_NONE)
+                .setHiddenContentSelector(HiddenContentSelector.None.INSTANCE)
                 .build();
         ParameterAnalysis p1Analysis = (ParameterAnalysis) new ParameterAnalysisImpl
                 .Builder(primitives, analysisProvider, param1)
-                .setHiddenContentSelector(CS_NONE)
+                .setHiddenContentSelector(HiddenContentSelector.None.INSTANCE)
                 .build();
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
@@ -70,7 +71,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         builder.setProperty(Property.IDENTITY, identity);
         builder.setProperty(Property.FLUENT, fluent);
         builder.setProperty(Property.INDEPENDENT, independent);
-        builder.setHiddenContentSelector(Objects.requireNonNullElse(hiddenContentSelector, CS_NONE));
+        builder.setHiddenContentSelector(Objects.requireNonNullElse(hiddenContentSelector, HiddenContentSelector.None.INSTANCE));
         methodInfo.setAnalysis(builder.build());
         return methodInfo;
     }
@@ -78,7 +79,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     private LinkedVariables callMethodWithTwoArgs(MethodInfo methodInfo,
                                                   ParameterizedType objectType, LV lvo, LV lva, LV lvb) {
         Expression zero = IntConstant.zero(primitives);
-        List<ParameterInfo>params = methodInfo.methodInspection.get().getParameters();
+        List<ParameterInfo> params = methodInfo.methodInspection.get().getParameters();
         VariableExpression va = makeLVAsExpression("a", zero);
         VariableExpression vb = makeLVAsExpression("b", zero);
         VariableExpression vo = makeLVAsExpression("o", zero, objectType);
@@ -351,8 +352,8 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("mutable object, method independent HC, immutable(mutable)")
     public void test10() {
-        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV, CS_ALL,
-                mutablePt);
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV,
+                HiddenContentSelector.All.INSTANCE, mutablePt);
         LV commonHC = LV.createHC(SELECT_0, SELECT_0);
         LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 commonHC);

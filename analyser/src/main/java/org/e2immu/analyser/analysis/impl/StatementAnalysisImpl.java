@@ -1040,7 +1040,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         if (variable instanceof DependentVariable dv) {
             VariableExpression arrayBase = new VariableExpression(dv.arrayExpression().getIdentifier(), dv.arrayVariable());
             LinkedVariables lvArrayBase = LinkedVariables.of(arrayBase.variable(),
-                    LV.createHC(LV.CS_ALL, LV.selectTypeParameters(0))); // FIXME correct? like List.get(index)
+                    LV.createHC(HiddenContentSelector.All.INSTANCE, HiddenContentSelector.CsSet.selectTypeParameters(0))); // FIXME correct? like List.get(index)
             DV independent = determineIndependentOfArrayBase(context, arrayBase);
             CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
             Expression arrayValue;
@@ -1570,8 +1570,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
             MethodInspection methodInspection = ac.getMethodInspection(methodInfo);
             ParameterizedType typeReturnedByIterableMethod = methodInspection.getReturnType();
             LV.HiddenContent hc = LV.from(typeReturnedByIterableMethod);
-            LV.HiddenContentSelector theirs = hc.all(); // typically, {0}, one type parameter
-            LV.HiddenContentSelector mine = LV.CS_ALL;
+            HiddenContentSelector theirs = hc.all(); // typically, {0}, one type parameter
+            HiddenContentSelector mine = HiddenContentSelector.All.INSTANCE;
             linkLevel = LV.createHC(mine, theirs);
         } else {
             linkLevel = LV.LINK_DEPENDENT;

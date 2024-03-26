@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.parser.impl;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.LV;
-import org.e2immu.analyser.analyser.Property;
-import org.e2immu.analyser.analyser.SetOfTypes;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -803,7 +800,7 @@ public class PrimitivesImpl implements Primitives {
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
                 methodInfo, null, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
-        builder.setHiddenContentSelector(LV.CS_NONE);
+        builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         return (MethodAnalysis) builder.build();
     }
 

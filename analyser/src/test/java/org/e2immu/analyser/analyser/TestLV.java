@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -54,7 +53,7 @@ public class TestLV {
     }
 
     private static String sorted(DijkstraShortestPath.Connection cc) {
-        if (cc instanceof LV.HiddenContentSelectorImpl cci) {
+        if (cc instanceof HiddenContentSelector cci) {
             return cci.set().stream().sorted().map(Object::toString).collect(Collectors.joining(", "));
         }
         throw new UnsupportedOperationException();
