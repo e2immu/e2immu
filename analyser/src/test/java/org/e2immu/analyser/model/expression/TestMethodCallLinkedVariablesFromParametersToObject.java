@@ -286,7 +286,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.CS_ALL);
         ParameterizedType integerPt = primitives.integerTypeInfo().asSimpleParameterizedType();
         MethodInfo map = methodWithFunctionParameter(integerPt, MultiLevel.INDEPENDENT_HC_DV,
-                LV.selectTypeParameter(0), tp0Pt, MultiLevel.INDEPENDENT_HC_DV, CS_ALL,
+                LV.selectTypeParameter(0), tp0Pt, MultiLevel.INDEPENDENT_DV, CS_NONE,
                 mutablePtWithOneTypeParameter);
         assertEquals("[com.foo.MutableTP|null]", tp0.getOwner().toString());
         ParameterInfo p0 = map.methodInspection.get().getParameters().get(0);
@@ -299,6 +299,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
 
         EvaluationResult er = evaluateMethodWithMethodReferenceArgument(map, get, mutableInteger);
 
+        // b:4 should not be present, because the object's type parameter is Integer, which is independent
         assertEquals("a:4", er.linkedVariablesOfExpression().toString());
         assertEquals(0, er.changeData().size());
     }

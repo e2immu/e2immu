@@ -215,43 +215,52 @@ public class MethodLinkHelper {
         return result;
     }
 
+    public record FromParameters(EvaluationResult intoObject, EvaluationResult intoResult) {
+    }
+
     /*
     Add all necessary links from parameters into scope, and in-between parameters
      */
-    public EvaluationResult fromParametersIntoObject(ParameterizedType objectPt,
-                                                     List<EvaluationResult> parameterResults,
-                                                     boolean fromParametersIntoObject,
-                                                     boolean addLinksBetweenParameters) {
+    public FromParameters fromParametersIntoObject(ParameterizedType objectPt,
+                                                   ParameterizedType resultPt,
+                                                   List<Expression> parameterExpressions,
+                                                   List<EvaluationResult> parameterResults,
+                                                   boolean fromParametersIntoObject,
+                                                   boolean addLinksBetweenParameters) {
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
-        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context)
+        EvaluationResultImpl.Builder intoObjectBuilder = new EvaluationResultImpl.Builder(context)
                 .setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
+        EvaluationResultImpl.Builder intoResultBuilder = resultPt == null || resultPt.isVoid() ? null
+                : new EvaluationResultImpl.Builder(context).setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
 
-        if (methodInspection.getParameters().isEmpty()) {
-            // explicitly set empty
-            return builder.build();
-        }
+        if (!methodInspection.getParameters().isEmpty()) {
+            List<LinkedVariables> parameterLv = computeLinkedVariablesOfParameters(parameterResults);
 
-        List<LinkedVariables> parameterLv = computeLinkedVariablesOfParameters(parameterResults);
-
-        if (fromParametersIntoObject) {
-            // links between object and parameters
-            for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
-                DV formalParameterIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
-                if (!INDEPENDENT_DV.equals(formalParameterIndependent)) {
-                    ParameterInfo pi = parameterAnalysis.getParameterInfo();
-                    ParameterizedType parameterType = pi.parameterizedType;
-                    LinkedVariables parameterLvs = parameterLv.get(pi.index);
-                    LinkedVariables addToObject = computeIndependent.linkedVariables(parameterType, parameterLvs,
-                            formalParameterIndependent, parameterAnalysis.getHiddenContentSelector(), objectPt);
-                    builder.mergeLinkedVariablesOfExpression(addToObject);
+            if (fromParametersIntoObject) {
+                // links between object and parameters
+                for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
+                    DV formalParameterIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
+                    if (!INDEPENDENT_DV.equals(formalParameterIndependent)) {
+                        ParameterInfo pi = parameterAnalysis.getParameterInfo();
+                        ParameterizedType parameterType = pi.parameterizedType;
+                        LinkedVariables parameterLvs = parameterLv.get(pi.index);
+                        boolean inResult = intoResultBuilder != null
+                                           && parameterExpressions.get(pi.index).isInstanceOf(MethodReference.class);
+                        ParameterizedType pt = inResult ? resultPt : objectPt;
+                        LinkedVariables lv = computeIndependent.linkedVariables(parameterType, parameterLvs,
+                                formalParameterIndependent, parameterAnalysis.getHiddenContentSelector(), pt);
+                        EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
+                        builder.mergeLinkedVariablesOfExpression(lv);
+                    }
                 }
             }
-        }
 
-        if (addLinksBetweenParameters) {
-            linksBetweenParameters(builder, methodInfo, parameterLv);
+            if (addLinksBetweenParameters) {
+                linksBetweenParameters(intoObjectBuilder, methodInfo, parameterLv);
+            }
         }
-        return builder.build();
+        return new FromParameters(intoObjectBuilder.build(), intoResultBuilder == null ? null :
+                intoResultBuilder.build());
     }
 
     public void linksBetweenParameters(EvaluationResultImpl.Builder builder,
@@ -352,8 +361,11 @@ public class MethodLinkHelper {
 
         if (identity.isDelayed() && !parameterResults.isEmpty()) {
             // temporarily link to both the object and the parameter, in a delayed way
+            LinkedVariables allParams = parameterResults.stream()
+                    .map(EvaluationResult::linkedVariablesOfExpression)
+                    .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
             return linkedVariablesOfObject
-                    .merge(parameterResults.get(0).linkedVariablesOfExpression())
+                    .merge(allParams)
                     .changeNonStaticallyAssignedToDelay(identity.causesOfDelay());
         }
 

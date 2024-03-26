@@ -374,14 +374,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.addPrecondition(precondition);
 
         // ----- START LINKS -----
-        
+
         // links, 1st: param -> object and param <-> param
         ParameterizedType objectType = methodInfo.isStatic() ? null : object.returnType();
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
-        EvaluationResult parametersToObject = methodLinkHelper.fromParametersIntoObject(objectType,
-                res.evaluationResults(), true, true);
-        LinkedVariables linkedVariablesOfObjectFromParams = parametersToObject.linkedVariablesOfExpression();
-        builder.compose(parametersToObject);
+        MethodLinkHelper.FromParameters fp = methodLinkHelper.fromParametersIntoObject(objectType, concreteReturnType,
+                parameterExpressions, res.evaluationResults(), true, true);
+        LinkedVariables linkedVariablesOfObjectFromParams = fp.intoObject().linkedVariablesOfExpression();
+        builder.compose(fp.intoObject());
+
         linkedVariablesOfObject.stream().forEach(e ->
                 linkedVariablesOfObjectFromParams.stream().forEach(e2 ->
                         builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))
@@ -390,20 +391,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // links, 2nd: object -> result; this will be the result of the expression
         // copy the link result from the parameters into the lvs of the object. There can be a result when
         // a parameter is a functional interface returning a value
-        EvaluationResult correctedObjectResult;
-        if (linkedVariablesOfObjectFromParams.isEmpty()) {
-            correctedObjectResult = objectResult;
-        } else {
-            LinkedVariables merged = objectResult.linkedVariablesOfExpression()
-                    .merge(linkedVariablesOfObjectFromParams);
-            correctedObjectResult = new EvaluationResultImpl.Builder(context).compose(objectResult)
-                    .setLinkedVariablesOfExpression(merged).build();
-        }
-        LinkedVariables lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(correctedObjectResult,
+        LinkedVariables lvsResult1 = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
                 res.evaluationResults(), concreteReturnType);
+        LinkedVariables lvsResult = fp.intoResult() == null ? lvsResult1
+                : lvsResult1.merge(fp.intoResult().linkedVariablesOfExpression());
 
         // ----- END LINKS -----
-        
+
         // increment the time, irrespective of NO_VALUE
         CausesOfDelay incrementDelays;
         if (!firstInCallCycle) {
@@ -417,7 +411,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         CausesOfDelay parameterDelays = parameterValues.stream().map(Expression::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
-        CausesOfDelay linkDelays = parametersToObject.causesOfDelay().merge(lvsResult.causesOfDelay());
+        CausesOfDelay linkDelays = fp.intoObject().causesOfDelay().merge(lvsResult.causesOfDelay());
         CausesOfDelay delays1 = modified.causesOfDelay().merge(parameterDelays).merge(delayedFinalizer)
                 .merge(objectResult.causesOfDelay()).merge(incrementDelays).merge(linkDelays);
 

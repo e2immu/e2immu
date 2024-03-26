@@ -157,10 +157,11 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 .toList();
         List<EvaluationResult> parameterResults = parameterExpressions.stream()
                 .map(e -> e.evaluate(context, forwardEvaluationInfo)).toList();
-        EvaluationResult links = methodLinkHelper.fromParametersIntoObject(scope.returnType(), parameterResults,
+        MethodLinkHelper.FromParameters from = methodLinkHelper.fromParametersIntoObject(scope.returnType(),
+                null, parameterExpressions, parameterResults,
                 true, true);
         scopeResult.linkedVariablesOfExpression().stream().forEach(e ->
-                links.linkedVariablesOfExpression().stream().forEach(e2 ->
+                from.intoObject().linkedVariablesOfExpression().stream().forEach(e2 ->
                         builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))));
         LinkedVariables lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult,
                 parameterResults, concreteReturnType);

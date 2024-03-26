@@ -485,9 +485,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
         // linking
         if (constructor != null) {
             MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, constructor);
-            EvaluationResult links = methodLinkHelper.fromParametersIntoObject(null, res.evaluationResults(),
+            MethodLinkHelper.FromParameters from = methodLinkHelper.fromParametersIntoObject(null,
+                    null, parameterExpressions, res.evaluationResults(),
                     true, true);
-            builder.compose(links);
+            builder.compose(from.intoObject());
         }
 
         // check state changes of companion methods
