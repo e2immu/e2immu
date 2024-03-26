@@ -234,9 +234,9 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("a::add")
     public void test3() {
-        MethodInfo method = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0));
+        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0));
 
-        EvaluationResult er = evaluateMethodReference(method);
+        EvaluationResult er = evaluateMethodReference(add);
         assertEquals("", er.linkedVariablesOfExpression().toString());
         assertEquals(2, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
@@ -246,16 +246,52 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
     }
 
+    @Test
+    @DisplayName("b.forEach(a::add)")
+    public void test3b() {
+        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0));
+        MethodInfo forEach = methodWithConsumerParameter(MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0));
+
+        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(forEach, add);
+
+        assertEquals("", er.linkedVariablesOfExpression().toString());
+        assertEquals(2, er.changeData().size());
+        ChangeData ca = er.findChangeData("a");
+        assertEquals("b:4", ca.linkedVariables().toString());
+        ChangeData cb = er.findChangeData("b");
+        assertEquals("a:4", cb.linkedVariables().toString());
+        assertTrue(cb.linkedVariables().causesOfDelay().isDone());
+    }
+
     private EvaluationResult evaluateMethodReference(MethodInfo method) {
         Expression zero = IntConstant.zero(primitives);
         VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
         ParameterInfo p0 = method.methodInspection.get().getParameters().get(0);
-        VariableExpression p0Var = new VariableExpression(newId(), p0);
         ParameterizedType concreteType = method.typeInfo.asParameterizedType(inspectionProvider);
         MethodReference mr = new MethodReference(newId(), va, method, concreteType);
         Expression thisMock = simpleMock(primitives.stringParameterizedType(), LinkedVariables.EMPTY);
+        VariableExpression p0Var = new VariableExpression(newId(), p0);
         EvaluationContext ec = evaluationContext(Map.of("this", thisMock, "a", va, "p0", p0Var));
         return mr.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
+    }
+
+    // b.forEach(a::add)
+    private EvaluationResult evaluateMethodWithMethodReferenceArgument(MethodInfo forEach, MethodInfo add) {
+        Expression zero = IntConstant.zero(primitives);
+        VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
+        ParameterizedType concreteType = add.typeInfo.asParameterizedType(inspectionProvider);
+        MethodReference mr = new MethodReference(newId(), va, add, concreteType);
+
+        VariableExpression vb = makeLVAsExpression("b", zero, mutablePtWithOneTypeParameter);
+        MethodCall mc = new MethodCall(newId(), vb, forEach, List.of(mr));
+        Expression thisMock = simpleMock(primitives.stringParameterizedType(), LinkedVariables.EMPTY);
+
+        ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
+        VariableExpression p0Var = new VariableExpression(newId(), p0);
+
+        EvaluationContext ec = evaluationContext(Map.of("this", thisMock, "a", va, "b", vb,
+                "p0", p0Var));
+        return mc.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
     }
 
     // b.forEach(e -> a.add(e))

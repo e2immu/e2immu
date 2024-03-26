@@ -1068,5 +1068,25 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         public CausesOfDelay causesOfDelay() {
             return causesOfDelay;
         }
+
+        public void removeFromChangeData(Predicate<Variable> predicate) {
+            for (Variable v : new HashSet<>(valueChanges.keySet())) {
+                if (predicate.test(v)) valueChanges.remove(v);
+                else {
+                    ChangeData cd = valueChanges.get(v);
+                    if (cd.linkedVariables() != null
+                        && !cd.linkedVariables().isEmpty()
+                        && cd.linkedVariables().stream().anyMatch(e -> predicate.test(e.getKey()))) {
+                        LinkedVariables linked = cd.linkedVariables().remove(predicate);
+                        ChangeData newCd = new ChangeData(cd.value(), cd.delays().merge(linked.causesOfDelay()),
+                                cd.stateIsDelayed(), cd.markAssignment(),
+                                cd.readAtStatementTime(), linked, cd.toRemoveFromLinkedVariables(),
+                                cd.properties(), cd.modificationTimeIncrement());
+                        valueChanges.put(v, newCd);
+                    }
+                }
+            }
+            valueChanges.keySet().removeIf(predicate);
+        }
     }
 }

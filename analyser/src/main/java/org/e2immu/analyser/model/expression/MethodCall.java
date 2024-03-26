@@ -386,15 +386,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 ));
 
         // links, 2nd: object -> result; this will be the result of the expression
-        LinkedVariables lvsResult1 = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
+        LinkedVariables lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
                 res.evaluationResults(), concreteReturnType);
-        LinkedVariables lvsResult;
-        if (lvsResult1.isEmpty() && parameterExpressions.stream().anyMatch(pe -> pe.isInstanceOf(MethodReference.class))) {
-            lvsResult = builder.build().changeData().entrySet().stream().filter(e -> isVariableFromFunctionalInterface(e.getKey()))
-                    .map(e -> e.getValue().linkedVariables()).reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
-        } else {
-            lvsResult = lvsResult1;
-        }
+
         // increment the time, irrespective of NO_VALUE
         CausesOfDelay incrementDelays;
         if (!firstInCallCycle) {
@@ -447,10 +441,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         checkCommonErrors(builder, context, concreteMethod, objectValue);
 
         return builder.build();
-    }
-
-    private static boolean isVariableFromFunctionalInterface(Variable key) {
-        return key instanceof ParameterInfo pi && pi.getMethodInfo().typeInfo.typeInspection.get().isFunctionalInterface();
     }
 
     private EvaluationResult evaluateComponents(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {

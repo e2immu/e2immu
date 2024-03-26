@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
@@ -30,10 +31,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
@@ -206,7 +204,9 @@ public class EvaluateParameters {
             contextModified = Property.CONTEXT_MODIFIED.bestDv;
         }
 
-        EvaluationResult parameterResult = parameterExpression.evaluate(context, forward);
+        EvaluationResult parameterResult1 = parameterExpression.evaluate(context, forward);
+        EvaluationResult parameterResult = correctForMethodReference(parameterResult1, parameterExpression);
+
         builder.compose(parameterResult, lvs -> null); // do not merge the linked variables, that will come later
         EvaluationResult afterModification;
 
@@ -225,6 +225,23 @@ public class EvaluateParameters {
         }
         evaluationResults.add(afterModification);
         return contextNotNull;
+    }
+
+    private static EvaluationResult correctForMethodReference(EvaluationResult er, Expression parameterExpression) {
+        MethodReference mr = parameterExpression.asInstanceOf(MethodReference.class);
+        if (mr != null) {
+            EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(er).compose(er);
+            MethodInfo theMethod = mr.methodInfo;
+            LinkedVariables lvs = er.changeData().entrySet().stream().filter(e -> isVariableFromFunctionalInterface(e.getKey(), theMethod))
+                    .map(e -> e.getValue().linkedVariables()).reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+            builder.removeFromChangeData(v -> isVariableFromFunctionalInterface(v, theMethod));
+            return builder.setLinkedVariablesOfExpression(lvs).build();
+        }
+        return er;
+    }
+
+    private static boolean isVariableFromFunctionalInterface(Variable key, MethodInfo theMethod) {
+        return key instanceof ParameterInfo pi && theMethod.equals(pi.getMethodInfo());
     }
 
     /*
