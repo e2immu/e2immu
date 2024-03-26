@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.e2immu.analyser.analyser.LV.CS_ALL;
 import static org.e2immu.analyser.analyser.LV.CS_NONE;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -263,11 +264,41 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
     }
 
+
+    @Test
+    @DisplayName("a::get")
+    public void test3c() {
+        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.CS_ALL);
+
+        EvaluationResult er = evaluateMethodReference(get);
+        assertEquals("a:4", er.linkedVariablesOfExpression().toString());
+        assertEquals(0, er.changeData().size());
+    }
+
+    /*
+       a ~ List<T>
+       b ~ Stream<Integer>
+       Stream<T> res = b.map(i -> a.get(i)); the result is linked to 'a', not to 'b'
+     */
+    @Test
+    @DisplayName("b.map(a::get)")
+    public void test3d() {
+        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.CS_ALL);
+        MethodInfo map = methodWithFunctionParameter(
+                mutablePtWithOneTypeParameter, MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0),
+                tp0Pt, MultiLevel.INDEPENDENT_HC_DV, CS_ALL);
+
+        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(map, get);
+
+        assertEquals("a:4", er.linkedVariablesOfExpression().toString());
+        assertEquals(0, er.changeData().size());
+    }
+
     private EvaluationResult evaluateMethodReference(MethodInfo method) {
         Expression zero = IntConstant.zero(primitives);
         VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
         ParameterInfo p0 = method.methodInspection.get().getParameters().get(0);
-        ParameterizedType concreteType = method.typeInfo.asParameterizedType(inspectionProvider);
+        ParameterizedType concreteType = method.returnType();
         MethodReference mr = new MethodReference(newId(), va, method, concreteType);
         Expression thisMock = simpleMock(primitives.stringParameterizedType(), LinkedVariables.EMPTY);
         VariableExpression p0Var = new VariableExpression(newId(), p0);
@@ -405,18 +436,61 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         return method;
     }
 
-    // e.g. forEach(Consumer<E>)
-    private MethodInfo methodWithConsumerParameter(DV independentP0, LV.HiddenContentSelector p0Hcs) {
-        TypeInfo consumerTypeInfo = typeMapBuilder.syntheticFunction(1, true);
-        ParameterizedType consumer = new ParameterizedType(consumerTypeInfo, List.of(tp0Pt));
-        assertEquals("Type _internal_.SyntheticConsumer1<T>", consumer.toString());
 
+    // e.g. T list.get(int)
+    private MethodInfo methodReturningHCParameter(DV independent, LV.HiddenContentSelector hcs) {
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
-                consumer, "p0", 0);
+                primitives.intParameterizedType(), "p0", 0);
 
         MethodInfo method = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(), "method",
                 MethodInfo.MethodType.METHOD)
-                .setReturnType(primitives.voidParameterizedType())
+                .setReturnType(tp0Pt)
+                .addParameter(param0Inspection)
+                .build(inspectionProvider).getMethodInfo();
+        TypeAnalysis typeAnalysisOfString = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                primitives.stringTypeInfo(), analyserContext).build();
+
+        ParameterAnalysis p0Analysis = parameterAnalysis(0, MultiLevel.INDEPENDENT_DV, method, CS_NONE);
+
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
+                primitives, analysisProvider, inspectionProvider, method, typeAnalysisOfString,
+                List.of(p0Analysis));
+        builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
+        builder.setProperty(Property.FLUENT, DV.FALSE_DV);
+        // we're not interested in the return value here! (void method)
+        builder.setProperty(Property.INDEPENDENT, independent);
+        builder.setHiddenContentSelector(hcs);
+        method.setAnalysis(builder.build());
+
+        MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
+                MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
+                false);
+        method.methodResolution.set(methodResolution);
+        return method;
+    }
+
+    // e.g. forEach(Consumer<E>)
+    private MethodInfo methodWithConsumerParameter(DV independentP0, LV.HiddenContentSelector p0Hcs) {
+        return methodWithFunctionParameter(tp0Pt, independentP0, p0Hcs, primitives.voidParameterizedType(),
+                MultiLevel.INDEPENDENT_DV, CS_NONE);
+    }
+
+    // e.g. map(Function<List<T>,T>), forEach(Consumer<T>)
+    private MethodInfo methodWithFunctionParameter(ParameterizedType param0Pt,
+                                                   DV independentP0,
+                                                   LV.HiddenContentSelector p0Hcs,
+                                                   ParameterizedType returnType,
+                                                   DV independent,
+                                                   LV.HiddenContentSelector hcs) {
+        TypeInfo functionTypeInfo = typeMapBuilder.syntheticFunction(1, returnType.isVoid());
+        ParameterizedType function = new ParameterizedType(functionTypeInfo, List.of(param0Pt));
+
+        ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
+                function, "p0", 0);
+
+        MethodInfo method = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(), "method",
+                MethodInfo.MethodType.METHOD)
+                .setReturnType(returnType)
                 .addParameter(param0Inspection)
                 .build(inspectionProvider).getMethodInfo();
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
@@ -434,8 +508,8 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 List.of(p0Analysis));
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
-        builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
-        builder.setHiddenContentSelector(CS_NONE);
+        builder.setProperty(Property.INDEPENDENT, independent);
+        builder.setHiddenContentSelector(hcs);
         method.setAnalysis(builder.build());
 
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),

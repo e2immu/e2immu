@@ -353,6 +353,7 @@ public class LV implements Comparable<LV> {
     }
 
     public static Map<Integer, ParameterizedType> typesCorrespondingToHC(ParameterizedType pt) {
+        if(pt.isUnboundTypeParameter()) return null;
         HiddenContentImpl hiddenContent = (HiddenContentImpl) from(pt);
         // the selector tells us where to find types
         Map<Integer, ParameterizedType> map = new HashMap<>();

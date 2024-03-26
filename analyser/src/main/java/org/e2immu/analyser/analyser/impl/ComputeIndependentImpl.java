@@ -94,7 +94,8 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
             correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
                     hiddenContentSelectorOfTransfer);
-            correctedTransferSelector = correctSelector(hiddenContentSelectorOfTransfer, typesCorrespondingToHC);
+            correctedTransferSelector = typesCorrespondingToHC == null ? CS_ALL
+                    : correctSelector(hiddenContentSelectorOfTransfer, typesCorrespondingToHC);
         }
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;

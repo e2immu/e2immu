@@ -373,6 +373,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 objectValue, parameterValues);
         builder.addPrecondition(precondition);
 
+        // ----- START LINKS -----
+        
         // links, 1st: param -> object and param <-> param
         ParameterizedType objectType = methodInfo.isStatic() ? null : object.returnType();
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
@@ -386,9 +388,22 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 ));
 
         // links, 2nd: object -> result; this will be the result of the expression
-        LinkedVariables lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
+        // copy the link result from the parameters into the lvs of the object. There can be a result when
+        // a parameter is a functional interface returning a value
+        EvaluationResult correctedObjectResult;
+        if (linkedVariablesOfObjectFromParams.isEmpty()) {
+            correctedObjectResult = objectResult;
+        } else {
+            LinkedVariables merged = objectResult.linkedVariablesOfExpression()
+                    .merge(linkedVariablesOfObjectFromParams);
+            correctedObjectResult = new EvaluationResultImpl.Builder(context).compose(objectResult)
+                    .setLinkedVariablesOfExpression(merged).build();
+        }
+        LinkedVariables lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(correctedObjectResult,
                 res.evaluationResults(), concreteReturnType);
 
+        // ----- END LINKS -----
+        
         // increment the time, irrespective of NO_VALUE
         CausesOfDelay incrementDelays;
         if (!firstInCallCycle) {

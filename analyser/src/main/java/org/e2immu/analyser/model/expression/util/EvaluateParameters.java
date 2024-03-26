@@ -235,7 +235,9 @@ public class EvaluateParameters {
             LinkedVariables lvs = er.changeData().entrySet().stream().filter(e -> isVariableFromFunctionalInterface(e.getKey(), theMethod))
                     .map(e -> e.getValue().linkedVariables()).reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
             builder.removeFromChangeData(v -> isVariableFromFunctionalInterface(v, theMethod));
-            return builder.setLinkedVariablesOfExpression(lvs).build();
+            LinkedVariables lvs2 = lvs.merge(er.linkedVariablesOfExpression());
+            LinkedVariables lvs3 = lvs2.remove(v -> isVariableFromFunctionalInterface(v, theMethod));
+            return builder.setLinkedVariablesOfExpression(lvs3).build();
         }
         return er;
     }

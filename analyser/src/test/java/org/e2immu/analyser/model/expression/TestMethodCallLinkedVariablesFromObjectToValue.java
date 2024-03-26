@@ -88,8 +88,8 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         ParameterizedType pt1 = params.get(1).parameterizedType;
         VariableExpression vd = makeLVAsExpression("d", zero, pt1);
 
-        Expression p0 = simpleMock(pt0, LinkedVariables.of(vc.variable(), LINK_DEPENDENT));
-        Expression p1 = simpleMock(pt1, LinkedVariables.of(vd.variable(), LINK_ASSIGNED));
+        Expression p0 = simpleMock(pt0, LinkedVariables.EMPTY);
+        Expression p1 = simpleMock(pt1, LinkedVariables.EMPTY);
 
         VariableExpression thisVE = new VariableExpression(newId(), new This(analyserContext,
                 primitives.stringTypeInfo()));
@@ -142,7 +142,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                 .linkedVariablesOfExpression();
 
         assertEquals("identity@NOT_YET_SET", lv.causesOfDelay().toString());
-        assertEquals("a:-1", lv.toString());
+        assertEquals("a:-1,b:-1", lv.toString());
     }
 
     @Test
