@@ -141,10 +141,10 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
 
     /*
     Example: Map<K,V>.entrySet() has HCS <0,1>: we keep both type parameters. But Map<Long,V> must have
-    only <1>, because type parameter 0 cannot be hidden content in the result.
+    only <1>, because type parameter 0 cannot be hidden content in this particular instantiation.
     Map<StringBuilder, V> is not relevant here, because then the type would be mutable, the corrected independent
     would be "dependent", and we'll not return a commonHC object.
-    So we'll only those type parameters that have a recursively immutable instantiation in the concrete type.
+    So we'll only remove those type parameters that have a recursively immutable instantiation in the concrete type.
      */
     private HiddenContentSelector correctSelector(HiddenContentSelector hiddenContentSelectorOfTransfer,
                                                   ParameterizedType targetType) {
@@ -155,6 +155,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 .filter(e -> e.getValue().isTypeParameter() && selectorSet.contains(e.getKey()))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toUnmodifiableSet());
+        if (remaining.isEmpty()) return CS_NONE;
         return new LV.HiddenContentSelectorImpl(remaining);
     }
 

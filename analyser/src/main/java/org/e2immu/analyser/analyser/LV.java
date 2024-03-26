@@ -89,7 +89,7 @@ public class LV implements Comparable<LV> {
     }
 
     public LV reverse() {
-        if(isCommonHC()) {
+        if (isCommonHC()) {
             return createHC(theirs, mine);
         }
         return this;
@@ -112,15 +112,16 @@ public class LV implements Comparable<LV> {
     }
 
     public LV min(LV other) {
-        if(isDelayed()) {
-            if(other.isDelayed()) {
+        if (isDelayed()) {
+            if (other.isDelayed()) {
                 return delay(causesOfDelay.merge(other.causesOfDelay));
             }
             return this;
         }
-        if(other.isDelayed()) return other;
+        if (other.isDelayed()) return other;
         if (value > other.value) return other;
-        assert value != HC || other.value != HC || mineEqualsTheirs(other);
+        assert value != HC || other.value != HC || mineEqualsTheirs(other)
+                : "mine = " + mine + ", theirs = " + theirs;
         return this;
     }
 
@@ -129,13 +130,13 @@ public class LV implements Comparable<LV> {
     }
 
     public LV max(LV other) {
-        if(isDelayed()) {
-            if(other.isDelayed()) {
+        if (isDelayed()) {
+            if (other.isDelayed()) {
                 return delay(causesOfDelay.merge(other.causesOfDelay));
             }
             return this;
         }
-        if(other.isDelayed()) return other;
+        if (other.isDelayed()) return other;
         if (value < other.value) return other;
         assert value != HC || other.value != HC || mineEqualsTheirs(other);
         return this;
@@ -216,7 +217,7 @@ public class LV implements Comparable<LV> {
         }
 
         public HiddenContentSelectorImpl(Set<Integer> set) {
-            assert set != null && set.stream().allMatch(i -> i >= 0);
+            assert set != null && !set.isEmpty() && set.stream().allMatch(i -> i >= 0);
             this.set = Set.copyOf(set);
         }
 
