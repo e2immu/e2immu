@@ -253,7 +253,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0));
         MethodInfo forEach = methodWithConsumerParameter(MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0));
 
-        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(forEach, add);
+        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(forEach, add, mutablePtWithOneTypeParameter);
 
         assertEquals("", er.linkedVariablesOfExpression().toString());
         assertEquals(2, er.changeData().size());
@@ -284,11 +284,20 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @DisplayName("b.map(a::get)")
     public void test3d() {
         MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, LV.CS_ALL);
-        MethodInfo map = methodWithFunctionParameter(
-                mutablePtWithOneTypeParameter, MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0),
-                tp0Pt, MultiLevel.INDEPENDENT_HC_DV, CS_ALL);
+        ParameterizedType integerPt = primitives.integerTypeInfo().asSimpleParameterizedType();
+        MethodInfo map = methodWithFunctionParameter(integerPt, MultiLevel.INDEPENDENT_HC_DV,
+                LV.selectTypeParameter(0), tp0Pt, MultiLevel.INDEPENDENT_HC_DV, CS_ALL,
+                mutablePtWithOneTypeParameter);
+        assertEquals("[com.foo.MutableTP|null]", tp0.getOwner().toString());
+        ParameterInfo p0 = map.methodInspection.get().getParameters().get(0);
+        assertEquals("Type _internal_.SyntheticFunction1<Integer,T>", p0.parameterizedType.toString());
+        assertEquals("com.foo.MutableTP.method(_internal_.SyntheticFunction1<Integer,T>)",
+                map.fullyQualifiedName());
+        ParameterizedType mutableInteger = new ParameterizedType(mutableWithOneTypeParameter, List.of(integerPt));
+        assertEquals("Type com.foo.MutableTP<Integer>", mutableInteger.toString());
+        assertEquals("Type com.foo.MutableTP<T>", map.returnType().toString());
 
-        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(map, get);
+        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(map, get, mutableInteger);
 
         assertEquals("a:4", er.linkedVariablesOfExpression().toString());
         assertEquals(0, er.changeData().size());
@@ -307,13 +316,14 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     }
 
     // b.forEach(a::add)
-    private EvaluationResult evaluateMethodWithMethodReferenceArgument(MethodInfo forEach, MethodInfo add) {
+    private EvaluationResult evaluateMethodWithMethodReferenceArgument(MethodInfo forEach, MethodInfo add,
+                                                                       ParameterizedType typeOfB) {
         Expression zero = IntConstant.zero(primitives);
         VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
         ParameterizedType concreteType = add.typeInfo.asParameterizedType(inspectionProvider);
         MethodReference mr = new MethodReference(newId(), va, add, concreteType);
 
-        VariableExpression vb = makeLVAsExpression("b", zero, mutablePtWithOneTypeParameter);
+        VariableExpression vb = makeLVAsExpression("b", zero, typeOfB);
         MethodCall mc = new MethodCall(newId(), vb, forEach, List.of(mr));
         Expression thisMock = simpleMock(primitives.stringParameterizedType(), LinkedVariables.EMPTY);
 
@@ -472,7 +482,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     // e.g. forEach(Consumer<E>)
     private MethodInfo methodWithConsumerParameter(DV independentP0, LV.HiddenContentSelector p0Hcs) {
         return methodWithFunctionParameter(tp0Pt, independentP0, p0Hcs, primitives.voidParameterizedType(),
-                MultiLevel.INDEPENDENT_DV, CS_NONE);
+                MultiLevel.INDEPENDENT_DV, CS_NONE, primitives.voidParameterizedType());
     }
 
     // e.g. map(Function<List<T>,T>), forEach(Consumer<T>)
@@ -481,16 +491,19 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                                                    LV.HiddenContentSelector p0Hcs,
                                                    ParameterizedType returnType,
                                                    DV independent,
-                                                   LV.HiddenContentSelector hcs) {
+                                                   LV.HiddenContentSelector hcs,
+                                                   ParameterizedType methodReturnType) {
         TypeInfo functionTypeInfo = typeMapBuilder.syntheticFunction(1, returnType.isVoid());
-        ParameterizedType function = new ParameterizedType(functionTypeInfo, List.of(param0Pt));
+        List<ParameterizedType> typeParamList = returnType.isVoid() ? List.of(param0Pt) :
+                List.of(param0Pt, returnType);
+        ParameterizedType function = new ParameterizedType(functionTypeInfo, typeParamList);
 
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 function, "p0", 0);
 
-        MethodInfo method = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(), "method",
+        MethodInfo method = new MethodInspectionImpl.Builder(newId(), mutableWithOneTypeParameter, "method",
                 MethodInfo.MethodType.METHOD)
-                .setReturnType(returnType)
+                .setReturnType(methodReturnType)
                 .addParameter(param0Inspection)
                 .build(inspectionProvider).getMethodInfo();
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
