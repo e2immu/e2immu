@@ -99,7 +99,9 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
         for (Map.Entry<Variable, LV> e : sourceLvs) {
-            DV immutable = typeImmutable(e.getKey().parameterizedType());
+            ParameterizedType pt = e.getKey().parameterizedType();
+            // for the purpose of this algorithm, unbound type parameters are HC
+            DV immutable = pt.isUnboundTypeParameter() ? MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV : typeImmutable(pt);
             LV lv = e.getValue();
             assert lv.lt(LINK_INDEPENDENT);
 

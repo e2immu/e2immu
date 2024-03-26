@@ -30,15 +30,16 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     private final HiddenContentSelector SELECT_0 = LV.selectTypeParameter(0);
     private final HiddenContentSelector SELECT_1 = LV.selectTypeParameter(1);
 
-    private MethodInfo minimalMethodAnalysis(DV identity,
-                                             DV fluent,
-                                             DV independent,
-                                             HiddenContentSelector hiddenContentSelector,
-                                             ParameterizedType methodReturnType) {
+    private MethodInfo methodWithTwoArgs(DV identity,
+                                         DV fluent,
+                                         DV independent,
+                                         HiddenContentSelector hiddenContentSelector,
+                                         ParameterizedType methodReturnType) {
+        ParameterizedType parameterType = hiddenContentSelector == null ? mutablePt: mutablePtWithOneTypeParameter;
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
-                mutablePt, "p0", 0);
+                parameterType, "p0", 0);
         ParameterInspectionImpl.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
-                mutablePt, "p1", 1);
+                parameterType, "p1", 1);
         MethodInfo methodInfo = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(), "method",
                 MethodInfo.MethodType.METHOD)
                 .addParameter(param0Inspection)
@@ -74,18 +75,21 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         return methodInfo;
     }
 
-    private LinkedVariables defineObjectAndComputeLV(MethodInfo methodInfo,
-                                                     ParameterizedType objectType, LV lvo, LV lva, LV lvb) {
+    private LinkedVariables callMethodWithTwoArgs(MethodInfo methodInfo,
+                                                  ParameterizedType objectType, LV lvo, LV lva, LV lvb) {
         Expression zero = IntConstant.zero(primitives);
+        List<ParameterInfo>params = methodInfo.methodInspection.get().getParameters();
         VariableExpression va = makeLVAsExpression("a", zero);
         VariableExpression vb = makeLVAsExpression("b", zero);
         VariableExpression vo = makeLVAsExpression("o", zero, objectType);
 
-        VariableExpression vc = makeLVAsExpression("c", zero);
-        VariableExpression vd = makeLVAsExpression("d", zero);
+        ParameterizedType pt0 = params.get(0).parameterizedType;
+        VariableExpression vc = makeLVAsExpression("c", zero, pt0);
+        ParameterizedType pt1 = params.get(1).parameterizedType;
+        VariableExpression vd = makeLVAsExpression("d", zero, pt1);
 
-        Expression p0 = simpleMock(mutablePt, LinkedVariables.of(vc.variable(), LINK_DEPENDENT));
-        Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vd.variable(), LINK_ASSIGNED));
+        Expression p0 = simpleMock(pt0, LinkedVariables.of(vc.variable(), LINK_DEPENDENT));
+        Expression p1 = simpleMock(pt1, LinkedVariables.of(vd.variable(), LINK_ASSIGNED));
 
         VariableExpression thisVE = new VariableExpression(newId(), new This(analyserContext,
                 primitives.stringTypeInfo()));
@@ -104,7 +108,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("base, identity delayed, object has no linked variables")
     public void test1() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
                 null, mutablePt);
         Expression p0 = simpleMock(mutablePt, LinkedVariables.EMPTY);
         Expression p1 = simpleMock(mutablePt, LinkedVariables.EMPTY);
@@ -121,7 +125,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @DisplayName("two parameters, identity delayed, object has no linked variables")
     public void test2() {
         DV delay = DelayFactory.createDelay(Location.NOT_YET_SET, CauseOfDelay.Cause.IDENTITY);
-        MethodInfo methodInfo = minimalMethodAnalysis(delay, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
+        MethodInfo methodInfo = methodWithTwoArgs(delay, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
                 null, mutablePt);
 
         Expression zero = IntConstant.zero(primitives);
@@ -144,7 +148,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("two parameters, identity")
     public void test3() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.TRUE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.TRUE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
                 null, mutablePt);
 
         Expression zero = IntConstant.zero(primitives);
@@ -171,10 +175,21 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("two parameters, void method")
     public void test3B() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.TRUE_DV, MultiLevel.DEPENDENT_DV,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.TRUE_DV, MultiLevel.DEPENDENT_DV,
                 null, primitives.voidParameterizedType());
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
-                LINK_COMMON_HC_ALL);
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
+                LINK_STATICALLY_ASSIGNED);
+        // the resulting object is the same as the object, so it keeps its linked variables
+        assertTrue(lv.isEmpty());
+    }
+
+    @Test
+    @DisplayName("two parameters, void method, HC for b")
+    public void test3Bb() {
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.TRUE_DV, MultiLevel.DEPENDENT_DV,
+                SELECT_0, primitives.voidParameterizedType());
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
+                createHC(SELECT_0, SELECT_0));
         // the resulting object is the same as the object, so it keeps its linked variables
         assertTrue(lv.isEmpty());
     }
@@ -182,10 +197,21 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("two parameters, fluent")
     public void test3C() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.TRUE_DV, MultiLevel.DEPENDENT_DV,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.TRUE_DV, MultiLevel.DEPENDENT_DV,
                 null, mutablePt);
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
-                LINK_COMMON_HC_ALL);
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
+                LINK_STATICALLY_ASSIGNED);
+        // the resulting object is the same as the object, so it keeps its linked variables
+        assertEquals("a:2,b:1,o:1,this:2", lv.toString());
+    }
+
+    @Test
+    @DisplayName("two parameters, fluent, HC for b")
+    public void test3Cb() {
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.TRUE_DV, MultiLevel.DEPENDENT_DV,
+                SELECT_0, mutablePt);
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
+                createHC(SELECT_0, SELECT_0));
         // the resulting object is the same as the object, so it keeps its linked variables
         assertEquals("a:2,b:4,o:1,this:2", lv.toString());
     }
@@ -194,10 +220,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @DisplayName("mutable object, independence delayed")
     public void test4() {
         DV delay = DelayFactory.createDelay(primitives.stringTypeInfo().newLocation(), CauseOfDelay.Cause.VALUE_INDEPENDENT);
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, delay, null,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, delay, null,
                 mutablePt);
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
-                LINK_COMMON_HC_ALL);
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
+                LINK_STATICALLY_ASSIGNED);
 
         assertEquals("a:-1,b:-1,o:-1,this:-1", lv.toString());
         assertEquals("independent@Class_String", lv.causesOfDelay().toString());
@@ -216,9 +242,9 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
               I is mutable, copy() is independent
            a change in the result of copy() will not be a change in the object
          */
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_DV,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_DV,
                 null, mutablePt);
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
                 LINK_STATICALLY_ASSIGNED);
 
         assertEquals("", lv.toString());
@@ -228,11 +254,11 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("mutable object, dependent method, mutable(immutable)")
     public void test6() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV, SELECT_0,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV, SELECT_0,
                 mutablePtWithOneTypeParameter);
         LV commonHC = LV.createHC(SELECT_0, SELECT_1);
         assertEquals("<0>-4-<1>", commonHC.toString());
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 commonHC);
 
         /*
@@ -266,10 +292,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("recursively immutable object, dependent method")
     public void test7() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
                 null, mutablePt);
         // values LINK_ASSIGNED should not be present; but they won't be used
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, recursivelyImmutablePt, LINK_ASSIGNED, LINK_ASSIGNED,
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, recursivelyImmutablePt, LINK_ASSIGNED, LINK_ASSIGNED,
                 LINK_ASSIGNED);
 
         assertTrue(lv.isEmpty());
@@ -278,10 +304,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("immutable HC object, dependent method")
     public void test8() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV, SELECT_0,
-                mutablePt);
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV, SELECT_0,
+                mutablePtWithOneTypeParameter);
         LV commonHC = LV.createHC(SELECT_0, SELECT_0);
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, immutableHCPt, LINK_STATICALLY_ASSIGNED,
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, immutableHCPt, LINK_STATICALLY_ASSIGNED,
                 LINK_ASSIGNED, commonHC);
 
         /*
@@ -304,10 +330,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("mutable object, method independent HC, mutable(immutable)")
     public void test9() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV, SELECT_0,
-                mutablePt);
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV, SELECT_0,
+                mutablePtWithOneTypeParameter);
         LV commonHC = LV.createHC(SELECT_0, SELECT_0);
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 commonHC);
 
         /*
@@ -325,10 +351,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("mutable object, method independent HC, immutable(mutable)")
     public void test10() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV, CS_ALL,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV, CS_ALL,
                 mutablePt);
         LV commonHC = LV.createHC(SELECT_0, SELECT_0);
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 commonHC);
 
         /*
@@ -350,10 +376,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @Test
     @DisplayName("immutable delayed, dependent method")
     public void test11() {
-        MethodInfo methodInfo = minimalMethodAnalysis(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
+        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV,
                 null, mutablePt);
         // values LINK_ASSIGNED should not be present; but they won't be used
-        LinkedVariables lv = defineObjectAndComputeLV(methodInfo, immutableDelayedPt, LINK_ASSIGNED, LINK_ASSIGNED,
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, immutableDelayedPt, LINK_ASSIGNED, LINK_ASSIGNED,
                 LINK_ASSIGNED);
 
         // FIXME: is this:-1 the correct decision?? we used to have special code for This to avoid delays

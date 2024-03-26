@@ -28,7 +28,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
     public void test1() {
         MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, true, false);
 
-        EvaluationResult er = evaluateMethodCallTwoArguments(method);
+        EvaluationResult er = evaluateMethodCallTwoArguments(method, primitives.intParameterizedType());
         assertEquals("", er.linkedVariablesOfExpression().toString());
         assertEquals(2, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
@@ -41,9 +41,10 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
     @Test
     @DisplayName("param 1 dependent on param 0, o~c.copy(p0~a,p1~b), independent HC")
     public void test1b() {
-        MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, false, false);
+        MethodInfo method = methodCallTwoArguments(mutablePtWithOneTypeParameter, mutablePtWithOneTypeParameter,
+                false, false);
 
-        EvaluationResult er = evaluateMethodCallTwoArguments(method);
+        EvaluationResult er = evaluateMethodCallTwoArguments(method, mutablePtWithOneTypeParameter);
         assertEquals("", er.linkedVariablesOfExpression().toString());
         assertEquals(2, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
@@ -73,10 +74,10 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
     }
 
 
-    private EvaluationResult evaluateMethodCallTwoArguments(MethodInfo method) {
+    private EvaluationResult evaluateMethodCallTwoArguments(MethodInfo method, ParameterizedType typeOfAB) {
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, typeOfAB);
+        VariableExpression vb = makeLVAsExpression("b", zero, typeOfAB);
         VariableExpression vc = makeLVAsExpression("c", zero);
 
         ExpressionMock argument0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), LV.LINK_ASSIGNED));

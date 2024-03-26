@@ -236,6 +236,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             Set<Integer> set = pt.extractTypeParameters().stream()
                     .map(tp -> tp.isMethodTypeParameter() ? numHiddenContentTypesOfType + tp.getIndex()
                             : tp.getIndex()).collect(Collectors.toUnmodifiableSet());
+            if (set.isEmpty()) return LV.CS_NONE;
             return new LV.HiddenContentSelectorImpl(set);
         }
 
