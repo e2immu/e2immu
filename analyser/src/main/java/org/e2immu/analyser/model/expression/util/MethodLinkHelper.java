@@ -21,11 +21,9 @@ import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.impl.TranslationMapImpl;
-import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,134 +68,7 @@ public class MethodLinkHelper {
         return parameterResults.stream().map(er -> er.linkedVariablesOfExpression().maximum(LINK_DEPENDENT)).toList();
     }
 
-    /*
-    TODO this code must move to evaluation of the respective types
-    situations:
-
-    1. consumer, as in .forEach(Consumer<T> consumer)
-    e.g. in tests Independent11_1, FactoryMethod_0, UpgradableBooleanMap
-
-    if the parameter of the accept method of the consumer links to a variable accessible here, then we extend the
-    link to the object of the method call.
-    Example:  list.stream().forEach(e -> result.add(e));
-    e links --3--> into 'result', so we'll link list <--4--> result
-
-    2. supplier, as in .fill(Supplier<T> supplier)
-
-    3. function, with ins and outs
-    */
-    private static List<LinkedVariables> additionalLinkingFunctionalInterface2(EvaluationResult context,
-                                                                               Expression parameterExpression,
-                                                                               EvaluationResult parameterResult) {
-        MethodInfo methodInfo;
-        TypeInfo nestedType;
-        ConstructorCall cc;
-        MethodReference methodReference;
-        Instance instance;
-        Lambda lambda;
-
-        if ((lambda = parameterExpression.asInstanceOf(Lambda.class)) != null) {
-            methodInfo = lambda.methodInfo;
-            nestedType = lambda.methodInfo.typeInfo;
-        } else if ((cc = parameterExpression.asInstanceOf(ConstructorCall.class)) != null
-                   && cc.anonymousClass() != null) {
-            TypeInspection anonymousClassInspection = context.getAnalyserContext().getTypeInspection(cc.anonymousClass());
-            assert parameterExpression.returnType().isFunctionalInterface();
-            methodInfo = anonymousClassInspection.findMethodOverridingSAMOf(parameterExpression.returnType().typeInfo);
-            nestedType = cc.anonymousClass();
-        } else if ((methodReference = parameterExpression.asInstanceOf(MethodReference.class)) != null) {
-            Expression parameterValue = parameterResult.value();
-            MethodReference mr;
-            if ((mr = parameterValue.asInstanceOf(MethodReference.class)) != null) {
-                // do we have access to the code?
-                if (methodReference.methodInfo.typeInfo.primaryType().equals(context.getCurrentType().primaryType())) {
-                    methodInfo = methodReference.methodInfo;
-                    // yes, access to the code!!
-                    List<LinkedVariables> res = additionalLinkingConsumer(context.evaluationContext(),
-                            methodReference.methodInfo, null);
-                    if (mr.scope.isInstanceOf(TypeExpression.class)) {
-                        /*
-                         methods which only have a scope, no argument... could be static suppliers, but more likely
-                         non-modifying getters. Ignoring for now.
-                         */
-                        return List.of();
-                    }
-                    IsVariableExpression ive = mr.scope.asInstanceOf(IsVariableExpression.class);
-                    if (!(ive != null && ive.variable() instanceof This thisVar
-                          && thisVar.typeInfo == context.getCurrentType())) {
-                        This innerThis = new This(context.getAnalyserContext(), methodInfo.typeInfo);
-                        if (ive != null) {
-                            TranslationMap tm = new TranslationMapImpl.Builder().put(innerThis, ive.variable()).build();
-                            return res.stream()
-                                    .map(lv -> lv.translate(context.getAnalyserContext(), tm))
-                                    .toList();
-                        } else {
-                            throw new UnsupportedOperationException("NYI: compute linked variables, merge them");
-                        }
-                    }
-                    return res;
-                } else {
-                    // no access to the code, directly link to object
-                    return additionalLinkingConsumerMethodReference(context, methodReference);
-                }
-            } else {
-                throw new UnsupportedOperationException("Method reference evaluated into " + parameterValue.getClass());
-            }
-        } else if ((instance = parameterExpression.asInstanceOf(Instance.class)) != null) {
-            MethodTypeParameterMap sam = instance.returnType()
-                    .findSingleAbstractMethodOfInterface(context.getAnalyserContext());
-            methodInfo = sam.methodInspection.getMethodInfo();
-            nestedType = sam.methodInspection.getMethodInfo().typeInfo;
-        } else {
-            methodInfo = null;
-            nestedType = null;
-        }
-        if (methodInfo != null) {
-            TypeInspection returnTypeInspection = context.getAnalyserContext()
-                    .getTypeInspection(parameterExpression.returnType().typeInfo);
-            MethodInspection sam = returnTypeInspection.getSingleAbstractMethod();
-            assert sam != null;
-            if (sam.getMethodInfo().isVoid()) {
-                assert nestedType != null;
-                return additionalLinkingConsumer(context.evaluationContext(), methodInfo, nestedType);
-            }
-        }
-        // not yet implemented
-        return List.of();
-    }
-
-    private static List<LinkedVariables> additionalLinkingConsumerMethodReference(EvaluationResult context,
-                                                                                  MethodReference methodReference) {
-        DV immutable = context.getProperty(methodReference.scope, Property.IMMUTABLE);
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return List.of();
-        LinkedVariables allLinkedVariablesOfScope = methodReference.scope.evaluate(context, ForwardEvaluationInfo.DEFAULT).linkedVariablesOfExpression();
-        if (allLinkedVariablesOfScope.isEmpty()) return List.of();
-        LinkedVariables linkedVariablesOfScope = allLinkedVariablesOfScope
-                .remove(v -> !context.evaluationContext().acceptForVariableAccessReport(v, null));
-        if (linkedVariablesOfScope.isEmpty()) return List.of();
-
-        MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(methodReference.methodInfo);
-        DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD);
-        if (DV.FALSE_DV.equals(modified)) return List.of();
-
-        MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodReference.methodInfo);
-        List<LinkedVariables> result = new ArrayList<>(methodInspection.getParameters().size());
-        for (ParameterInfo pi : methodInspection.getParameters()) {
-            ParameterAnalysis parameterAnalysis = context.getAnalyserContext().getParameterAnalysis(pi);
-            DV independent = parameterAnalysis.getProperty(Property.INDEPENDENT);
-            if (DEPENDENT_DV.equals(independent)) result.add(linkedVariablesOfScope);
-            else if (INDEPENDENT_HC_DV.equals(independent)) {
-                // modify to :4
-                LinkedVariables lv = linkedVariablesOfScope.maximum(LINK_COMMON_HC);
-                result.add(lv);
-            }
-        }
-        return result;
-    }
-
-    public static List<LinkedVariables> additionalLinkingConsumer(EvaluationContext evaluationContext,
-                                                                  MethodInfo concreteMethod,
-                                                                  TypeInfo nestedType) {
+    public static List<LinkedVariables> lambdaLinking(EvaluationContext evaluationContext, MethodInfo concreteMethod) {
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(concreteMethod);
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
@@ -205,12 +76,18 @@ public class MethodLinkHelper {
             return List.of();
         }
         MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(concreteMethod);
-        List<LinkedVariables> result = new ArrayList<>(methodInspection.getParameters().size());
+        List<LinkedVariables> result = new ArrayList<>(methodInspection.getParameters().size() + 1);
+
         for (ParameterInfo pi : methodInspection.getParameters()) {
             VariableInfo vi = lastStatement.getLatestVariableInfo(pi.fullyQualifiedName);
             LinkedVariables lv = vi.getLinkedVariables().remove(v ->
-                    !evaluationContext.acceptForVariableAccessReport(v, nestedType));
+                    !evaluationContext.acceptForVariableAccessReport(v, concreteMethod.typeInfo));
             result.add(lv);
+        }
+        if (concreteMethod.hasReturnValue()) {
+            ReturnVariable returnVariable = new ReturnVariable(concreteMethod);
+            VariableInfo vi = lastStatement.getLatestVariableInfo(returnVariable.fqn);
+            result.add(vi.getLinkedVariables());
         }
         return result;
     }

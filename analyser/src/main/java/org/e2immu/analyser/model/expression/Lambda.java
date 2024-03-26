@@ -370,18 +370,18 @@ public class Lambda extends BaseExpression implements Expression {
                                     String statementIndex,
                                     ParameterizedType parameterizedType,
                                     DV nne) {
-        Expression result;
         Properties valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, nne,
                 Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
                 Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV,
                 Property.CONTAINER, MultiLevel.CONTAINER_DV,
                 Property.IGNORE_MODIFICATIONS, Property.IGNORE_MODIFICATIONS.falseDv,
                 Property.IDENTITY, Property.IDENTITY.falseDv));
-        result = Instance.forGetInstance(identifier, statementIndex, parameterizedType, valueProperties);
-        if (concreteReturnType.isVoid()) {
-            List<LinkedVariables> lvsList = MethodLinkHelper.additionalLinkingConsumer(context.evaluationContext(),
-                    methodInfo, methodInfo.typeInfo);
-            LinkedVariables lvs = lvsList.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+        Expression result = Instance.forGetInstance(identifier, statementIndex, parameterizedType, valueProperties);
+
+        List<LinkedVariables> lvsList = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
+        LinkedVariables lvs = lvsList.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+
+        if (!lvs.isEmpty()) {
             return PropertyWrapper.propertyWrapper(result, lvs);
         }
         return result;
