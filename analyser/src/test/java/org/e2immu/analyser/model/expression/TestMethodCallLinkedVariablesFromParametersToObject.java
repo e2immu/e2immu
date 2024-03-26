@@ -233,7 +233,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
 
 
     @Test
-    @DisplayName("b.forEach(a::add)")
+    @DisplayName("a::add")
     public void test3() {
         MethodInfo method = methodCallConsumer(MultiLevel.INDEPENDENT_HC_DV, LV.selectTypeParameter(0));
 
@@ -241,15 +241,15 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         assertEquals("", er.linkedVariablesOfExpression().toString());
         assertEquals(2, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
-        assertEquals("b:2", ca.linkedVariables().toString());
-        ChangeData cb = er.findChangeData("b");
-        assertEquals("a:2", cb.linkedVariables().toString());
+        assertEquals("p0:4", ca.linkedVariables().toString());
+        ChangeData cb = er.findChangeData("p0");
+        assertEquals("a:4", cb.linkedVariables().toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
     }
 
     private EvaluationResult evaluateMethodCallConsumerReference(MethodInfo method) {
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
         ParameterInfo p0 = method.methodInspection.get().getParameters().get(0);
         VariableExpression p0Var = new VariableExpression(newId(), p0);
         ParameterizedType concreteType = method.typeInfo.asParameterizedType(inspectionProvider);
@@ -259,11 +259,10 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         return mr.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
     }
 
-
     private EvaluationResult evaluateMethodCallConsumer(MethodInfo method) {
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
+        VariableExpression vb = makeLVAsExpression("b", zero, mutablePtWithOneTypeParameter);
         TypeInfo consumerTypeInfo = typeMapBuilder.syntheticFunction(1, true);
         MethodInfo abstractSam = consumerTypeInfo.findUniqueMethod("accept", 1);
         ParameterizedType abstractFunctionalType = consumerTypeInfo.asParameterizedType(inspectionProvider);

@@ -149,16 +149,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         EvaluationResult scopeResult = scope.evaluate(context, scopeForward);
         builder.compose(scopeResult);
 
-        /*
-         Example: other.map.forEach(this::put), in SetOnceMap.putAll
-         equivalent of other.map.forEach((k,v) -> this.put(k,v))
-         k and v as parameters of put are linked to this at independent_hc level, and should cause a link
-         from forEach:k <--4--> this, forEach:v <--4--> this, so that we end up with
-           other.map <--4--> this, and other <--4--> this.
-         We definitely don't want other <--2--> this.
-        */
-        // links between parameters, and from scope to parameters
-        // the parameters are never evaluated, they remain the formal variables
+
+        // very similar to MethodCall.evaluation(), because in reality, they do exactly the same
         MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
         List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses().stream()
                 .map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo()))
@@ -167,16 +159,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 .map(e -> e.evaluate(context, forwardEvaluationInfo)).toList();
         EvaluationResult links = methodLinkHelper.fromParametersIntoObject(scope.returnType(), parameterResults,
                 true, true);
-        builder.compose(links);
+        scopeResult.linkedVariablesOfExpression().stream().forEach(e ->
+                links.linkedVariablesOfExpression().stream().forEach(e2 ->
+                        builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))));
+        LinkedVariables lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult,
+                parameterResults, concreteReturnType);
+
+        builder.setLinkedVariablesOfExpression(lvsResult);
         builder.setExpression(this);
-
-        if (scope instanceof IsVariableExpression ive) {
-            ChangeData cd = links.changeData().get(ive.variable());
-            builder.setLinkedVariablesOfExpression(cd == null ? LinkedVariables.EMPTY : cd.linkedVariables());
-        } else {
-            builder.setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
-        }
-
         return builder.build();
     }
 
