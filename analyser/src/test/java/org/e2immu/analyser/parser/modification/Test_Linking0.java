@@ -96,6 +96,59 @@ public class Test_Linking0 extends CommonTestRunner {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
                         assertLinked(d, it(0, "list:4"));
                     }
+                    case "m9", "m10", "m11" -> {
+                        assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
+                        assertLinked(d, it(0, "map:4"));
+                    }
+                    case "m12" -> {
+                        assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "m13" -> {
+                        assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
+                        assertLinked(d, it(0, 1, "map:-1"), it(2, "map:2"));
+                    }
+                    case "m14" -> {
+                        assertCurrentValue(d, 2, "list.subList(0,1).subList(0,1)");
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                    }
+                    case "m15" -> {
+                        assertCurrentValue(d, 0, "list.subList(0,1).subList(0,1)");
+                        assertLinked(d, it(0, "list:2"));
+                    }
+                    case "m16" -> {
+                        assertCurrentValue(d, 0, "new ArrayList<>(list.subList(0,1).subList(0,1))");
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                    case "m17" -> {
+                        assertCurrentValue(d, 0, "(new ArrayList<>(list.subList(0,1))).subList(0,1)");
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                    case "m18" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "list");
+                            assertLinked(d, it(0, "list:0,x:4"));
+                        }
+                    }
+                    case "m19" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "list");
+                            assertLinked(d, it(0, "list:0,x0:4,x1:4"));
+                        }
+                    }
+                    case "m20" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "list");
+                            assertLinked(d, it(0, "list:0"));
+                        }
+                    }
+                    case "m21" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 2, "list");
+                            assertLinked(d,  it(0, 1, "list:0,x0:-1,x1:-1"),
+                                    it(2, "list:0,x0:2,x1:2"));
+                        }
+                    }
                     default -> {
                     }
                 }
