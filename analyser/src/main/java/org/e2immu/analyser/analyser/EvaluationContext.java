@@ -234,21 +234,6 @@ public interface EvaluationContext {
 
     int initialModificationTimeOrZero(Variable variable);
 
-    /*
-    if the formal type is T (hidden content), then the expression is returned is List.of(expression).
-    It is important to return the expression, because it may have a dynamic immutability higher than its formal value,
-    e.g., as a result of another method call.
-
-    if the formal type is Collection<T>, we'll have to go and search for the concrete type represented by T.
-    We then return a list of the concrete type parameters, as TypeExpression.
-    This again allows us to compute immutability values better than formal.
-     */
-
-    HiddenContent NO_HIDDEN_CONTENT = new HiddenContent(List.of(), CausesOfDelay.EMPTY);
-
-
-    HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes);
-
     // meant for computing method analyser, computing field analyser
 
     boolean hasState(Expression expression);

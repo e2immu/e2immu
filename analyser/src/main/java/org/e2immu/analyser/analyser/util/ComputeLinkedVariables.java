@@ -494,10 +494,10 @@ public class ComputeLinkedVariables {
             LV newLv;
             if (entry.getValue() == LV.LINK_COMMON_HC) {
                 // TODO 20240327 this is not efficient
-                LV.HiddenContent hcMine = LV.from(variable.parameterizedType());
-                HiddenContentSelector mine = hcMine == null ? HiddenContentSelector.All.INSTANCE : hcMine.all();
-                LV.HiddenContent hcTheirs = LV.from(entry.getKey().parameterizedType());
-                HiddenContentSelector theirs = hcTheirs == null ? HiddenContentSelector.All.INSTANCE : hcTheirs.all();
+                HiddenContent hcMine = HiddenContent.from(variable.parameterizedType());
+                HiddenContentSelector mine = hcMine == null ? HiddenContentSelector.All.INSTANCE : hcMine.selectAll();
+                HiddenContent hcTheirs = HiddenContent.from(entry.getKey().parameterizedType());
+                HiddenContentSelector theirs = hcTheirs == null ? HiddenContentSelector.All.INSTANCE : hcTheirs.selectAll();
                 newLv = theirs.isNone() || mine.isNone() ? null : LV.createHC(mine, theirs);
             } else {
                 newLv = entry.getValue();

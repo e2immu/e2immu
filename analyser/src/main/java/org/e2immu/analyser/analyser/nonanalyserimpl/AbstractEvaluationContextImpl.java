@@ -426,32 +426,6 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         return 0;
     }
 
-    public HiddenContent extractHiddenContentTypes(ParameterizedType concreteType, SetOfTypes hiddenContentTypes) {
-        if (hiddenContentTypes == null) return new HiddenContent(List.of(),
-                DelayFactory.createDelay(new SimpleCause(getLocation(Stage.EVALUATION), CauseOfDelay.Cause.HIDDEN_CONTENT)));
-        if (hiddenContentTypes.contains(concreteType)) {
-            return new HiddenContent(List.of(concreteType), CausesOfDelay.EMPTY);
-        }
-        TypeInfo bestType = concreteType.bestTypeInfo(getAnalyserContext());
-        if (bestType == null) return NO_HIDDEN_CONTENT; // method type parameter, but not involved in fields of type
-        DV immutable = getAnalyserContext().typeImmutable(concreteType);
-        if (immutable.equals(MultiLevel.INDEPENDENT_DV)) return NO_HIDDEN_CONTENT;
-        if (immutable.isDelayed()) {
-            new HiddenContent(List.of(),
-                    DelayFactory.createDelay(new SimpleCause(bestType.newLocation(), CauseOfDelay.Cause.HIDDEN_CONTENT))
-                            .merge(immutable.causesOfDelay()));
-        }
-
-        // hidden content is more complex
-        TypeInspection bestInspection = getAnalyserContext().getTypeInspection(bestType);
-        if (!bestInspection.typeParameters().isEmpty()) {
-            return concreteType.parameters.stream()
-                    .reduce(NO_HIDDEN_CONTENT, (hc, pt) -> extractHiddenContentTypes(pt, hiddenContentTypes),
-                            HiddenContent::merge);
-        }
-        return NO_HIDDEN_CONTENT;
-    }
-
     // meant for computing method analyser, computing field analyser
 
     public boolean hasState(Expression expression) {
