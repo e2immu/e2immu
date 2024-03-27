@@ -107,6 +107,7 @@ public class Linking_0 {
         return new ArrayList<>(list.subList(0, 1)).subList(0, 1);
     }
 
+
     static <X> List<X> m18(X x, List<X> list) {
         Collections.addAll(list, x);
         return list;
@@ -122,8 +123,19 @@ public class Linking_0 {
         return list;
     }
 
-    static List<M> m21(M x0, M x1, List<M> list) {
+    static List<M> m21(M m, List<M> list) {
+        Collections.addAll(list, m);
+        return list;
+    }
+
+    static List<M> m22(M x0, M x1, List<M> list) {
         Collections.addAll(list, x0, x1);
+        return list;
+    }
+
+    // ensure that it doesn't crash
+    static List<M> m23(List<M> list) {
+        Collections.addAll(list);
         return list;
     }
 }

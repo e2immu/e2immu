@@ -46,8 +46,9 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
     @Override
     public LinkedVariables linkedVariables(ParameterizedType sourceType,
                                            LinkedVariables sourceLvs,
+                                           HiddenContentSelector hiddenContentSelectorOfSource,
                                            DV transferIndependent,
-                                           HiddenContentSelector hiddenContentSelectorOfTransfer,
+                                           HiddenContentSelector hiddenContentSelectorOfTarget,
                                            ParameterizedType targetType) {
         assert targetType != null;
 
@@ -55,13 +56,13 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         if (sourceLvs.isEmpty() || MultiLevel.INDEPENDENT_DV.equals(transferIndependent)) {
             return LinkedVariables.EMPTY;
         }
-        assert !(hiddenContentSelectorOfTransfer.isNone() && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
+        assert !(hiddenContentSelectorOfTarget.isNone() && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
                 : "Impossible to have no knowledge of hidden content, and INDEPENDENT_HC";
 
         DV immutableOfSource;
         if (sourceType.isTypeParameter()) {
             // for the purpose of this algorithm...
-            immutableOfSource = MultiLevel.INDEPENDENT_HC_DV;
+            immutableOfSource = MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
         } else {
             immutableOfSource = typeImmutable(sourceType);
             // RULE 2: delays
@@ -88,13 +89,13 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 ? targetType.typeInfo.asParameterizedType(analyserContext) : targetType;
         HiddenContent targetTypeHC = HiddenContent.from(formalTargetType);
         Map<Integer, ParameterizedType> typesCorrespondingToHC = targetTypeHC.hiddenContentTypes(targetType);
-        DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
-                typesCorrespondingToHC, hiddenContentSelectorOfTransfer);
+        DV correctedIndependent = correctIndependent(immutableOfSource, hiddenContentSelectorOfSource,
+                transferIndependent, targetType, typesCorrespondingToHC, hiddenContentSelectorOfTarget);
         if (correctedIndependent.isDelayed()) {
             // delay in method independent
             return sourceLvs.changeToDelay(LV.delay(correctedIndependent.causesOfDelay()));
         }
-        HiddenContentSelector correctedTransferSelector = correctSelector(hiddenContentSelectorOfTransfer,
+        HiddenContentSelector correctedTransferSelector = correctSelector(hiddenContentSelectorOfTarget,
                 typesCorrespondingToHC.keySet());
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
@@ -156,13 +157,13 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
     would be "dependent", and we'll not return a commonHC object.
     So we'll only remove those type parameters that have a recursively immutable instantiation in the concrete type.
      */
-    private HiddenContentSelector correctSelector(HiddenContentSelector hiddenContentSelectorOfTransfer,
+    private HiddenContentSelector correctSelector(HiddenContentSelector hiddenContentSelectorOfTarget,
                                                   Set<Integer> typesCorrespondingToHCKeySet) {
-        if (hiddenContentSelectorOfTransfer.isNone() || hiddenContentSelectorOfTransfer.isAll()) {
-            return hiddenContentSelectorOfTransfer;
+        if (hiddenContentSelectorOfTarget.isNone() || hiddenContentSelectorOfTarget.isAll()) {
+            return hiddenContentSelectorOfTarget;
         }
         // find the types corresponding to the hidden content indices
-        Set<Integer> selectorSet = hiddenContentSelectorOfTransfer.set();
+        Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();
         Set<Integer> remaining = typesCorrespondingToHCKeySet.stream()
                 .filter(selectorSet::contains)
                 .collect(Collectors.toUnmodifiableSet());
@@ -171,10 +172,11 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
     }
 
     private DV correctIndependent(DV immutableOfSource,
+                                  HiddenContentSelector hiddenContentSelectorOfSource,
                                   DV independent,
                                   ParameterizedType targetType,
                                   Map<Integer, ParameterizedType> typesCorrespondingToHCInTarget,
-                                  HiddenContentSelector hiddenContentSelectorOfTransfer) {
+                                  HiddenContentSelector hiddenContentSelectorOfTarget) {
         // immutableOfSource is not recursively immutable, independent is not fully independent
         // remaining values immutable: mutable, immutable HC
         // remaining values independent: dependent, independent hc
@@ -182,17 +184,17 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             if (MultiLevel.isAtLeastImmutableHC(immutableOfSource)) {
                 return MultiLevel.INDEPENDENT_HC_DV;
             }
-            if (hiddenContentSelectorOfTransfer.isAll()) {
+            if (hiddenContentSelectorOfTarget.isAll()) {
                 // look at the whole object
                 DV immutablePt = typeImmutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
                     return MultiLevel.INDEPENDENT_HC_DV;
                 }
-            } else if (hiddenContentSelectorOfTransfer.isNone()) {
+            } else if (hiddenContentSelectorOfTarget.isNone()) {
                 return MultiLevel.INDEPENDENT_DV;
             } else {
-                Set<Integer> selectorSet = hiddenContentSelectorOfTransfer.set();
+                Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();
                 boolean allIndependentHC = true;
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
                     if (selectorSet.contains(entry.getKey())) {
@@ -208,14 +210,17 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             }
         }
         if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
-            if (hiddenContentSelectorOfTransfer.isAll()) {
+            if (hiddenContentSelectorOfTarget.isAll()) {
                 DV immutablePt = typeImmutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isMutable(immutablePt)) {
                     return MultiLevel.DEPENDENT_DV;
                 }
             } else {
-                Set<Integer> selectorSet = hiddenContentSelectorOfTransfer.set();
+                if (MultiLevel.isMutable(immutableOfSource) && hiddenContentSelectorOfSource != null &&  hiddenContentSelectorOfSource.isAll()) {
+                    return MultiLevel.DEPENDENT_DV;
+                }
+                Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
                     if (selectorSet.contains(entry.getKey())) {
                         if (!entry.getValue().isTypeParameter()) {

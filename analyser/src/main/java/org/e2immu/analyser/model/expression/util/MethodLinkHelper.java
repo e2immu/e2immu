@@ -127,7 +127,7 @@ public class MethodLinkHelper {
                         boolean inResult = intoResultBuilder != null
                                            && parameterExpressions.get(pi.index).isInstanceOf(MethodReference.class);
                         ParameterizedType pt = inResult ? resultPt : objectPt;
-                        LinkedVariables lv = computeIndependent.linkedVariables(parameterType, parameterLvs,
+                        LinkedVariables lv = computeIndependent.linkedVariables(parameterType, parameterLvs, null,
                                 formalParameterIndependent, parameterAnalysis.getHiddenContentSelector(), pt);
                         EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
                         builder.mergeLinkedVariablesOfExpression(lv);
@@ -136,7 +136,7 @@ public class MethodLinkHelper {
             }
 
             if (addLinksBetweenParameters) {
-                linksBetweenParameters(intoObjectBuilder, methodInfo, parameterLv);
+                linksBetweenParameters(intoObjectBuilder, methodInfo, parameterResults, parameterLv);
             }
         }
         return new FromParameters(intoObjectBuilder.build(), intoResultBuilder == null ? null :
@@ -144,23 +144,31 @@ public class MethodLinkHelper {
     }
 
     public void linksBetweenParameters(EvaluationResultImpl.Builder builder,
-                                       MethodInfo concreteMethod,
+                                       MethodInfo methodInfo,
+                                       List<EvaluationResult> parameterResults,
                                        List<LinkedVariables> parameterLvs) {
-        Map<ParameterInfo, LinkedVariables> crossLinks = concreteMethod.crossLinks(context.getAnalyserContext());
+        Map<ParameterInfo, LinkedVariables> crossLinks = methodInfo.crossLinks(context.getAnalyserContext());
         if (crossLinks.isEmpty()) return;
         crossLinks.forEach((pi, lv) -> lv.stream().forEach(e -> {
             ParameterInfo target = (ParameterInfo) e.getKey();
             boolean sourceIsVarArgs = pi.parameterInspection.get().isVarArgs();
             assert !sourceIsVarArgs : "Varargs must always be a target";
             boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
-            LV level = e.getValue();
-            LinkedVariables sourceLvs = parameterLvs.get(pi.index);
-            LinkedVariables targetLvs = parameterLvs.get(target.index);
-            if (!targetLvs.isEmpty()) {
-                tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, target.parameterizedType,
-                        targetLvs, level, pi.parameterizedType, sourceLvs, parameterLvs);
-            }
-
+            if (!targetIsVarArgs || parameterResults.size() > target.index) {
+                ParameterizedType atIndex = parameterResults.get(target.index).getExpression().returnType();
+                ParameterizedType concreteTargetType;
+                if (targetIsVarArgs && parameterResults.size() > target.index + 1) {
+                    concreteTargetType = parameterResults.subList(target.index + 1, parameterResults.size()).stream()
+                            .map(er -> er.getExpression().returnType())
+                            .reduce(atIndex, (pt1, pt2) -> pt1.commonType(context.getAnalyserContext(), pt2));
+                } else {
+                    concreteTargetType = atIndex;
+                }
+                LV level = e.getValue();
+                LinkedVariables sourceLvs = parameterLvs.get(pi.index);
+                tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, concreteTargetType,
+                        level, pi.parameterizedType, sourceLvs, parameterLvs);
+            } // else: no value... empty varargs
         }));
     }
 
@@ -173,24 +181,24 @@ public class MethodLinkHelper {
                                           int targetIndex,
                                           boolean targetIsVarArgs,
                                           ParameterizedType targetType,
-                                          LinkedVariables targetLinkedVariables,
                                           LV level,
                                           ParameterizedType sourceType,
                                           LinkedVariables sourceLinkedVariables,
                                           List<LinkedVariables> parameterLvs) {
         LinkedVariables mergedLvs;
-        HiddenContentSelector hcs = level.isCommonHC() ? level.mine() : HiddenContentSelector.None.INSTANCE;
+        HiddenContentSelector hcsSource = level.isCommonHC() ? level.theirs() : HiddenContentSelector.None.INSTANCE;
+        HiddenContentSelector hcsTarget = level.isCommonHC() ? level.mine() : HiddenContentSelector.None.INSTANCE;
         DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
         if (targetIsVarArgs) {
             mergedLvs = LinkedVariables.EMPTY;
-            ParameterizedType targetTypeCorrected = targetType.copyWithOneFewerArrays();
             for (int i = targetIndex; i < parameterLvs.size(); i++) {
                 LinkedVariables lvs = parameterLvs.get(i);
-                LinkedVariables lv = computeIndependent.linkedVariables(targetTypeCorrected, lvs, independentDv, hcs, sourceType);
+                LinkedVariables lv = computeIndependent.linkedVariables(targetType, lvs, hcsSource, independentDv, hcsTarget, sourceType);
                 mergedLvs = mergedLvs.merge(lv);
             }
         } else {
-            mergedLvs = computeIndependent.linkedVariables(targetType, targetLinkedVariables, independentDv, hcs, sourceType);
+            LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
+            mergedLvs = computeIndependent.linkedVariables(targetType, targetLinkedVariables, hcsSource, independentDv, hcsTarget, sourceType);
         }
         LinkedVariables finalMergedLvs = mergedLvs;
         sourceLinkedVariables.stream().forEach(e ->
@@ -260,7 +268,7 @@ public class MethodLinkHelper {
 
         DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
         return computeIndependent.linkedVariables(objectResult.getExpression().returnType(), linkedVariablesOfObject,
-                independent, methodAnalysis.getHiddenContentSelector(), concreteReturnType);
+                null, independent, methodAnalysis.getHiddenContentSelector(), concreteReturnType);
     }
 
        /* we have to probe the object first, to see if there is a value
