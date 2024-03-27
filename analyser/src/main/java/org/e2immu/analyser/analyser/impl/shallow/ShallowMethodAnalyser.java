@@ -131,6 +131,11 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                 }
                 builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             }
+            if (!builder.hiddenContentSelectorIsSet()) {
+                LV.HiddenContent hc = LV.from(builder.getParameterInfo().parameterizedType);
+                HiddenContentSelector hcs = hc == null ? HiddenContentSelector.None.INSTANCE : hc.all();
+                builder.setHiddenContentSelector(hcs);
+            }
         });
 
         if (!annotationsHaveBeenSet.isSet()) {
@@ -197,6 +202,12 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                             this::getMessageStream));
                 }
             }
+        }
+
+        if (!methodAnalysis.hiddenContentSelectorIsSet()) {
+            LV.HiddenContent hc = LV.from(methodInspection.getReturnType());
+            HiddenContentSelector hcs = hc == null ? HiddenContentSelector.None.INSTANCE : hc.all();
+            methodAnalysis.setHiddenContentSelector(hcs);
         }
 
         if (causes.isDelayed()) {
@@ -505,8 +516,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         DV result = returnValueIndependent.max(bestOfOverrides).max(typeIndependent);
 
         if (MultiLevel.INDEPENDENT_HC_DV.equals(result)
-                && methodInspection.isPubliclyAccessible()
-                && methodInspection.isFactoryMethod()) {
+            && methodInspection.isPubliclyAccessible()
+            && methodInspection.isFactoryMethod()) {
             // at least one of the parameters must be independent HC!!
             boolean hcParam = parameterAnalyses.stream()
                     .anyMatch(pa -> MultiLevel.INDEPENDENT_HC_DV
@@ -517,8 +528,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             }
         }
         if (result.isDelayed()
-                && !methodInspection.isPubliclyAccessible()
-                && analyserContext.inAnnotatedAPIAnalysis()) {
+            && !methodInspection.isPubliclyAccessible()
+            && analyserContext.inAnnotatedAPIAnalysis()) {
             return MultiLevel.DEPENDENT_DV;
         }
         return result;

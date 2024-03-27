@@ -60,7 +60,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
         // as opposed to java.io.PrintStream.print(X x), for example
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
-        assertEquals("<0>", p0.getHiddenContentSelector().toString());
+        assertEquals("*", p0.getHiddenContentSelector().toString());
     }
 
     @Test

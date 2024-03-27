@@ -330,6 +330,10 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public String toString() {
             return parameterInfo.toString();
         }
+
+        public boolean hiddenContentSelectorIsSet() {
+            return hiddenContentSelector.isSet();
+        }
     }
 
 }

@@ -874,6 +874,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             this.hiddenContentSelector.set(hiddenContentSelector);
             return this;
         }
+
+        public boolean hiddenContentSelectorIsSet() {
+            return hiddenContentSelector.isSet();
+        }
     }
 
     private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider,
