@@ -367,6 +367,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Expression> parameterValues = res.evaluationResults().stream().map(EvaluationResult::getExpression).toList();
         builder.compose(objectResult, res.builder().build());
         LinkedVariables linkedVariablesOfObject = objectResult.linkedVariablesOfExpression();
+        assert linkedVariablesOfObject != null : "Problem in " + object.getClass();
 
         // precondition
         Precondition precondition = EvaluatePreconditionFromMethod.evaluate(context, builder, identifier, concreteMethod,

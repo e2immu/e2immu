@@ -94,6 +94,10 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
             correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
                     hiddenContentSelectorOfTransfer);
+            if (correctedIndependent.isDelayed()) {
+                // delay in method independent
+                return sourceLvs.changeToDelay(LV.delay(correctedIndependent.causesOfDelay()));
+            }
             correctedTransferSelector = typesCorrespondingToHC == null ? HiddenContentSelector.All.INSTANCE
                     : correctSelector(hiddenContentSelectorOfTransfer, typesCorrespondingToHC);
         }
@@ -194,13 +198,15 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 Set<Integer> selectorSet = hiddenContentSelectorOfTransfer.isNone() ? Set.of() : hiddenContentSelectorOfTransfer.set();
                 Map<Integer, ParameterizedType> typesCorrespondingToHC = LV.typesCorrespondingToHC(targetType);
                 boolean allIndependent = true;
-                for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHC.entrySet()) {
-                    if (selectorSet.contains(entry.getKey())) {
-                        DV immutablePt = typeImmutable(entry.getValue());
-                        if (immutablePt.isDelayed()) return immutablePt;
-                        if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
-                            allIndependent = false;
-                            break;
+                if(typesCorrespondingToHC != null) {
+                    for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHC.entrySet()) {
+                        if (selectorSet.contains(entry.getKey())) {
+                            DV immutablePt = typeImmutable(entry.getValue());
+                            if (immutablePt.isDelayed()) return immutablePt;
+                            if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
+                                allIndependent = false;
+                                break;
+                            }
                         }
                     }
                 }

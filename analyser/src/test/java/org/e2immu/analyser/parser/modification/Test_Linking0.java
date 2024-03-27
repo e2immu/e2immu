@@ -21,13 +21,11 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.modification.testexample.Modification_0B;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.TypeMapVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -43,11 +41,58 @@ public class Test_Linking0 extends CommonTestRunner {
         super(true);
     }
 
-    // String is immutable
     @Test
-    public void test_0A() throws IOException {
+    public void test_0() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("m1".equals(d.methodInfo().name)) {
+                String expectedLv = d.iteration() < 2 ? "list:-1" : "list:2";
+                assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
+                ChangeData cd = d.findValueChangeByToString("m1");
+                assertEquals(expectedLv, cd.linkedVariables().toString());
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("m0".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 0, "list.get(0)");
+                    assertLinked(d, it(0, ""));
+                }
+            }
+            if ("m1".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 2, "list.get(0)");
+                    assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                }
+            }
+            if ("m2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 0, "list.get(0)");
+                    assertLinked(d, it(0, "list:4"));
+                }
+            }
+            if ("m3".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 0, "list.subList(0,1)");
+                    assertLinked(d, it(0, "list:2"));
+                }
+            }
+            if ("m4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 0, "list.subList(0,1)");
+                    assertLinked(d, it(0, "list:2"));
+                }
+            }
+            if ("m5".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 0, "list.subList(0,1)");
+                    assertLinked(d, it(0, "list:2"));
+                }
+            }
+        };
 
         testClass("Linking_0", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

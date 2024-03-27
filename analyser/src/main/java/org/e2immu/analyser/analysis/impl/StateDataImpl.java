@@ -399,9 +399,22 @@ public class StateDataImpl implements StateData {
 
     @Override
     public boolean writeValueOfExpression(Expression expression, LinkedVariables linkedVariables) {
-        boolean c1 = setFinalAllowEquals(valueOfExpression, expression);
-        boolean c2 = setFinalAllowEquals(linkedVariablesOfExpression, linkedVariables);
-        assert c1 == c2;
-        return c1;
+        boolean c1;
+        boolean c2;
+        if (expression.isDelayed()) {
+            valueOfExpression.setVariable(expression);
+            c1 = false;
+            c2 = false;
+        } else {
+            c1 = setFinalAllowEquals(valueOfExpression, expression);
+
+            if (linkedVariables.isDelayed()) {
+                linkedVariablesOfExpression.setVariable(linkedVariables);
+                c2 = false;
+            } else {
+                c2 = setFinalAllowEquals(linkedVariablesOfExpression, linkedVariables);
+            }
+        }
+        return c1 || c2;
     }
 }

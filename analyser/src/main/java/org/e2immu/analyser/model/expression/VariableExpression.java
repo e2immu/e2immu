@@ -292,7 +292,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
         ForwardEvaluationInfo forwardEvaluationInfo = overrideForward(forwardEvaluationInfoIn);
         if (forwardEvaluationInfo.isDoNotReevaluateVariableExpressions()) {
-            return builder.setExpression(this).build();
+            // meant to be used in Companion methods, where linking is not relevant
+            return builder.setExpression(this).setLinkedVariablesOfExpression(LinkedVariables.EMPTY).build();
         }
         ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().notNullNotAssignment().build();
         EvaluationResult scopeResult = evaluateScope(context, fwd);

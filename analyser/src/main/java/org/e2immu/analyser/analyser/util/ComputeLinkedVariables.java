@@ -169,9 +169,9 @@ public class ComputeLinkedVariables {
         if (variable instanceof This) {
             curated = LinkedVariables.EMPTY;
         } else if (viE != vi1
-                && viE.getValue() instanceof DelayedVariableExpression dve
-                && dve.msg.startsWith("<vl:")
-                && !curated.isDelayed()) {
+                   && viE.getValue() instanceof DelayedVariableExpression dve
+                   && dve.msg.startsWith("<vl:")
+                   && !curated.isDelayed()) {
             curated = curated.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
         }
         weightedGraph.addNode(variable, curated.variables());
@@ -244,8 +244,8 @@ public class ComputeLinkedVariables {
              */
             boolean clusterComplain;
             if (property.propertyType == Property.PropertyType.CONTEXT
-                    && !summary.equals(property.bestDv)
-                    && cluster.variables().size() > 1) {
+                && !summary.equals(property.bestDv)
+                && cluster.variables().size() > 1) {
                 // if any of the previous values has a max value, we'll need to have it, too
                 DV best = cluster.variables().stream().map(v -> {
                     VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
@@ -326,13 +326,13 @@ public class ComputeLinkedVariables {
             DV value;
             boolean complain;
             if ((property == Property.CONTEXT_NOT_NULL || property == Property.CONTEXT_IMMUTABLE
-                    || property == Property.CONTEXT_CONTAINER) && oneBranchHasBecomeUnreachable) {
+                 || property == Property.CONTEXT_CONTAINER) && oneBranchHasBecomeUnreachable) {
                 value = valueInput;
                 complain = false;
             } else if (valueInput.isDone()
-                    && property.propertyType == Property.PropertyType.EXTERNAL
-                    && MultiLevel.NOT_INVOLVED_DV.equals(current)
-                    && !valueInput.equals(current)) {
+                       && property.propertyType == Property.PropertyType.EXTERNAL
+                       && MultiLevel.NOT_INVOLVED_DV.equals(current)
+                       && !valueInput.equals(current)) {
                 // See Lambda_19Recursion... don't see another way out; in the lambda we don't see the assignment
                 value = MultiLevel.NOT_INVOLVED_DV;
                 complain = clusterComplain;
@@ -488,7 +488,25 @@ public class ComputeLinkedVariables {
             if (allDelays.isDelayed()) return LinkedVariables.NOT_YET_SET;
             return LinkedVariables.EMPTY;
         }
-        return LinkedVariables.of(map);
+        // the clustering algorithm may produce LINK_COMMON_HC links ... without mine, theirs
+        Map<Variable, LV> newMap = new HashMap<>();
+        for (Map.Entry<Variable, LV> entry : map.entrySet()) {
+            LV newLv;
+            if (entry.getValue() == LV.LINK_COMMON_HC) {
+                // TODO 20240327 this is not efficient
+                LV.HiddenContent hcMine = LV.from(variable.parameterizedType());
+                HiddenContentSelector mine = hcMine == null ? HiddenContentSelector.All.INSTANCE : hcMine.all();
+                LV.HiddenContent hcTheirs = LV.from(entry.getKey().parameterizedType());
+                HiddenContentSelector theirs = hcTheirs == null ? HiddenContentSelector.All.INSTANCE : hcTheirs.all();
+                newLv = theirs.isNone() || mine.isNone() ? null : LV.createHC(mine, theirs);
+            } else {
+                newLv = entry.getValue();
+            }
+            if(newLv != null) {
+                newMap.put(entry.getKey(), newLv);
+            }
+        }
+        return LinkedVariables.of(newMap);
     }
 
     /**
@@ -574,8 +592,8 @@ public class ComputeLinkedVariables {
      */
     private DV potentiallyBreakContextModifiedDelay(Variable v, DV propertyValue) {
         if (breakDelayLevel.acceptStatement()
-                && propertyValue.isDelayed()
-                && (propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
+            && propertyValue.isDelayed()
+            && (propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.BREAK_MOM_DELAY,
                 c -> c instanceof SimpleCause sc && sc.location().getInfo() instanceof ParameterInfo) ||
                 // this second situation arises in InstanceOf_16: direct self reference
                 propertyValue.containsCauseOfDelay(CauseOfDelay.Cause.CONTEXT_MODIFIED,
