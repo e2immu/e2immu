@@ -133,7 +133,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             }
             if (!builder.hiddenContentSelectorIsSet()) {
                 HiddenContent hc = HiddenContent.from(builder.getParameterInfo().parameterizedType);
-                HiddenContentSelector hcs = hc == null ? HiddenContentSelector.None.INSTANCE : hc.selectAll();
+                HiddenContentSelector hcs = hc.selectAll();
                 builder.setHiddenContentSelector(hcs);
             }
         });
@@ -206,7 +206,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
         if (!methodAnalysis.hiddenContentSelectorIsSet()) {
             HiddenContent hc = HiddenContent.from(methodInspection.getReturnType());
-            HiddenContentSelector hcs = hc == null ? HiddenContentSelector.None.INSTANCE : hc.selectAll();
+            HiddenContentSelector hcs = hc.selectAll();
             methodAnalysis.setHiddenContentSelector(hcs);
         }
 

@@ -59,7 +59,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 : "Impossible to have no knowledge of hidden content, and INDEPENDENT_HC";
 
         DV immutableOfSource;
-        if (sourceType.isUnboundTypeParameter()) {
+        if (sourceType.isTypeParameter()) {
             // for the purpose of this algorithm...
             immutableOfSource = MultiLevel.INDEPENDENT_HC_DV;
         } else {
@@ -99,7 +99,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         for (Map.Entry<Variable, LV> e : sourceLvs) {
             ParameterizedType pt = e.getKey().parameterizedType();
             // for the purpose of this algorithm, unbound type parameters are HC
-            DV immutable = pt.isUnboundTypeParameter() ? MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV : typeImmutable(pt);
+            DV immutable = pt.isTypeParameter() ? MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV : typeImmutable(pt);
             LV lv = e.getValue();
             assert lv.lt(LINK_INDEPENDENT);
 

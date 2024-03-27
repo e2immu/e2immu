@@ -143,8 +143,10 @@ public interface HiddenContent {
                 }
                 return new HiddenContentSelector.CsSet(set);
             }
-            assert wholeTypeIndex != null;
-            return HiddenContentSelector.All.INSTANCE;
+            if (wholeTypeIndex != null) {
+                return HiddenContentSelector.All.INSTANCE;
+            }
+            return HiddenContentSelector.None.INSTANCE;
         }
 
         @Override
