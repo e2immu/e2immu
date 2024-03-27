@@ -26,6 +26,7 @@ public class TestHiddenContent extends CommonTest {
         assertFalse(hc2.isNone());
         assertEquals("[0:Type param T]", hc2.niceHiddenContentTypes());
         assertEquals("*", hc2.selectAll().toString());
+        assertEquals("[0:Type com.foo.Mutable]", hc2.niceHiddenContentTypes(mutablePt));
     }
 
     @Test
@@ -45,6 +46,7 @@ public class TestHiddenContent extends CommonTest {
         assertEquals("<*0-0>", hc2.toString());
         assertEquals("<0>", hc2.selectAll().toString());
         assertEquals("[0:Type param T]", hc2.niceHiddenContentTypes());
+        assertEquals("[0:Type com.foo.Mutable]", hc2.niceHiddenContentTypes(mutablePt.copyWithArrays(2)));
     }
 
     @Test
@@ -81,5 +83,10 @@ public class TestHiddenContent extends CommonTest {
         HiddenContent hc1 = HiddenContent.from(mmtp);
         assertEquals("<*0-0>", hc1.toString());
         assertEquals("<0>", hc1.selectAll().toString());
+
+        ParameterizedType mm = new ParameterizedType(mutableWithOneTypeParameter, List.of(mutablePt));
+        ParameterizedType mmm = new ParameterizedType(mutableWithOneTypeParameter, List.of(mm));
+        assertEquals("Type com.foo.MutableTP<com.foo.MutableTP<com.foo.Mutable>>", mmm.toString());
+        assertEquals("[0:Type com.foo.Mutable]", hc1.niceHiddenContentTypes(mmm));
     }
 }

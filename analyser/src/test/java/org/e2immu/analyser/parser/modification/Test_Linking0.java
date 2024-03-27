@@ -76,9 +76,13 @@ public class Test_Linking0 extends CommonTestRunner {
                         assertCurrentValue(d, 0, "list.get(0)");
                         assertLinked(d, it(0, "list:4"));
                     }
-                    case "m3", "m4", "m5" -> {
+                    case "m3", "m5" -> {
                         assertCurrentValue(d, 0, "list.subList(0,1)");
                         assertLinked(d, it(0, "list:2"));
+                    }
+                    case "m4" -> {
+                        assertCurrentValue(d, 2, "list.subList(0,1)");
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
                     }
                     case "m6" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
@@ -86,7 +90,7 @@ public class Test_Linking0 extends CommonTestRunner {
                     }
                     case "m7" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
-                        assertLinked(d, it(0, "list:2"));
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
                     }
                     case "m8" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");

@@ -83,9 +83,11 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             // delay in method independent
             return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
         }
-        // we'll return a sensible value now
-        HiddenContent targetTypeHC = HiddenContent.from(targetType);
-        Map<Integer, ParameterizedType> typesCorrespondingToHC = targetTypeHC.hiddenContentTypes();
+
+        ParameterizedType formalTargetType = targetType.typeInfo != null
+                ? targetType.typeInfo.asParameterizedType(analyserContext) : targetType;
+        HiddenContent targetTypeHC = HiddenContent.from(formalTargetType);
+        Map<Integer, ParameterizedType> typesCorrespondingToHC = targetTypeHC.hiddenContentTypes(targetType);
         DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
                 typesCorrespondingToHC, hiddenContentSelectorOfTransfer);
         if (correctedIndependent.isDelayed()) {
@@ -181,6 +183,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 return MultiLevel.INDEPENDENT_HC_DV;
             }
             if (hiddenContentSelectorOfTransfer.isAll()) {
+                // look at the whole object
                 DV immutablePt = typeImmutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
@@ -190,18 +193,18 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 return MultiLevel.INDEPENDENT_DV;
             } else {
                 Set<Integer> selectorSet = hiddenContentSelectorOfTransfer.set();
-                boolean allIndependent = true;
+                boolean allIndependentHC = true;
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
                     if (selectorSet.contains(entry.getKey())) {
                         DV immutablePt = typeImmutable(entry.getValue());
                         if (immutablePt.isDelayed()) return immutablePt;
                         if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
-                            allIndependent = false;
+                            allIndependentHC = false;
                             break;
                         }
                     }
                 }
-                if (allIndependent) return MultiLevel.INDEPENDENT_HC_DV;
+                if (allIndependentHC) return MultiLevel.INDEPENDENT_HC_DV;
             }
         }
         if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
@@ -215,10 +218,12 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 Set<Integer> selectorSet = hiddenContentSelectorOfTransfer.set();
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
                     if (selectorSet.contains(entry.getKey())) {
-                        DV immutablePt = typeImmutable(entry.getValue());
-                        if (immutablePt.isDelayed()) return immutablePt;
-                        if (MultiLevel.isMutable(immutablePt)) {
-                            return MultiLevel.DEPENDENT_DV;
+                        if (!entry.getValue().isTypeParameter()) {
+                            DV immutablePt = typeImmutable(entry.getValue());
+                            if (immutablePt.isDelayed()) return immutablePt;
+                            if (MultiLevel.isMutable(immutablePt)) {
+                                return MultiLevel.DEPENDENT_DV;
+                            }
                         }
                     }
                 }

@@ -64,13 +64,15 @@ public abstract class CommonTest {
             CauseOfDelay.Cause.IMMUTABLE);
 
     protected final TypeInfo mutableWithOneTypeParameter = new TypeInfo("com.foo", "MutableTP");
-    protected final TypeParameter tp0 = new TypeParameterImpl(mutableWithOneTypeParameter, "T", 0);
+    protected final TypeParameter tp0 = new TypeParameterImpl(mutableWithOneTypeParameter, "T", 0)
+            .noTypeBounds();
     protected final ParameterizedType tp0Pt = new ParameterizedType(tp0, 0, ParameterizedType.WildCard.NONE);
     protected final ParameterizedType mutablePtWithOneTypeParameter
             = new ParameterizedType(mutableWithOneTypeParameter, List.of(tp0Pt));
 
     protected final TypeInfo immutableHcWithOneTypeParameter = new TypeInfo("com.foo", "ImmutableHcTP");
-    protected final TypeParameter tpHc0 = new TypeParameterImpl(immutableHcWithOneTypeParameter, "T", 0);
+    protected final TypeParameter tpHc0 = new TypeParameterImpl(immutableHcWithOneTypeParameter, "T", 0)
+            .noTypeBounds();
     protected final ParameterizedType tpHc0Pt = new ParameterizedType(tpHc0, 0, ParameterizedType.WildCard.NONE);
     protected final ParameterizedType immutableHcPtWithOneTypeParameter
             = new ParameterizedType(immutableHcWithOneTypeParameter, List.of(tpHc0Pt));
