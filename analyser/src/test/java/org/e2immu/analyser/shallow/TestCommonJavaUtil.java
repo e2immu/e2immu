@@ -75,6 +75,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+        assertEquals("<0>", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -100,6 +101,10 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
 
         // however, there is no restriction on the container property: the consumer's accept method is allowed to modify its parameter
         assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER));
+
+        assertEquals("Type java.util.function.Consumer<? super E>",
+                p0.getParameterInfo().parameterizedType.toString());
+        assertEquals("<0>", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -130,6 +135,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals("<0>", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -144,6 +150,11 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         // the value should be the one in the map; for speed reasons, we should not be looking at overrides!
         DV inMap = ((MethodAnalysisImpl) methodAnalysis).properties.get(Property.INDEPENDENT);
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, inMap);
+
+        assertEquals("Type Object[]", methodInfo.returnType().toString());
+        // TODO 20240327 when we generalize the hidden content system, this should become <n>, as in Array<Object>,
+        //   and n some index in AbstractCollection indicating that Object is one of the HC types
+        assertEquals("X", methodAnalysis.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -169,6 +180,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals("*", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -178,11 +190,13 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("*", methodAnalysis.getHiddenContentSelector().toString());
 
         // index
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+        assertTrue(p0.getHiddenContentSelector().isNone());
     }
 
 
@@ -193,11 +207,13 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("<0>", methodAnalysis.getHiddenContentSelector().toString());
 
         // index
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals("*", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -209,6 +225,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
+        assertEquals("<0>", methodAnalysis.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -232,6 +249,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+
+        // return is boolean
+        assertTrue(methodAnalysis.getHiddenContentSelector().isNone());
     }
 
 
@@ -250,11 +270,13 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
+        assertEquals("<0>", methodAnalysis.getHiddenContentSelector().toString());
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+        assertTrue(p0.getHiddenContentSelector().isAll());
     }
 
 
@@ -264,6 +286,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
+        assertTrue(typeAnalysis.getHiddenContentTypes().isEmpty());
 
         MethodInfo methodInfo = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> "stream".equals(m.name))
@@ -271,12 +294,13 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
                              m.methodInspection.get().getParameters().get(0).parameterizedType.isTypeParameter())
                 .findFirst().orElseThrow();
         assertEquals("java.util.Arrays.stream(T[])", methodInfo.fullyQualifiedName);
+
         ParameterAnalysis p0 = methodInfo.methodAnalysis.get().getParameterAnalyses().get(0);
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         // because an array is always a container...
         assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
-
-        assertTrue(typeAnalysis.getHiddenContentTypes().isEmpty());
+        // because T[] ~ Array<T>
+        assertEquals("<0>", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -289,10 +313,11 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals("java.util.Arrays.setAll(T[],java.util.function.IntFunction<? extends T>)", methodInfo.fullyQualifiedName);
         ParameterAnalysis p1 = methodInfo.methodAnalysis.get().getParameterAnalyses().get(1);
         assertEquals("array:4", p1.getLinksToOtherParameters().toString());
-
         ParameterInfo pi1 = methodInfo.methodInspection.get().getParameters().get(1);
         assertEquals("generator", pi1.name);
         assertEquals(1, pi1.index);
+        assertEquals("Type java.util.function.IntFunction<? extends T>", pi1.parameterizedType.toString());
+        assertEquals("<0>", p1.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -323,6 +348,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
 
         // because of the type parameter, we're assuming it'll go into the hidden content
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+
+        assertEquals("*", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -334,6 +361,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+
+        assertEquals("<0>", methodAnalysis.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -357,6 +386,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("*", methodAnalysis.getHiddenContentSelector().toString());
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
@@ -364,6 +394,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals("*", p0.getHiddenContentSelector().toString());
 
         // value
         ParameterAnalysis p1 = methodInfo.parameterAnalysis(0);
@@ -371,6 +402,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p1.getProperty(Property.MODIFIED_VARIABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p1.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p1.getProperty(Property.IMMUTABLE));
+        assertEquals("*", p1.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -380,6 +412,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("*", methodAnalysis.getHiddenContentSelector().toString());
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
@@ -388,6 +421,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         // type: object
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
+        // TODO 20240327 should this be overridden to '*' ?
+        assertEquals("X", p0.getHiddenContentSelector().toString());
 
         // default value
         ParameterAnalysis p1 = methodInfo.parameterAnalysis(1);
@@ -396,6 +431,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         // type: V
         assertEquals(MultiLevel.INDEPENDENT_DV, p1.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p1.getProperty(Property.IMMUTABLE));
+        assertEquals("*", p1.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -414,6 +450,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("<0,1>", methodAnalysis.getHiddenContentSelector().toString());
 
         ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
         assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
@@ -430,6 +467,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("<0,1>", methodAnalysis.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -439,6 +477,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("<0>", methodAnalysis.getHiddenContentSelector().toString());
     }
 
     @Test

@@ -231,7 +231,7 @@ public class LV implements Comparable<LV> {
             if (sequence != null) {
                 Set<Integer> set = sequence.stream().flatMap(IndexedType::typeParameterIndexStream)
                         .collect(Collectors.toUnmodifiableSet());
-                if(set.isEmpty()) {
+                if (set.isEmpty()) {
                     return HiddenContentSelector.None.INSTANCE;
                 }
                 return new HiddenContentSelector.CsSet(set);
@@ -253,6 +253,14 @@ public class LV implements Comparable<LV> {
 
     public static HiddenContent from(ParameterizedType pt) {
         if (pt.isTypeParameter()) {
+            if (pt.arrays > 0) {
+                // arrays == 1 ~ Array<T> -> <0>
+                // arrays == 2 ~ Array<Array<T>> -> <*0-0>
+                List<Integer> list = new ArrayList<>();
+                for (int i = 0; i < pt.arrays - 1; i++) list.add(-1);
+                list.add(0);
+                return new HiddenContentImpl(List.of(new IndexedType(pt.copyWithoutArrays(), list)));
+            }
             return new HiddenContentImpl(pt, pt.typeParameter.getIndex());
         }
         AtomicInteger counter = new AtomicInteger();
@@ -277,7 +285,7 @@ public class LV implements Comparable<LV> {
                 sequence.add(new IndexedType(tp, List.of(index)));
             } else if (!tp.parameters.isEmpty()) {
                 HiddenContentImpl recursively = (HiddenContentImpl) from(tp, typeParameterIndex, counter);
-                if(recursively != null) {
+                if (recursively != null) {
                     for (IndexedType it : recursively.sequence) {
                         List<Integer> indices = Stream.concat(Stream.of(-countParameter),
                                 it.index.stream()).toList();
@@ -289,7 +297,7 @@ public class LV implements Comparable<LV> {
             }
             countParameter++;
         }
-        if(sequence.isEmpty()) {
+        if (sequence.isEmpty()) {
             return null;
         }
         return new HiddenContentImpl(List.copyOf(sequence));
@@ -298,6 +306,7 @@ public class LV implements Comparable<LV> {
     public static Map<Integer, ParameterizedType> typesCorrespondingToHC(ParameterizedType pt) {
         if (pt.isUnboundTypeParameter()) return null;
         HiddenContentImpl hiddenContent = (HiddenContentImpl) from(pt);
+        if (hiddenContent == null) return null;
         // the selector tells us where to find types
         Map<Integer, ParameterizedType> map = new HashMap<>();
         for (IndexedType it : hiddenContent.sequence) {

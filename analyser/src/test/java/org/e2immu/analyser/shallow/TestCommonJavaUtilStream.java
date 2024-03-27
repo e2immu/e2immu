@@ -47,6 +47,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, typeAnalysis.immutableDeterminedByTypeParameters());
+        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test
@@ -56,6 +57,8 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("Type java.util.stream.Stream<R>", methodInfo.returnType().toString());
+        assertEquals("<0>", methodAnalysis.getHiddenContentSelector().toString());
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
@@ -64,6 +67,9 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.IGNORE_MODS_DV, p0.getProperty(Property.IGNORE_MODIFICATIONS));
         assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+        assertEquals("Type java.util.function.Function<? super T,? extends R>",
+                p0.getParameterInfo().parameterizedType.toString());
+        assertEquals("<0,1>", p0.getHiddenContentSelector().toString());
     }
 
 
