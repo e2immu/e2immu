@@ -156,7 +156,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 .map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo()))
                 .toList();
         List<EvaluationResult> parameterResults = parameterExpressions.stream()
-                .map(e -> e.evaluate(context, forwardEvaluationInfo)).toList();
+                .map(e -> makeEvaluationResult(context, e)).toList();
         MethodLinkHelper.FromParameters from = methodLinkHelper.fromParametersIntoObject(scope.returnType(),
                 null, parameterExpressions, parameterResults,
                 true, true);
@@ -169,6 +169,14 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         builder.setLinkedVariablesOfExpression(lvsResult);
         builder.setExpression(this);
         return builder.build();
+    }
+
+    private EvaluationResult makeEvaluationResult(EvaluationResult context, Expression e) {
+        if(e instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi) {
+            LinkedVariables lvs = LinkedVariables.of(pi, LV.LINK_STATICALLY_ASSIGNED);
+            return new EvaluationResultImpl.Builder(context).setExpression(e).setLinkedVariablesOfExpression(lvs).build();
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override

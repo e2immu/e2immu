@@ -86,6 +86,56 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertCurrentValue(d, 1, "stream.filter(/*inline test*/predicate.test(i)).findFirst().orElseThrow()");
                         assertLinked(d, it(0, "stream:4"));
                     }
+                    case "m12" -> {
+                        assertCurrentValue(d, 1, "stream.filter(/*inline test*/predicate.test(i)).findFirst().orElseThrow()");
+                        assertLinked(d, it(0, "stream:2"));
+                    }
+                    case "m13" -> {
+                        assertCurrentValue(d, 0, "stream.map(function::apply)");
+                        assertLinked(d, it(0, "stream:2"));
+                    }
+                    case "m14" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "out");
+                            assertLinked(d, it(0, "out:0"));
+                        }
+                    }
+                    case "m15" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "out");
+                            assertLinked(d, it(0, "in:4,out:0"));
+                        }
+                    }
+                    case "m16" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 2, "out");
+                            assertLinked(d, it(0, 1, "in:-1,out:0"), it(2, "in:2,out:0"));
+                        }
+                    }
+                    case "m17" -> {
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get())");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "m18" -> {
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get())");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "m19" -> {
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i))");
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                    case "m20" -> {
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i))");
+                        assertLinked(d, it(0, "list:2"));
+                    }
+                    case "m21" -> {
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                    case "m22" -> {
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
+                        assertLinked(d, it(0, "list:2"));
+                    }
                     default -> {
                     }
                 }

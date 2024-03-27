@@ -96,6 +96,12 @@ public class JavaUtilStream {
             @Modified
             void accept(int i, IntConsumer ic);
         }
+
+        @NotNull
+        IntStream of(int i);
+
+        @Independent(hc = true)
+        <X> Stream<X> mapToObj(@NotNull IntFunction<? extends X> mapper);
     }
 
     @Container
