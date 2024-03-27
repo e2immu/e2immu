@@ -12,6 +12,10 @@ public interface HiddenContent {
 
     boolean isNone();
 
+    Map<Integer, ParameterizedType> hiddenContentTypes();
+
+    String niceHiddenContentTypes();
+
     static HiddenContent from(ParameterizedType pt) {
         AtomicInteger counter = new AtomicInteger();
         Map<ParameterizedType, Integer> typeParameterIndex = new HashMap<>();
@@ -72,23 +76,6 @@ public interface HiddenContent {
         return new HiddenContentImpl(List.copyOf(sequence));
     }
 
-    // TODO
-    static Map<Integer, ParameterizedType> typesCorrespondingToHC(ParameterizedType pt) {
-        if (pt.isUnboundTypeParameter()) return null;
-        HiddenContentImpl hiddenContent = (HiddenContentImpl) from(pt);
-        if (hiddenContent == null) return null;
-        // the selector tells us where to find types
-        Map<Integer, ParameterizedType> map = new HashMap<>();
-        for (IndexedType it : hiddenContent.sequence) {
-            int index = it.index.get(it.index.size() - 1);
-            if (index >= 0 && !map.containsKey(index)) {
-                ParameterizedType tp = it.concreteOf(pt);
-                map.put(index, tp);
-            }
-        }
-        return Map.copyOf(map);
-    }
-
     record IndexedType(ParameterizedType parameterizedType, List<Integer> index) {
         private static int realIndex(int i) {
             return i >= 0 ? i : -i - 1;
@@ -104,15 +91,6 @@ public interface HiddenContent {
             if (index.isEmpty()) return Stream.of();
             int i = index.get(index.size() - 1);
             return i >= 0 ? Stream.of(i) : Stream.of();
-        }
-
-        public ParameterizedType concreteOf(ParameterizedType input) {
-            ParameterizedType pt = input;
-            for (int i : index) {
-                if (i >= 0) return pt.parameters.get(i);
-                pt = pt.parameters.get(realIndex(i));
-            }
-            return pt;
         }
 
         public IndexedType addPrefix(List<Integer> prefix) {
@@ -179,6 +157,33 @@ public interface HiddenContent {
                         "<", ">"));
             }
             return "X";
+        }
+
+        @Override
+        public Map<Integer, ParameterizedType> hiddenContentTypes() {
+            if (wholeTypeIndex != null) {
+                return Map.of(wholeTypeIndex, wholeType);
+            }
+            if (sequence != null) {
+                // the selector tells us where to find types
+                Map<Integer, ParameterizedType> map = new HashMap<>();
+                for (IndexedType it : sequence) {
+                    int index = it.index.get(it.index.size() - 1);
+                    if (index >= 0 && !map.containsKey(index)) {
+                        map.put(index, it.parameterizedType);
+                    }
+                }
+                return Map.copyOf(map);
+            }
+            return Map.of();
+        }
+
+        // for testing
+        @Override
+        public String niceHiddenContentTypes() {
+            return hiddenContentTypes().entrySet().stream()
+                    .map(e -> e.getKey() + ":" + e.getValue()).sorted()
+                    .collect(Collectors.joining(", ", "[", "]"));
         }
     }
 }
