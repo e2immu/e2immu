@@ -128,9 +128,9 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                     index(), methodInfo().fullyQualifiedName, ennStatus);
         }
 
-        Post post = postProcess(statement, sharedState, result2.value());
+        Post post = postProcess(statement, sharedState, result2.value(), result2.linkedVariablesOfExpression());
 
-        statementAnalysis.stateData().setValueOfExpression(post.expression);
+        statementAnalysis.stateData().writeValueOfExpression(post.expression, post.linkedVariables);
         CausesOfDelay sseDelay;
         if (statementAnalysis.stateData().staticSideEffectIsSet()) {
             sseDelay = CausesOfDelay.EMPTY;
@@ -215,14 +215,16 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
     }
 
 
-    private record Post(Expression expression, CausesOfDelay causes) {
+    private record Post(Expression expression, CausesOfDelay causes, LinkedVariables linkedVariables) {
     }
 
-    private Post postProcess(Statement statement, StatementAnalyserSharedState sharedState, Expression value) {
+    private Post postProcess(Statement statement, StatementAnalyserSharedState sharedState, Expression value,
+                             LinkedVariables linkedVariables) {
         assert value != null; // EmptyExpression in case there really is no value
 
         if (statement instanceof ForStatement fs && fs.expression.isEmpty()) {
-            return new Post(new BooleanConstant(sharedState.context().getPrimitives(), true), CausesOfDelay.EMPTY);
+            return new Post(new BooleanConstant(sharedState.context().getPrimitives(), true),
+                    CausesOfDelay.EMPTY, LinkedVariables.EMPTY);
         }
 
         if (statement instanceof IfElseStatement || statement instanceof AssertStatement) {
@@ -230,23 +232,23 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
                 Expression newValue = eval_IfElse_Assert(sharedState, value);
                 if (newValue.isDelayed()) {
                     // for example, an if(...) inside a loop, when the loop's range is being computed
-                    return new Post(newValue, newValue.causesOfDelay());
+                    return new Post(newValue, newValue.causesOfDelay(), linkedVariables);
                 }
                 if (statement() instanceof IfElseStatement && sharedState.localConditionManager().isDelayed()) {
                     Expression de = DelayedExpression.forState(sharedState.localConditionManager().getIdentifier(),
                             newValue.returnType(),
                             sharedState.localConditionManager().multiExpression(),
                             sharedState.localConditionManager().causesOfDelay());
-                    return new Post(de, CausesOfDelay.EMPTY);
+                    return new Post(de, CausesOfDelay.EMPTY, null);
                 }
-                return new Post(newValue, CausesOfDelay.EMPTY);
+                return new Post(newValue, CausesOfDelay.EMPTY, linkedVariables);
             }
-            return new Post(value, CausesOfDelay.EMPTY);
+            return new Post(value, CausesOfDelay.EMPTY, linkedVariables);
         }
 
         if (statement instanceof HasSwitchLabels switchStatement && value.isDone()) {
             eval_Switch(sharedState, value, switchStatement);
-            return new Post(value, CausesOfDelay.EMPTY);
+            return new Post(value, CausesOfDelay.EMPTY, linkedVariables);
         }
 
         if (statement instanceof ReturnStatement) {
@@ -254,30 +256,30 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             Expression condition = sharedState.localConditionManager().condition();
             StatementAnalysisImpl.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(null);
             if (correspondingLoop != null
-                    && correspondingLoop.isLoop()
-                    && correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+                && correspondingLoop.isLoop()
+                && correspondingLoop.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
                 statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION), Message.Label.INTERRUPT_IN_LOOP));
             }
-            return new Post(value, stateForLoop);
+            return new Post(value, stateForLoop, linkedVariables);
         }
 
         if (statement() instanceof ThrowStatement) {
             // but, see also code above that changes the return variable's value; See SwitchExpression_4
             Expression noReturn = noReturnValue();
-            return new Post(noReturn, CausesOfDelay.EMPTY);
+            return new Post(noReturn, CausesOfDelay.EMPTY, linkedVariables);
         }
 
         // the value can be delayed even if it is "true", for example (Basics_3)
         // see Precondition_3 for an example where different values arise, because preconditions kick in
         if (statement() instanceof ExplicitConstructorInvocation) {
             Expression unknown = UnknownExpression.forExplicitConstructorInvocation();
-            return new Post(unknown, CausesOfDelay.EMPTY);
+            return new Post(unknown, CausesOfDelay.EMPTY, linkedVariables);
         }
 
         // this statement can never be fully correct, but it seems to do the job for now... preconditions may arrive late
         // and my cause delays in the evaluation after a number of iterations
 
-        return new Post(value, CausesOfDelay.EMPTY);
+        return new Post(value, CausesOfDelay.EMPTY, linkedVariables);
     }
 
     /*
@@ -292,8 +294,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             // if the variable expression is field$0, and we are in statement time 1, we cannot use this expression!
             // TODO is there an equivalent for loop variables?
             if (!(ive instanceof VariableExpression ve)
-                    || !(ve.getSuffix() instanceof VariableExpression.VariableField vf)
-                    || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
+                || !(ve.getSuffix() instanceof VariableExpression.VariableField vf)
+                || vf.statementTime() == statementAnalysis.statementTime(EVALUATION)) {
                 builder.modifyingMethodAccess(ive.variable(), e.getValue(), null);
             }
         });
@@ -306,7 +308,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         boolean progress = false;
         StateData stateData = statementAnalysis.stateData();
         if (stateData.valueOfExpressionIsVariable()) {
-            progress = stateData.writeValueOfExpression(EmptyExpression.EMPTY_EXPRESSION);
+            progress = stateData.writeValueOfExpression(EmptyExpression.EMPTY_EXPRESSION, LinkedVariables.EMPTY);
         }
         Primitives primitives = sharedState.context().getPrimitives();
         progress |= stateData.setPrecondition(Precondition.empty(primitives));
@@ -326,7 +328,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
             if (state.isDelayed()) return ProgressWrapper.of(progress, state.causesOfDelay());
             Expression condition = sharedState.localConditionManager().condition();
             if (loopOrSwitch.isLoop() &&
-                    loopOrSwitch.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
+                loopOrSwitch.statementAnalysis().rangeData().getRange().generateErrorOnInterrupt(condition)) {
                 statementAnalysis.ensure(Message.newMessage(statementAnalysis.location(EVALUATION),
                         Message.Label.INTERRUPT_IN_LOOP));
             }
@@ -440,8 +442,8 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         ForwardEvaluationInfo forwardEvaluationInfo;
         EvaluationResult hasAlreadyBeenEvaluated;
         if (currentReturnValue instanceof UnknownExpression ||
-                // we're at the start of a new case: group in an old-style switch statement
-                forwardAnalysisInfo.switchData() != null && forwardAnalysisInfo.switchData().switchIdToLabels().containsKey(index())) {
+            // we're at the start of a new case: group in an old-style switch statement
+            forwardAnalysisInfo.switchData() != null && forwardAnalysisInfo.switchData().switchIdToLabels().containsKey(index())) {
             // simplest situation
             toEvaluate = expression;
             updatedContext = context;
@@ -578,7 +580,7 @@ record SAEvaluationOfMainExpression(StatementAnalysis statementAnalysis,
         else throw new UnsupportedOperationException("Mine is " + mine);
 
         if (!firstStatement.flowData().getGuaranteedToBeReachedInMethod().equals(FlowDataConstants.NEVER)
-                || !combined.equals(FlowDataConstants.CONDITIONALLY)) {
+            || !combined.equals(FlowDataConstants.CONDITIONALLY)) {
             firstStatement.flowData().setGuaranteedToBeReachedInMethod(combined);
         } // else: we'll keep NEVER
     }

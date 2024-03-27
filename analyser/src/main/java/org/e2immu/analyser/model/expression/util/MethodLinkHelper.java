@@ -66,6 +66,8 @@ public class MethodLinkHelper {
     called by ConstructorCall and MethodCall
      */
     private List<LinkedVariables> computeLinkedVariablesOfParameters(List<EvaluationResult> parameterResults) {
+        // temporary assertion, to help debugging
+        assert parameterResults.stream().noneMatch(er -> er.linkedVariablesOfExpression() == null);
         return parameterResults.stream().map(er -> er.linkedVariablesOfExpression().maximum(LINK_DEPENDENT)).toList();
     }
 

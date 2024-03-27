@@ -51,6 +51,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertTrue(methodAnalysis.getHiddenContentSelector().isNone());
+
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
@@ -58,6 +60,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
         // as opposed to java.io.PrintStream.print(X x), for example
         assertFalse(methodInfo.methodResolution.get().allowsInterrupts());
+        assertEquals("<0>", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -237,9 +240,9 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Set.class);
         MethodInfo methodInfo = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodInspection.get().getParameters().size() == 1 &&
-                        m.name.equals("of") &&
-                        m.isStatic() &&
-                        m.methodInspection.get().getParameters().get(0).parameterizedType.arrays > 0)
+                             m.name.equals("of") &&
+                             m.isStatic() &&
+                             m.methodInspection.get().getParameters().get(0).parameterizedType.arrays > 0)
                 .findFirst().orElseThrow();
         assertEquals("java.util.Set.of(E...)", methodInfo.fullyQualifiedName);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
@@ -265,7 +268,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> "stream".equals(m.name))
                 .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.arrays > 0 &&
-                        m.methodInspection.get().getParameters().get(0).parameterizedType.isTypeParameter())
+                             m.methodInspection.get().getParameters().get(0).parameterizedType.isTypeParameter())
                 .findFirst().orElseThrow();
         assertEquals("java.util.Arrays.stream(T[])", methodInfo.fullyQualifiedName);
         ParameterAnalysis p0 = methodInfo.methodAnalysis.get().getParameterAnalyses().get(0);

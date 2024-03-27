@@ -243,7 +243,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         @Override
         public HiddenContentSelector getHiddenContentSelector() {
-            return hiddenContentSelector.get(parameterInfo.fullyQualifiedName);
+            // must add a default, for ShallowAnalyser/CompanionAnalyser
+            return hiddenContentSelector.getOrDefault(HiddenContentSelector.None.INSTANCE);
         }
 
         public Builder setHiddenContentSelector(HiddenContentSelector hiddenContentSelector) {

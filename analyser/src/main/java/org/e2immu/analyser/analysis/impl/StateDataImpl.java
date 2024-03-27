@@ -280,16 +280,6 @@ public class StateDataImpl implements StateData {
         }
     }
 
-    public boolean setValueOfExpression(Expression value) {
-        if (value.isDelayed()) {
-            assert valueOfExpression.isVariable()
-                    : "Already have final value '" + valueOfExpression.get() + "'; trying to write delayed value '" + value + "'";
-            valueOfExpression.setVariable(value);
-            return false;
-        }
-        return setFinalAllowEquals(valueOfExpression, value);
-    }
-
     // mainly for testing
     public Stream<Map.Entry<String, EventuallyFinal<Expression>>> statesOfInterruptsStream() {
         return statesOfInterrupts == null ? Stream.of() : statesOfInterrupts.stream();
@@ -402,22 +392,16 @@ public class StateDataImpl implements StateData {
         return linkedVariablesOfExpression.get();
     }
 
-    public boolean setLinkedVariablesOfExpression(LinkedVariables linkedVariables) {
-        if (linkedVariables.isDelayed()) {
-            this.linkedVariablesOfExpression.setVariable(linkedVariables);
-            return false;
-        }
-        this.linkedVariablesOfExpression.setFinal(linkedVariables);
-        return true;
-    }
-
     @Override
     public boolean valueOfExpressionIsVariable() {
         return valueOfExpression.isVariable();
     }
 
     @Override
-    public boolean writeValueOfExpression(Expression expression) {
-        return setFinalAllowEquals(valueOfExpression, expression);
+    public boolean writeValueOfExpression(Expression expression, LinkedVariables linkedVariables) {
+        boolean c1 = setFinalAllowEquals(valueOfExpression, expression);
+        boolean c2 = setFinalAllowEquals(linkedVariablesOfExpression, linkedVariables);
+        assert c1 == c2;
+        return c1;
     }
 }

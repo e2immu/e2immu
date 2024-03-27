@@ -929,8 +929,9 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
          */
         public void link(Variable from, Variable to, LV level) {
             assert !LV.LINK_INDEPENDENT.equals(level);
-
-            internalLink(from, to, level);
+            if (!(to instanceof ReturnVariable)) {
+                internalLink(from, to, level);
+            }
             if (!(from instanceof ReturnVariable)) {
                 internalLink(to, from, level.reverse());
             }

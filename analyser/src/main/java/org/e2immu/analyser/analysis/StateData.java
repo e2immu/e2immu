@@ -102,8 +102,6 @@ public interface StateData {
     // return progress
     boolean setPreconditionFromMethodCalls(Precondition precondition);
 
-    boolean setValueOfExpression(Expression value);
-
     // mainly for testing
     Stream<Map.Entry<String, EventuallyFinal<Expression>>> statesOfInterruptsStream();
 
@@ -150,6 +148,6 @@ public interface StateData {
 
     boolean valueOfExpressionIsVariable();
 
-    boolean writeValueOfExpression(Expression expression);
+    boolean writeValueOfExpression(Expression expression, LinkedVariables linkedVariables);
 
 }
