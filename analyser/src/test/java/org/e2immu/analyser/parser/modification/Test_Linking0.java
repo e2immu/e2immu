@@ -44,48 +44,56 @@ public class Test_Linking0 extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("m1".equals(d.methodInfo().name)) {
-                String expectedLv = d.iteration() < 2 ? "list:-1" : "list:2";
-                assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
-                ChangeData cd = d.findValueChangeByToString("m1");
-                assertEquals(expectedLv, cd.linkedVariables().toString());
+            switch (d.methodInfo().name) {
+                case "m1" -> {
+                    String expectedLv = d.iteration() < 2 ? "list:-1" : "list:2";
+                    assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
+                    ChangeData cd = d.findValueChangeByToString("m1");
+                    assertEquals(expectedLv, cd.linkedVariables().toString());
+                }
+                case "m7" -> {
+                    String expectedLv = d.iteration() < 2 ? "list:-1" : "list:2";
+                    assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
+                    ChangeData cd = d.findValueChangeByToString("m7");
+                    assertEquals(expectedLv, cd.linkedVariables().toString());
+                }
+                default -> {
+                }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("m0".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 0, "list.get(0)");
-                    assertLinked(d, it(0, ""));
-                }
-            }
-            if ("m1".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 2, "list.get(0)");
-                    assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
-                }
-            }
-            if ("m2".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 0, "list.get(0)");
-                    assertLinked(d, it(0, "list:4"));
-                }
-            }
-            if ("m3".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 0, "list.subList(0,1)");
-                    assertLinked(d, it(0, "list:2"));
-                }
-            }
-            if ("m4".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 0, "list.subList(0,1)");
-                    assertLinked(d, it(0, "list:2"));
-                }
-            }
-            if ("m5".equals(d.methodInfo().name)) {
-                if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 0, "list.subList(0,1)");
-                    assertLinked(d, it(0, "list:2"));
+            if (d.variable() instanceof ReturnVariable) {
+                switch (d.methodInfo().name) {
+                    case "m0" -> {
+                        assertCurrentValue(d, 0, "list.get(0)");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "m1" -> {
+                        assertCurrentValue(d, 2, "list.get(0)");
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                    }
+                    case "m2" -> {
+                        assertCurrentValue(d, 0, "list.get(0)");
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                    case "m3", "m4", "m5" -> {
+                        assertCurrentValue(d, 0, "list.subList(0,1)");
+                        assertLinked(d, it(0, "list:2"));
+                    }
+                    case "m6" -> {
+                        assertCurrentValue(d, 0, "new ArrayList<>(list)");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "m7" -> {
+                        assertCurrentValue(d, 0, "new ArrayList<>(list)");
+                        assertLinked(d, it(0, "list:2"));
+                    }
+                    case "m8" -> {
+                        assertCurrentValue(d, 0, "new ArrayList<>(list)");
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                    default -> {
+                    }
                 }
             }
         };

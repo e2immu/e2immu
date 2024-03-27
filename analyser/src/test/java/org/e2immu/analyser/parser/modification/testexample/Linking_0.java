@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser.modification.testexample;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Linking_0 {
@@ -45,5 +46,20 @@ public class Linking_0 {
     // dependent, regardless of X
     static <X> List<X> m5(List<X> list) {
         return list.subList(0, 1);
+    }
+
+    // independent, because of String
+    static List<String> m6(List<String> list) {
+        return new ArrayList<>(list);
+    }
+
+    // dependent, because of M
+    static List<M> m7(List<M> list) {
+        return new ArrayList<>(list);
+    }
+
+    // independent HC, because of X
+    static <X> List<X> m8(List<X> list) {
+        return new ArrayList<>(list);
     }
 }

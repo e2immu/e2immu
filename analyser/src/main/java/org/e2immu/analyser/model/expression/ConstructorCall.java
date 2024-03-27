@@ -501,8 +501,9 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             This thisVar = new This(context.getAnalyserContext(), context.getCurrentType());
             VariableExpression thisVe = new VariableExpression(identifier, thisVar);
             EvaluationResult objectResult = builder.setExpression(thisVe).build(); // linked variables have been set
-            MethodCall.ModReturn modReturn = MethodCall.checkCompanionMethodsModifying(identifier, builder, context,
-                    constructor, withEvalParam, objectResult, expressions, this, DV.TRUE_DV);
+            MethodCallCompanion.ModReturn modReturn = MethodCallCompanion.checkCompanionMethodsModifying(identifier,
+                    builder, context, constructor, this, withEvalParam,
+                    objectResult.linkedVariablesOfExpression(), expressions, this, DV.TRUE_DV);
             if (modReturn == null) {
                 instance = withEvalParam;
             } else if (modReturn.expression() != null) {
