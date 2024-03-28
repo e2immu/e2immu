@@ -25,12 +25,14 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.LV.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
@@ -116,16 +118,30 @@ public class MethodLinkHelper {
             // links between object/return value and parameters
             for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
                 DV formalParameterIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
-                if (!INDEPENDENT_DV.equals(formalParameterIndependent)) {
+                LinkedVariables lvsToResult = parameterAnalysis.getLinkToReturnValueOfMethod();
+                if (!INDEPENDENT_DV.equals(formalParameterIndependent) || !lvsToResult.isEmpty()) {
                     ParameterInfo pi = parameterAnalysis.getParameterInfo();
                     ParameterizedType parameterType = pi.parameterizedType;
-                    LinkedVariables lvsToResult = parameterAnalysis.getLinkToReturnValueOfMethod();
                     LinkedVariables parameterLvs;
                     boolean inResult;
                     if (!lvsToResult.isEmpty()) {
+                        /*
+                        change the links of the parameter to the value of the return variable (see also MethodReference,
+                        computation of links when modified is true)
+                         */
                         inResult = intoResultBuilder != null;
-                        parameterLvs = lvsToResult;
-                        // FIXME: deal with the return:4 link
+                        LinkedVariables returnValueLvs = parameterLv.get(pi.index);
+                        LV valueOfReturnValue = lvsToResult.stream().filter(e -> e.getKey() instanceof ReturnVariable)
+                                .map(Map.Entry::getValue).findFirst().orElseThrow();
+                        Map<Variable, LV> map = returnValueLvs.stream().collect(Collectors.toMap(Map.Entry::getKey,
+                                e -> {
+                                    if (e.getValue().isCommonHC() && valueOfReturnValue.isCommonHC()) {
+                                        return e.getValue();
+                                    }
+                                    return e.getValue().min(valueOfReturnValue);
+                                }));
+                        parameterLvs = LinkedVariables.of(map);
+                        formalParameterIndependent = valueOfReturnValue.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
                     } else {
                         inResult = false;
                         parameterLvs = parameterLv.get(pi.index);

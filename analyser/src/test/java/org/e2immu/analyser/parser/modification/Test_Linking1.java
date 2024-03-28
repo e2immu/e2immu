@@ -92,7 +92,7 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                     case "m13" -> {
                         assertCurrentValue(d, 0, "stream.map(function::apply)");
-                        assertLinked(d, it(0, "stream:2"));
+                        assertLinked(d, it(0, "function:4,stream:2"));
                     }
                     case "m14" -> {
                         if ("1".equals(d.statementId())) {
@@ -134,19 +134,19 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i))");
                         assertLinked(d, it(0, "list:2"));
                     }
-                    case "m21--" -> {
+                    case "m21" -> {
                         assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
                         assertLinked(d, it(0, "list:4"));
                     }
-                    case "m22--" -> {
-                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
-                        assertLinked(d, it(0, "list:2"));
+                    case "m22" -> {
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(list::get)");
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
                     }
-                    case "m22b--" -> {
+                    case "m22b" -> {
                         if ("1".equals(d.statementId())) {
                             // "get" is expanded to "list::get"
-                            assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
-                            assertLinked(d, it(0, "list:2"));
+                            assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(list::get)");
+                            assertLinked(d, it(0, 1, "get:-1,list:-1"), it(2, "get:2,list:2"));
                         }
                     }
                     default -> {

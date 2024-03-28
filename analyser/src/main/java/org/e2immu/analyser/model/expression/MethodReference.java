@@ -177,9 +177,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 if (maxOfParameters == null) {
                     lvsResult = LinkedVariables.EMPTY;
                 } else {
-                    Map<Variable, LV> map = scopeResult.linkedVariablesOfExpression().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                            e -> e.getValue().max(maxOfParameters)));
-                    lvsResult = LinkedVariables.of(map);
+                    lvsResult =scopeResult.linkedVariablesOfExpression().maximum(maxOfParameters);
                 }
             } else {
                 lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult,

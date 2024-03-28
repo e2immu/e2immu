@@ -361,7 +361,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         @Override
         public LinkedVariables getLinkToReturnValueOfMethod() {
-            return linkToReturnValueOfMethod.get();
+            return linkToReturnValueOfMethod.getOrDefault(LinkedVariables.EMPTY);
         }
     }
 
