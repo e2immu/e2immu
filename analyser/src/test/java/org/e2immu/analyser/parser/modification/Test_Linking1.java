@@ -106,6 +106,12 @@ public class Test_Linking1 extends CommonTestRunner {
                             assertLinked(d, it(0, "in:4,out:0"));
                         }
                     }
+                    case "m15b" -> {
+                        if ("2".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "out");
+                            assertLinked(d, it(0, "add:4,in:4,out:0"));
+                        }
+                    }
                     case "m16" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 2, "out");
@@ -148,6 +154,11 @@ public class Test_Linking1 extends CommonTestRunner {
                 }
             }
             switch (d.methodInfo().name) {
+                case "m15b" -> {
+                    if ("0".equals(d.statementId()) && "add".equals(d.variableName())) {
+                        assertLinked(d, it(0, "out:4"));
+                    }
+                }
                 case "m17b--" -> {
                     if ("0".equals(d.statementId()) && "f".equals(d.variableName())) {
                         assertLinked(d, it(0, "list:2"));

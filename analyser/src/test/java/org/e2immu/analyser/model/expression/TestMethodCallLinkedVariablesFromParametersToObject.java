@@ -236,13 +236,8 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.CsSet.selectTypeParameter(0));
 
         EvaluationResult er = evaluateMethodReference(add);
-        assertEquals("", er.linkedVariablesOfExpression().toString());
-        assertEquals(2, er.changeData().size());
-        ChangeData ca = er.findChangeData("a");
-        assertEquals("p0:4", ca.linkedVariables().toString());
-        ChangeData cb = er.findChangeData("p0");
-        assertEquals("a:4", cb.linkedVariables().toString());
-        assertTrue(cb.linkedVariables().causesOfDelay().isDone());
+        assertEquals("a:4", er.linkedVariablesOfExpression().toString());
+        assertEquals(0, er.changeData().size());
     }
 
     @Test
@@ -458,6 +453,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         // we're not interested in the return value here! (void method)
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
+        builder.setProperty(Property.MODIFIED_METHOD, DV.TRUE_DV);
         builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         method.setAnalysis(builder.build());
 
@@ -492,6 +488,8 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         // we're not interested in the return value here! (void method)
         builder.setProperty(Property.INDEPENDENT, independent);
+        builder.setProperty(Property.MODIFIED_METHOD, DV.FALSE_DV);
+
         builder.setHiddenContentSelector(hcs);
         method.setAnalysis(builder.build());
 
@@ -549,11 +547,10 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
             p0Builder.writeLinkToReturnValue(MultiLevel.DEPENDENT_DV.equals(independentP0));
         }
 
-        ParameterAnalysis p0Analysis = (ParameterAnalysis) p0Builder.build();
-
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, independent);
+        builder.setProperty(Property.MODIFIED_METHOD, DV.fromBoolDv(returnType.isVoid()));
 
         method.setAnalysis(builder.build());
 

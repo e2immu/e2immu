@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MethodLinkHelper;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -28,8 +29,10 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
@@ -126,8 +129,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         ForwardEvaluationInfo scopeForward;
 
         DV contextContainer = forwardEvaluationInfo.getProperty(Property.CONTEXT_CONTAINER);
+        DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
         if (contextContainer.equals(MultiLevel.NOT_CONTAINER_DV)) {
-            DV modified = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
             scopeForward = new ForwardEvaluationInfo.Builder(forwardEvaluationInfo)
                     .addProperty(Property.CONTEXT_MODIFIED, modified)
@@ -157,16 +160,34 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 .toList();
         List<EvaluationResult> parameterResults = parameterExpressions.stream()
                 .map(e -> makeEvaluationResult(context, e)).toList();
-        MethodLinkHelper.FromParameters from = methodLinkHelper.linksInvolvingParameters(scope.returnType(),
-                null, parameterResults);
-        scopeResult.linkedVariablesOfExpression().stream().forEach(e ->
-                from.intoObject().linkedVariablesOfExpression().stream().forEach(e2 ->
-                        builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))));
-        LinkedVariables lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult,
-                parameterResults, concreteReturnType);
 
+        LinkedVariables lvsResult;
+        if (modified.isDelayed()) {
+            lvsResult = scopeResult.linkedVariablesOfExpression().changeToDelay(LV.delay(modified.causesOfDelay()));
+            builder.setExpression(DelayedExpression.forModification(this, modified.causesOfDelay()));
+        } else {
+            if (modified.valueIsTrue()) {
+                /*
+                link the result to the scope's linked variables, with values of the parameters
+                 */
+                MethodLinkHelper.FromParameters from = methodLinkHelper.linksInvolvingParameters(scope.returnType(),
+                        null, parameterResults);
+                LV maxOfParameters = from.intoObject().linkedVariablesOfExpression().stream().filter(e -> e.getKey() instanceof ParameterInfo)
+                        .map(Map.Entry::getValue).max(LV::compareTo).orElse(null);
+                if (maxOfParameters == null) {
+                    lvsResult = LinkedVariables.EMPTY;
+                } else {
+                    Map<Variable, LV> map = scopeResult.linkedVariablesOfExpression().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                            e -> e.getValue().max(maxOfParameters)));
+                    lvsResult = LinkedVariables.of(map);
+                }
+            } else {
+                lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult,
+                        parameterResults, concreteReturnType);
+            }
+            builder.setExpression(this);
+        }
         builder.setLinkedVariablesOfExpression(lvsResult);
-        builder.setExpression(this);
         return builder.build();
     }
 

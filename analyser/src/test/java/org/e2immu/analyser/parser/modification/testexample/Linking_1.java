@@ -1,10 +1,7 @@
 package org.e2immu.analyser.parser.modification.testexample;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -93,6 +90,13 @@ public class Linking_1 {
     static <X> List<X> m15(List<X> in, List<X> out) {
         //noinspection ALL
         in.forEach(out::add);
+        return out;
+    }
+
+    static <X> List<X> m15b(List<X> in, List<X> out) {
+        //noinspection ALL
+        Consumer<X> add = out::add;
+        in.forEach(add);
         return out;
     }
 
