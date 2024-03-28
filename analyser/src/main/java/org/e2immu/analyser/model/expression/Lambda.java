@@ -378,7 +378,7 @@ public class Lambda extends BaseExpression implements Expression {
                 Property.IDENTITY, Property.IDENTITY.falseDv));
         Expression result = Instance.forGetInstance(identifier, statementIndex, parameterizedType, valueProperties);
 
-        List<LinkedVariables> lvsList = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
+        List<LinkedVariables> lvsList = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo).linkedToParameters();
         LinkedVariables lvs = lvsList.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
 
         if (!lvs.isEmpty()) {

@@ -169,6 +169,11 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertLinked(d, it(0, "list:2"));
                     }
                 }
+                case "m23b" -> {
+                    if ("0".equals(d.statementId()) && "f".equals(d.variableName())) {
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                }
             }
         };
 

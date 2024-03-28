@@ -73,12 +73,15 @@ public class MethodLinkHelper {
         return parameterResults.stream().map(er -> er.linkedVariablesOfExpression().maximum(LINK_DEPENDENT)).toList();
     }
 
-    public static List<LinkedVariables> lambdaLinking(EvaluationContext evaluationContext, MethodInfo concreteMethod) {
+    public record LambdaResult(List<LinkedVariables> linkedToParameters, LinkedVariables linkedToReturnValue) {
+    }
+
+    public static LambdaResult lambdaLinking(EvaluationContext evaluationContext, MethodInfo concreteMethod) {
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(concreteMethod);
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         if (lastStatement == null) {
-            return List.of();
+            return new LambdaResult(List.of(), LinkedVariables.EMPTY);
         }
         MethodInspection methodInspection = evaluationContext.getAnalyserContext().getMethodInspection(concreteMethod);
         List<LinkedVariables> result = new ArrayList<>(methodInspection.getParameters().size() + 1);
@@ -92,9 +95,9 @@ public class MethodLinkHelper {
         if (concreteMethod.hasReturnValue()) {
             ReturnVariable returnVariable = new ReturnVariable(concreteMethod);
             VariableInfo vi = lastStatement.getLatestVariableInfo(returnVariable.fqn);
-            result.add(vi.getLinkedVariables());
+            return new LambdaResult(result, vi.getLinkedVariables());
         }
-        return result;
+        return new LambdaResult(result, LinkedVariables.EMPTY);
     }
 
     public record FromParameters(EvaluationResult intoObject, EvaluationResult intoResult) {

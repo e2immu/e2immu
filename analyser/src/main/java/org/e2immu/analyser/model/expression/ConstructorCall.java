@@ -15,6 +15,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
@@ -24,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
@@ -36,10 +38,7 @@ import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.graph.analyser.PackedInt;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -464,6 +463,38 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             builder.setExpression(new ArrayInitializer(identifier, context.getAnalyserContext(),
                     values, arrayInitializer.returnType()));
             return builder.build();
+        }
+
+        if (anonymousClass != null) {
+            EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
+            LinkedVariables lvs;
+            TypeInspection typeInspection = context.getAnalyserContext().getTypeInspection(anonymousClass);
+            Expression expression;
+            if (typeInspection.isFunctionalInterface()) {
+                // we follow the same rules as in MethodReference and Lambda: if modifying, then the result
+                // links to the parameters of the SAM; if non-modifying, the result links to the result of the SAM.
+                MethodInspection sami = typeInspection.getSingleAbstractMethod();
+                MethodAnalysis sama = context.getAnalyserContext().getMethodAnalysis(sami.getMethodInfo());
+                DV modified = sama.getProperty(Property.MODIFIED_METHOD);
+                MethodLinkHelper.LambdaResult lr = MethodLinkHelper.lambdaLinking(context.evaluationContext(),
+                        sami.getMethodInfo());
+                if (modified.isDelayed()) {
+                    expression = DelayedExpression.forModification(this, modified.causesOfDelay());
+                    lvs = lr.linkedToParameters().stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge)
+                            .merge(lr.linkedToReturnValue()).changeToDelay(LV.delay(modified.causesOfDelay()));
+                } else {
+                    if (modified.valueIsTrue()) {
+                        lvs = lr.linkedToParameters().stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+                    } else {
+                        lvs = lr.linkedToReturnValue();
+                    }
+                    expression = this;
+                }
+            } else {
+                lvs = LinkedVariables.EMPTY;
+                expression = this;
+            }
+            return builder.setLinkedVariablesOfExpression(lvs).setExpression(expression).build();
         }
 
         // "normal"
