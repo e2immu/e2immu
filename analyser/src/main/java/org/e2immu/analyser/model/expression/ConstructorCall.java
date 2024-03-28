@@ -470,10 +470,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             LinkedVariables lvs;
             TypeInspection typeInspection = context.getAnalyserContext().getTypeInspection(anonymousClass);
             Expression expression;
-            if (typeInspection.isFunctionalInterface()) {
+
+            MethodInspection sami = typeInspection.anonymousTypeImplementsFunctionalInterface(context.getAnalyserContext());
+            if (sami != null) {
                 // we follow the same rules as in MethodReference and Lambda: if modifying, then the result
                 // links to the parameters of the SAM; if non-modifying, the result links to the result of the SAM.
-                MethodInspection sami = typeInspection.getSingleAbstractMethod();
                 MethodAnalysis sama = context.getAnalyserContext().getMethodAnalysis(sami.getMethodInfo());
                 DV modified = sama.getProperty(Property.MODIFIED_METHOD);
                 MethodLinkHelper.LambdaResult lr = MethodLinkHelper.lambdaLinking(context.evaluationContext(),

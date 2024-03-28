@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.SetOfTypes;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -64,7 +65,6 @@ public interface TypeInspection extends Inspection {
     List<ParameterizedType> interfacesImplemented();
 
     /**
-     *
      * @return null when the type is not a functional interface
      */
     @Nullable
@@ -89,6 +89,17 @@ public interface TypeInspection extends Inspection {
     default boolean isAbstract() {
         if (typeNature() == TypeNature.INTERFACE) return true;
         return modifiers().contains(TypeModifier.ABSTRACT);
+    }
+
+    default MethodInspection anonymousTypeImplementsFunctionalInterface(InspectionProvider inspectionProvider) {
+        if (!parentClass().isJavaLangObject()) return null;
+        if (!interfacesImplemented().isEmpty()) {
+            if (interfacesImplemented().size() > 1) return null;
+            if (!interfacesImplemented().get(0).isFunctionalInterface()) return null;
+        }
+        List<MethodInfo> methods = methods();
+        if (methods.size() != 1) return null;
+        return inspectionProvider.getMethodInspection(methods.get(0));
     }
 
     enum Methods {
@@ -163,8 +174,8 @@ public interface TypeInspection extends Inspection {
                 .filter(fieldInfo -> fieldInfo.fieldInspection.get().fieldInitialiserIsSet())
                 .map(fieldInfo -> fieldInfo.fieldInspection.get().getFieldInitialiser())
                 .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null
-                        && (alsoSynthetic ||
-                        !initialiser.implementationOfSingleAbstractMethod().methodInspection.get().isSynthetic()))
+                                       && (alsoSynthetic ||
+                                           !initialiser.implementationOfSingleAbstractMethod().methodInspection.get().isSynthetic()))
                 .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }
 

@@ -149,6 +149,20 @@ public class Test_Linking1 extends CommonTestRunner {
                             assertLinked(d, it(0, 1, "get:-1,list:-1"), it(2, "get:2,list:2"));
                         }
                     }
+                    case "m23" -> {
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new IntFunction<X>(){public X apply(int value){return list.get(value);}})");
+                        assertLinked(d, it(0, "list:4"));
+                    }
+                    case "m23b" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new IntFunction<>(){public X apply(int value){return list.get(value);}})");
+                            assertLinked(d, it(0, "f:4,list:4"));
+                        }
+                    }
+                    case "m24" -> {
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(new IntFunction<M>(){public M apply(int value){return list.get(value);}})");
+                        assertLinked(d,it(0, 1, "list:-1"),  it(2, "list:2"));
+                    }
                     default -> {
                     }
                 }
