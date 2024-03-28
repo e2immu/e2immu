@@ -387,8 +387,7 @@ public class Lambda extends BaseExpression implements Expression {
      */
     private Expression addLinkingInformation(EvaluationResult context, InlinedMethod inlinedMethod) {
         MethodLinkHelper.LambdaResult lr = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
-        LinkedVariables lvs = lr.linkedToReturnValue()
-                .remove(v -> v instanceof ParameterInfo pi && methodInfo.equals(pi.getMethodInfo()));
+        LinkedVariables lvs = lr.linkedToReturnValue().remove(this::removeFromLinkedVariables);
         if (lvs.isEmpty()) {
             return inlinedMethod;
         }
@@ -420,14 +419,17 @@ public class Lambda extends BaseExpression implements Expression {
             } else {
                 lvsBeforeRemove = lr.linkedToReturnValue();
             }
-            // FIXME scopes of fields??
-            lvs = lvsBeforeRemove
-                    .remove(v -> v instanceof ParameterInfo pi && methodInfo.equals(pi.getMethodInfo()));
+            lvs = lvsBeforeRemove.remove(this::removeFromLinkedVariables);
         }
         if (!lvs.isEmpty()) {
             return PropertyWrapper.propertyWrapper(result, lvs);
         }
         return result;
+    }
+
+    private boolean removeFromLinkedVariables(Variable v) {
+        return v instanceof ParameterInfo pi && methodInfo.equals(pi.getMethodInfo())
+               || v instanceof FieldReference fr && fr.someScopeIsParameterOf(methodInfo);
     }
 
     private Expression noLocalAnalysersYet(EvaluationResult evaluationContext) {

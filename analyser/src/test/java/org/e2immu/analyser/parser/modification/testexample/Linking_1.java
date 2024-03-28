@@ -70,11 +70,11 @@ public class Linking_1 {
         //noinspection ALL
         return stream.filter(i -> predicate.test(i)).findFirst().orElseThrow();
     }
-/*  FIXME bug1
+
     static <X, Y> Stream<Y> m12(Stream<X> stream, Function<X, Y> function) {
         //noinspection ALL
         return stream.map(x -> function.apply(x));
-    }*/
+    }
 
     static <X, Y> Stream<Y> m13(Stream<X> stream, Function<X, Y> function) {
         //noinspection ALL

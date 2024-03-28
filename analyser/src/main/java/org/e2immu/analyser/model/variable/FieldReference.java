@@ -41,4 +41,11 @@ public interface FieldReference extends Variable {
     boolean hasAsScopeVariable(Variable pv);
 
     boolean isDefaultScope();
+
+    default boolean someScopeIsParameterOf(MethodInfo methodInfo) {
+        Variable sv = scopeVariable();
+        if (sv instanceof ParameterInfo pi && methodInfo.equals(pi.getMethodInfo())) return true;
+        if (sv instanceof FieldReference fr) return fr.someScopeIsParameterOf(methodInfo);
+        return false;
+    }
 }

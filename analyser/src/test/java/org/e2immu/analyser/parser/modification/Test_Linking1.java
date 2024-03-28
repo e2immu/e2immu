@@ -48,15 +48,15 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertLinked(d, it(0, ""));
                     }
                     case "m3" -> {
-                     // FIXME   assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0)");
+                        assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0)");
                         assertLinked(d, it(0, 1, "stream:-1"), it(2, "stream:2"));
                     }
                     case "m4" -> {
-                     //   assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0).findFirst()");
+                        assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0).findFirst()");
                         assertLinked(d, it(0, 1, "stream:-1"), it(2, "stream:2"));
                     }
                     case "m5" -> {
-                      //  assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0).findFirst().orElseThrow()");
+                        assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0).findFirst().orElseThrow()");
                         assertLinked(d, it(0, 1, "stream:-1"), it(2, "stream:2"));
                     }
                     case "m6" -> {
@@ -85,7 +85,7 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                     case "m12" -> {
                         assertCurrentValue(d, 1, "stream.filter(/*inline test*/predicate.test(i)).findFirst().orElseThrow()");
-                        assertLinked(d, it(0, "stream:2"));
+                        assertLinked(d, it(0, "function:4,stream:2"));
                     }
                     case "m13" -> {
                         assertCurrentValue(d, 0, "stream.map(function::apply)");
