@@ -141,7 +141,8 @@ public interface TypeInspection extends Inspection {
         return nonRecursiveMethodStream(methodsMode);
     }
 
-    private Stream<MethodInfo> nonRecursiveMethodStream(Methods methodsMode) {
+    // NOTE: this should be private, but JavaParser 3.25.9 complains
+    default Stream<MethodInfo> nonRecursiveMethodStream(Methods methodsMode) {
         if (methodsMode == Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM) return methods().stream();
         return Stream.concat(methods().stream(),
                 methodsInFieldInitializers(methodsMode != Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM));

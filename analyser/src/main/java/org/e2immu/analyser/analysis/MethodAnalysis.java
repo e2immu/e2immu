@@ -126,7 +126,8 @@ public interface MethodAnalysis extends Analysis {
         };
     }
 
-    private DV modifiedMethodOrTempModifiedMethod() {
+    // NOTE: this should be private, but JavaParser 3.25.9 complains
+    default DV modifiedMethodOrTempModifiedMethod() {
         if (getMethodInfo().methodResolution.get().partOfCallCycle()) {
             return getPropertyFromMapDelayWhenAbsent(Property.TEMP_MODIFIED_METHOD);
         }

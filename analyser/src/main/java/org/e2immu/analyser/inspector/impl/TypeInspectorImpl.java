@@ -331,6 +331,12 @@ public class TypeInspectorImpl implements TypeInspector {
 
     private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext,
                                                ClassOrInterfaceDeclaration cid) {
+        if (cid.getPermittedTypes() != null) {
+            for (ClassOrInterfaceType cit : cid.getPermittedTypes()) {
+                ParameterizedType permittedType = ParameterizedTypeFactory.from(expressionContext.typeContext(), cit);
+                builder.addPermittedWhenSealed(permittedType.typeInfo);
+            }
+        }
         doTypeParameters(expressionContext, cid);
         if (cid.isInterface()) {
             builder.setTypeNature(TypeNature.INTERFACE);
@@ -365,7 +371,7 @@ public class TypeInspectorImpl implements TypeInspector {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
         if (typeInspection == null) {
             throw new UnsupportedOperationException("The type " + parameterizedType.typeInfo.fullyQualifiedName +
-                    " should already have a type inspection");
+                                                    " should already have a type inspection");
         }
 
         // now that we're sure it has been inspected, we add all its top-level subtypes to the type context
@@ -710,7 +716,7 @@ public class TypeInspectorImpl implements TypeInspector {
         TypeInfo fromStore = typeMapBuilder.get(typeInfo.fullyQualifiedName + "." + name);
         if (fromStore == null)
             throw new UnsupportedOperationException("I should already know type " + name +
-                    " inside " + typeInfo.fullyQualifiedName);
+                                                    " inside " + typeInfo.fullyQualifiedName);
         return new DollarResolverResult(fromStore, false);
     }
 

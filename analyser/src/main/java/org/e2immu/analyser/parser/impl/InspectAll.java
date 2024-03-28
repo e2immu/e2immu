@@ -191,7 +191,10 @@ public class InspectAll implements InspectWithJavaParser {
         JavaParser javaParser = new JavaParser(parserConfiguration);
         ParseResult<CompilationUnit> parseResult = javaParser.parse(sourceCode);
         if (!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
-            parseResult.getProblems().forEach(problem -> LOGGER.error("Parsing problem: {}", problem));
+            parseResult.getProblems().forEach(problem -> {
+                LOGGER.error("Parsing problem: {}", problem);
+                LOGGER.error("  in compilation unit {}", uri);
+            });
             throw new ParseException();
         }
         CompilationUnit compilationUnit = parseResult.getResult().get();

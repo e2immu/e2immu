@@ -32,7 +32,7 @@ dependencyResolutionManagement {
             library("googleGson", "com.google.code.gson:gson:2.8.9") // Apache License 2.0
             library("httpClient", "org.apache.httpcomponents:httpclient:4.5.13") // Apache License 2.0
             library("httpCore", "org.apache.httpcomponents:httpcore:4.4.13") // Apache License 2.0
-            library("javaParser", "com.github.javaparser:javaparser-core:3.25.3")
+            library("javaParser", "com.github.javaparser:javaparser-core:3.25.9")
             library("junitJupiterApi", "org.junit.jupiter:junit-jupiter-api:5.9.3") // EPL v2 License
             library("junitJupiterEngine", "org.junit.jupiter:junit-jupiter-engine:5.9.3") // EPL v2 License
             library("logbackClassic", "ch.qos.logback:logback-classic:1.4.12") // EPL v1.0 and the LGPL 2.1

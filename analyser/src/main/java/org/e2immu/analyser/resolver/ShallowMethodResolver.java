@@ -107,12 +107,10 @@ public class ShallowMethodResolver {
                                       Map<NamedType, ParameterizedType> translationMap) {
         if (!base.name.equals(targetInspection.getMethodInfo().name)) return false;
         MethodInspection baseInspection = inspectionProvider.getMethodInspection(base);
-        return sameParameters(inspectionProvider,
-                baseInspection.getParameters(), targetInspection.getParameters(), translationMap);
+        return sameParameters(baseInspection.getParameters(), targetInspection.getParameters(), translationMap);
     }
 
     public static boolean sameParameters(
-            InspectionProvider inspectionProvider,
             List<ParameterInfo> parametersOfMyMethod,
             List<ParameterInfo> parametersOfTarget,
             Map<NamedType, ParameterizedType> translationMap) {
@@ -120,7 +118,7 @@ public class ShallowMethodResolver {
         int i = 0;
         for (ParameterInfo parameterInfo : parametersOfMyMethod) {
             ParameterInfo p2 = parametersOfTarget.get(i);
-            if (differentType(inspectionProvider, parameterInfo.parameterizedType, p2.parameterizedType,
+            if (differentType(new HashSet<>(), parameterInfo.parameterizedType, p2.parameterizedType,
                     translationMap, 0)) {
                 return false;
             }
@@ -145,7 +143,7 @@ public class ShallowMethodResolver {
      * @return true if the types are "different"
      */
     private static boolean differentType(
-            InspectionProvider inspectionProvider,
+            Set<TypeInfo> seenTypeBounds,
             ParameterizedType inSuperType,
             ParameterizedType inSubType,
             Map<NamedType, ParameterizedType> translationMap,
@@ -161,7 +159,7 @@ public class ShallowMethodResolver {
             int i = 0;
             for (ParameterizedType param1 : inSuperType.parameters) {
                 ParameterizedType param2 = inSubType.parameters.get(i);
-                if (differentType(inspectionProvider, param1, param2, translationMap,
+                if (differentType(seenTypeBounds, param1, param2, translationMap,
                         infiniteLoopDetector + 1))
                     return true;
                 i++;
@@ -173,7 +171,7 @@ public class ShallowMethodResolver {
             ParameterizedType inMap = translationMap.get(inSuperType.typeParameter);
             if (inMap == null) return true;
             if (inMap.typeParameter != inSuperType.typeParameter) {
-                return differentType(inspectionProvider, inMap, inSubType, translationMap,
+                return differentType(seenTypeBounds, inMap, inSubType, translationMap,
                         infiniteLoopDetector + 1);
             } // else: the map doesn't point us to some other place
         }
@@ -190,9 +188,11 @@ public class ShallowMethodResolver {
         if (inSubTypeBounds.size() != inSuperTypeBounds.size()) return true;
         int i = 0;
         for (ParameterizedType typeBound : inSubType.typeParameter.getTypeBounds()) {
-            boolean different = differentType(inspectionProvider, typeBound, inSuperTypeBounds.get(i), translationMap,
-                    infiniteLoopDetector + 1);
-            if (different) return true;
+            if (seenTypeBounds.add(typeBound.typeInfo)) {
+                boolean different = differentType(seenTypeBounds, typeBound, inSuperTypeBounds.get(i), translationMap,
+                        infiniteLoopDetector + 1);
+                if (different) return true;
+            }
             i++;
         }
         return false;

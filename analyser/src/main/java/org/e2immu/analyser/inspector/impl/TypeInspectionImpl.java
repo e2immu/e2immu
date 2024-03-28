@@ -211,10 +211,10 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     throw new RuntimeException("Cannot find method inspection of " + methodInfo.fullyQualifiedName);
                 }
                 boolean nonStaticNonDefault = !inspection.isPrivate() && !methodInfo.isStatic()
-                        && !methodInfo.isDefault() && !inspection.isOverloadOfJLOMethod();
+                                              && !methodInfo.isDefault() && !inspection.isOverloadOfJLOMethod();
                 if (nonStaticNonDefault) {
                     if (overriddenByDefault.stream().noneMatch(override ->
-                            isOverrideOf(inspectionProvider, inspection, override, translationMap))) {
+                            isOverrideOf(inspection, override, translationMap))) {
                         abstractMethods.add(inspection);
                         overriddenByDefault.add(inspection);
                     } // is cancelled out, we have a default implementation for this method
@@ -240,13 +240,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
     }
 
-    private static boolean isOverrideOf(InspectionProvider inspectionProvider,
-                                        MethodInspection inSubType,
+    private static boolean isOverrideOf(MethodInspection inSubType,
                                         MethodInspection inSuperType,
                                         Map<NamedType, ParameterizedType> map) {
         if (!inSubType.getMethodInfo().name.equals(inSuperType.getMethodInfo().name)) return false;
-        return ShallowMethodResolver.sameParameters(inspectionProvider, inSubType.getParameters(),
-                inSuperType.getParameters(), map);
+        return ShallowMethodResolver.sameParameters(inSubType.getParameters(), inSuperType.getParameters(), map);
     }
 
     @Container(builds = TypeInspectionImpl.class)
@@ -323,6 +321,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return List.copyOf(permittedWhenSealed);
         }
 
+        public Builder addPermittedWhenSealed(TypeInfo typeInfo) {
+            this.permittedWhenSealed.add(typeInfo);
+            return this;
+        }
+
         public Builder setTypeNature(TypeNature typeNature) {
             this.typeNature = typeNature;
             return this;
@@ -355,7 +358,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public Builder addConstructor(MethodInfo methodInfo) {
             if (!methodAndConstructorNames.add(methodInfo.distinguishingName)) {
                 throw new UnsupportedOperationException("Already have " + methodInfo.distinguishingName +
-                        ", set is " + methodAndConstructorNames);
+                                                        ", set is " + methodAndConstructorNames);
             }
             constructors.add(methodInfo);
             return this;
@@ -370,7 +373,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public Builder addMethod(MethodInfo methodInfo) {
             if (!methodAndConstructorNames.add(methodInfo.distinguishingName)) {
                 throw new UnsupportedOperationException("Already have " + methodInfo.distinguishingName
-                        + ", set is " + methodAndConstructorNames);
+                                                        + ", set is " + methodAndConstructorNames);
             }
             methods.add(methodInfo);
             return this;
@@ -423,7 +426,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             assert Input.acceptFQN(typeInfo.fullyQualifiedName);
             if (typeInfo.needsParent() && parentClass == null) {
                 throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName
-                        + ". If this error occurs during annotated API inspection, check that the class name is spelled correctly!");
+                                                        + ". If this error occurs during annotated API inspection, check that the class name is spelled correctly!");
             }
             assert permittedWhenSealed.isEmpty() || modifiers.contains(TypeModifier.SEALED);
             assert !modifiers.contains(TypeModifier.SEALED) || !permittedWhenSealed.isEmpty();
@@ -525,7 +528,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                         .getTypeInspection(typeInfo.packageNameOrEnclosingType.getRight());
                 if (typeInspection.accessNotYetComputed()) {
                     throw new UnsupportedOperationException("Access of type " +
-                            typeInspection.typeInfo().fullyQualifiedName + " has not yet been computed");
+                                                            typeInspection.typeInfo().fullyQualifiedName + " has not yet been computed");
                 }
                 Access fromEnclosing = typeInspection.getAccess();
                 Access combined = fromEnclosing.combine(fromModifiers);

@@ -276,7 +276,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
-        assertTrue(p0.getHiddenContentSelector().isAll());
+        assertEquals("<0>", p0.getHiddenContentSelector().toString());
     }
 
 
