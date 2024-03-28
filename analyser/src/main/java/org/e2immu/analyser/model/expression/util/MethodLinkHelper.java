@@ -74,6 +74,13 @@ public class MethodLinkHelper {
     }
 
     public record LambdaResult(List<LinkedVariables> linkedToParameters, LinkedVariables linkedToReturnValue) {
+        public LinkedVariables delay(CausesOfDelay causesOfDelay) {
+            return linkedToParameters.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge)
+                    .merge(linkedToReturnValue.changeToDelay(LV.delay(causesOfDelay)));
+        }
+        public LinkedVariables mergedLinkedToParameters() {
+            return linkedToParameters.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+        }
     }
 
     public static LambdaResult lambdaLinking(EvaluationContext evaluationContext, MethodInfo concreteMethod) {

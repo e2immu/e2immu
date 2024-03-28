@@ -316,7 +316,8 @@ public class Lambda extends BaseExpression implements Expression {
             boolean firstInCycle = breakCallCycleDelay || recursiveCall;
             String statementIndex = context.evaluationContext().statementIndex();
             if (firstInCycle) {
-                result = makeInstance(context, statementIndex, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+                result = makeInstance(context, statementIndex, parameterizedType, DV.TRUE_DV,
+                        MultiLevel.EFFECTIVELY_NOT_NULL_DV);
             } else {
                 result = withLocalAnalyser(context, statementIndex, parameterizedType, methodAnalysis);
             }
@@ -348,12 +349,16 @@ public class Lambda extends BaseExpression implements Expression {
             }
             if (srv.isDone() && modified.isDone() && nneParam.isDone()) {
                 if (modified.valueIsFalse() && (srv instanceof InlinedMethod || srv.isConstant())) {
-                    result = srv;
+                    if (srv instanceof InlinedMethod inlinedMethod) {
+                        result = addLinkingInformation(context, inlinedMethod);
+                    } else {
+                        result = srv;
+                    }
                 } else {
                     // modifying method, we cannot simply substitute; or: non-modifying, too complex
                     DV nne = MultiLevel.composeOneLevelMoreNotNull(nneParam);
                     assert nne.isDone();
-                    result = makeInstance(context, statementIndex, parameterizedType, nne);
+                    result = makeInstance(context, statementIndex, parameterizedType, modified, nne);
                 }
             } else {
                 CausesOfDelay causes = srv.causesOfDelay().merge(modified.causesOfDelay()).merge(nneParam.causesOfDelay());
@@ -361,14 +366,29 @@ public class Lambda extends BaseExpression implements Expression {
             }
         } else {
             // the lambda
-            result = makeInstance(context, statementIndex, parameterizedType, MultiLevel.EFFECTIVELY_NOT_NULL_DV);
+            result = makeInstance(context, statementIndex, parameterizedType, DV.TRUE_DV,
+                    MultiLevel.EFFECTIVELY_NOT_NULL_DV);
         }
         return result;
+    }
+
+    /*
+    non-modifying inlined method (identical to non-modified part of makeInstance)
+     */
+    private Expression addLinkingInformation(EvaluationResult context, InlinedMethod inlinedMethod) {
+        MethodLinkHelper.LambdaResult lr = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
+        LinkedVariables lvs = lr.linkedToReturnValue()
+                .remove(v -> v instanceof ParameterInfo pi && methodInfo.equals(pi.getMethodInfo()));
+        if (lvs.isEmpty()) {
+            return inlinedMethod;
+        }
+        return PropertyWrapper.propertyWrapper(inlinedMethod, lvs);
     }
 
     private Expression makeInstance(EvaluationResult context,
                                     String statementIndex,
                                     ParameterizedType parameterizedType,
+                                    DV modified,
                                     DV nne) {
         Properties valueProperties = Properties.of(Map.of(Property.NOT_NULL_EXPRESSION, nne,
                 Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV,
@@ -378,9 +398,21 @@ public class Lambda extends BaseExpression implements Expression {
                 Property.IDENTITY, Property.IDENTITY.falseDv));
         Expression result = Instance.forGetInstance(identifier, statementIndex, parameterizedType, valueProperties);
 
-        List<LinkedVariables> lvsList = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo).linkedToParameters();
-        LinkedVariables lvs = lvsList.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
-
+        // similar to MethodResult, ConstructorCall.anonymous
+        MethodLinkHelper.LambdaResult lr = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
+        LinkedVariables lvs;
+        if (modified.isDelayed()) {
+            lvs = lr.delay(modified.causesOfDelay());
+        } else {
+            LinkedVariables lvsBeforeRemove;
+            if (modified.valueIsTrue()) {
+                lvsBeforeRemove = lr.mergedLinkedToParameters();
+            } else {
+                lvsBeforeRemove = lr.linkedToReturnValue();
+            }
+            lvs = lvsBeforeRemove
+                    .remove(v -> v instanceof ParameterInfo pi && methodInfo.equals(pi.getMethodInfo()));
+        }
         if (!lvs.isEmpty()) {
             return PropertyWrapper.propertyWrapper(result, lvs);
         }
@@ -408,10 +440,12 @@ public class Lambda extends BaseExpression implements Expression {
         /*
         See Lambda_2, Lambda_4, SwitchExpression_4: we catch all the "this" variants that we encounter.
         Called by DelayedExpression, original.variables(...) for the delayed version of the lambda.
+
+        20240328 looks like we want all variables, when computing the linked variables of Inlined methods
          */
         return block.variableStream()
-                .filter(v -> v instanceof FieldReference fr && fr.scopeVariable() instanceof This)
-                .map(v -> ((FieldReference) v).scopeVariable())
+                //  .filter(v -> v instanceof FieldReference fr && fr.scopeVariable() instanceof This)
+                //   .map(v -> ((FieldReference) v).scopeVariable())
                 .toList();
     }
 }

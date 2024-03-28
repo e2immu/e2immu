@@ -481,11 +481,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                         sami.getMethodInfo());
                 if (modified.isDelayed()) {
                     expression = DelayedExpression.forModification(this, modified.causesOfDelay());
-                    lvs = lr.linkedToParameters().stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge)
-                            .merge(lr.linkedToReturnValue()).changeToDelay(LV.delay(modified.causesOfDelay()));
+                    lvs = lr.delay(modified.causesOfDelay());
                 } else {
                     if (modified.valueIsTrue()) {
-                        lvs = lr.linkedToParameters().stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+                        lvs = lr.mergedLinkedToParameters();
                     } else {
                         lvs = lr.linkedToReturnValue();
                     }
