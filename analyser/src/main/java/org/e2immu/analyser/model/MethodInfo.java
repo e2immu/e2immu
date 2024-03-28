@@ -81,7 +81,7 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
 
     public boolean isPostfix() {
         return (this.name.equals("++") || this.name.equals("--")) && returnType().typeInfo != null &&
-                returnType().typeInfo.fullyQualifiedName.equals("long");
+               returnType().typeInfo.fullyQualifiedName.equals("long");
     }
 
     @Override
@@ -318,7 +318,7 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
 
     public boolean isNotATestMethod() {
         return hasInspectedAnnotation("org.junit.Test").isEmpty() &&
-                hasInspectedAnnotation("org.junit.jupiter.api.Test").isEmpty();
+               hasInspectedAnnotation("org.junit.jupiter.api.Test").isEmpty();
     }
 
     public boolean noReturnValue() {
@@ -382,15 +382,20 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
         return true; // by hand, java parsing
     }
 
-    /*
-     The one method dealing with the parameters={} parameter in @Independent1, @Dependent on parameters
-     */
     public Map<ParameterInfo, LinkedVariables> crossLinks(AnalyserContext analyserContext) {
         return analyserContext.getMethodInspection(this).getParameters().stream()
                 .map(analyserContext::getParameterAnalysis)
                 .filter(pa -> !pa.getLinksToOtherParameters().isEmpty())
                 .collect(Collectors.toUnmodifiableMap(ParameterAnalysis::getParameterInfo,
                         ParameterAnalysis::getLinksToOtherParameters));
+    }
+
+    public Map<ParameterInfo, LinkedVariables> linksToReturnValue(AnalyserContext analyserContext) {
+        return analyserContext.getMethodInspection(this).getParameters().stream()
+                .map(analyserContext::getParameterAnalysis)
+                .filter(pa -> !pa.getLinkToReturnValueOfMethod().isEmpty())
+                .collect(Collectors.toUnmodifiableMap(ParameterAnalysis::getParameterInfo,
+                        ParameterAnalysis::getLinkToReturnValueOfMethod));
     }
 
     @Override
@@ -416,7 +421,7 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
             return "equals".equals(name) || "wait".equals(name) && parameters.get(0).parameterizedType.isLong();
         }
         return numParameters == 2 && "wait".equals(name) && parameters.get(0).parameterizedType.isLong() &&
-                parameters.get(1).parameterizedType.isInt();
+               parameters.get(1).parameterizedType.isInt();
     }
 
     public int getComplexity() {
@@ -527,8 +532,8 @@ public class MethodInfo implements InfoObject, WithInspectionAndAnalysis {
         Block block = methodInspection.get().getMethodBody();
         assert block != null;
         return block.structure.statements().size() == 1
-                && block.structure.statements().get(0) instanceof ReturnStatement rs
-                && rs.expression.isInstanceOf(ConstantExpression.class);
+               && block.structure.statements().get(0) instanceof ReturnStatement rs
+               && rs.expression.isInstanceOf(ConstantExpression.class);
     }
 
     public Set<MethodInfo> topOfOverloadingHierarchy() {

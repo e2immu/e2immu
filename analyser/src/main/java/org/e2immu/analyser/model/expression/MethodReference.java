@@ -157,9 +157,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 .toList();
         List<EvaluationResult> parameterResults = parameterExpressions.stream()
                 .map(e -> makeEvaluationResult(context, e)).toList();
-        MethodLinkHelper.FromParameters from = methodLinkHelper.fromParametersIntoObject(scope.returnType(),
-                null, parameterExpressions, parameterResults,
-                true, true);
+        MethodLinkHelper.FromParameters from = methodLinkHelper.linksInvolvingParameters(scope.returnType(),
+                null, parameterResults);
         scopeResult.linkedVariablesOfExpression().stream().forEach(e ->
                 from.intoObject().linkedVariablesOfExpression().stream().forEach(e2 ->
                         builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))));
@@ -172,7 +171,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     private EvaluationResult makeEvaluationResult(EvaluationResult context, Expression e) {
-        if(e instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi) {
+        if (e instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi) {
             LinkedVariables lvs = LinkedVariables.of(pi, LV.LINK_STATICALLY_ASSIGNED);
             return new EvaluationResultImpl.Builder(context).setExpression(e).setLinkedVariablesOfExpression(lvs).build();
         }

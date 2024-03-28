@@ -2,6 +2,7 @@ package org.e2immu.analyser.parser.modification.testexample;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -105,6 +106,11 @@ public class Linking_1 {
         return IntStream.of(3).mapToObj(i -> supplier.get());
     }
 
+    static <X> Stream<X> m17b(Supplier<X> supplier) {
+        IntFunction<X> f = i -> supplier.get();
+        return IntStream.of(3).mapToObj(f);
+    }
+
     static Stream<M> m18(Supplier<M> supplier) {
         return IntStream.of(3).mapToObj(i -> supplier.get());
     }
@@ -125,5 +131,38 @@ public class Linking_1 {
 
     static Stream<M> m22(List<M> list) {
         return IntStream.of(3).mapToObj(list::get);
+    }
+
+    static Stream<M> m22b(List<M> list) {
+        IntFunction<M> get = list::get;
+        return IntStream.of(3).mapToObj(get);
+    }
+
+    static <X> Stream<X> m23(List<X> list) {
+        return IntStream.of(3).mapToObj(new IntFunction<X>() {
+            @Override
+            public X apply(int value) {
+                return list.get(value);
+            }
+        });
+    }
+
+    static <X> Stream<X> m23b(List<X> list) {
+        IntFunction<X> f = new IntFunction<>() {
+            @Override
+            public X apply(int value) {
+                return list.get(value);
+            }
+        };
+        return IntStream.of(3).mapToObj(f);
+    }
+
+    static Stream<M> m24(List<M> list) {
+        return IntStream.of(3).mapToObj(new IntFunction<M>() {
+            @Override
+            public M apply(int value) {
+                return list.get(value);
+            }
+        });
     }
 }

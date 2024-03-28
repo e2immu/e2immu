@@ -532,20 +532,29 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 primitives.stringTypeInfo(), analyserContext).build();
         ParameterInfo param0 = method.methodInspection.get().getParameters().get(0);
+
         ParameterAnalysisImpl.Builder p0Builder = new ParameterAnalysisImpl
                 .Builder(primitives, analysisProvider, param0)
                 .setHiddenContentSelector(p0Hcs);
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
+                primitives, analysisProvider, inspectionProvider, method, typeAnalysis,
+                List.of(p0Builder));
+        builder.setHiddenContentSelector(hcs);
+        p0Builder.setMethodAnalysis(builder);
+
         if (independentP0 != null) {
             p0Builder.setProperty(Property.INDEPENDENT, independentP0);
         }
+        if (!returnType.isVoid()) {
+            p0Builder.writeLinkToReturnValue(MultiLevel.DEPENDENT_DV.equals(independentP0));
+        }
+
         ParameterAnalysis p0Analysis = (ParameterAnalysis) p0Builder.build();
-        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
-                primitives, analysisProvider, inspectionProvider, method, typeAnalysis,
-                List.of(p0Analysis));
+
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, independent);
-        builder.setHiddenContentSelector(hcs);
+
         method.setAnalysis(builder.build());
 
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),

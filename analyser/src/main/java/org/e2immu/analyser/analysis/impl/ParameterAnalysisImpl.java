@@ -178,7 +178,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        protected void writeLinkToReturnValue(boolean dependent) {
+        public void writeLinkToReturnValue(boolean dependent) {
             LV lv;
             if (dependent) {
                 lv = LV.LINK_DEPENDENT;
