@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Lambda extends BaseExpression implements Expression {
@@ -322,9 +323,18 @@ public class Lambda extends BaseExpression implements Expression {
                 result = withLocalAnalyser(context, statementIndex, parameterizedType, methodAnalysis);
             }
         }
-        builder.setLinkedVariablesOfExpression(
-                result instanceof PropertyWrapper pw && pw.linkedVariables() != null
-                        ? pw.linkedVariables() : LinkedVariables.EMPTY);
+        LinkedVariables lvs;
+        if (result instanceof PropertyWrapper pw && pw.linkedVariables() != null) {
+            lvs = pw.linkedVariables();
+        } else if (result instanceof DelayedExpression) {
+            LV delay = LV.delay(result.causesOfDelay());
+            lvs = LinkedVariables.of(variableStream().distinct()
+                    .filter(v -> !(v instanceof ParameterInfo pi && pi.getMethodInfo().equals(methodInfo)))
+                    .collect(Collectors.toMap(v -> v, v -> delay)));
+        } else {
+            lvs = LinkedVariables.EMPTY;
+        }
+        builder.setLinkedVariablesOfExpression(lvs);
         builder.setExpression(result);
         return builder.build();
     }
@@ -410,6 +420,7 @@ public class Lambda extends BaseExpression implements Expression {
             } else {
                 lvsBeforeRemove = lr.linkedToReturnValue();
             }
+            // FIXME scopes of fields??
             lvs = lvsBeforeRemove
                     .remove(v -> v instanceof ParameterInfo pi && methodInfo.equals(pi.getMethodInfo()));
         }
