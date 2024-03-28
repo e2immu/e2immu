@@ -78,6 +78,7 @@ public class MethodLinkHelper {
             return linkedToParameters.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge)
                     .merge(linkedToReturnValue.changeToDelay(LV.delay(causesOfDelay)));
         }
+
         public LinkedVariables mergedLinkedToParameters() {
             return linkedToParameters.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
         }
@@ -157,10 +158,12 @@ public class MethodLinkHelper {
                         parameterLvs = parameterLv.get(pi.index);
                     }
                     ParameterizedType pt = inResult ? resultPt : objectPt;
-                    LinkedVariables lv = computeIndependent.linkedVariables(parameterType, parameterLvs, null,
-                            formalParameterIndependent, parameterAnalysis.getHiddenContentSelector(), pt);
-                    EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
-                    builder.mergeLinkedVariablesOfExpression(lv);
+                    if (pt != null) {
+                        LinkedVariables lv = computeIndependent.linkedVariables(parameterType, parameterLvs, null,
+                                formalParameterIndependent, parameterAnalysis.getHiddenContentSelector(), pt);
+                        EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
+                        builder.mergeLinkedVariablesOfExpression(lv);
+                    }
                 }
             }
 

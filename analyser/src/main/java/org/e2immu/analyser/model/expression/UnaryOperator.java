@@ -97,6 +97,7 @@ public class UnaryOperator extends BaseExpression implements Expression {
         return new EvaluationResultImpl.Builder(context)
                 .compose(evaluationResult)
                 .setExpression(value)
+                .setLinkedVariablesOfExpression(LinkedVariables.EMPTY)
                 .build();
     }
 

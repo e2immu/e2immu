@@ -929,11 +929,13 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
          */
         public void link(Variable from, Variable to, LV level) {
             assert !LV.LINK_INDEPENDENT.equals(level);
-            if (!(to instanceof ReturnVariable)) {
-                internalLink(from, to, level);
-            }
-            if (!(from instanceof ReturnVariable)) {
-                internalLink(to, from, level.reverse());
+            if (!from.equals(to)) {
+                if (!(to instanceof ReturnVariable)) {
+                    internalLink(from, to, level);
+                }
+                if (!(from instanceof ReturnVariable)) {
+                    internalLink(to, from, level.reverse());
+                }
             }
         }
 
@@ -1091,8 +1093,8 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         }
 
         public LinkedVariables getLinkedVariablesOf(Variable key) {
-           ChangeData cd= valueChanges.get(key);
-           return cd == null ? null: cd.linkedVariables();
+            ChangeData cd = valueChanges.get(key);
+            return cd == null ? null : cd.linkedVariables();
         }
     }
 }

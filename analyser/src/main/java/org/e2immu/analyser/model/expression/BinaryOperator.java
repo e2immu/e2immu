@@ -82,8 +82,8 @@ public class BinaryOperator extends BaseExpression implements Expression {
         if (o == null || getClass() != o.getClass()) return false;
         BinaryOperator that = (BinaryOperator) o;
         return lhs.equals(that.lhs) &&
-                rhs.equals(that.rhs) &&
-                operator.equals(that.operator);
+               rhs.equals(that.rhs) &&
+               operator.equals(that.operator);
     }
 
     @Override
@@ -168,7 +168,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         EvaluationResult rightResult = rhs.evaluate(leftResultContext, forward);
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(leftResult, rightResult);
         builder.setExpression(determineValueProtect(primitives, builder, leftResult, rightResult, context, forward));
-        return builder.build();
+        return builder.setLinkedVariablesOfExpression(LinkedVariables.EMPTY).build();
     }
 
     private Expression determineValueProtect(Primitives primitives,
@@ -394,11 +394,11 @@ public class BinaryOperator extends BaseExpression implements Expression {
 
     private boolean allowsForNullOperands(Primitives primitives) {
         return operator == primitives.equalsOperatorInt() ||
-                operator == primitives.equalsOperatorObject() ||
-                operator == primitives.notEqualsOperatorObject() ||
-                operator == primitives.notEqualsOperatorInt() ||
-                operator == primitives.plusOperatorString() ||
-                operator == primitives.plusOperatorString();
+               operator == primitives.equalsOperatorObject() ||
+               operator == primitives.notEqualsOperatorObject() ||
+               operator == primitives.notEqualsOperatorInt() ||
+               operator == primitives.plusOperatorString() ||
+               operator == primitives.plusOperatorString();
     }
 
     @NotNull
@@ -482,7 +482,7 @@ public class BinaryOperator extends BaseExpression implements Expression {
         }
 
         throw new UnsupportedOperationException("Unknown operator " + operator + " on widest type " +
-                widestType.fullyQualifiedName);
+                                                widestType.fullyQualifiedName);
     }
 
     public static MethodInfo fromAssignmentOperatorToNormalOperator(Primitives primitives, MethodInfo methodInfo) {

@@ -14,10 +14,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -67,7 +64,7 @@ public class NullConstant extends BaseExpression implements ConstantExpression<O
         if (max.gt(MultiLevel.NULLABLE_DV) && forwardEvaluationInfo.isComplainInlineConditional()) {
             builder.raiseError(getIdentifier(), Message.Label.NULL_POINTER_EXCEPTION);
         }
-        return builder.setExpression(this).build();
+        return builder.setExpression(this).setLinkedVariablesOfExpression(LinkedVariables.EMPTY).build();
     }
 
     @Override
