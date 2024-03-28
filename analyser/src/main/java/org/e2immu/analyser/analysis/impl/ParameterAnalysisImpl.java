@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.impl.AnnotationExpressionImpl;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
@@ -45,7 +46,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     private final ParameterInfo parameterInfo;
     public final Map<FieldInfo, LV> assignedToField;
     private final LinkedVariables linksToOtherParameters;
-    // TODO at some point private final LinkedVariables linkToReturnValueOfMethod;
+    private final LinkedVariables linkToReturnValueOfMethod;
     private final HiddenContentSelector hiddenContentSelector;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
@@ -53,12 +54,14 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
                                   Map<FieldInfo, LV> assignedToField,
                                   LinkedVariables linksToOtherParameters,
+                                  LinkedVariables linkToReturnValueOfMethod,
                                   HiddenContentSelector hiddenContentSelector) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
         this.assignedToField = assignedToField;
         this.linksToOtherParameters = linksToOtherParameters;
         this.hiddenContentSelector = hiddenContentSelector;
+        this.linkToReturnValueOfMethod = linkToReturnValueOfMethod;
     }
 
     @Override
@@ -87,6 +90,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     }
 
     @Override
+    public LinkedVariables getLinkToReturnValueOfMethod() {
+        return linkToReturnValueOfMethod;
+    }
+
+    @Override
     public HiddenContentSelector getHiddenContentSelector() {
         return hiddenContentSelector;
     }
@@ -104,6 +112,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         private final AnalysisProvider analysisProvider;
         private final SetOnce<MethodAnalysisImpl.Builder> methodAnalysis = new SetOnce<>();
         private final SetOnce<LinkedVariables> linksToParameters = new SetOnce<>();
+        private final SetOnce<LinkedVariables> linkToReturnValueOfMethod = new SetOnce<>();
         private final SetOnce<HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
 
         @Override
@@ -169,6 +178,20 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
+        protected void writeLinkToReturnValue(boolean dependent) {
+            LV lv;
+            if (dependent) {
+                lv = LV.LINK_DEPENDENT;
+            } else {
+                assert hiddenContentSelector.isSet();
+                assert methodAnalysis.isSet() && methodAnalysis.get().hiddenContentSelectorIsSet();
+                lv = LV.createHC(getHiddenContentSelector(), methodAnalysis.get().getHiddenContentSelector());
+            }
+            ReturnVariable returnVariable = new ReturnVariable(parameterInfo.getMethodInfo());
+            linkToReturnValueOfMethod.set(LinkedVariables.of(returnVariable, lv));
+        }
+
+        @Override
         public void writeHiddenContentLink(int[] hcLinkParameters, int[] dependentLinkToParameters) {
             LinkedVariables hcLv = hcLinkParameters == null ? LinkedVariables.EMPTY
                     : hcLinkToParameters(hcLinkParameters);
@@ -222,8 +245,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         Type parameters of the method vs type parameters of the type
          */
         private HiddenContentSelector bestHiddenContentSelector(int numHiddenContentTypesOfType,
-                                                                   boolean isVarargs,
-                                                                   ParameterizedType parameterType) {
+                                                                boolean isVarargs,
+                                                                ParameterizedType parameterType) {
             ParameterizedType pt;
             if (isVarargs) {
                 assert parameterType.arrays > 0;
@@ -257,6 +280,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             return new ParameterAnalysisImpl(parameterInfo, properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(), getAssignedToField(),
                     linksToParameters.getOrDefault(LinkedVariables.EMPTY),
+                    linkToReturnValueOfMethod.getOrDefault(LinkedVariables.EMPTY),
                     getHiddenContentSelector());
         }
 
@@ -333,6 +357,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         public boolean hiddenContentSelectorIsSet() {
             return hiddenContentSelector.isSet();
+        }
+
+        @Override
+        public LinkedVariables getLinkToReturnValueOfMethod() {
+            return linkToReturnValueOfMethod.get();
         }
     }
 

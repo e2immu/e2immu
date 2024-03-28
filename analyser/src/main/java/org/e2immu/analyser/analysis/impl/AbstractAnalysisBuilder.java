@@ -386,10 +386,9 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             writeHiddenContentLink(linkHcParameters, linkDependentParameters);
         }
         if (linkHcReturnValue) {
-            writeHiddenContentLink();
-        }
-        if (linkDependentReturnValue) {
-            writeDependentLink();
+            writeLinkToReturnValue(false);
+        } else if (linkDependentReturnValue) {
+            writeLinkToReturnValue(true);
         }
         return messages;
     }
@@ -413,11 +412,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
         throw new UnsupportedOperationException();
     }
 
-    protected void writeHiddenContentLink() {
-        throw new UnsupportedOperationException();
-    }
-
-    protected void writeDependentLink() {
+    protected void writeLinkToReturnValue(boolean dependent) {
         throw new UnsupportedOperationException();
     }
 

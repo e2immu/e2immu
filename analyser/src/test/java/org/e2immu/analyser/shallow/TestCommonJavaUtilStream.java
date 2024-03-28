@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.junit.jupiter.api.Test;
 
 import java.util.stream.Collector;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,6 +71,10 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals("Type java.util.function.Function<? super T,? extends R>",
                 p0.getParameterInfo().parameterizedType.toString());
         assertEquals("<0,1>", p0.getHiddenContentSelector().toString());
+
+        assertEquals("return map:4", p0.getLinkToReturnValueOfMethod().toString());
+        assertEquals("<0,1>-4-<0>", p0.getLinkToReturnValueOfMethod().stream().findFirst()
+                .orElseThrow().getValue().toString());
     }
 
 
@@ -136,4 +141,26 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
     }
+
+    @Test
+    public void testIntStreamMapToObj() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(IntStream.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("mapToObj", 1);
+
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT),
+                methodInfo.fullyQualifiedName);
+
+        // IntFunction<? extends U> mapper
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
+
+        assertEquals("return mapToObj:4", p0.getLinkToReturnValueOfMethod().toString());
+        assertEquals("<0>-4-<0>", p0.getLinkToReturnValueOfMethod().stream().findFirst()
+                .orElseThrow().getValue().toString());
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+    }
+
 }

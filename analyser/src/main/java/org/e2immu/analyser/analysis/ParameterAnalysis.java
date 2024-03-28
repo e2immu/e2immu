@@ -128,6 +128,10 @@ public interface ParameterAnalysis extends Analysis {
         return LinkedVariables.EMPTY;
     }
 
+    default LinkedVariables getLinkToReturnValueOfMethod() {
+        return LinkedVariables.EMPTY;
+    }
+
     /*
     which part of the hidden content of the type is assigned from the parameter to the field,
     or vice versa?

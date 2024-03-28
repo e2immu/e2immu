@@ -116,8 +116,23 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         boolean explicitlyEmpty = methodInfo.explicitlyEmptyMethod();
 
+        /*
+         the hidden content selector of methodAnalysis and parameterAnalysis needs to be set before calling
+         parameterAnalysis.fromAnnotationsIntoProperties
+         */
+        if (!methodAnalysis.hiddenContentSelectorIsSet()) {
+            HiddenContent hc = HiddenContent.from(methodInspection.getReturnType());
+            HiddenContentSelector hcs = hc.selectAll();
+            methodAnalysis.setHiddenContentSelector(hcs);
+        }
+
         parameterAnalyses.forEach(parameterAnalysis -> {
             ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+            if (!builder.hiddenContentSelectorIsSet()) {
+                HiddenContent hc = HiddenContent.from(builder.getParameterInfo().parameterizedType);
+                HiddenContentSelector hcs = hc.selectAll();
+                builder.setHiddenContentSelector(hcs);
+            }
             List<AnnotationExpression> annotations = builder.getParameterInfo().parameterInspection.get().getAnnotations();
             analyserResultBuilder.addMessages(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
                     annotations, e2));
@@ -130,11 +145,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                     builder.setProperty(Property.MODIFIED_VARIABLE, DV.FALSE_DV);
                 }
                 builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            }
-            if (!builder.hiddenContentSelectorIsSet()) {
-                HiddenContent hc = HiddenContent.from(builder.getParameterInfo().parameterizedType);
-                HiddenContentSelector hcs = hc.selectAll();
-                builder.setHiddenContentSelector(hcs);
             }
         });
 
@@ -202,12 +212,6 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                             this::getMessageStream));
                 }
             }
-        }
-
-        if (!methodAnalysis.hiddenContentSelectorIsSet()) {
-            HiddenContent hc = HiddenContent.from(methodInspection.getReturnType());
-            HiddenContentSelector hcs = hc.selectAll();
-            methodAnalysis.setHiddenContentSelector(hcs);
         }
 
         if (causes.isDelayed()) {

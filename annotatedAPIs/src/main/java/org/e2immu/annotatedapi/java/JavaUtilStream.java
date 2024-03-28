@@ -100,8 +100,8 @@ public class JavaUtilStream {
         @NotNull
         IntStream of(int i);
 
-        @Independent(hc = true)
-        <X> Stream<X> mapToObj(@NotNull IntFunction<? extends X> mapper);
+        @NotNull
+        <X> Stream<X> mapToObj(@Independent(hcReturnValue = true) @NotNull IntFunction<? extends X> mapper);
     }
 
     @Container
@@ -179,13 +179,14 @@ public class JavaUtilStream {
 
         /*
          The resulting stream is dependent on the object stream, but the method is not modifying.
-         Note that the functional interface implies @IgnoreModifications, which allows modifications external to the type,
+         Note that the functional interface implies @IgnoreModifications, which allows modifications external to the type.
+         The parameter's hidden content (of type R) leak to the result of the method (Stream<R>)
          */
         @NotNull
-        <R> Stream<R> map(@NotNull Function<? super T, ? extends R> mapper);
+        <R> Stream<R> map(@Independent(hcReturnValue = true) @NotNull Function<? super T, ? extends R> mapper);
 
         @NotNull
-        <R> Stream<R> flatMap(@NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
+        <R> Stream<R> flatMap(@Independent(hcReturnValue = true) @NotNull Function<? super T, ? extends Stream<? extends R>> mapper);
 
         @NotNull
         @Modified
