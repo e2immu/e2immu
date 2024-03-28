@@ -1089,5 +1089,10 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             }
             valueChanges.keySet().removeIf(predicate);
         }
+
+        public LinkedVariables getLinkedVariablesOf(Variable key) {
+           ChangeData cd= valueChanges.get(key);
+           return cd == null ? null: cd.linkedVariables();
+        }
     }
 }

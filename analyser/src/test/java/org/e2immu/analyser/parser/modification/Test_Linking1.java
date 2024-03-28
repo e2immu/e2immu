@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
 
 public class Test_Linking1 extends CommonTestRunner {
 
@@ -84,8 +85,14 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertLinked(d, it(0, "stream:4"));
                     }
                     case "m12" -> {
-                        assertCurrentValue(d, 1, "stream.filter(/*inline test*/predicate.test(i)).findFirst().orElseThrow()");
+                        assertCurrentValue(d, 1, "stream.map(/*inline apply*/function.apply(x)/*{L function:4}*/)");
                         assertLinked(d, it(0, "function:4,stream:2"));
+                    }
+                    case "m12b" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 1, "stream.map(/*inline apply*/function.apply(x)/*{L function:4}*/)");
+                            assertLinked(d, it0("f:-1,function:-1,stream:-1"), it(1, "f:4,function:4,stream:2"));
+                        }
                     }
                     case "m13" -> {
                         assertCurrentValue(d, 0, "stream.map(function::apply)");
@@ -165,6 +172,11 @@ public class Test_Linking1 extends CommonTestRunner {
                 }
             }
             switch (d.methodInfo().name) {
+                case "m12b" -> {
+                    if ("0".equals(d.statementId()) && "f".equals(d.variableName())) {
+                        assertLinked(d, it0("function:-1"), it(1, "function:4"));
+                    }
+                }
                 case "m15b" -> {
                     if ("0".equals(d.statementId()) && "add".equals(d.variableName())) {
                         assertLinked(d, it(0, "out:4"));

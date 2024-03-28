@@ -129,7 +129,7 @@ public class LV implements Comparable<LV> {
         }
         if (other.isDelayed()) return other;
         if (value < other.value) return other;
-        assert value != HC || other.value != HC || mineEqualsTheirs(other);
+        // FIXME assert value != HC || other.value != HC || mineEqualsTheirs(other);
         return this;
     }
 

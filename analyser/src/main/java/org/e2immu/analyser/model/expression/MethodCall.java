@@ -33,10 +33,7 @@ import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.support.Either;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -377,6 +374,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         LinkedVariables linkedVariablesOfObjectFromParams = fp.intoObject().linkedVariablesOfExpression();
         builder.compose(fp.intoObject());
 
+        // (A)
         linkedVariablesOfObject.stream().forEach(e ->
                 linkedVariablesOfObjectFromParams.stream().forEach(e2 ->
                         builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))
@@ -387,8 +385,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // a parameter is a functional interface returning a value
         LinkedVariables lvsResult1 = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
                 res.evaluationResults(), concreteReturnType);
-        LinkedVariables lvsResult = fp.intoResult() == null ? lvsResult1
+        LinkedVariables lvsResult2 = fp.intoResult() == null ? lvsResult1
                 : lvsResult1.merge(fp.intoResult().linkedVariablesOfExpression());
+
+        // the effects of (A) must be copied into lvsResult2. See Linking_1,m12
+        Map<Variable, LV> map = new HashMap<>();
+        lvsResult2.stream().forEach(e -> {
+            LinkedVariables lvs = builder.getLinkedVariablesOf(e.getKey());
+            map.put(e.getKey(), e.getValue());
+            if (lvs != null) {
+                lvs.stream().forEach(e2 -> map.merge(e2.getKey(), e2.getValue().max(e.getValue()), LV::max));
+            }
+        });
+        LinkedVariables lvsResult = LinkedVariables.of(map);
 
         // ----- END LINKS -----
 

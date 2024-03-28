@@ -76,6 +76,12 @@ public class Linking_1 {
         return stream.map(x -> function.apply(x));
     }
 
+    static <X, Y> Stream<Y> m12b(Stream<X> stream, Function<X, Y> function) {
+        //noinspection ALL
+        Function<X, Y> f = x -> function.apply(x);
+        return stream.map(f);
+    }
+
     static <X, Y> Stream<Y> m13(Stream<X> stream, Function<X, Y> function) {
         //noinspection ALL
         return stream.map(function::apply);
